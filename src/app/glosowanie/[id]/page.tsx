@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby, wynikiKlubow } from '@/lib/dane';
 import { BARWY_GLOSU, stylGlosu } from '@/lib/barwy-glosu';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
+import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -27,7 +28,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const a = rozbijAdres(id);
   const g = a && bazaDostepna() ? glosowanie(a.posiedzenie, a.numer) : null;
   if (!g) return { title: 'Nie ma takiego głosowania' };
+  // Strony z pominietymi nazwiskami osob prywatnych nie ida do wyszukiwarek
+  // takze po premierze. Klucz `robots` dodajemy TYLKO wtedy — obecny
+  // z wartoscia undefined skasowalby ustawienie odziedziczone z layoutu.
+  const bezIndeksu = pominietoNazwiska(g.tytul) || pominietoNazwiska(g.temat) || pominietoNazwiska(g.opis);
   return {
+    ...(bezIndeksu ? { robots: { index: false, follow: false } } : {}),
     title: skroc(opisJednaLinia(g), 90),
     description: `Głosowanie z ${dataSlownie(g.data)}: za ${g.za}, przeciw ${g.przeciw}, wstrzymało się ${g.wstrzymalo}.`,
   };
@@ -113,7 +119,14 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
             {o.przedmiot.charAt(0).toLocaleUpperCase('pl-PL') + o.przedmiot.slice(1)}
           </p>
         ) : null}
-        {g.opis ? <p className="mt-2 text-sm text-atrament-2">{g.opis}</p> : null}
+        {g.opis ? <p className="mt-2 text-sm text-atrament-2">{bezNazwiskOsobPrywatnych(g.opis)}</p> : null}
+        {pominietoNazwiska(g.tytul) || pominietoNazwiska(g.temat) || pominietoNazwiska(g.opis) ? (
+          <p className="mt-3 rounded-lg border border-kreska bg-papier-3 px-3 py-2 text-xs leading-relaxed text-atrament-2">
+            W sprawach z oskarżenia prywatnego nie powtarzamy nazwisk oskarżycieli ani ich
+            pełnomocników — to osoby prywatne. Nazwisko posła zostaje. Pełny tytuł jest
+            w rejestrze Sejmu pod odnośnikiem poniżej.
+          </p>
+        ) : null}
 
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <Zrodlo

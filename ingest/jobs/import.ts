@@ -16,6 +16,7 @@ import * as api from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
+import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -391,7 +392,10 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   db.exec('begin');
   db.exec('delete from glosowania_szukaj');
   for (const g of glosowania) {
-    wstaw.run(uprosc([g.temat, g.tytul, g.opis].filter(Boolean).join(' • ')), g.posiedzenie, g.numer);
+    // Do indeksu idzie tekst BEZ nazwisk osob prywatnych: nasze wyszukiwanie
+    // nie moze znajdowac prywatnego oskarzyciela po nazwisku (prywatnosc.ts).
+    const tekst = [g.temat, g.tytul, g.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
+    wstaw.run(uprosc(tekst), g.posiedzenie, g.numer);
   }
   db.exec('commit');
   log(`   ${glosowania.length} glosowan w indeksie`);

@@ -39,6 +39,13 @@ export default function StronaOSerwisie() {
           którego nie znamy.
         </li>
         <li>
+          <span className="font-medium text-atrament">Nazwisk osób prywatnych.</span>{' '}
+          We wnioskach o uchylenie immunitetu z oskarżenia prywatnego nie powtarzamy
+          nazwisk oskarżycieli ani ich pełnomocników. Rejestr Sejmu je podaje, ale to
+          my sprawiamy, że da się je łatwo wyszukać. Nazwisko posła zostaje, a pełny
+          tytuł jest pod odnośnikiem do rejestru.
+        </li>
+        <li>
           <span className="font-medium text-atrament">Barw partyjnych.</span>{' '}
           Kolory na wykresach są nasze i służą wyłącznie rozróżnieniu bloków.
           Loga klubów dają pięć podobnych czerwieni i trzy granaty — na ich

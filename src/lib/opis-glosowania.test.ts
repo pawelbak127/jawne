@@ -49,6 +49,18 @@ describe('opisGlosowania', () => {
   });
 });
 
+describe('nazwiska osob prywatnych', () => {
+  // Nazwiska zmyslone — patrz komentarz w prywatnosc.test.ts.
+  it('nie przechodza do opisu glosowania', () => {
+    const o = opisGlosowania({
+      tytul: 'Pkt. 34 Sprawozdanie Komisji w sprawie wniosku oskarżyciela prywatnego Jana Kowalskiego, reprezentowanego przez adwokata Adama Nowaka, z dnia 10 września 2025 r. o wyrażenie zgody na pociągnięcie do odpowiedzialności karnej posła Piotra Posłowskiego (druk nr 1)',
+      temat: 'głosowanie nad przyjęciem wniosku z druku.',
+    });
+    expect(o.sprawa).not.toMatch(/Kowalsk|Nowak/);
+    expect(o.sprawa).toMatch(/posła Piotra Posłowskiego/);
+  });
+});
+
 describe('opisJednaLinia', () => {
   it('skleja sprawe z przedmiotem', () => {
     expect(opisJednaLinia({ tytul: 'Pkt. 5 Projekt ustawy o X', temat: 'poprawka 3' })).toBe('Projekt ustawy o X — poprawka 3');

@@ -10,6 +10,8 @@
  * Pokazywanie zawsze tematu dawalo karty "głosowanie nad przyjęciem wniosku
  * z druku." bez slowa o tym, jakiego druku.
  */
+import { bezNazwiskOsobPrywatnych } from './prywatnosc';
+
 export type OpisGlosowania = {
   /** Glowna linia: o czym jest sprawa. */
   sprawa: string;
@@ -37,8 +39,10 @@ function wielka(t: string): string {
 }
 
 export function opisGlosowania(g: { tytul: string; temat: string | null }): OpisGlosowania {
-  const tytul = g.tytul.trim();
-  const temat = g.temat ? bezKropki(g.temat) : null;
+  // Nazwiska osob prywatnych znikaja TUTAJ, zeby nie trafily ani na strone,
+  // ani do podgladu linku, ani do <title> — patrz prywatnosc.ts.
+  const tytul = bezNazwiskOsobPrywatnych(g.tytul.trim());
+  const temat = g.temat ? bezKropki(bezNazwiskOsobPrywatnych(g.temat)) : null;
   const nadCaloscia = temat !== null && NAD_CALOSCIA.test(temat);
 
   if (NAZWA_POSIEDZENIA.test(tytul)) {

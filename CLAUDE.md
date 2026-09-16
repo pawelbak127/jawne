@@ -35,9 +35,10 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
-| `src/lib/` | czyste funkcje: `format`, `polkole`, `kluby`, `barwy`, `glosy` (+ testy) |
+| `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
+| `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
 | `src/components/` | komponenty; `'use client'` tylko tam, gdzie potrzebna interakcja |
 | `ingest/` | import z API Sejmu do SQLite |
 | `dane/sejm.db` | baza — **nie w repozytorium**, odtwarzalna w ~20 minut |
@@ -55,7 +56,8 @@ npx eslint src ingest
 
 npm run import wszystko                    # pełny import (~20 min)
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
-npm run import zdjecia                     # 499 portretów do bazy, ~25 MB
+npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
+npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 ```
 
@@ -74,6 +76,14 @@ npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 5. **Nikogo nie ukrywamy.** Poseł z wygasłym mandatem i klub, którego już nie
    ma, zostają w serwisie.
 6. **Nie oceniamy.** Żadnych odznak, rankingów „leniwych" ani punktów.
+7. **Nie powtarzamy nazwisk osób prywatnych** (decyzja z 16.09.2026, do
+   odwołania przez Pawła). W sprawach z oskarżenia prywatnego nazwiska
+   oskarżycieli i ich pełnomocników znikają z tytułów, podglądów linku
+   i z naszego indeksu wyszukiwania; strona dostaje `noindex` i mówi o tym
+   wprost. Nazwisko posła zostaje. Jedna reguła dla wszystkich — także gdy
+   oskarżycielem jest polityk. Kod: `src/lib/prywatnosc.ts`.
+8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
+   po słowach rejestru. Nie wybieramy „ważnych" według siebie.
 
 ---
 
@@ -121,6 +131,28 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 8. **ESLint wywala zwykły `"` w tekście JSX.** I dobrze — polski cudzysłów
    zamykający to `”` (U+201D), a nie `"`.
 
+9. **Plik PKW zapisuje TERYT jako liczbę** — 608 kodów ma 5 cyfr zamiast 6.
+   Trzy sąsiednie adresy PKW odpowiadają `HTTP 200` z HTML-em zamiast pliku.
+10. **`core.autocrlf=true` wycina CR z plików źródłowych w repozytorium** —
+    stąd `.gitattributes` z `ingest/zrodla/** -text`.
+11. **FTS5 `remove_diacritics` nie zamienia „ł" na „l"**, a trygram szuka
+    podciągów, więc „podatek" nie znajduje „podatku". Tekst i zapytanie
+    przechodzą przez `uprosc()` i `rdzen()` z `src/lib/tekst.ts`.
+12. **Tytuł i temat głosowania zamieniają się rolami**: w 3966 tytułach
+    „Pkt. N" sprawa jest w tytule, w 350 tytuł to nazwa posiedzenia.
+    Zawsze przez `opisGlosowania()`, nigdy `temat ?? tytul`.
+13. **za + przeciw + wstrzymał ≠ głosujących** w 59 głosowaniach (kworum,
+    wybory na liście). Pasek bez odcinka „obecnych bez głosu" kłamie.
+14. **`Math.cos` w Node i w Chrome różni się na ostatniej cyfrze** —
+    niezgodność hydracji na `cx`/`cy`. Współrzędne zaokrąglone.
+15. **Tailwind 4: `dark:` słucha tylko systemu**, dopóki nie zdefiniujesz
+    `@custom-variant dark` pod przełącznik.
+16. **Tekst w `foreignObject` skaluje się z SVG** — etykieta półkola rosła
+    razem z wykresem i zasłaniała kropki.
+17. **Desktopowy Chrome ma minimalną szerokość okna ~500 px** — zrzut
+    „390 px" z `--window-size` jest fałszywy. Telefon sprawdza się
+    w ramce `<iframe style="width:390px">`.
+
 ---
 
 ## Wzorce obowiązujące
@@ -139,7 +171,14 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
    testy i build przepuszczają komentarz JSX widoczny jako tekst, wycięty
    atrybut i brakującą kropkę.
 6. **Brak danych to stan, nie awaria.** Nie ma pliku bazy → `<BrakDanych>`
-   z poleceniem. Nie ma głosów imiennych → strona mówi to wprost.
+   z poleceniem. Nie ma tabeli → `bezTabeli()` w `dane.ts`.
+7. **Liczba z serwisu sprawdzona drugą drogą.** Porównanie z klubem liczone
+   funkcją TS i niezależnym SQL-em (0 rozjazdów); tabela klubów na stronie
+   głosowania zsumowana i porównana z nagłówkiem rejestru.
+8. **Zrzut ekranu i konsola przeglądarki przed commitem.**
+   `chrome --headless=new --screenshot` oraz `--enable-logging=stderr
+   --dump-dom` (niezgodności hydracji). Osobny `--user-data-dir` na każdy
+   zrzut, inaczej Chrome oddaje kod 0 i nic nie zapisuje.
 
 ---
 
