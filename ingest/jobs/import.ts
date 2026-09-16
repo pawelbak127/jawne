@@ -177,6 +177,15 @@ async function importGlosowan(db: DatabaseSync): Promise<void> {
 
 async function importGlosow(db: DatabaseSync): Promise<void> {
   log('-> glosy imienne (najdluzszy etap)');
+
+  // `--od-nowa` sluzy do powtorzenia etapu po zmianie SPOSOBU zapisu (a nie
+  // danych zrodlowych) — tak jak przy naprawie klubow historycznych. Bez tego
+  // etap pomija glosowania, ktore juz maja wiersze, i poprawka by ich nie objela.
+  if (process.argv.includes('--od-nowa')) {
+    db.exec('delete from glosy');
+    log('   wyczyszczono tabele glosow (--od-nowa)');
+  }
+
   const doPobrania = db.prepare(
     `select g.posiedzenie as posiedzenie, g.numer as numer from glosowania g
       where not exists (select 1 from glosy s
@@ -190,8 +199,9 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
     'insert into glosy(posiedzenie, numer, posel_id, klub_id, glos) values (?,?,?,?,?) on conflict do nothing',
   );
   const znaneKluby = new Set(db.prepare('select id from kluby').all().map((r) => String((r as { id: string }).id)));
+  const wstawKlub = db.prepare('insert into kluby(id, nazwa, mandaty) values (?, null, null) on conflict(id) do nothing');
   const nieznaneGlosy = new Map<string, number>();
-  const nieznaneKluby = new Map<string, number>();
+  const klubyHistoryczne = new Map<string, number>();
   let zapisanych = 0;
   let zrobione = 0;
 
@@ -204,9 +214,25 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
     for (const g of pelne) {
       for (const v of g.votes ?? []) {
         if (!GLOSY_ZNANE.has(v.vote)) nieznaneGlosy.set(v.vote, (nieznaneGlosy.get(v.vote) ?? 0) + 1);
-        const klub = v.club && znaneKluby.has(v.club) ? v.club : null;
-        if (v.club && !klub) nieznaneKluby.set(v.club, (nieznaneKluby.get(v.club) ?? 0) + 1);
-        wstaw.run(g.sitting, g.votingNumber, v.MP, klub, v.vote);
+
+        // KLUBY HISTORYCZNE. Glos niesie klub z DNIA GLOSOWANIA, a /clubs
+        // podaje tylko stan biezacy. ZMIERZONE na pelnym imporcie: w glosach
+        // wystepuja Kukiz15 (2993 glosy), Republikanie (9604), PSL (256)
+        // i Nowa_Lewica (208) — kluby, ktorych dzis juz nie ma.
+        //
+        // Zapisanie przy nich null byloby cicha utrata informacji: glos oddany
+        // przez czlonka Kukiz15 pokazywalby sie jako "bez klubu", czyli
+        // nieprawde. Zakladamy wiec klub z samym identyfikatorem, tak samo jak
+        // przy posle wskazujacym klub spoza listy.
+        if (v.club && !znaneKluby.has(v.club)) {
+          wstawKlub.run(v.club);
+          znaneKluby.add(v.club);
+          klubyHistoryczne.set(v.club, 0);
+        }
+        if (v.club && klubyHistoryczne.has(v.club)) {
+          klubyHistoryczne.set(v.club, (klubyHistoryczne.get(v.club) ?? 0) + 1);
+        }
+        wstaw.run(g.sitting, g.votingNumber, v.MP, v.club || null, v.vote);
         zapisanych++;
       }
     }
@@ -223,10 +249,10 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
     log('          dopisz je do GLOSY_ZNANE i ETYKIETY w ingest/lib/glosy.ts');
     uwagi.push(`nieznane glosy: ${opis}`);
   }
-  if (nieznaneKluby.size) {
-    const opis = [...nieznaneKluby].map(([k, n]) => `${k}x${n}`).join(', ');
-    log(`   UWAGA - kluby w glosach, ktorych nie ma w /clubs: ${opis} (zapisane jako null)`);
-    uwagi.push(`kluby spoza rejestru: ${opis}`);
+  if (klubyHistoryczne.size) {
+    const opis = [...klubyHistoryczne].map(([k, n]) => `${k}x${n}`).join(', ');
+    log(`   kluby historyczne (sa w glosach, nie ma ich w /clubs): ${opis}`);
+    uwagi.push(`kluby historyczne: ${opis}`);
   }
   log(`   razem ${zapisanych} glosow`);
   odnotujImport(db, 'glosy', zapisanych, uwagi.join(' | '));

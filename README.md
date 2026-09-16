@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# jawne
 
-## Getting Started
+Serwis pokazujący dane publiczne o Sejmie RP: kto jak głosował, kto zasiada
+w izbie i skąd to wiadomo. Przy każdej liczbie stoi odnośnik do oficjalnego
+rejestru.
 
-First, run the development server:
+## Uruchomienie
+
+Potrzebny jest **Node 24 lub nowszy** (serwis używa wbudowanego `node:sqlite`).
+Nie trzeba żadnego konta, klucza ani bazy w chmurze.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+
+# 1. Szybkie etapy: kluby, posłowie, nagłówki głosowań (~5 s)
+npm run import kluby poslowie glosowania
+
+# 2. Serwis już działa — z liczbami zbiorczymi głosowań
+npm run dev        # http://localhost:3000
+
+# 3. Głosy imienne: 2,1 mln wierszy, ~18 minut. Można w tle.
+npm run import glosy
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Baza powstaje w `dane/sejm.db` i nie jest trzymana w repozytorium — odtwarza
+się w całości z publicznego API Sejmu.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Co jest w środku
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Ścieżka | |
+|---|---|
+| `/` | półkole izby, wyszukiwarka posła, ostatnie głosowania |
+| `/poslowie` | wszyscy posłowie, filtrowanie w przeglądarce |
+| `/posel/[slug]` | profil: rozkład głosów, udział, ostatnie głosowania |
+| `/glosowania` | wszystkie głosowania, stronicowane |
+| `/glosowanie/[posiedzenie]-[numer]` | kto jak zagłosował, imiennie |
+| `/stan` | co i kiedy zaimportowano oraz czego brakuje |
 
-## Learn More
+## Sprawdzenie
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run typecheck
+npm test
+npx eslint src ingest
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Źródło danych
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[API Sejmu RP](https://api.sejm.gov.pl/sejm/openapi/) — publiczne, bez klucza.
+Serwis nie jest powiązany z Kancelarią Sejmu ani z żadnym klubem poselskim.
