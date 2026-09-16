@@ -1,0 +1,4 @@
+# Pliki zrodlowe z rejestrow maja zostac bajt w bajt takie, jak je wydano.
+# Bez tego core.autocrlf=true wycina CR z pliku PKW w repozytorium
+# (zmierzone: 2586 znakow, inna suma SHA-256 niz w ZRODLO.md).
+ingest/zrodla/** -text
