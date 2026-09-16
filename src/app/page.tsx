@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { bazaDostepna, kluby, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
-import { dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
+import { bazaDostepna, kluby, liczbaGlosowan, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
+import { dataSlownie, liczba, zOdmiana } from '@/lib/format';
 import { Polkole, type Blok } from '@/components/Polkole';
 import { Szukajka } from '@/components/Szukajka';
 import { Kafel, Zrodlo } from '@/components/Zrodlo';
 import { BrakDanych } from '@/components/BrakDanych';
-import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { KartaGlosowania } from '@/components/KartaGlosowania';
 
 const PRZYKLADY = ['Kraków', 'Zakopane', 'podatek', 'sygnaliści'];
 
@@ -14,7 +14,8 @@ export default function StronaGlowna() {
 
   const stan = podsumowanie();
   const listaKlubow = kluby();
-  const glosowania = ostatnieGlosowania(6);
+  const glosowania = ostatnieGlosowania(6, { nadCaloscia: true });
+  const glosowanNadCaloscia = liczbaGlosowan({ nadCaloscia: true });
   const listaOkregow = okregi();
   const okregiLiczba = listaOkregow.length;
   const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
@@ -42,9 +43,9 @@ export default function StronaGlowna() {
           <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-akcent">
             Sejm RP · X kadencja
           </p>
-          <h1 className="szryft mt-4 max-w-3xl text-4xl leading-[1.08] font-semibold tracking-tight sm:text-6xl">
-            Kto Cię reprezentuje w Sejmie <br className="hidden sm:block" />
-            — i jak naprawdę głosuje.
+          {/* text-balance zamiast twardego <br>: przy <br> "Sejmie" zostawalo samo w linii. */}
+          <h1 className="szryft mt-4 max-w-4xl text-4xl leading-[1.08] font-semibold tracking-tight text-balance sm:text-6xl">
+            Kto Cię reprezentuje w&nbsp;Sejmie — i&nbsp;jak naprawdę głosuje.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
             Wpisz swoją miejscowość, a zobaczysz posłów ze swojego okręgu, ich głosy
@@ -109,7 +110,7 @@ export default function StronaGlowna() {
               podpis={`Rozkład ${mandatow} mandatów między kluby i koła poselskie`}
               srodek={
                 <>
-                  <span className="liczby szryft text-5xl font-semibold leading-none">{mandatow}</span>
+                  <span className="liczby szryft text-3xl font-semibold leading-none sm:text-5xl">{mandatow}</span>
                   <span className="mt-1 text-xs text-atrament-2">mandatów</span>
                 </>
               }
@@ -163,35 +164,24 @@ export default function StronaGlowna() {
 
       <section className="obszar py-8">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="szryft text-2xl font-semibold">Ostatnie głosowania</h2>
-          <Link href="/glosowania" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
-            wszystkie {liczba(stan.glosowan)}
+          <h2 className="szryft text-2xl font-semibold">Ostatnie głosowania nad całością projektów</h2>
+          <Link href="/glosowania?rodzaj=calosc" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
+            {`wszystkie ${liczba(glosowanNadCaloscia)}`}
           </Link>
         </div>
+        {/*
+          Ostatnie glosowania w ogole to prawie zawsze kworum, przerwy
+          i poprawki. Nie wybieramy "waznych" wedlug siebie — pokazujemy
+          ostateczne glosowania nad projektami, rozpoznane po slowach rejestru.
+        */}
+        <p className="mt-1 max-w-2xl text-sm text-atrament-2">
+          {`Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je rejestr. Wszystkich głosowań, łącznie z poprawkami i sprawami porządkowymi, jest ${liczba(stan.glosowan)}.`}
+        </p>
 
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
           {glosowania.map((g) => (
             <li key={`${g.posiedzenie}-${g.numer}`}>
-              <Link
-                href={`/glosowanie/${g.posiedzenie}-${g.numer}`}
-                className="group flex h-full flex-col rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta transition-all hover:border-kreska-2 hover:shadow-karta-2"
-              >
-                <div className="flex items-center gap-2 text-xs text-atrament-3">
-                  <span>{dataSlownie(g.data)}</span>
-                  <span aria-hidden>·</span>
-                  <span>posiedzenie {g.posiedzenie}</span>
-                </div>
-                <p className="mt-2 flex-1 leading-snug font-medium group-hover:text-akcent">
-                  {skroc(g.temat ?? g.tytul, 110)}
-                </p>
-                <PaseczekGlosow
-                  za={g.za}
-                  przeciw={g.przeciw}
-                  wstrzymalo={g.wstrzymalo}
-                  nieobecnych={g.nieobecnych}
-                  className="mt-4"
-                />
-              </Link>
+              <KartaGlosowania g={g} />
             </li>
           ))}
         </ul>

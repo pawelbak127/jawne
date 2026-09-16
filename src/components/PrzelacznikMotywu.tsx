@@ -28,7 +28,7 @@ export function PrzelacznikMotywu() {
       type="button"
       onClick={przelacz}
       aria-label="Przełącz motyw jasny i ciemny"
-      className="ml-1 grid h-9 w-9 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
+      className="ml-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
     >
       <svg viewBox="0 0 24 24" className="ikona-jasny h-4 w-4" fill="currentColor" aria-hidden>
         <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />

@@ -8,6 +8,7 @@ import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { stylGlosu } from '@/lib/barwy-glosu';
 import { opisGminy } from '@/lib/wyszukiwanie';
+import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
@@ -148,13 +149,13 @@ export default async function StronaOkregu({
 
       {glosowania.length && aktywni.length ? (
         <section className="mt-12">
-          <h2 className="szryft text-2xl font-semibold">Jak głosowali w ostatnich głosowaniach</h2>
+          <h2 className="szryft text-2xl font-semibold">Jak głosowali nad ostatnimi projektami</h2>
           {/*
             Ostatnie glosowania, bez wybierania "waznych" — kazdy taki wybor
             bylby nasza ocena tego, co wazne. Czytelnik widzi to, co bylo ostatnio.
           */}
           <p className="mt-1 max-w-2xl text-sm text-atrament-2">
-            {`${zOdmiana(glosowania.length, 'ostatnie głosowanie', 'ostatnie głosowania', 'ostatnich głosowań')} w Sejmie, bez wybierania — w kolejności od najnowszego. Numer kolumny odpowiada liście pod tabelą.`}
+            {`${zOdmiana(glosowania.length, 'ostatnie głosowanie', 'ostatnie głosowania', 'ostatnich głosowań')} nad całością projektów ustaw i uchwał — tak nazywa je rejestr. Nie wybieramy ich sami. Numer kolumny odpowiada liście pod tabelą.`}
           </p>
 
           <div className="mt-5 overflow-x-auto rounded-2xl border border-kreska bg-papier-2 p-4 shadow-karta">
@@ -164,7 +165,7 @@ export default async function StronaOkregu({
                   <th className="pb-2 text-left font-medium">Poseł</th>
                   {glosowania.map((g, i) => (
                     <th key={`${g.posiedzenie}-${g.numer}`} className="liczby w-8 pb-2 text-center font-medium">
-                      <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} title={g.temat ?? g.tytul} className="hover:text-akcent">
+                      <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} title={opisJednaLinia(g)} className="hover:text-akcent">
                         {i + 1}
                       </Link>
                     </th>
@@ -215,7 +216,7 @@ export default async function StronaOkregu({
                 <span className="liczby w-5 shrink-0 text-right text-atrament-3">{i + 1}.</span>
                 <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="hover:text-akcent">
                   <span className="text-atrament-3">{`${dataSlownie(g.data)} · `}</span>
-                  {skroc(g.temat ?? g.tytul, 130)}
+                  {skroc(opisGlosowania(g).sprawa, 150)}
                 </Link>
               </li>
             ))}

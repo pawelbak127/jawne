@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { bazaDostepna, szukaj } from '@/lib/dane';
-import { dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
+import { liczba, zOdmiana } from '@/lib/format';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { BrakDanych } from '@/components/BrakDanych';
-import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { KartaGlosowania } from '@/components/KartaGlosowania';
 import { Szukajka } from '@/components/Szukajka';
 
 // Strony wynikow nie maja wlasnej tresci — nie indeksujemy ich nigdy,
@@ -97,26 +97,7 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
           <ul className="mt-4 space-y-2">
             {w.glosowania.map((g) => (
               <li key={`${g.posiedzenie}-${g.numer}`}>
-                <Link
-                  href={`/glosowanie/${g.posiedzenie}-${g.numer}`}
-                  className="group flex flex-col gap-3 rounded-2xl border border-kreska bg-papier-2 p-4 transition-all hover:border-kreska-2 hover:shadow-karta sm:flex-row sm:items-center"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs text-atrament-3">
-                      {`${dataSlownie(g.data)} · posiedzenie ${g.posiedzenie}, nr ${g.numer}`}
-                    </span>
-                    <span className="mt-1 block leading-snug font-medium group-hover:text-akcent">
-                      {skroc(g.temat ?? g.tytul, 160)}
-                    </span>
-                  </span>
-                  <PaseczekGlosow
-                    za={g.za}
-                    przeciw={g.przeciw}
-                    wstrzymalo={g.wstrzymalo}
-                    nieobecnych={g.nieobecnych}
-                    className="w-full shrink-0 sm:w-56"
-                  />
-                </Link>
+                <KartaGlosowania g={g} uklad="wiersz" />
               </li>
             ))}
           </ul>

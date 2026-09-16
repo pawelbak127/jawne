@@ -152,6 +152,19 @@ create table if not exists glosy_klubow (
 ) without rowid;
 
 /*
+  Cechy glosowania wyliczone funkcja opisGlosowania() — ta sama, ktorej uzywa
+  interfejs. Dzieki temu filtr "nad caloscia" w SQL-u i etykieta na stronie
+  nie moga sie rozjechac.
+*/
+create table if not exists glosowania_cechy (
+  posiedzenie  integer not null,
+  numer        integer not null,
+  nad_caloscia integer not null,
+  porzadkowe   integer not null,
+  primary key (posiedzenie, numer)
+) without rowid;
+
+/*
   Wyszukiwanie glosowan. Tekst trafia tu JUZ UPROSZCZONY (uprosc()), bo
   tokenizer z remove_diacritics nie zamienia "ł" na "l" — zmierzone.
 */

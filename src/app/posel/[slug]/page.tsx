@@ -11,7 +11,8 @@ import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
-import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { KartaGlosowania } from '@/components/KartaGlosowania';
+import { opisJednaLinia } from '@/lib/opis-glosowania';
 
 export function generateStaticParams() {
   if (!bazaDostepna()) return [];
@@ -28,13 +29,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-const TONY: Record<string, string> = {
-  za: 'bg-[#1b9e63] dark:bg-[#34b87c]',
-  przeciw: 'bg-[#d2453f] dark:bg-[#e2635d]',
-  wstrzymal: 'bg-[#e0a021] dark:bg-[#d9a52e]',
-  brak: 'bg-kreska-2',
-  inne: 'bg-atrament-3',
-};
 
 export default async function StronaPosla({ params }: { params: Promise<{ slug: string }> }) {
   if (!bazaDostepna()) return <BrakDanych />;
@@ -191,7 +185,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                                 {`${dataSlownie(o.data)}${o.klub_id !== p.klub_id ? ` · wtedy w klubie ${o.klub_id}` : ''}`}
                               </span>
                               <span className="mt-0.5 block text-sm leading-snug group-hover:text-akcent">
-                                {skroc(o.temat ?? o.tytul, 120)}
+                                {skroc(opisJednaLinia(o), 140)}
                               </span>
                               <span className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                                 <span className="inline-flex items-center gap-1.5">
@@ -238,8 +232,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                         </div>
                         <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-papier-3">
                           <div
-                            className={`h-full rounded-full ${TONY[e.ton] ?? TONY.inne}`}
-                            style={{ width: `${udzialProc}%` }}
+                            className="miejsce-probka h-full rounded-full"
+                            style={{ ...stylGlosu(r.glos), width: `${udzialProc}%` }}
                           />
                         </div>
                       </li>
@@ -273,52 +267,24 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
               <h2 className="szryft text-2xl font-semibold">Ostatnie głosowania</h2>
             </div>
             <ul className="mt-5 space-y-2">
-              {ostatnie.map((g) => {
-                const e = etykietaGlosu(g.glos);
-                return (
-                  <li key={`${g.posiedzenie}-${g.numer}`}>
-                    <Link
-                      href={`/glosowanie/${g.posiedzenie}-${g.numer}`}
-                      className="group flex flex-col gap-3 rounded-2xl border border-kreska bg-papier-2 p-4 transition-all hover:border-kreska-2 hover:shadow-karta sm:flex-row sm:items-center"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs text-atrament-3">
-                          {dataSlownie(g.data)} · posiedzenie {g.posiedzenie}
-                        </span>
-                        <span className="mt-1 block leading-snug font-medium group-hover:text-akcent">
-                          {skroc(g.temat ?? g.tytul, 120)}
-                        </span>
+              {ostatnie.map((g) => (
+                <li key={`${g.posiedzenie}-${g.numer}`}>
+                  <KartaGlosowania
+                    g={g}
+                    uklad="wiersz"
+                    dodatek={
+                      <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-kreska-2 px-3 py-1 text-xs font-medium sm:self-center">
+                        <span className="miejsce-probka h-2.5 w-2.5 rounded-full" style={stylGlosu(g.glos)} />
+                        {etykietaGlosu(g.glos).krotka}
                       </span>
-                      <span
-                        className={`inline-flex shrink-0 items-center gap-2 self-start rounded-full px-3 py-1 text-xs font-medium text-papier sm:self-center ${TONY[e.ton] ?? TONY.inne}`}
-                      >
-                        {e.krotka}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+                    }
+                  />
+                </li>
+              ))}
             </ul>
           </section>
         </>
       )}
-
-      {ostatnie.length > 0 ? (
-        <section className="mt-12">
-          <h2 className="szryft text-2xl font-semibold">Najświeższe głosowanie w izbie</h2>
-          <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-            <p className="font-medium">{skroc(ostatnie[0]!.temat ?? ostatnie[0]!.tytul, 160)}</p>
-            <PaseczekGlosow
-              za={ostatnie[0]!.za}
-              przeciw={ostatnie[0]!.przeciw}
-              wstrzymalo={ostatnie[0]!.wstrzymalo}
-              nieobecnych={ostatnie[0]!.nieobecnych}
-              className="mt-4"
-              zOpisem
-            />
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

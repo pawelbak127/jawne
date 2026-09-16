@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
 
         <header className="sticky top-0 z-40 border-b border-kreska bg-papier/85 backdrop-blur-md">
-          <div className="obszar flex h-16 items-center gap-6">
+          <div className="obszar flex h-16 items-center gap-3 sm:gap-6">
             <Link href="/" className="flex items-baseline gap-2 shrink-0">
               <span className="szryft text-2xl font-semibold tracking-tight">jawne</span>
               <span className="hidden text-[11px] uppercase tracking-[0.18em] text-atrament-3 sm:inline">
@@ -68,12 +68,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
 
-            <nav className="ml-auto flex items-center gap-1 text-sm">
+            {/* Na 390 px trzy pozycje i przelacznik wystawaly poza ekran — stad mniejsze odstepy. */}
+            <nav className="ml-auto flex min-w-0 items-center text-[13px] sm:gap-1 sm:text-sm">
               {NAWIGACJA.map((p) => (
                 <Link
                   key={p.adres}
                   href={p.adres}
-                  className="rounded-lg px-3 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
+                  className="rounded-lg px-2 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
                 >
                   {p.etykieta}
                 </Link>

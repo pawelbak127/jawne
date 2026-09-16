@@ -32,6 +32,16 @@ describe('ulozPolkole', () => {
     }
   });
 
+  // Serwer i przegladarka licza trygonometrie z roznica na ostatniej cyfrze.
+  // Bez zaokraglenia React zglasza niezgodnosc hydracji na atrybutach cx/cy.
+  it('wspolrzedne maja najwyzej trzy miejsca po przecinku', () => {
+    for (const m of ulozPolkole(460).miejsca) {
+      for (const v of [m.x, m.y, m.r]) {
+        expect(Math.abs(v * 1000 - Math.round(v * 1000))).toBeLessThan(1e-6);
+      }
+    }
+  });
+
   it('zadna kropka nie ma zerowego ani ujemnego promienia', () => {
     for (const m of ulozPolkole(460).miejsca) expect(m.r).toBeGreaterThan(0);
   });

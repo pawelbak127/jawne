@@ -1,5 +1,6 @@
 import { szukaj } from '@/lib/dane';
 import type { OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
+import { opisJednaLinia } from '@/lib/opis-glosowania';
 
 /**
  * Podpowiedzi dla pola wyszukiwania. Te same dane pokazuje strona /szukaj,
@@ -30,7 +31,7 @@ export async function GET(zadanie: Request) {
     glosowania: w.glosowania.map((g) => ({
       id: `${g.posiedzenie}-${g.numer}`,
       data: g.data,
-      tytul: g.temat ?? g.tytul,
+      tytul: opisJednaLinia(g),
     })),
     glosowanWszystkich: w.glosowanWszystkich,
   };

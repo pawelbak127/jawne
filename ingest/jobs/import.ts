@@ -15,6 +15,7 @@ import { dlaKazdego, pobierzBajty } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
+import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -395,6 +396,22 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   db.exec('commit');
   log(`   ${glosowania.length} glosowan w indeksie`);
   odnotujImport(db, 'szukaj-glosowania', glosowania.length);
+
+  log('-> wyliczenia: cechy glosowan');
+  const wstawCechy = db.prepare(
+    'insert into glosowania_cechy(posiedzenie, numer, nad_caloscia, porzadkowe) values (?,?,?,?)',
+  );
+  let nadCaloscia = 0;
+  db.exec('begin');
+  db.exec('delete from glosowania_cechy');
+  for (const g of glosowania) {
+    const o = opisGlosowania({ tytul: g.tytul, temat: g.temat });
+    if (o.nadCaloscia) nadCaloscia++;
+    wstawCechy.run(g.posiedzenie, g.numer, o.nadCaloscia ? 1 : 0, o.porzadkowe ? 1 : 0);
+  }
+  db.exec('commit');
+  log(`   nad caloscia projektu: ${nadCaloscia} z ${glosowania.length}`);
+  odnotujImport(db, 'cechy-glosowan', glosowania.length, `nad caloscia: ${nadCaloscia}`);
 }
 
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {

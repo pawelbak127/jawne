@@ -204,9 +204,7 @@ export function statystykiPosla(id: number): StatystykiPosla {
 /** Ostatnie glosowania, w ktorych posel figuruje — z jego glosem. */
 export function ostatnieGlosyPosla(id: number, ile = 8): (GlosowanieSkrot & { glos: string })[] {
   return wszystkie<GlosowanieSkrot & { glos: string }>(
-    `select g.posiedzenie as posiedzenie, g.numer as numer, g.data as data,
-            g.tytul as tytul, g.temat as temat, g.za as za, g.przeciw as przeciw,
-            g.wstrzymalo as wstrzymalo, g.nieobecnych as nieobecnych, s.glos as glos
+    `select ${KOLUMNY_GLOSOWANIA}, s.glos as glos
        from glosy s
        join glosowania g on g.posiedzenie = s.posiedzenie and g.numer = s.numer
       where s.posel_id = ?
@@ -230,24 +228,62 @@ export type GlosowanieSkrot = {
   przeciw: number;
   wstrzymalo: number;
   nieobecnych: number;
+  /**
+   * Liczba obecnych, ktorzy wzieli udzial. NIE jest rowna za+przeciw+wstrzymalo:
+   * w 59 glosowaniach (kworum, wybory na liscie) rejestr liczy obecnych bez
+   * glosu za/przeciw. Bez tego pola pasek glosowania kworum pokazywal,
+   * ze nikt nie glosowal.
+   */
+  glosowalo: number;
+  rodzaj: string | null;
 };
 
-export function ostatnieGlosowania(ile = 12): GlosowanieSkrot[] {
-  return wszystkie<GlosowanieSkrot>(
-    `select posiedzenie, numer, data, tytul, temat, za, przeciw, wstrzymalo, nieobecnych
-       from glosowania
-      order by data desc, posiedzenie desc, numer desc
-      limit ?`,
-    ile,
+/** Kolumny skrotu glosowania z tabela aliasowana jako `g`. Jedno miejsce, piec zapytan. */
+const KOLUMNY_GLOSOWANIA = `
+  g.posiedzenie as posiedzenie, g.numer as numer, g.data as data, g.tytul as tytul,
+  g.temat as temat, g.za as za, g.przeciw as przeciw, g.wstrzymalo as wstrzymalo,
+  g.nieobecnych as nieobecnych, g.glosowalo as glosowalo, g.rodzaj as rodzaj`;
+
+/**
+ * Filtr "nad caloscia projektu" korzysta z tabeli cech wyliczonej ta sama
+ * funkcja, ktora opisuje glosowanie na stronie. Bez tabeli (nie uruchomiono
+ * etapu "wyliczenia") zwracamy pusta liste — pokazanie wszystkich glosowan
+ * pod naglowkiem "nad caloscia" byloby nieprawda.
+ */
+function zFiltrem<T>(nadCaloscia: boolean, zapytanie: (zlaczenie: string) => T, gdyBrak: T): T {
+  if (!nadCaloscia) return zapytanie('');
+  return bezTabeli(
+    () => zapytanie(
+      `join glosowania_cechy c on c.posiedzenie = g.posiedzenie and c.numer = g.numer and c.nad_caloscia = 1`,
+    ),
+    gdyBrak,
+  );
+}
+
+export function ostatnieGlosowania(ile = 12, opcje: { nadCaloscia?: boolean } = {}): GlosowanieSkrot[] {
+  return zFiltrem(
+    Boolean(opcje.nadCaloscia),
+    (zl) => wszystkie<GlosowanieSkrot>(
+      `select ${KOLUMNY_GLOSOWANIA} from glosowania g ${zl}
+        order by g.data desc, g.posiedzenie desc, g.numer desc limit ?`,
+      ile,
+    ),
+    [],
+  );
+}
+
+export function liczbaGlosowan(opcje: { nadCaloscia?: boolean } = {}): number {
+  return zFiltrem(
+    Boolean(opcje.nadCaloscia),
+    (zl) => jeden<{ c: number }>(`select count(*) as c from glosowania g ${zl}`)?.c ?? 0,
+    0,
   );
 }
 
 export type Glosowanie = GlosowanieSkrot & {
   dzien: number | null;
   opis: string | null;
-  rodzaj: string | null;
   typ_wiekszosci: string | null;
-  glosowalo: number;
   pdf: string | null;
 };
 
@@ -288,13 +324,15 @@ export function maGlosyImienne(posiedzenie: number, numer: number): boolean {
 }
 
 /** Strona listy glosowan. Stronicowanie jawne — bez niego lista urywa sie po cichu. */
-export function stronaGlosowan(offset: number, limit: number): GlosowanieSkrot[] {
-  return wszystkie<GlosowanieSkrot>(
-    `select posiedzenie, numer, data, tytul, temat, za, przeciw, wstrzymalo, nieobecnych
-       from glosowania
-      order by data desc, posiedzenie desc, numer desc
-      limit ? offset ?`,
-    limit, offset,
+export function stronaGlosowan(offset: number, limit: number, opcje: { nadCaloscia?: boolean } = {}): GlosowanieSkrot[] {
+  return zFiltrem(
+    Boolean(opcje.nadCaloscia),
+    (zl) => wszystkie<GlosowanieSkrot>(
+      `select ${KOLUMNY_GLOSOWANIA} from glosowania g ${zl}
+        order by g.data desc, g.posiedzenie desc, g.numer desc limit ? offset ?`,
+      limit, offset,
+    ),
+    [],
   );
 }
 
@@ -426,12 +464,15 @@ export function poslowieOkregu(nr: number): PoselSkrot[] {
 export type GlosWOkregu = { posiedzenie: number; numer: number; posel_id: number; glos: string };
 
 /**
- * Ostatnie glosowania z glosami posłow jednego okregu — do tabeli
- * "jak glosowali posłowie z Twojego okregu". Bierzemy po prostu OSTATNIE
- * glosowania, bez wybierania "waznych": kazdy taki wybor bylby nasza ocena.
+ * Ostatnie glosowania NAD CALOSCIA projektow z glosami posłow jednego okregu.
+ *
+ * Nie wybieramy "waznych" glosowan — to bylaby nasza ocena. Bierzemy
+ * ostateczne glosowania nad projektami, rozpoznane po slowach rejestru
+ * ("głosowanie nad całością"). Wczesniejsza wersja brala po prostu ostatnie
+ * glosowania i tabela okregu skladala sie z kworum, przerw i odroczen.
  */
 export function glosyOkregu(nr: number, ile = 10): { glosowania: GlosowanieSkrot[]; glosy: GlosWOkregu[] } {
-  const glosowania = ostatnieGlosowania(ile);
+  const glosowania = ostatnieGlosowania(ile, { nadCaloscia: true });
   if (glosowania.length === 0) return { glosowania, glosy: [] };
   const warunek = glosowania.map(() => '(s.posiedzenie = ? and s.numer = ?)').join(' or ');
   const glosy = wszystkie<GlosWOkregu>(
@@ -506,9 +547,7 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
   if (fts) {
     glosowania = bezTabeli(
       () => wszystkie<GlosowanieSkrot>(
-        `select g.posiedzenie as posiedzenie, g.numer as numer, g.data as data, g.tytul as tytul,
-                g.temat as temat, g.za as za, g.przeciw as przeciw, g.wstrzymalo as wstrzymalo,
-                g.nieobecnych as nieobecnych
+        `select ${KOLUMNY_GLOSOWANIA}
            from glosowania_szukaj f
            join glosowania g on g.posiedzenie = f.posiedzenie and g.numer = f.numer
           where glosowania_szukaj match ?

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby, wynikiKlubow } from '@/lib/dane';
-import { BARWY_GLOSU } from '@/lib/barwy-glosu';
+import { BARWY_GLOSU, stylGlosu } from '@/lib/barwy-glosu';
+import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
-import { dataSlownie, liczba, procent, zOdmiana } from '@/lib/format';
+import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Polkole, type Blok } from '@/components/Polkole';
 import { PaseczekGlosow } from '@/components/PaseczekGlosow';
@@ -27,10 +28,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const g = a && bazaDostepna() ? glosowanie(a.posiedzenie, a.numer) : null;
   if (!g) return { title: 'Nie ma takiego głosowania' };
   return {
-    title: (g.temat ?? g.tytul).slice(0, 70),
+    title: skroc(opisJednaLinia(g), 90),
     description: `Głosowanie z ${dataSlownie(g.data)}: za ${g.za}, przeciw ${g.przeciw}, wstrzymało się ${g.wstrzymalo}.`,
   };
 }
+
+const KOLEJNOSC_GLOSOW = ['YES', 'NO', 'ABSTAIN', 'VOTE_VALID', 'PRESENT', 'ABSENT'];
 
 export default async function StronaGlosowania({ params }: { params: Promise<{ id: string }> }) {
   if (!bazaDostepna()) return <BrakDanych />;
@@ -43,16 +46,16 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
 
   const glosy = glosyWGlosowaniu(adres.posiedzenie, adres.numer);
   const listaKlubow = kluby();
-  const kolejnosc = new Map(listaKlubow.map((k, i) => [k.id, i]));
+  const kolejnoscKlubow = new Map(listaKlubow.map((k, i) => [k.id, i]));
   const wynikiWgKlubow = wynikiKlubow(adres.posiedzenie, adres.numer)
-    .sort((a, b) => (kolejnosc.get(a.klub_id) ?? 999) - (kolejnosc.get(b.klub_id) ?? 999));
+    .sort((a, b) => (kolejnoscKlubow.get(a.klub_id) ?? 999) - (kolejnoscKlubow.get(b.klub_id) ?? 999));
+  const o = opisGlosowania(g);
 
   /*
     Miejsca ustawiamy wedlug KLUBU (czyli tak, jak posel siedzi na sali),
     a kolorujemy wedlug GLOSU. Dzieki temu z jednego obrazka widac to, czego
     nie widac z zadnej tabeli: czy klub glosowal jednolicie, czy sie rozsypal.
   */
-  const kolejnoscKlubow = new Map(listaKlubow.map((k, i) => [k.id, i]));
   const wgKlubow = new Map<string, typeof glosy>();
   for (const glos of glosy) {
     const klucz = glos.klub_id ?? 'bez klubu';
@@ -95,14 +98,20 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
       </Link>
 
       <header className="mt-5 max-w-3xl">
-        <p className="text-xs text-atrament-3">
-          {dataSlownie(g.data)} · posiedzenie {g.posiedzenie}, głosowanie nr {g.numer}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-atrament-3">
+          <span>
+            {`${dataSlownie(g.data)} · posiedzenie ${g.posiedzenie}${o.punkt ? `, pkt ${o.punkt}` : ''} · głosowanie nr ${g.numer}`}
+          </span>
+          {o.nadCaloscia ? (
+            <span className="rounded-md bg-akcent-slaby px-1.5 py-0.5 font-medium text-akcent">nad całością projektu</span>
+          ) : null}
+          {o.porzadkowe ? <span className="rounded-md bg-papier-3 px-1.5 py-0.5">sprawa porządkowa</span> : null}
         </p>
-        <h1 className="szryft mt-2 text-2xl leading-tight font-semibold sm:text-4xl">
-          {g.temat ?? g.tytul}
-        </h1>
-        {g.temat && g.tytul !== g.temat ? (
-          <p className="mt-3 text-atrament-2">{g.tytul}</p>
+        <h1 className="szryft mt-2 text-2xl leading-tight font-semibold sm:text-4xl">{o.sprawa}</h1>
+        {o.przedmiot ? (
+          <p className="mt-3 text-lg text-atrament-2">
+            {o.przedmiot.charAt(0).toLocaleUpperCase('pl-PL') + o.przedmiot.slice(1)}
+          </p>
         ) : null}
         {g.opis ? <p className="mt-2 text-sm text-atrament-2">{g.opis}</p> : null}
 
@@ -117,22 +126,27 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <PaseczekGlosow
-            za={g.za}
-            przeciw={g.przeciw}
-            wstrzymalo={g.wstrzymalo}
-            nieobecnych={g.nieobecnych}
-            zOpisem
-          />
+          <PaseczekGlosow g={g} zOpisem />
         </div>
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold leading-none">{procent(poparcie)}</p>
-          <p className="mt-2 text-sm font-medium">głosów „za” wśród oddanych</p>
-          {/* Mianownik nie jest ozdoba: 60% z 90 glosow to co innego niz 60% z 460. */}
-          <p className="mt-1 text-xs text-atrament-2">
-            {liczba(g.za)} z {zOdmiana(oddanych, 'oddanego głosu', 'oddanych głosów', 'oddanych głosów')}
-            {g.nieobecnych > 0 ? `; ${liczba(g.nieobecnych)} posłów nie głosowało` : ''}
-          </p>
+          {oddanych > 0 ? (
+            <>
+              <p className="liczby szryft text-4xl font-semibold leading-none">{procent(poparcie)}</p>
+              <p className="mt-2 text-sm font-medium">głosów „za” wśród oddanych</p>
+              {/* Mianownik nie jest ozdoba: 60% z 90 glosow to co innego niz 60% z 460. */}
+              <p className="mt-1 text-xs text-atrament-2">
+                {`${liczba(g.za)} z ${zOdmiana(oddanych, 'oddanego głosu', 'oddanych głosów', 'oddanych głosów')}${g.nieobecnych > 0 ? `; ${liczba(g.nieobecnych)} posłów nie głosowało` : ''}`}
+              </p>
+            </>
+          ) : (
+            // Kworum i wybory na liscie nie maja glosow za/przeciw. Procent
+            // "za" bylby tu polpauza bez wyjasnienia — mowimy wiec wprost.
+            <p className="text-sm leading-relaxed text-atrament-2">
+              {g.rodzaj === 'ON_LIST'
+                ? `Głosowanie na liście kandydatów — rejestr nie podaje głosów „za” i „przeciw”, tylko to, że ${zOdmiana(g.glosowalo, 'poseł oddał', 'posłów oddało', 'posłów oddało')} głos.`
+                : `W tym głosowaniu nikt nie głosował „za” ani „przeciw”. Rejestr odnotował ${zOdmiana(g.glosowalo, 'obecnego posła', 'obecnych posłów', 'obecnych posłów')}.`}
+            </p>
+          )}
         </div>
       </section>
 
@@ -147,10 +161,20 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
             <h2 className="szryft text-2xl font-semibold">Kto jak zagłosował</h2>
             <p className="mt-1 max-w-xl text-sm text-atrament-2">
               Miejsca ułożone klubami, kolor pokazuje oddany głos. Jednolity blok
-              znaczy, że klub głosował razem.
+              znaczy, że klub głosował razem. Najedź na nazwę klubu, żeby go wyróżnić.
             </p>
-            <div className="mx-auto mt-8 max-w-2xl">
-              <Polkole bloki={bloki} podpis={`Głosy imienne: ${glosy.length} posłów`} />
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-atrament-2">
+              {[...new Set(glosy.map((s) => s.glos))]
+                .sort((a, b) => KOLEJNOSC_GLOSOW.indexOf(a) - KOLEJNOSC_GLOSOW.indexOf(b))
+                .map((kod) => (
+                  <span key={kod} className="inline-flex items-center gap-1.5">
+                    <span className="miejsce-probka h-2.5 w-2.5 rounded-full" style={stylGlosu(kod)} />
+                    {etykietaGlosu(kod).krotka}
+                  </span>
+                ))}
+            </div>
+            <div className="mx-auto mt-6 max-w-2xl">
+              <Polkole bloki={bloki} podpis={`Głosy imienne: ${glosy.length} posłów`} probkiBlokow={false} />
             </div>
           </section>
 

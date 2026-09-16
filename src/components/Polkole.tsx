@@ -32,8 +32,15 @@ export function Polkole({
   bloki,
   srodek,
   podpis,
+  probkiBlokow = true,
 }: {
   bloki: Blok[];
+  /**
+   * `false`, gdy kolor kropki NIE oznacza bloku (np. na stronie glosowania
+   * koduje glos). Probka w legendzie klubu pokazywalaby wtedy kolor
+   * pierwszego glosu w klubie i sugerowala, ze to barwa klubu.
+   */
+  probkiBlokow?: boolean;
   /** Tresc w pustym srodku polkola — zwykle najwazniejsza liczba. */
   srodek?: React.ReactNode;
   podpis?: string;
@@ -43,7 +50,7 @@ export function Polkole({
 
   const { uklad, przydzial, plaskie } = useMemo(() => {
     const plaskie = bloki.flatMap((b) => b.miejsca.map((m) => ({ ...m, blok: b.id })));
-    const uklad = ulozPolkole(plaskie.length);
+    const uklad = ulozPolkole(plaskie.length, { promienWew: 48 });
     const przydzial = przydzielBloki(uklad.miejsca.length, bloki.map((b) => b.miejsca.length));
     return { uklad, przydzial, plaskie };
   }, [bloki]);
@@ -52,47 +59,50 @@ export function Polkole({
 
   return (
     <figure className="w-full">
-      <svg
-        viewBox={`${-polowaX} ${-uklad.wysokosc} ${uklad.szerokosc} ${uklad.wysokosc}`}
-        className="w-full overflow-visible"
-        role="img"
-        aria-labelledby={`${id}-opis`}
-      >
-        <title id={`${id}-opis`}>{podpis ?? 'Rozkład miejsc w Sejmie'}</title>
-        {uklad.miejsca.map((m, i) => {
-          const dane = plaskie[i]!;
-          const blok = bloki[przydzial[i]!]!;
-          const przygaszony = podswietlony !== null && podswietlony !== blok.id;
-          return (
-            <circle
-              key={i}
-              cx={m.x}
-              cy={m.y}
-              r={m.r}
-              className="miejsce"
-              style={
-                {
-                  '--b': dane.barwa,
-                  '--bc': dane.barwaCiemna,
-                  opacity: przygaszony ? 0.18 : 1,
-                } as React.CSSProperties
-              }
-            >
-              <title>{dane.opis}</title>
-            </circle>
-          );
-        })}
+      {/*
+        Srodek jest ZWYKLYM HTML-em nad wykresem, a nie foreignObject w SVG.
+        W foreignObject rozmiar tekstu liczy sie w jednostkach viewBoxu
+        (szerokosc ~212), wiec text-5xl rozrastal sie razem z wykresem
+        i zaslanial kropki — widac to bylo dopiero na zrzucie ekranu.
+      */}
+      <div className="relative">
+        <svg
+          viewBox={`${-polowaX} ${-uklad.wysokosc} ${uklad.szerokosc} ${uklad.wysokosc}`}
+          className="w-full overflow-visible"
+          role="img"
+          aria-labelledby={`${id}-opis`}
+        >
+          <title id={`${id}-opis`}>{podpis ?? 'Rozkład miejsc w Sejmie'}</title>
+          {uklad.miejsca.map((m, i) => {
+            const dane = plaskie[i]!;
+            const blok = bloki[przydzial[i]!]!;
+            const przygaszony = podswietlony !== null && podswietlony !== blok.id;
+            return (
+              <circle
+                key={i}
+                cx={m.x}
+                cy={m.y}
+                r={m.r}
+                className="miejsce"
+                style={
+                  {
+                    '--b': dane.barwa,
+                    '--bc': dane.barwaCiemna,
+                    opacity: przygaszony ? 0.18 : 1,
+                  } as React.CSSProperties
+                }
+              >
+                <title>{dane.opis}</title>
+              </circle>
+            );
+          })}
+        </svg>
         {srodek ? (
-          <foreignObject
-            x={-polowaX * 0.52}
-            y={-uklad.wysokosc * 0.36}
-            width={polowaX * 1.04}
-            height={uklad.wysokosc * 0.34}
-          >
-            <div className="flex h-full flex-col items-center justify-end text-center">{srodek}</div>
-          </foreignObject>
+          <div className="pointer-events-none absolute inset-x-0 bottom-[4%] flex flex-col items-center text-center">
+            {srodek}
+          </div>
         ) : null}
-      </svg>
+      </div>
 
       <figcaption className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
         {bloki.map((b) => (
@@ -107,10 +117,12 @@ export function Polkole({
             className="flex items-center gap-2 rounded-md px-1.5 py-0.5 transition-opacity hover:bg-papier-3"
             style={{ opacity: podswietlony && podswietlony !== b.id ? 0.45 : 1 }}
           >
-            <span
-              className="miejsce-probka h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ '--b': b.miejsca[0]?.barwa, '--bc': b.miejsca[0]?.barwaCiemna } as React.CSSProperties}
-            />
+            {probkiBlokow ? (
+              <span
+                className="miejsce-probka h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ '--b': b.miejsca[0]?.barwa, '--bc': b.miejsca[0]?.barwaCiemna } as React.CSSProperties}
+              />
+            ) : null}
             <span className="text-atrament-2">{b.etykieta}</span>
             <span className="liczby font-medium">{b.miejsca.length}</span>
           </button>

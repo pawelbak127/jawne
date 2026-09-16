@@ -6,6 +6,17 @@
  * a nie kosmetycznym: czytelnik liczy z niego wiekszosc.
  */
 
+/**
+ * Wspolrzedne zaokraglamy do tysiecznych. Zmierzone: Math.cos/Math.sin w Node
+ * i w Chrome roznia sie na ostatniej cyfrze (-93.77521321470803 kontra
+ * -93.77521321470805), wiec atrybut `cx` wyrenderowany na serwerze nie
+ * zgadzal sie z klienckim i React zglaszal niezgodnosc hydracji.
+ * Tysieczna czesc jednostki to ulamek piksela — nie widac jej.
+ */
+function zaokr(v: number): number {
+  return Math.round(v * 1000) / 1000;
+}
+
 export type Miejsce = {
   x: number;
   y: number;
@@ -71,9 +82,10 @@ export function ulozPolkole(n: number, opcje: { promienWew?: number; promienZew?
       const t = ile === 1 ? 0.5 : j / (ile - 1);
       const kat = Math.PI * (1 - 0.02) - t * Math.PI * (1 - 0.04);
       miejsca.push({
-        x: Math.cos(kat) * promien,
-        y: -Math.sin(kat) * promien,
-        r: rozmiar,
+        x: zaokr(Math.cos(kat) * promien),
+        // `+ 0` zamienia -0 na 0: atrybut "-0" i "0" to tez dwa rozne napisy.
+        y: zaokr(-Math.sin(kat) * promien) + 0,
+        r: zaokr(rozmiar),
         kat,
         rzad: i,
       });
