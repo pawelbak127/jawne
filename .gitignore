@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# lokalna baza (2,1 mln glosow) - odtwarzalna z API
+dane/
