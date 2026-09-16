@@ -17,6 +17,7 @@ import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
+import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -383,6 +384,28 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   }
   log(`   ${wierszy} wierszy, ${sumaGlosow} glosow, ${((Date.now() - start) / 1000).toFixed(1)} s`);
   odnotujImport(db, 'glosy-klubow', wierszy);
+
+  log('-> wyliczenia: porownanie poslow z klubem');
+  const wierszePosla = db.prepare(
+    `select s.posiedzenie as posiedzenie, s.numer as numer, g.data as data, g.tytul as tytul,
+            g.temat as temat, s.klub_id as klub_id, s.glos as glos,
+            k.za as za, k.przeciw as przeciw, k.wstrzymalo as wstrzymalo
+       from glosy s
+       join glosy_klubow k on k.posiedzenie = s.posiedzenie and k.numer = s.numer and k.klub_id = s.klub_id
+       join glosowania g on g.posiedzenie = s.posiedzenie and g.numer = s.numer
+      where s.posel_id = ?`,
+  );
+  const wstawPorownanie = db.prepare('insert into porownania_poslow(posel_id, porownywalnych, odmiennych) values (?,?,?)');
+  const idPoslow = (db.prepare('select id from poslowie').all() as unknown as { id: number }[]).map((r) => r.id);
+  db.exec('begin');
+  db.exec('delete from porownania_poslow');
+  for (const id of idPoslow) {
+    const p = porownajZKlubem(wierszePosla.all(id) as unknown as GlosZKlubem[]);
+    wstawPorownanie.run(id, p.porownywalnych, p.odmiennych);
+  }
+  db.exec('commit');
+  log(`   ${idPoslow.length} poslow`);
+  odnotujImport(db, 'porownania-poslow', idPoslow.length);
 
   log('-> wyliczenia: indeks wyszukiwania glosowan');
   const glosowania = db.prepare('select posiedzenie, numer, tytul, temat, opis from glosowania').all() as unknown as {

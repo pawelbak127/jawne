@@ -30,16 +30,27 @@ export type Klub = {
   barwaCiemna: string;
 };
 
+/*
+ * Kluby HISTORYCZNE (mandaty: null) wystepuja juz tylko w starych glosach.
+ * Stoja obok swoich nastepcow, bo bez wpisu tutaj trafialy na KONIEC listy,
+ * czyli na prawy skraj sali — wykres glosowania z 2023 r. pokazywal PSL
+ * i Nowa Lewice po prawej stronie izby. Barwe dziedzicza po nastepcy, bo
+ * w wykresach klubow dzisiejszej izby i tak nie wystepuja.
+ */
 export const KLUBY: readonly Klub[] = [
   { id: 'Razem',           nazwa: null, mandaty: 4,    barwa: '#b0407a', barwaCiemna: '#d55181' },
   { id: 'Lewica',          nazwa: null, mandaty: 21,   barwa: '#e34948', barwaCiemna: '#e66767' },
+  { id: 'Nowa_Lewica',     nazwa: null, mandaty: null, barwa: '#e34948', barwaCiemna: '#e66767' },
   { id: 'KO',              nazwa: null, mandaty: 156,  barwa: '#2a78d6', barwaCiemna: '#3987e5' },
   { id: 'Polska2050',      nazwa: null, mandaty: 15,   barwa: '#e87ba4', barwaCiemna: '#e896b6' },
   { id: 'PSL-TD',          nazwa: null, mandaty: 32,   barwa: '#008300', barwaCiemna: '#2ba52b' },
+  { id: 'PSL',             nazwa: null, mandaty: null, barwa: '#008300', barwaCiemna: '#2ba52b' },
   { id: 'Demokracja',      nazwa: null, mandaty: 4,    barwa: '#5b4636', barwaCiemna: '#9c7f66' },
   { id: 'Centrum',         nazwa: null, mandaty: 15,   barwa: '#1baf7a', barwaCiemna: '#3ec79a' },
   { id: 'RozwojPlus',      nazwa: null, mandaty: 41,   barwa: '#eb6834', barwaCiemna: '#f0855a' },
   { id: 'PiS',             nazwa: null, mandaty: 146,  barwa: '#4a3aa7', barwaCiemna: '#9085e9' },
+  { id: 'Republikanie',    nazwa: null, mandaty: null, barwa: '#4a3aa7', barwaCiemna: '#9085e9' },
+  { id: 'Kukiz15',         nazwa: null, mandaty: null, barwa: '#6d6378', barwaCiemna: '#a59db0' },
   { id: 'Konfederacja',    nazwa: null, mandaty: 16,   barwa: '#eda100', barwaCiemna: '#d9a52e' },
   { id: 'Konfederacja_KP', nazwa: null, mandaty: 3,    barwa: '#8a6a4f', barwaCiemna: '#c0a184' },
   { id: 'niez.',           nazwa: null, mandaty: 7,    barwa: '#9a958c', barwaCiemna: '#8e8a95' },

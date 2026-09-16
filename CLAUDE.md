@@ -153,6 +153,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     „390 px" z `--window-size` jest fałszywy. Telefon sprawdza się
     w ramce `<iframe style="width:390px">`.
 
+18. **Zatrzymanie zadania w tle zabija `npx`, nie serwer Node.** Port zostaje
+    zajęty, a pomiar trafia w STARY kod (tak zmierzyliśmy „szybką" stronę,
+    która wcale nie była nowa). Przed pomiarem: kto słucha na porcie
+    (`Get-NetTCPConnection -LocalPort 3222`) i od kiedy.
+19. **Klub spoza listy `KLUBY` ląduje na prawym skraju sali.** Kluby
+    historyczne (`PSL`, `Nowa_Lewica`, `Kukiz15`, `Republikanie`) mają wpis
+    w `kluby.ts` obok następców — inaczej wykres z 2023 r. przestawiał je
+    politycznie.
+
 ---
 
 ## Wzorce obowiązujące

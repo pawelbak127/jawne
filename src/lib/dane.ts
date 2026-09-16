@@ -381,6 +381,22 @@ export function porownanieZKlubem(poselId: number): PorownanieZKlubem | null {
   }, null);
 }
 
+export type PodsumowaniePorownania = { porownywalnych: number; odmiennych: number };
+
+/** Same liczby porownania dla wielu posłow — z tabeli liczonej przy imporcie. */
+export function podsumowaniaPorownan(idPoslow: number[]): Map<number, PodsumowaniePorownania> {
+  if (idPoslow.length === 0) return new Map();
+  const wiersze = bezTabeli(
+    () => wszystkie<PodsumowaniePorownania & { posel_id: number }>(
+      `select posel_id, porownywalnych, odmiennych from porownania_poslow
+        where posel_id in (${idPoslow.map(() => '?').join(',')})`,
+      ...idPoslow,
+    ),
+    [],
+  );
+  return new Map(wiersze.map((w) => [w.posel_id, w]));
+}
+
 export type WynikKlubu = {
   klub_id: string;
   za: number;

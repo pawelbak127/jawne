@@ -165,6 +165,18 @@ create table if not exists glosowania_cechy (
 ) without rowid;
 
 /*
+  Podsumowanie porownania z klubem dla kazdego posla — liczone przy imporcie
+  funkcja porownajZKlubem(), ta sama, ktora pokazuje liste na profilu.
+  Strona okregu czyta stad liczby dla nawet 20 poslow naraz; liczenie ich
+  przy kazdym wejsciu dawalo ~1 s odpowiedzi.
+*/
+create table if not exists porownania_poslow (
+  posel_id       integer primary key,
+  porownywalnych integer not null,
+  odmiennych     integer not null
+);
+
+/*
   Wyszukiwanie glosowan. Tekst trafia tu JUZ UPROSZCZONY (uprosc()), bo
   tokenizer z remove_diacritics nie zamienia "ł" na "l" — zmierzone.
 */

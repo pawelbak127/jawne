@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, glosyOkregu, gminyOkregu, kluby, okreg, porownanieZKlubem, poslowieOkregu,
+  bazaDostepna, glosyOkregu, gminyOkregu, kluby, okreg, podsumowaniaPorownan, poslowieOkregu,
 } from '@/lib/dane';
 import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
@@ -46,6 +46,7 @@ export default async function StronaOkregu({
   const poslowie = poslowieOkregu(o.nr);
   const aktywni = poslowie.filter((p) => p.aktywny === 1);
   const byli = poslowie.filter((p) => p.aktywny === 0);
+  const porownania = podsumowaniaPorownan(aktywni.map((p) => p.id));
   const gminy = gminyOkregu(o.nr);
   const twojaGmina = terytGminy ? gminy.find((g) => g.teryt === terytGminy) : undefined;
   const listaKlubow = kluby();
@@ -101,7 +102,7 @@ export default async function StronaOkregu({
         <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {aktywni.map((p) => {
             const k = barwaKlubu(p.klub_id);
-            const por = porownanieZKlubem(p.id);
+            const por = porownania.get(p.id);
             return (
               <li key={p.slug}>
                 <Link
