@@ -13,6 +13,10 @@ import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
 import { dlaKazdego, pobierzBajty } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
+import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
+import { uprosc } from '../../src/lib/tekst.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
@@ -285,12 +289,122 @@ async function importZdjec(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'zdjecia', maja, `bez zdjecia: ${poslowie.length - maja}`);
 }
 
+/**
+ * Okregi i gminy z pliku PKW, ktory lezy w repozytorium — ten etap nie
+ * dotyka sieci. Nazwe okregu (siedzibe) bierzemy z rejestru Sejmu, bo PKW
+ * w tym pliku jej nie podaje; dlatego etap idzie PO etapie "poslowie".
+ */
+async function importOkregow(db: DatabaseSync): Promise<void> {
+  log('-> okregi i gminy (PKW 2023, plik lokalny)');
+  const sciezka = join(process.cwd(), 'ingest', 'zrodla', 'pkw-2023', 'wyniki_gl_na_listy_po_gminach_sejm_utf8.csv');
+  const wynik = czytajGminyPkw(readFileSync(sciezka, 'utf8'));
+
+  // Kontrola dziedziny PRZED zapisem — cala porcja albo nic.
+  const problemy = sprawdzGminyPkw(wynik);
+  if (problemy.length) throw new Error(`Plik PKW nie przeszedl kontroli:\n  ${problemy.join('\n  ')}`);
+  if (wynik.nieznanePrefiksy.length) {
+    log(`   UWAGA - nieznane prefiksy nazw gmin: ${wynik.nieznanePrefiksy.join(', ')}`);
+  }
+
+  // Zgodnosc z Sejmem: kazdy okreg posla musi istniec w PKW i odwrotnie.
+  const nazwySejmu = new Map(
+    (db.prepare('select distinct okreg_nr as nr, okreg_nazwa as nazwa from poslowie where okreg_nr is not null').all() as unknown as { nr: number; nazwa: string }[])
+      .map((r) => [r.nr, r.nazwa]),
+  );
+  const okregiPkw = new Set(wynik.gminy.map((g) => g.okreg));
+  const tylkoWSejmie = [...nazwySejmu.keys()].filter((n) => !okregiPkw.has(n));
+  if (tylkoWSejmie.length) throw new Error(`Okregi poslow nieobecne w PKW: ${tylkoWSejmie.join(', ')}`);
+  if (nazwySejmu.size === 0) log('   UWAGA - brak poslow w bazie; okregi zostana zapisane bez nazw');
+
+  const okregi = [...okregiPkw].sort((a, b) => a - b).map((nr) => {
+    const gminy = wynik.gminy.filter((g) => g.okreg === nr);
+    const zagr = wynik.zagranica.filter((z) => z.okreg === nr);
+    return {
+      nr,
+      nazwa: nazwySejmu.get(nr) ?? null,
+      wojewodztwo: gminy[0]!.wojewodztwo,
+      kraj: gminy.reduce((a, g) => a + (g.uprawnionych ?? 0), 0),
+      zagr: zagr.length ? zagr.reduce((a, z) => a + (z.uprawnionych ?? 0), 0) : null,
+    };
+  });
+
+  const wstawOkreg = db.prepare(
+    `insert into okregi(nr, nazwa, wojewodztwo, uprawnionych_kraj, uprawnionych_zagr) values (?,?,?,?,?)
+     on conflict(nr) do update set nazwa=excluded.nazwa, wojewodztwo=excluded.wojewodztwo,
+       uprawnionych_kraj=excluded.uprawnionych_kraj, uprawnionych_zagr=excluded.uprawnionych_zagr`,
+  );
+  const wstawGmine = db.prepare(
+    `insert into gminy(teryt, nazwa, rodzaj, powiat, wojewodztwo, okreg_nr, uprawnionych, szukaj)
+     values (?,?,?,?,?,?,?,?)
+     on conflict(teryt) do update set nazwa=excluded.nazwa, rodzaj=excluded.rodzaj,
+       powiat=excluded.powiat, wojewodztwo=excluded.wojewodztwo, okreg_nr=excluded.okreg_nr,
+       uprawnionych=excluded.uprawnionych, szukaj=excluded.szukaj`,
+  );
+
+  db.exec('begin');
+  for (const o of okregi) wstawOkreg.run(o.nr, o.nazwa, o.wojewodztwo, o.kraj, o.zagr);
+  for (const g of wynik.gminy) {
+    wstawGmine.run(g.teryt, g.nazwa, g.rodzaj, g.powiat, g.wojewodztwo, g.okreg, g.uprawnionych, uprosc(g.nazwa));
+  }
+  db.exec('commit');
+
+  log(`   ${okregi.length} okregow, ${wynik.gminy.length} gmin, ${wynik.zagranica.length} obwodow za granica`);
+  odnotujImport(db, 'okregi', okregi.length, `gmin: ${wynik.gminy.length}; zrodlo: PKW, wybory do Sejmu 2023`);
+}
+
+/**
+ * Wyliczenia na zaimportowanych danych: sumy glosow klubow i indeks
+ * wyszukiwania. Zadnej sieci, wiec mozna je powtarzac dowolnie czesto.
+ */
+async function wyliczenia(db: DatabaseSync): Promise<void> {
+  log('-> wyliczenia: sumy glosow klubow');
+  const start = Date.now();
+  db.exec('begin');
+  db.exec('delete from glosy_klubow');
+  db.exec(`
+    insert into glosy_klubow(posiedzenie, numer, klub_id, za, przeciw, wstrzymalo, nieobecnych, innych)
+    select posiedzenie, numer, klub_id,
+           sum(glos = 'YES'), sum(glos = 'NO'), sum(glos = 'ABSTAIN'), sum(glos = 'ABSENT'),
+           sum(glos not in ('YES', 'NO', 'ABSTAIN', 'ABSENT'))
+      from glosy
+     where klub_id is not null
+     group by posiedzenie, numer, klub_id`);
+  db.exec('commit');
+  const wierszy = (db.prepare('select count(*) as c from glosy_klubow').get() as { c: number }).c;
+
+  // Kontrola: sumy klubow musza dac sume glosow. Rozjazd znaczy, ze cos
+  // zgubilismy po drodze — a to jest dokladnie ten blad, ktory nie krzyczy.
+  const sumaKlubow = (db.prepare('select sum(za + przeciw + wstrzymalo + nieobecnych + innych) as s from glosy_klubow').get() as { s: number | null }).s ?? 0;
+  const sumaGlosow = (db.prepare('select count(*) as c from glosy where klub_id is not null').get() as { c: number }).c;
+  if (sumaKlubow !== sumaGlosow) {
+    throw new Error(`Sumy klubow (${sumaKlubow}) nie zgadzaja sie z liczba glosow (${sumaGlosow})`);
+  }
+  log(`   ${wierszy} wierszy, ${sumaGlosow} glosow, ${((Date.now() - start) / 1000).toFixed(1)} s`);
+  odnotujImport(db, 'glosy-klubow', wierszy);
+
+  log('-> wyliczenia: indeks wyszukiwania glosowan');
+  const glosowania = db.prepare('select posiedzenie, numer, tytul, temat, opis from glosowania').all() as unknown as {
+    posiedzenie: number; numer: number; tytul: string; temat: string | null; opis: string | null;
+  }[];
+  const wstaw = db.prepare('insert into glosowania_szukaj(tekst, posiedzenie, numer) values (?,?,?)');
+  db.exec('begin');
+  db.exec('delete from glosowania_szukaj');
+  for (const g of glosowania) {
+    wstaw.run(uprosc([g.temat, g.tytul, g.opis].filter(Boolean).join(' • ')), g.posiedzenie, g.numer);
+  }
+  db.exec('commit');
+  log(`   ${glosowania.length} glosowan w indeksie`);
+  odnotujImport(db, 'szukaj-glosowania', glosowania.length);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
   glosowania: importGlosowan,
   glosy: importGlosow,
   zdjecia: importZdjec,
+  okregi: importOkregow,
+  wyliczenia,
 };
 
 const zadane = process.argv.slice(2).filter((a) => !a.startsWith('--'));

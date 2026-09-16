@@ -103,13 +103,63 @@ create index if not exists glosy_posel on glosy(posel_id);
   Zdjecia trzymamy U SIEBIE, a nie linkujemy przy generowaniu obrazka OG.
   Powod jest zmierzony: przy adresie zdalnym render podgladu wisi tak dlugo,
   jak dlugo milczy API Sejmu, a build 499 stron zamienia sie w loterie.
-  499 zdjec po ~50 kB to ~25 MB w pliku, ktory i tak nie idzie do repozytorium.
+  Zmierzone: 499 zdjec to 6,8 MB, w pliku, ktory i tak nie idzie do repozytorium.
 */
 create table if not exists zdjecia (
   posel_id integer primary key,
   typ      text not null,          -- rozpoznany z SYGNATURY bajtow, nie z naglowka
   bajty    blob not null,
   foreign key (posel_id) references poslowie(id)
+);
+
+/* Okregi i gminy — z danych PKW 2023, patrz ingest/zrodla/pkw-2023/ZRODLO.md. */
+create table if not exists okregi (
+  nr                  integer primary key,
+  nazwa               text,          -- siedziba okregu, z rejestru Sejmu
+  wojewodztwo         text not null,
+  uprawnionych_kraj   integer,       -- suma z gmin, wybory 2023
+  uprawnionych_zagr   integer        -- obwody za granica i na statkach (tylko okreg 19)
+);
+
+create table if not exists gminy (
+  teryt        text primary key,     -- 6 cyfr, DOPELNIONE zerem
+  nazwa        text not null,
+  rodzaj       text not null,
+  powiat       text not null,
+  wojewodztwo  text not null,
+  okreg_nr     integer not null,
+  uprawnionych integer,
+  szukaj       text not null,        -- nazwa po uprosc(): bez ogonkow, male litery
+  foreign key (okreg_nr) references okregi(nr)
+);
+create index if not exists gminy_okreg on gminy(okreg_nr);
+
+/*
+  Sumy glosow kazdego klubu w kazdym glosowaniu. Wyliczone raz przy imporcie
+  z tabeli glosow — na stronie posla porownujemy z nimi jego glos. Liczenie
+  tego przy kazdym wejsciu to agregacja setek tysiecy wierszy na strone.
+*/
+create table if not exists glosy_klubow (
+  posiedzenie integer not null,
+  numer       integer not null,
+  klub_id     text not null,
+  za          integer not null,
+  przeciw     integer not null,
+  wstrzymalo  integer not null,
+  nieobecnych integer not null,
+  innych      integer not null,      -- PRESENT, VOTE_VALID i wartosci spoza slownika
+  primary key (posiedzenie, numer, klub_id)
+) without rowid;
+
+/*
+  Wyszukiwanie glosowan. Tekst trafia tu JUZ UPROSZCZONY (uprosc()), bo
+  tokenizer z remove_diacritics nie zamienia "ł" na "l" — zmierzone.
+*/
+create virtual table if not exists glosowania_szukaj using fts5(
+  tekst,
+  posiedzenie unindexed,
+  numer unindexed,
+  tokenize = 'trigram'
 );
 
 create table if not exists import (
