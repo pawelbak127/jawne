@@ -32,6 +32,7 @@ export const metadata: Metadata = {
 };
 
 const NAWIGACJA = [
+  { adres: '/okregi', etykieta: 'Okręgi' },
   { adres: '/poslowie', etykieta: 'Posłowie' },
   { adres: '/glosowania', etykieta: 'Głosowania' },
 ];

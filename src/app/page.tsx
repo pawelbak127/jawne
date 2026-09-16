@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { bazaDostepna, kluby, listaPoslow, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
+import { bazaDostepna, kluby, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
 import { dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { Polkole, type Blok } from '@/components/Polkole';
 import { Szukajka } from '@/components/Szukajka';
@@ -7,13 +7,17 @@ import { Kafel, Zrodlo } from '@/components/Zrodlo';
 import { BrakDanych } from '@/components/BrakDanych';
 import { PaseczekGlosow } from '@/components/PaseczekGlosow';
 
+const PRZYKLADY = ['Kraków', 'Zakopane', 'podatek', 'sygnaliści'];
+
 export default function StronaGlowna() {
   if (!bazaDostepna()) return <BrakDanych />;
 
   const stan = podsumowanie();
   const listaKlubow = kluby();
-  const poslowie = listaPoslow();
   const glosowania = ostatnieGlosowania(6);
+  const listaOkregow = okregi();
+  const okregiLiczba = listaOkregow.length;
+  const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
 
   const bloki: Blok[] = listaKlubow
     .filter((k) => k.mandaty !== null && k.mandaty > 0)
@@ -39,31 +43,56 @@ export default function StronaGlowna() {
             Sejm RP · X kadencja
           </p>
           <h1 className="szryft mt-4 max-w-3xl text-4xl leading-[1.08] font-semibold tracking-tight sm:text-6xl">
-            Kto jak głosował — <br className="hidden sm:block" />
-            i skąd to wiadomo.
+            Kto Cię reprezentuje w Sejmie <br className="hidden sm:block" />
+            — i jak naprawdę głosuje.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
-            {liczba(stan.glosowan)} głosowań, {liczba(stan.poslow)} posłów, jeden rejestr.
-            Przy każdej liczbie stoi odnośnik do źródła w Sejmie — możesz sprawdzić nas
-            w dwóch kliknięciach.
+            Wpisz swoją miejscowość, a zobaczysz posłów ze swojego okręgu, ich głosy
+            i to, czy głosują tak jak ich klub. Przy każdej liczbie jest odnośnik do rejestru.
           </p>
 
-          <div className="mt-8 max-w-xl">
-            <Szukajka
-              pozycje={poslowie.map((p) => ({
-                slug: p.slug,
-                nazwa: p.imie_nazwisko,
-                klub: p.klub_id,
-                okreg: p.okreg_nazwa,
-              }))}
-            />
+          <div className="mt-8 max-w-2xl">
+            <Szukajka />
           </div>
-          <p className="mt-3 text-sm text-atrament-3">
-            albo{' '}
-            <Link href="/poslowie" className="text-akcent underline underline-offset-4 hover:no-underline">
-              przejrzyj wszystkich posłów
-            </Link>
+          {/*
+            Przyklady: dwie miejscowosci i dwa tematy. Celowo bez nazwisk —
+            nazwisko wybrane przez nas na stronie glownej czyta sie jak wyroznienie.
+          */}
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-atrament-3">
+            <span>np.</span>
+            {PRZYKLADY.map((p) => (
+              <Link
+                key={p}
+                href={`/szukaj?q=${encodeURIComponent(p)}`}
+                className="rounded-full border border-kreska-2 px-2.5 py-0.5 text-atrament-2 transition-colors hover:border-akcent hover:text-akcent"
+              >
+                {p}
+              </Link>
+            ))}
           </p>
+        </div>
+      </section>
+
+      <section className="obszar pb-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link href="/okregi" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              {`${liczba(okregiLiczba)} okręgów, ${liczba(gminLiczba)} gmin. Znajdź swoją gminę i zobacz posłów wybranych w Twoim okręgu.`}
+            </p>
+          </Link>
+          <Link href="/poslowie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Czy mój poseł głosuje jak klub?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              {`Każdy głos porównany z resztą klubu — w ${liczba(stan.glosowan)} głosowaniach, zawsze z mianownikiem.`}
+            </p>
+          </Link>
+          <Link href="/o-serwisie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Skąd to wiadomo?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              Z rejestrów Sejmu i PKW. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
+            </p>
+          </Link>
         </div>
       </section>
 

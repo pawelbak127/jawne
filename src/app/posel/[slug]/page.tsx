@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, ostatnieGlosyPosla, posel, slugiPoslow, statystykiPosla,
+  bazaDostepna, kluby, ostatnieGlosyPosla, porownanieZKlubem, posel, slugiPoslow, statystykiPosla,
 } from '@/lib/dane';
+import { MIN_RESZTY } from '@/lib/niezaleznosc';
+import { stylGlosu } from '@/lib/barwy-glosu';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -45,6 +47,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const k = kluby().find((x) => x.id === p.klub_id);
   const adresRejestru = `https://www.sejm.gov.pl/sejm10.nsf/posel.xsp?id=${String(p.id).padStart(3, '0')}`;
 
+  const porownanie = porownanieZKlubem(p.id);
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 
@@ -73,10 +76,10 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
             ) : (
               <span className="text-atrament-2">bez klubu</span>
             )}
-            {p.okreg_nazwa ? (
-              <span className="text-atrament-2">
-                okręg {p.okreg_nr} · {p.okreg_nazwa}
-              </span>
+            {p.okreg_nr ? (
+              <Link href={`/okreg/${p.okreg_nr}`} className="text-atrament-2 underline-offset-4 hover:text-akcent hover:underline">
+                {`okręg nr ${p.okreg_nr}${p.okreg_nazwa ? ` · ${p.okreg_nazwa}` : ''}`}
+              </Link>
             ) : null}
             {p.aktywny === 0 ? (
               <span className="rounded-md bg-papier-3 px-2 py-0.5 text-xs text-atrament-2">mandat wygasł</span>
@@ -135,6 +138,82 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
         </p>
       ) : (
         <>
+          {porownanie && porownanie.porownywalnych > 0 ? (
+            <section className="mt-12">
+              <h2 className="szryft text-2xl font-semibold">Czy głosuje tak jak reszta klubu?</h2>
+              <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_2fr]">
+                <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+                  <p className="liczby szryft text-5xl font-semibold leading-none">
+                    {procent((porownanie.odmiennych / porownanie.porownywalnych) * 100)}
+                  </p>
+                  <p className="mt-3 font-medium">głosowań inaczej niż reszta klubu</p>
+                  {/* Mianownik stoi obok procentu, nie w przypisie. */}
+                  <p className="mt-1 text-sm text-atrament-2">
+                    {`${liczba(porownanie.odmiennych)} z ${zOdmiana(porownanie.porownywalnych, 'porównywalnego głosowania', 'porównywalnych głosowań', 'porównywalnych głosowań')}`}
+                  </p>
+                  {porownanie.kluby.length > 1 ? (
+                    <p className="mt-3 text-xs leading-relaxed text-atrament-3">
+                      {`W tym czasie należał(a) do klubów: ${porownanie.kluby.join(', ')}. Każdy głos porównujemy z klubem z dnia głosowania.`}
+                    </p>
+                  ) : null}
+                  <details className="mt-4 border-t border-kreska pt-3 text-xs leading-relaxed text-atrament-2">
+                    <summary className="cursor-pointer font-medium text-atrament">Jak to liczymy</summary>
+                    <ul className="mt-2 list-disc space-y-1 pl-4">
+                      <li>Porównujemy tylko głosy „za”, „przeciw” i „wstrzymał się”. Nieobecność nie jest stanowiskiem.</li>
+                      <li>Punktem odniesienia jest najczęstszy głos pozostałych członków klubu — bez samego posła.</li>
+                      <li>{`Głosowanie liczymy, gdy reszta klubu oddała co najmniej ${MIN_RESZTY} głosy i miała jeden wyraźnie najczęstszy głos. Przy remisie nie ma z czym porównać.`}</li>
+                      <li>Posłowie niezrzeszeni nie tworzą klubu, więc ich głosów nie porównujemy.</li>
+                      <li>
+                        Głos inny niż klub może wynikać z przekonań, z umowy w klubie albo z pomyłki
+                        przy przycisku. Rejestr tego nie podaje — i my też tego nie rozstrzygamy.
+                      </li>
+                    </ul>
+                  </details>
+                </div>
+
+                <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+                  {porownanie.odstepstwa.length === 0 ? (
+                    <p className="text-atrament-2">
+                      W żadnym z porównywalnych głosowań nie zagłosował(a) inaczej niż reszta klubu.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium">
+                        {porownanie.odstepstwa.length > 8
+                          ? 'Ostatnie 8 głosowań, w których zagłosował(a) inaczej'
+                          : 'Głosowania, w których zagłosował(a) inaczej'}
+                      </p>
+                      <ul className="mt-3 divide-y divide-kreska">
+                        {porownanie.odstepstwa.slice(0, 8).map((o) => (
+                          <li key={`${o.posiedzenie}-${o.numer}`} className="py-3">
+                            <Link href={`/glosowanie/${o.posiedzenie}-${o.numer}`} className="group block">
+                              <span className="block text-xs text-atrament-3">
+                                {`${dataSlownie(o.data)}${o.klub_id !== p.klub_id ? ` · wtedy w klubie ${o.klub_id}` : ''}`}
+                              </span>
+                              <span className="mt-0.5 block text-sm leading-snug group-hover:text-akcent">
+                                {skroc(o.temat ?? o.tytul, 120)}
+                              </span>
+                              <span className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="miejsce-probka h-2 w-2 rounded-full" style={stylGlosu(o.glos)} />
+                                  {`poseł: ${etykietaGlosu(o.glos).krotka}`}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 text-atrament-2">
+                                  <span className="miejsce-probka h-2 w-2 rounded-full" style={stylGlosu(o.wiekszosc)} />
+                                  {`reszta klubu: ${etykietaGlosu(o.wiekszosc).krotka}`}
+                                </span>
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-12">
             <h2 className="szryft text-2xl font-semibold">Jak głosował(a)</h2>
             <p className="mt-1 text-sm text-atrament-2">

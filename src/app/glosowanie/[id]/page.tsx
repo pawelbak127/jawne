@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby } from '@/lib/dane';
+import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby, wynikiKlubow } from '@/lib/dane';
+import { BARWY_GLOSU } from '@/lib/barwy-glosu';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { dataSlownie, liczba, procent, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -31,15 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-/** Barwy sposobu glosowania. Te SA semantyczne — zielony/czerwony czyta kazdy. */
-const BARWY_GLOSU: Record<string, { jasny: string; ciemny: string }> = {
-  za: { jasny: '#1b9e63', ciemny: '#34b87c' },
-  przeciw: { jasny: '#d2453f', ciemny: '#e2635d' },
-  wstrzymal: { jasny: '#e0a021', ciemny: '#d9a52e' },
-  brak: { jasny: '#cfcbc0', ciemny: '#3a3945' },
-  inne: { jasny: '#8b8794', ciemny: '#736f7e' },
-};
-
 export default async function StronaGlosowania({ params }: { params: Promise<{ id: string }> }) {
   if (!bazaDostepna()) return <BrakDanych />;
   const { id } = await params;
@@ -51,6 +43,9 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
 
   const glosy = glosyWGlosowaniu(adres.posiedzenie, adres.numer);
   const listaKlubow = kluby();
+  const kolejnosc = new Map(listaKlubow.map((k, i) => [k.id, i]));
+  const wynikiWgKlubow = wynikiKlubow(adres.posiedzenie, adres.numer)
+    .sort((a, b) => (kolejnosc.get(a.klub_id) ?? 999) - (kolejnosc.get(b.klub_id) ?? 999));
 
   /*
     Miejsca ustawiamy wedlug KLUBU (czyli tak, jak posel siedzi na sali),
@@ -80,7 +75,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
           .sort((x, y) => x.glos.localeCompare(y.glos) || x.nazwisko.localeCompare(y.nazwisko, 'pl'))
           .map((glos) => {
             const e = etykietaGlosu(glos.glos);
-            const b = BARWY_GLOSU[e.ton] ?? BARWY_GLOSU.inne!;
+            const b = BARWY_GLOSU[e.ton];
             return {
               barwa: b.jasny,
               barwaCiemna: b.ciemny,
@@ -158,6 +153,70 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
               <Polkole bloki={bloki} podpis={`Głosy imienne: ${glosy.length} posłów`} />
             </div>
           </section>
+
+          {wynikiWgKlubow.length ? (
+            <section className="mt-12">
+              <h2 className="szryft text-2xl font-semibold">Jak głosowały kluby</h2>
+              <p className="mt-1 text-sm text-atrament-2">
+                Kluby z dnia głosowania — także te, których dziś już nie ma.
+              </p>
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-kreska bg-papier-2 shadow-karta">
+                <table className="liczby w-full min-w-[34rem] text-sm">
+                  <thead>
+                    <tr className="border-b border-kreska text-xs text-atrament-3">
+                      <th className="px-4 py-2.5 text-left font-medium">Klub</th>
+                      <th className="px-2 py-2.5 text-right font-medium">za</th>
+                      <th className="px-2 py-2.5 text-right font-medium">przeciw</th>
+                      <th className="px-2 py-2.5 text-right font-medium">wstrz.</th>
+                      <th className="px-2 py-2.5 text-right font-medium">nie głos.</th>
+                      <th className="px-4 py-2.5 text-left font-medium">rozkład</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {wynikiWgKlubow.map((w) => {
+                      const k = listaKlubow.find((x) => x.id === w.klub_id);
+                      const wszyscy = w.za + w.przeciw + w.wstrzymalo + w.nieobecnych + w.innych;
+                      const czesci = [
+                        { ile: w.za, b: BARWY_GLOSU.za },
+                        { ile: w.przeciw, b: BARWY_GLOSU.przeciw },
+                        { ile: w.wstrzymalo, b: BARWY_GLOSU.wstrzymal },
+                        { ile: w.nieobecnych, b: BARWY_GLOSU.brak },
+                        { ile: w.innych, b: BARWY_GLOSU.inne },
+                      ];
+                      return (
+                        <tr key={w.klub_id} className="border-b border-kreska last:border-0">
+                          <td className="px-4 py-2.5">
+                            <span className="inline-flex items-center gap-2" title={k?.nazwa ?? undefined}>
+                              <span
+                                className="miejsce-probka h-2.5 w-2.5 rounded-full"
+                                style={{ '--b': k?.barwa ?? '#9a958c', '--bc': k?.barwaCiemna ?? '#8e8a95' } as React.CSSProperties}
+                              />
+                              <span className="font-medium">{w.klub_id}</span>
+                            </span>
+                          </td>
+                          <td className="px-2 py-2.5 text-right">{w.za}</td>
+                          <td className="px-2 py-2.5 text-right">{w.przeciw}</td>
+                          <td className="px-2 py-2.5 text-right">{w.wstrzymalo}</td>
+                          <td className="px-2 py-2.5 text-right text-atrament-2">{w.nieobecnych}</td>
+                          <td className="w-40 px-4 py-2.5">
+                            <div className="flex h-2 overflow-hidden rounded-full bg-papier-3">
+                              {czesci.filter((c) => c.ile > 0).map((c, i) => (
+                                <span
+                                  key={i}
+                                  className="miejsce-probka"
+                                  style={{ width: `${(c.ile / wszyscy) * 100}%`, '--b': c.b.jasny, '--bc': c.b.ciemny } as React.CSSProperties}
+                                />
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : null}
 
           <section className="mt-12">
             <h2 className="szryft text-2xl font-semibold">Wszystkie głosy</h2>

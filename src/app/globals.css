@@ -1,6 +1,23 @@
 @import "tailwindcss";
 
 /*
+  Wariant `dark:` MUSI sluchac przelacznika, nie tylko systemu. Domyslnie
+  Tailwind 4 bierze wylacznie prefers-color-scheme — wtedy paski glosow
+  zostawaly jasne po recznym wlaczeniu ciemnego motywu (i ciemne u kogos,
+  kto w ciemnym systemie wybral jasny).
+*/
+@custom-variant dark {
+  &:where([data-motyw="ciemny"], [data-motyw="ciemny"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-motyw="jasny"]), :root:not([data-motyw="jasny"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
   Chromatyka serwisu jest CELOWO bezbarwna: papier, atrament, jeden akcent.
   Kolor pojawia sie wylacznie w danych (barwy klubow w wykresach).
   Powod jest merytoryczny, nie estetyczny — serwis w barwach jednej strony

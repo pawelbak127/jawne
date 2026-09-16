@@ -15,6 +15,10 @@ const OPISY: Record<string, string> = {
   glosowania: 'Głosowania (liczby zbiorcze)',
   glosy: 'Głosy imienne',
   'kluby-spoza-listy': 'Kluby wskazane przez posłów, których nie ma w rejestrze klubów',
+  zdjecia: 'Zdjęcia posłów',
+  okregi: 'Okręgi wyborcze i gminy (PKW, wybory 2023)',
+  'glosy-klubow': 'Sumy głosów klubów w każdym głosowaniu',
+  'szukaj-glosowania': 'Indeks wyszukiwania głosowań',
 };
 
 export default function StronaStanu() {
@@ -69,8 +73,15 @@ export default function StronaStanu() {
         <h2 className="font-medium">Skąd to pochodzi</h2>
         <ul className="mt-3 space-y-2 text-atrament-2">
           <li className="flex flex-wrap items-center gap-2">
-            Posłowie, kluby, głosowania i głosy imienne:
+            Posłowie, kluby, głosowania, głosy imienne i zdjęcia:
             <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="API Sejmu RP" />
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            Przypisanie gmin do okręgów wyborczych:
+            <Zrodlo
+              adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach"
+              etykieta="PKW — wyniki wyborów do Sejmu 2023 po gminach"
+            />
           </li>
         </ul>
         <p className="mt-4 text-xs text-atrament-3">
