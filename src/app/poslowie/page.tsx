@@ -38,7 +38,11 @@ export default function StronaPoslow() {
             aktywny: p.aktywny === 1,
             maZdjecie: p.ma_zdjecie,
           }))}
-          kluby={listaKlubow.map((k) => ({
+          // Filtry pokazuja tylko kluby, w ktorych ktos jest. Tabela klubow
+          // zawiera takze kluby HISTORYCZNE, zalozone przy imporcie glosow
+          // (Kukiz15, Republikanie i inne) — jako filtr listy poslow daly by
+          // cztery guziki, ktore niczego nie znajduja.
+          kluby={listaKlubow.filter((k) => k.poslow > 0).map((k) => ({
             id: k.id,
             etykieta: k.id,
             barwa: k.barwa,

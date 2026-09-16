@@ -121,7 +121,10 @@ export default function StronaGlowna() {
             zrodlo="https://api.sejm.gov.pl/sejm/openapi/"
           />
           <Kafel
-            wartosc={liczba(listaKlubow.length)}
+            // Liczymy kluby Z REJESTRU KLUBOW, a nie wszystkie wiersze tabeli:
+            // te zawieraja rowniez kluby historyczne wystepujace juz tylko
+            // w starych glosach.
+            wartosc={liczba(listaKlubow.filter((k) => k.mandaty !== null).length)}
             etykieta="klubów i kół"
             mianownik={stan.ostatnieGlosowanie ? `stan na ${dataSlownie(stan.ostatnieGlosowanie)}` : undefined}
             zrodlo="https://api.sejm.gov.pl/sejm/term10/clubs"
