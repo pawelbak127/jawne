@@ -10,7 +10,7 @@
  */
 import { otworz, zalozSchemat, odnotujImport } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
-import { GLOSY_ZNANE } from '../lib/glosy.js';
+import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
 import { dlaKazdego, pobierz } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import type { DatabaseSync } from 'node:sqlite';

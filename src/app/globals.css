@@ -124,3 +124,35 @@
     mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
   }
 }
+
+/*
+  Barwa kropki w polkolu. Inline style poda `--b` (motyw jasny) i `--bc`
+  (ciemny); przelaczenie robi CSS, zeby komponent nie musial wiedziec,
+  ktory motyw jest wlaczony — i zeby dzialalo bez JS-u.
+*/
+@layer components {
+  .miejsce { fill: var(--b); transition: opacity 140ms ease; }
+  .miejsce-probka { background: var(--b); }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-motyw="jasny"]) .miejsce { fill: var(--bc); }
+    :root:not([data-motyw="jasny"]) .miejsce-probka { background: var(--bc); }
+  }
+  :root[data-motyw="ciemny"] .miejsce { fill: var(--bc); }
+  :root[data-motyw="ciemny"] .miejsce-probka { background: var(--bc); }
+}
+
+/*
+  Ikona przelacznika motywu wybierana CSS-em, nie stanem Reacta — patrz
+  komentarz w PrzelacznikMotywu.tsx. Domyslnie (motyw jasny) widac ksiezyc,
+  czyli to, na co przelaczenie zmieni wyglad.
+*/
+@layer components {
+  .ikona-ciemny { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-motyw="jasny"]) .ikona-jasny { display: none; }
+    :root:not([data-motyw="jasny"]) .ikona-ciemny { display: block; }
+  }
+  :root[data-motyw="ciemny"] .ikona-jasny { display: none; }
+  :root[data-motyw="ciemny"] .ikona-ciemny { display: block; }
+}

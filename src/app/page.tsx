@@ -1,69 +1,169 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { bazaDostepna, kluby, listaPoslow, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
+import { dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
+import { Polkole, type Blok } from '@/components/Polkole';
+import { Szukajka } from '@/components/Szukajka';
+import { Kafel, Zrodlo } from '@/components/Zrodlo';
+import { BrakDanych } from '@/components/BrakDanych';
+import { PaseczekGlosow } from '@/components/PaseczekGlosow';
 
-export default function Home() {
+export default function StronaGlowna() {
+  if (!bazaDostepna()) return <BrakDanych />;
+
+  const stan = podsumowanie();
+  const listaKlubow = kluby();
+  const poslowie = listaPoslow();
+  const glosowania = ostatnieGlosowania(6);
+
+  const bloki: Blok[] = listaKlubow
+    .filter((k) => k.mandaty !== null && k.mandaty > 0)
+    .map((k) => ({
+      id: k.id,
+      etykieta: k.id,
+      pelnaNazwa: k.nazwa,
+      miejsca: Array.from({ length: k.mandaty ?? 0 }, () => ({
+        barwa: k.barwa,
+        barwaCiemna: k.barwaCiemna,
+        opis: `${k.nazwa ?? k.id} — ${zOdmiana(k.mandaty ?? 0, 'mandat', 'mandaty', 'mandatów')}`,
+      })),
+    }));
+
+  const mandatow = bloki.reduce((a, b) => a + b.miejsca.length, 0);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <>
+      <section className="relative">
+        <div className="siatka-tla pointer-events-none absolute inset-0 -z-10" aria-hidden />
+        <div className="obszar pt-16 pb-12 sm:pt-24">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-akcent">
+            Sejm RP · X kadencja
+          </p>
+          <h1 className="szryft mt-4 max-w-3xl text-4xl leading-[1.08] font-semibold tracking-tight sm:text-6xl">
+            Kto jak głosował — <br className="hidden sm:block" />
+            i skąd to wiadomo.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
+            {liczba(stan.glosowan)} głosowań, {liczba(stan.poslow)} posłów, jeden rejestr.
+            Przy każdej liczbie stoi odnośnik do źródła w Sejmie — możesz sprawdzić nas
+            w dwóch kliknięciach.
+          </p>
+
+          <div className="mt-8 max-w-xl">
+            <Szukajka
+              pozycje={poslowie.map((p) => ({
+                slug: p.slug,
+                nazwa: p.imie_nazwisko,
+                klub: p.klub_id,
+                okreg: p.okreg_nazwa,
+              }))}
+            />
+          </div>
+          <p className="mt-3 text-sm text-atrament-3">
+            albo{' '}
+            <Link href="/poslowie" className="text-akcent underline underline-offset-4 hover:no-underline">
+              przejrzyj wszystkich posłów
+            </Link>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+      </section>
+
+      <section className="obszar py-8">
+        <div className="rounded-3xl border border-kreska bg-papier-2 p-6 shadow-karta sm:p-10">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="szryft text-2xl font-semibold">Układ izby</h2>
+            <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/clubs" etykieta="rejestr klubów" />
+          </div>
+
+          <div className="mx-auto mt-6 max-w-2xl">
+            <Polkole
+              bloki={bloki}
+              podpis={`Rozkład ${mandatow} mandatów między kluby i koła poselskie`}
+              srodek={
+                <>
+                  <span className="liczby szryft text-5xl font-semibold leading-none">{mandatow}</span>
+                  <span className="mt-1 text-xs text-atrament-2">mandatów</span>
+                </>
+              }
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          {/*
+            Ta uwaga nie jest drobnym drukiem. Czytelnik widzacy kolorowy wykres
+            sejmowy zaklada, ze to barwy partyjne — i na tym zalozeniu buduje
+            wnioski. Musi wiedziec, ze tak nie jest.
+          */}
+          <p className="mx-auto mt-8 max-w-xl text-center text-xs leading-relaxed text-atrament-3">
+            Barwy są nasze, dobrane pod rozróżnialność przy daltonizmie — nie są
+            barwami partyjnymi. Loga klubów dają pięć podobnych czerwieni i trzy
+            granaty, więc na ich podstawie nie da się narysować czytelnego wykresu.
+          </p>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="obszar py-8">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Kafel
+            wartosc={liczba(stan.glosowan)}
+            etykieta="głosowań"
+            mianownik={stan.pierwszeGlosowanie ? `od ${dataSlownie(stan.pierwszeGlosowanie)}` : undefined}
+            zrodlo="https://api.sejm.gov.pl/sejm/term10/votings"
+          />
+          <Kafel
+            wartosc={liczba(stan.poslow)}
+            etykieta="posłów w rejestrze"
+            mianownik={`w tym ${liczba(stan.poslow - stan.poslowAktywnych)} z wygasłym mandatem`}
+            zrodlo="https://api.sejm.gov.pl/sejm/term10/MP"
+          />
+          <Kafel
+            wartosc={liczba(stan.glosow)}
+            etykieta="głosów imiennych"
+            mianownik={`z ${liczba(stan.glosowanZGlosami)} głosowań`}
+            zrodlo="https://api.sejm.gov.pl/sejm/openapi/"
+          />
+          <Kafel
+            wartosc={liczba(listaKlubow.length)}
+            etykieta="klubów i kół"
+            mianownik={stan.ostatnieGlosowanie ? `stan na ${dataSlownie(stan.ostatnieGlosowanie)}` : undefined}
+            zrodlo="https://api.sejm.gov.pl/sejm/term10/clubs"
+          />
+        </div>
+      </section>
+
+      <section className="obszar py-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="szryft text-2xl font-semibold">Ostatnie głosowania</h2>
+          <Link href="/glosowania" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
+            wszystkie {liczba(stan.glosowan)}
+          </Link>
+        </div>
+
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+          {glosowania.map((g) => (
+            <li key={`${g.posiedzenie}-${g.numer}`}>
+              <Link
+                href={`/glosowanie/${g.posiedzenie}-${g.numer}`}
+                className="group flex h-full flex-col rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta transition-all hover:border-kreska-2 hover:shadow-karta-2"
+              >
+                <div className="flex items-center gap-2 text-xs text-atrament-3">
+                  <span>{dataSlownie(g.data)}</span>
+                  <span aria-hidden>·</span>
+                  <span>posiedzenie {g.posiedzenie}</span>
+                </div>
+                <p className="mt-2 flex-1 leading-snug font-medium group-hover:text-akcent">
+                  {skroc(g.temat ?? g.tytul, 110)}
+                </p>
+                <PaseczekGlosow
+                  za={g.za}
+                  przeciw={g.przeciw}
+                  wstrzymalo={g.wstrzymalo}
+                  nieobecnych={g.nieobecnych}
+                  className="mt-4"
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
   );
 }
