@@ -3,6 +3,7 @@ import { Inter, Source_Serif_4 } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
 import { PrzelacznikMotywu } from '@/components/PrzelacznikMotywu';
+import { ADRES_SERWISU } from '@/lib/adres';
 
 // latin-ext jest OBOWIAZKOWE: szablon create-next-app ma tu samo "latin",
 // przy ktorym "ą", "ę", "ł", "ń", "ś", "ź", "ż" lecą na font zastepczy
@@ -21,6 +22,7 @@ const serif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
+  metadataBase: ADRES_SERWISU,
   title: {
     default: 'jawne — Sejm bez komentarza',
     template: '%s · jawne',

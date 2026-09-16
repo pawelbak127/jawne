@@ -39,6 +39,19 @@ się w całości z publicznego API Sejmu.
 | `/glosowanie/[posiedzenie]-[numer]` | kto jak zagłosował, imiennie |
 | `/stan` | co i kiedy zaimportowano oraz czego brakuje |
 
+## Wdrożenie
+
+Przed buildem produkcyjnym ustaw publiczny adres serwisu — inaczej obrazki
+podglądu linków będą wskazywać na `localhost`:
+
+```bash
+JAWNE_ADRES_SERWISU=https://twoja-domena.pl npm run build
+```
+
+Plik `dane/sejm.db` trzeba dostarczyć obok aplikacji — bundler go nie zabierze.
+Strony główna, `/okregi` i `/stan` są generowane przy buildzie, więc po imporcie
+nowych danych trzeba przebudować serwis.
+
 ## Sprawdzenie
 
 ```bash
