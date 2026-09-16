@@ -19,7 +19,15 @@ let polaczenie: DatabaseSync | null = null;
 
 function db(): DatabaseSync | null {
   if (polaczenie) return polaczenie;
-  if (!existsSync(SCIEZKA)) return null;
+  /*
+    Turbopack ostrzega tu o dostepie do pliku, ktorego sciezki nie umie
+    przesledzic, i ma racje: jest zlozona ze zmiennej srodowiskowej.
+    To jest SWIADOME — baza nie jest zasobem aplikacji do spakowania, tylko
+    plikiem danych obok niej, wymienianym bez przebudowy przy kazdym imporcie.
+    Wniosek praktyczny na wdrozenie: `dane/sejm.db` trzeba dostarczyc osobno,
+    bo bundler go nie zabierze.
+  */
+  if (!existsSync(/* turbopackIgnore: true */ SCIEZKA)) return null;
   polaczenie = new DatabaseSync(SCIEZKA, { readOnly: true });
   return polaczenie;
 }
