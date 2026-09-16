@@ -11,7 +11,7 @@
 import { otworz, zalozSchemat, odnotujImport } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
-import { dlaKazdego, pobierz } from '../lib/http.js';
+import { dlaKazdego, pobierzBajty } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import type { DatabaseSync } from 'node:sqlite';
 
@@ -39,7 +39,7 @@ async function importKlubow(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'kluby', kluby.length, bezLiczby.length ? `bez liczebnosci: ${bezLiczby.join(',')}` : '');
 }
 
-async function importPoslow(db: DatabaseSync, sprawdzZdjecia: boolean): Promise<void> {
+async function importPoslow(db: DatabaseSync): Promise<void> {
   log('-> poslowie');
   const lista = await api.poslowie();
 
@@ -78,20 +78,6 @@ async function importPoslow(db: DatabaseSync, sprawdzZdjecia: boolean): Promise<
   );
   const zajete = new Set(istniejace.values());
 
-  let zdjecia = new Map<number, boolean>();
-  if (sprawdzZdjecia) {
-    log('   sprawdzam zdjecia (HEAD)');
-    const wyniki = await dlaKazdego(lista, async (p) => {
-      try {
-        const odp = await pobierz(api.adresZdjecia(p.id), { json: false });
-        return [p.id, odp.ok] as const;
-      } catch {
-        return [p.id, false] as const;
-      }
-    }, { opis: 'zdjecia', co: 100 });
-    zdjecia = new Map(wyniki);
-  }
-
   const wstaw = db.prepare(
     `insert into poslowie(id, slug, imie, drugie_imie, nazwisko, imie_nazwisko, klub_id,
        okreg_nr, okreg_nazwa, wojewodztwo, zawod, wyksztalcenie, data_urodzenia,
@@ -121,7 +107,7 @@ async function importPoslow(db: DatabaseSync, sprawdzZdjecia: boolean): Promise<
       p.profession ?? null, p.educationLevel ?? null, p.birthDate ?? null,
       p.birthLocation ?? null, p.numberOfVotes ?? null, p.email ?? null,
       p.active ? 1 : 0, p.inactiveCause ?? null, p.mandateExpiryDate ?? null,
-      sprawdzZdjecia ? (zdjecia.get(p.id) ? 1 : 0) : null,
+      null,  // ma_zdjecie ustawia etap "zdjecia" — on jedyny wie to na pewno
     );
   }
   db.exec('commit');
@@ -258,11 +244,53 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'glosy', zapisanych, uwagi.join(' | '));
 }
 
+/**
+ * Zdjecia posiadanie u siebie zamiast linkowania — patrz komentarz przy tabeli
+ * `zdjecia`. Przy okazji ustawiamy `ma_zdjecie`, bo to jest jedyny moment,
+ * w ktorym naprawde wiemy, czy rejestr zdjecie ma.
+ */
+async function importZdjec(db: DatabaseSync): Promise<void> {
+  log('-> zdjecia poslow');
+  const poslowie = db.prepare('select id from poslowie order by id').all() as unknown as { id: number }[];
+
+  const wstaw = db.prepare(
+    'insert into zdjecia(posel_id, typ, bajty) values (?,?,?) on conflict(posel_id) do update set typ=excluded.typ, bajty=excluded.bajty',
+  );
+  const oznacz = db.prepare('update poslowie set ma_zdjecie = ? where id = ?');
+
+  const wyniki = await dlaKazdego(poslowie, async (p) => {
+    try {
+      const bajty = await pobierzBajty(api.adresZdjecia(p.id));
+      // Typ z SYGNATURY, nie z naglowka: przy zasobach graficznych rejestru
+      // `content-type` potrafi podawac co innego niz zawartosc.
+      const jpeg = bajty[0] === 0xff && bajty[1] === 0xd8;
+      const png = bajty.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
+      if (!jpeg && !png) return { id: p.id, bajty: null, typ: null, powod: 'nierozpoznany format' };
+      return { id: p.id, bajty, typ: jpeg ? 'image/jpeg' : 'image/png', powod: null };
+    } catch {
+      return { id: p.id, bajty: null, typ: null, powod: 'rejestr nie oddal zdjecia' };
+    }
+  }, { opis: 'zdjecia', co: 100 });
+
+  db.exec('begin');
+  for (const w of wyniki) {
+    if (w.bajty && w.typ) wstaw.run(w.id, w.typ, w.bajty);
+    oznacz.run(w.bajty ? 1 : 0, w.id);
+  }
+  db.exec('commit');
+
+  const maja = wyniki.filter((w) => w.bajty).length;
+  const bajtow = wyniki.reduce((a, w) => a + (w.bajty?.length ?? 0), 0);
+  log(`   ${maja} z ${poslowie.length} poslow ma zdjecie (${(bajtow / 1024 / 1024).toFixed(1)} MB)`);
+  odnotujImport(db, 'zdjecia', maja, `bez zdjecia: ${poslowie.length - maja}`);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
-  poslowie: (db) => importPoslow(db, process.argv.includes('--zdjecia')),
+  poslowie: importPoslow,
   glosowania: importGlosowan,
   glosy: importGlosow,
+  zdjecia: importZdjec,
 };
 
 const zadane = process.argv.slice(2).filter((a) => !a.startsWith('--'));

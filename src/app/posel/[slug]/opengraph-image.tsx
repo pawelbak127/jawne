@@ -1,34 +1,7 @@
 import { ImageResponse } from 'next/og';
-import { bazaDostepna, kluby, posel, statystykiPosla } from '@/lib/dane';
+import { bazaDostepna, kluby, posel, statystykiPosla, zdjeciePosla } from '@/lib/dane';
 import { inicjaly, liczba, procent } from '@/lib/format';
 import { fontDoOg, OG, ROZMIAR_OG, TYP_OG } from '@/lib/og';
-
-/**
- * Zdjecie pobieramy SAMI i wkladamy jako data URI, zamiast dawac Satori adres
- * do rejestru.
- *
- * Powod jest zmierzony: przy adresie zdalnym generowanie obrazka wisi tak
- * dlugo, jak dlugo milczy API Sejmu — a ono milczy. Podglad linku padalby
- * dokladnie w chwili, w ktorej rejestr ma awarie. Przy wlasnym pobieraniu
- * mamy limit czasu i sensowny zapas: inicjaly.
- */
-async function zdjecieJakoDataUri(id: number): Promise<string | null> {
-  try {
-    const odp = await fetch(`https://api.sejm.gov.pl/sejm/term10/MP/${id}/photo`, {
-      signal: AbortSignal.timeout(3500),
-    });
-    if (!odp.ok) return null;
-    const bajty = Buffer.from(await odp.arrayBuffer());
-    // Typ czytamy z SYGNATURY BAJTOW, nie z naglowka — przy zasobach graficznych
-    // rejestru `content-type` potrafi podawac co innego niz zawartosc.
-    const jpeg = bajty[0] === 0xff && bajty[1] === 0xd8;
-    const png = bajty.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
-    if (!jpeg && !png) return null;
-    return `data:image/${jpeg ? 'jpeg' : 'png'};base64,${bajty.toString('base64')}`;
-  } catch {
-    return null;
-  }
-}
 
 export const size = ROZMIAR_OG;
 export const contentType = TYP_OG;
@@ -55,7 +28,14 @@ export default async function Obrazek({ params }: { params: Promise<{ slug: stri
 
   const staty = statystykiPosla(p.id);
   const k = kluby().find((x) => x.id === p.klub_id);
-  const zdjecie = p.ma_zdjecie === 0 ? null : await zdjecieJakoDataUri(p.id);
+  /*
+    Zdjecie bierzemy Z NASZEJ BAZY i wkladamy jako data URI.
+    Adres zdalny oznaczalby, ze generowanie podgladu linku — i build 499 stron
+    — wisi tak dlugo, jak dlugo milczy API Sejmu. A ono milczy; przy budowie
+    tego serwisu oddawalo kolejno timeout, 503 i 404 na poprawny adres.
+  */
+  const z = zdjeciePosla(p.id);
+  const zdjecie = z ? `data:${z.typ};base64,${Buffer.from(z.bajty).toString('base64')}` : null;
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 

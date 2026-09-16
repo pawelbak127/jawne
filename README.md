@@ -18,7 +18,10 @@ npm run import kluby poslowie glosowania
 # 2. Serwis już działa — z liczbami zbiorczymi głosowań
 npm run dev        # http://localhost:3000
 
-# 3. Głosy imienne: 2,1 mln wierszy, ~18 minut. Można w tle.
+# 3. Zdjęcia posłów do lokalnej bazy (~25 MB, ~1 min)
+npm run import zdjecia
+
+# 4. Głosy imienne: 2,1 mln wierszy, ~18 minut. Można w tle.
 npm run import glosy
 ```
 

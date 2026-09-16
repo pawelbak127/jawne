@@ -5,19 +5,19 @@ import { inicjaly } from '@/lib/format';
  *
  * ZWYKLY <img>, nie next/image — swiadomie. Optymalizator liczy kazdy obraz
  * jako transformacje, a 499 portretow zjadaloby darmowy limit w kilka dni.
- * Zdjecia sa i tak male (~50 kB) i serwuje je Sejm, wiec nie placimy za nie
- * ani transferem, ani miejscem.
+ * Pliki sa male (~50 kB) i lezą u nas w bazie, wiec nie ma czego optymalizowac.
  *
- * `ma_zdjecie` rozstrzygamy przy imporcie zapytaniem HEAD, zeby nie pokazywac
- * polamanej ikonki tam, gdzie rejestr zdjecia nie ma.
+ * `ma_zdjecie === 0` znaczy "sprawdzilismy i rejestr go nie ma" — wtedy od razu
+ * inicjaly, zamiast polamanej ikonki. `null` znaczy "jeszcze nie sprawdzalismy",
+ * wiec probujemy pobrac; to sa dwa rozne stany i nie wolno ich zlepic.
  */
 export function Portret({
-  id,
+  slug,
   imieNazwisko,
   maZdjecie,
   rozmiar = 'zwykly',
 }: {
-  id: number;
+  slug: string;
   imieNazwisko: string;
   maZdjecie: number | null;
   rozmiar?: 'maly' | 'zwykly' | 'duzy';
@@ -34,7 +34,6 @@ export function Portret({
     return (
       <span
         className={`${wspolne} grid place-items-center font-semibold text-atrament-3`}
-        aria-hidden
         title={`Rejestr nie ma zdjęcia: ${imieNazwisko}`}
       >
         {inicjaly(imieNazwisko)}
@@ -45,7 +44,7 @@ export function Portret({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`https://api.sejm.gov.pl/sejm/term10/MP/${id}/photo`}
+      src={`/posel/${slug}/zdjecie`}
       alt={`Portret: ${imieNazwisko}`}
       loading="lazy"
       decoding="async"

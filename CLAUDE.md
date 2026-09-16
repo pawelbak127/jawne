@@ -55,7 +55,7 @@ npx eslint src ingest
 
 npm run import wszystko                    # pełny import (~20 min)
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
-npm run import poslowie -- --zdjecia       # sprawdza HEAD-em, kto ma zdjęcie
+npm run import zdjecia                     # 499 portretów do bazy, ~25 MB
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 ```
 

@@ -281,3 +281,25 @@ export type WpisImportu = { co: string; kiedy: string; ile: number | null; uwagi
 export function stanImportu(): WpisImportu[] {
   return wszystkie<WpisImportu>('select co, kiedy, ile, uwagi from import order by co');
 }
+
+export type Zdjecie = { typ: string; bajty: Uint8Array };
+
+/**
+ * Zdjecie posla z naszej bazy. Uzywane przez obrazek Open Graph i przez wlasna
+ * trase obrazka — dzieki temu ani render podgladu, ani build nie zaleza od
+ * tego, czy API Sejmu akurat odpowiada.
+ */
+export function zdjeciePosla(id: number): Zdjecie | null {
+  try {
+    const w = jeden<{ typ: string; bajty: Uint8Array }>(
+      'select typ, bajty from zdjecia where posel_id = ?', id,
+    );
+    return w ? { typ: w.typ, bajty: w.bajty } : null;
+  } catch (e) {
+    // Brak tabeli = nie uruchomiono etapu "zdjecia". To jest brakujacy etap
+    // importu, a nie awaria — trasa narysuje inicjaly i serwis dziala dalej.
+    // Kazdy inny blad SQL-a przepuszczamy, bo oznacza realna usterke.
+    if (e instanceof Error && /no such table/i.test(e.message)) return null;
+    throw e;
+  }
+}

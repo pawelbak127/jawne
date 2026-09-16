@@ -55,7 +55,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
       </Link>
 
       <header className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-7">
-        <Portret id={p.id} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="duzy" />
+        <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="duzy" />
         <div className="min-w-0 flex-1">
           <h1 className="szryft text-3xl leading-tight font-semibold sm:text-5xl">{p.imie_nazwisko}</h1>
 

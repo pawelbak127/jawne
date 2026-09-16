@@ -132,7 +132,7 @@ export function PrzegladPoslow({
                   href={`/posel/${p.slug}`}
                   className="group flex items-center gap-3 rounded-xl border border-kreska bg-papier-2 p-3 transition-all hover:border-kreska-2 hover:shadow-karta"
                 >
-                  <Portret id={p.id} imieNazwisko={p.nazwa} maZdjecie={p.maZdjecie} rozmiar="maly" />
+                  <Portret slug={p.slug} imieNazwisko={p.nazwa} maZdjecie={p.maZdjecie} rozmiar="maly" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium group-hover:text-akcent">{p.nazwa}</span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-xs text-atrament-2">

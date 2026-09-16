@@ -99,6 +99,19 @@ create table if not exists glosy (
 ) without rowid;
 create index if not exists glosy_posel on glosy(posel_id);
 
+/*
+  Zdjecia trzymamy U SIEBIE, a nie linkujemy przy generowaniu obrazka OG.
+  Powod jest zmierzony: przy adresie zdalnym render podgladu wisi tak dlugo,
+  jak dlugo milczy API Sejmu, a build 499 stron zamienia sie w loterie.
+  499 zdjec po ~50 kB to ~25 MB w pliku, ktory i tak nie idzie do repozytorium.
+*/
+create table if not exists zdjecia (
+  posel_id integer primary key,
+  typ      text not null,          -- rozpoznany z SYGNATURY bajtow, nie z naglowka
+  bajty    blob not null,
+  foreign key (posel_id) references poslowie(id)
+);
+
 create table if not exists import (
   co        text primary key,
   kiedy     text not null,
