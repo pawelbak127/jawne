@@ -1,26 +1,126 @@
 @import "tailwindcss";
 
+/*
+  Chromatyka serwisu jest CELOWO bezbarwna: papier, atrament, jeden akcent.
+  Kolor pojawia sie wylacznie w danych (barwy klubow w wykresach).
+  Powod jest merytoryczny, nie estetyczny — serwis w barwach jednej strony
+  sceny czyta sie jako jej publikacja. theyworkforyou trzyma te sama zasade
+  od dwudziestu lat.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --papier:      #faf9f6;  /* cieple biel — czysta biel meczy przy tabelach */
+  --papier-2:    #ffffff;  /* karta uniesiona nad tlem */
+  --papier-3:    #f1efe9;  /* wypelnienia, paski skali */
+  --atrament:    #17161a;
+  --atrament-2:  #56535e;  /* tekst drugorzedny, podpisy */
+  --atrament-3:  #8b8794;  /* metki, znaki wodne */
+  --kreska:      #e3e0d8;
+  --kreska-2:    #cfcbc0;
+  --akcent:      #0a6b62;  /* glebokie morskie — zaden polski klub go nie uzywa */
+  --akcent-slaby:#e6f2f0;
+  --cien:        0 1px 2px rgb(23 22 26 / 0.04), 0 4px 16px -4px rgb(23 22 26 / 0.06);
+  --cien-2:      0 2px 4px rgb(23 22 26 / 0.05), 0 12px 32px -8px rgb(23 22 26 / 0.12);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-motyw="jasny"]) {
+    --papier:      #0e0e12;
+    --papier-2:    #17171d;
+    --papier-3:    #212129;
+    --atrament:    #f2f1ee;
+    --atrament-2:  #a6a2b0;
+    --atrament-3:  #736f7e;
+    --kreska:      #2a2a33;
+    --kreska-2:    #3a3945;
+    --akcent:      #4fd1c0;
+    --akcent-slaby:#0f2a28;
+    --cien:        0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4);
+    --cien-2:      0 2px 4px rgb(0 0 0 / 0.35), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root[data-motyw="ciemny"] {
+  --papier:      #0e0e12;
+  --papier-2:    #17171d;
+  --papier-3:    #212129;
+  --atrament:    #f2f1ee;
+  --atrament-2:  #a6a2b0;
+  --atrament-3:  #736f7e;
+  --kreska:      #2a2a33;
+  --kreska-2:    #3a3945;
+  --akcent:      #4fd1c0;
+  --akcent-slaby:#0f2a28;
+  --cien:        0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4);
+  --cien-2:      0 2px 4px rgb(0 0 0 / 0.35), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-papier:     var(--papier);
+  --color-papier-2:   var(--papier-2);
+  --color-papier-3:   var(--papier-3);
+  --color-atrament:   var(--atrament);
+  --color-atrament-2: var(--atrament-2);
+  --color-atrament-3: var(--atrament-3);
+  --color-kreska:     var(--kreska);
+  --color-kreska-2:   var(--kreska-2);
+  --color-akcent:     var(--akcent);
+  --color-akcent-slaby: var(--akcent-slaby);
+
+  --font-tekst:  var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-szryft: var(--font-serif), ui-serif, Georgia, serif;
+
+  --shadow-karta:   var(--cien);
+  --shadow-karta-2: var(--cien-2);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  body {
+    background: var(--papier);
+    color: var(--atrament);
+    font-family: var(--font-tekst);
+    font-feature-settings: "cv05" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Liczby w tabelach musza sie pionowo zgadzac — inaczej kolumna klamie okiem. */
+  .liczby { font-variant-numeric: tabular-nums; }
+
+  ::selection { background: var(--akcent); color: var(--papier); }
+
+  :focus-visible {
+    outline: 2px solid var(--akcent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  /* Siatka tresci: jedna kolumna czytelna, marginesy 16px na telefonie. */
+  .obszar { width: 100%; margin-inline: auto; padding-inline: 1rem; max-width: 76rem; }
+  @media (min-width: 640px) { .obszar { padding-inline: 1.5rem; } }
+
+  .szryft { font-family: var(--font-szryft); font-weight: 400; letter-spacing: -0.015em; }
+
+  /* Delikatna siatka pod naglowkiem — daje glebie bez obrazka. */
+  .siatka-tla {
+    background-image:
+      linear-gradient(to right, var(--kreska) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--kreska) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+  }
 }
