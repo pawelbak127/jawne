@@ -56,8 +56,9 @@ export default function StronaOSerwisie() {
           <span className="font-medium text-atrament">Nazw beneficjentów, które mogą być osobą.</span>{' '}
           Dotacje i pomoc publiczną dostają też rolnicy i jednoosobowe firmy, których
           nazwą jest imię i nazwisko. Nazwę pokazujemy tylko wtedy, gdy widać w niej
-          formę prawną albo instytucję (np. „sp. z o.o.”, „gmina”, „szkoła”). Pozostałych
-          nie wymieniamy, ale zawsze podajemy, ilu ich jest, i wliczamy ich kwoty do sum.
+          formę prawną albo instytucję (np. „sp. z o.o.”, „gmina”, „szpital”) i nie ma
+          w niej imienia z rejestru PESEL. Pozostałych nie wymieniamy, ale zawsze
+          podajemy, ilu ich jest, i wliczamy ich kwoty do sum.
         </li>
         <li>
           <span className="font-medium text-atrament">Barw partyjnych.</span>{' '}

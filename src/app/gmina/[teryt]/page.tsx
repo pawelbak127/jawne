@@ -279,7 +279,9 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Zestawienie tytul="Na co" wiersze={pomoc.przeznaczenia} />
-        <Zestawienie tytul="Kto udzielił" wiersze={pomoc.udzielajacy} />
+        {/* Udzielajacym bywa firma szkoleniowa osoby fizycznej (pomoc de minimis
+            przy szkoleniach z funduszy UE) — ta sama regula co dla beneficjentow. */}
+        <Zestawienie tytul="Kto udzielił" wiersze={pomoc.udzielajacy} ukrywajOsoby />
       </div>
 
       <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
@@ -315,17 +317,24 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   );
 }
 
-function Zestawienie({ tytul, wiersze }: { tytul: string; wiersze: { nazwa: string; przypadkow: number; brutto: number | null }[] }) {
+function Zestawienie({ tytul, wiersze, ukrywajOsoby = false }: {
+  tytul: string;
+  wiersze: { nazwa: string; przypadkow: number; brutto: number | null }[];
+  ukrywajOsoby?: boolean;
+}) {
   return (
     <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
       <p className="text-sm font-medium">{tytul}</p>
       <ul className="mt-3 divide-y divide-kreska">
-        {wiersze.map((w) => (
-          <li key={w.nazwa} className="flex items-baseline gap-4 py-2 text-sm">
-            <span className="min-w-0 flex-1 leading-snug">{skroc(w.nazwa, 110)}</span>
-            <span className="liczby w-24 shrink-0 text-right font-medium">{zlote(w.brutto)}</span>
-          </li>
-        ))}
+        {wiersze.map((w) => {
+          const n = ukrywajOsoby ? nazwaDoPokazania(w.nazwa) : { tekst: w.nazwa, pominieta: false };
+          return (
+            <li key={w.nazwa} className="flex items-baseline gap-4 py-2 text-sm">
+              <span className={`min-w-0 flex-1 leading-snug ${n.pominieta ? 'text-atrament-3 italic' : ''}`}>{skroc(n.tekst, 110)}</span>
+              <span className="liczby w-24 shrink-0 text-right font-medium">{zlote(w.brutto)}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

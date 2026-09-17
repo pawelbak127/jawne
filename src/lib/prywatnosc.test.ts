@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska } from './prywatnosc';
+import { bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska, zawieraImie } from './prywatnosc';
 
 /*
  * NAZWISKA W TYCH TESTACH SA ZMYSLONE. Budowa zdan jest przepisana z tytulow
@@ -74,17 +74,52 @@ describe('nazwaPodmiotuJawna', () => {
     'Stowarzyszenie Przyjaciół Przykładu', 'Szpital Wojewódzki w Przykładowie', 'Lokalna Grupa Działania Przykład',
     'Przykład spółka komandytowa', 'Przykład Sp.k.', 'Generalna Dyrekcja Dróg Krajowych i Autostrad',
     'Szef Urzędu do Spraw Przykładów', 'Przedsiębiorstwo Wodociągów i Kanalizacji w Przykładowie',
+    // forma prawna zapisana skrotem i z literowka — obie sa w listach UE
+    'PRZYKŁAD SPÓŁKA Z O.O.', 'Przykład Spólka z ograniczoną odpowiedzialnością',
+    // patron w dopelniaczu nie jest osoba, choc "Jana" i "Stanisława" to tez imiona zenskie
+    'Szkoła Podstawowa nr 3 im. Jana Pawła II w Przykładowie', 'TEATR IM. STANISŁAWA PRZYKŁADOWEGO W PRZYKŁADOWIE',
+    'Parafia pw. św. Józefa w Przykładowie',
+    // jednostka samorzadu z imieniem w nazwie miejscowosci
+    'Gmina Kazimierz Dolny',
+    'Zakład Gospodarki Komunalnej w Przykładowie', 'Instytut Przykładów PAN', 'Akademia Sztuk Pięknych w Przykładowie',
+    // organy udzielajace pomocy
+    'BURMISTRZ PRZYKŁADOWA', 'Starosta Przykładowski', 'Prezydent Miasta Przykładowa', 'Bankowy Fundusz Przykładowy',
+    'Polski Instytut Przykładów',
+    'STAROSTA POWIATU JAROSŁAW', 'Przykład Anna Przykładna Jan Przykładny sp. jawna',
   ];
   for (const n of jawne) it(`pokazuje: ${n}`, () => expect(nazwaPodmiotuJawna(n)).toBe(true));
 
   const ukryte = [
     'Jan Kowalski', 'ANNA NOWAK', 'SMART BUSINESS Jan Kowalski', 'Biuro Projektowe PRZYKŁAD Anna Nowak',
     'Kowalski i Nowak s.c.', 'PRZYKŁAD SPÓŁKA CYWILNA Jan Kowalski', '', null,
+    // slowo "zakład", "agencja", "centrum" nie wyklucza jednoosobowej firmy
+    'Zakład Fryzjerski Anna Przykładowa', 'Agencja Reklamowa Piotr Przykładny', 'Centrum Urody PRZYKŁAD',
+    // ulica Kosciuszki nie jest kosciolem; adres z kodem pocztowym to znak firmy osoby
+    'F.H. „PRZYKŁAD” Jan Przykładowski 00-000 Przykładowo ul. Kościuszki 1', 'Firma Handlowa PRZYKŁAD 00-001 Przykładowo',
+    // imie wlasciciela za patronem nadal zatrzymuje
+    'Niepubliczne Przedszkole im. Kubusia Puchatka Anna Przykładowa',
+    'Wspólnota Mieszkaniowa przy ul. Przykładowej 1',
+    // udzielajacym bywa jednoosobowa firma szkoleniowa
+    'Centrum Doradztwa Przykładowego Urszula Przykładna',
   ];
   for (const n of ukryte) it(`ukrywa: ${String(n)}`, () => expect(nazwaPodmiotuJawna(n)).toBe(false));
 
   it('nie myli "sa" w srodku slowa z forma prawna', () => {
     expect(nazwaPodmiotuJawna('Jan Sadowski')).toBe(false);
+  });
+});
+
+describe('zawieraImie', () => {
+  it('rozpoznaje imie w mianowniku, takze wielkimi literami', () => {
+    expect(zawieraImie('Usługi Transportowe KAROL PRZYKŁADNY')).toBe(true);
+    expect(zawieraImie('Józefa Przykładowa')).toBe(true);
+  });
+  it('pomija dopelniacz meskiego imienia po patronie', () => {
+    expect(zawieraImie('Szpital im. Józefa Przykładnego')).toBe(false);
+    expect(zawieraImie('Liceum im. Aleksandra Przykładowego')).toBe(false);
+  });
+  it('nie myli nazwy miejscowosci z imieniem', () => {
+    expect(zawieraImie('Gmina Stanisławów')).toBe(false);
   });
 });
 

@@ -42,48 +42,120 @@ export function pominietoNazwiska(tekst: string | null | undefined): boolean {
  * Czy nazwe beneficjenta (dotacji, pomocy publicznej, zamowienia) wolno
  * pokazac z nazwy.
  *
- * DECYZJA (17.09.2026): pokazujemy nazwe tylko wtedy, gdy WIDAC, ze to nie
- * jest czlowiek — forma prawna spolki, instytucja publiczna, organizacja.
- * Zmierzone na liscie projektow UE 2021-2027: 3 482 z 16 347 beneficjentow
- * nie ma zadnego takiego znacznika, a wsrod nich sa gole imiona i nazwiska
- * ("Jan Kowalski") oraz jednoosobowe firmy z nazwiskiem w nazwie.
- * Instrukcja UOKiK do SUDOP mowi wprost, ze baza "zawiera dane osobowe".
+ * DECYZJA (17.09.2026, do potwierdzenia przez Pawla): pokazujemy nazwe tylko
+ * wtedy, gdy WIDAC, ze to nie jest czlowiek. Instrukcja UOKiK do SUDOP mowi
+ * wprost, ze baza "zawiera dane osobowe", a na listach UE sa gole imiona
+ * i nazwiska oraz jednoosobowe firmy z nazwiskiem w nazwie.
  *
- * Blad jest celowo w jedna strone: czesc organizacji bez znacznika w nazwie
- * zostanie ukryta. Pokazanie nazwiska rolnika albo samozatrudnionej osoby
- * na stronie zoptymalizowanej pod wyszukiwarki byloby bledem gorszym.
- * Spolka cywilna (s.c.) NIE jest jawna — jej wspolnicy to osoby fizyczne,
- * a nazwa zwykle ich wymienia.
+ * Kolejnosc sprawdzen (pierwsze trafienie rozstrzyga):
+ *   1. forma prawna osoby prawnej albo jednostka samorzadu  -> pokazujemy,
+ *   2. imie w mianowniku (rejestr PESEL) albo kod pocztowy   -> ukrywamy,
+ *   3. instytucja lub organizacja                            -> pokazujemy,
+ *   4. cokolwiek innego                                      -> ukrywamy.
+ *
+ * Krok 2 stoi PRZED krokiem 3, bo slowo w rodzaju "zakład", "centrum" czy
+ * "agencja" niczego nie dowodzi: "Zakład Fryzjerski Anna Nowak" to
+ * jednoosobowa dzialalnosc. Pierwsza wersja (tylko kroki 1, 3, 4) pokazala
+ * na stronie Zakopanego firme z imieniem, nazwiskiem i adresem wlasciciela,
+ * bo znacznik "kości" (od "kościół") trafil w ulice Kosciuszki.
+ *
+ * Spolki jawne i komandytowe pokazujemy mimo nazwisk wspolnikow w firmie —
+ * sa w jawnym KRS. Spolka cywilna (s.c.) NIE jest jawna: to umowa osob
+ * fizycznych, a nazwa zwykle je wymienia.
+ *
+ * Zmierzone 17.09.2026 na 67 219 nazwach z list UE i 22 071 z SUDOP: pierwsza
+ * wersja pokazywala 2 955 i 488 nazw, ktore ta ukrywa — w probkach prawie
+ * wylacznie jednoosobowe firmy z imieniem i nazwiskiem.
+ *
+ * Blad jest celowo w jedna strone: czesc organizacji zostanie ukryta.
+ * Pokazanie nazwiska rolnika albo samozatrudnionej osoby na stronie
+ * zoptymalizowanej pod wyszukiwarki byloby bledem gorszym.
  */
+import { IMIONA_MESKIE, IMIONA_PESEL } from './imiona-pesel';
+
 // Wzorce jako LITERALY wyrazen regularnych, nie napisy: w napisie '\b' to
-// znak backspace, nie granica slowa — pierwsza wersja tego modulu przepuszczala
-// przez to "Gmina Przykladowo" jako osobe prywatna. Granice slow sa jawne
-// (\p{L}), bo \b w JS zna tylko litery ASCII.
-const ZNACZNIKI_PODMIOTU: readonly RegExp[] = [
-  // formy prawne
+// znak backspace, nie granica slowa. Granice slow sa jawne (\p{L}), bo \b
+// w JS zna tylko litery ASCII.
+const OSOBA_PRAWNA: readonly RegExp[] = [
   /sp\.?\s*z\s*o\.?\s*o/iu,
-  /spółk[aiąe]\s+(akcyjn|z\s+ograniczon|komandytow|jawn|partnersk)/iu,
+  // "SPÓŁKA Z O.O." i literowka "SPÓLKA" — obie sa w listach UE.
+  /spó[łl]k[aiąe]\s+(akcyjn|z\s+ograniczon|z\s*o\.?\s*o|komandytow|jawn|partnersk)/iu,
   /(?<![\p{L}\p{N}])s\.?\s?a\.?(?![\p{L}\p{N}])/iu,
-  /(?<![\p{L}\p{N}])sp\.\s?[kj]\.?(?![\p{L}\p{N}])/iu,
+  /(?<![\p{L}\p{N}])sp\.\s?([kjp]\.?|jawna|komandytowa|partnerska)(?![\p{L}\p{N}])/iu,
   /(?<![\p{L}\p{N}])p\.?\s?s\.?\s?a\.?(?![\p{L}\p{N}])/iu,
-  // organizacje
-  /fundacj|stowarzysz|spółdziel|związ[ek]|zrzeszeni|towarzystw|federacj|lokalna\s+grupa|grupa\s+rybacka|caritas|parafi|diecezj|kości/iu,
-  /(?<![\p{L}])izb[ay](?![\p{L}])/iu,
-  // administracja i instytucje publiczne
-  /(?<![\p{L}])gmin[ayę](?![\p{L}])|powiat|województw|(?<![\p{L}])miast[oa](?![\p{L}])|urząd|starostw|marszał|wojewod/iu,
-  /ministerstw|(?<![\p{L}])minist(er|ra)(?![\p{L}])|komend|państwow|narodow|krajow|generaln|główn|dyrekcj|skarb\s+państwa/iu,
-  /(?<![\p{L}])(szef|prezes|dyrektor|rzecznik)(?![\p{L}])|straż|policj|prokuratur|agencj/iu,
-  // oswiata, nauka, zdrowie, kultura
-  /uniwersytet|politechnik|akademi|uczelni|szkoł|przedszkol|szpital|instytut|zakład|ośrod|bibliotek|muzeum|teatr|filharmoni|centrum|inkubator|klaster/iu,
-  /park\s+(naukowo|technolog|przemysł)|wodociąg|kanalizac|energetyk|przedsiębiorstwo\s+(państwowe|komunalne)/iu,
-  /(?<![\p{L}])(bank|banku|kasa)(?![\p{L}])/iu,
+  /(?<![\p{L}])(fundacj|stowarzysz|spółdziel)/iu,
+  // Jednostka samorzadu albo organ tylko NA POCZATKU nazwy: "Gmina Kazimierz
+  // Dolny" i "Starosta Powiatu Jarosław" zawieraja imie, a "Sklep Miasto Anna
+  // Nowak" nie jest miastem.
+  /^\s*(gmina|miasto|powiat|województwo|skarb\s+państwa|starosta|burmistrz|prezydent|wójt|marszałek|wojewoda|minister)(?![\p{L}])/iu,
 ];
-const SPOLKA_CYWILNA = /(?<![\p{L}\p{N}])s\.\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna/iu;
+
+// Instytucje i organizacje, ktorych nazwy nie nosza jednoosobowe firmy.
+const INSTYTUCJA: readonly RegExp[] = [
+  /(?<![\p{L}])(gmin[ayę]|miast[oa]|powiat\p{L}*|województw\p{L}*|urz[ąę]d\p{L}*|starostw\p{L}*|marszał\p{L}*|wojewod\p{L}*)(?![\p{L}])/iu,
+  /ministerstw|(?<![\p{L}])minist(er|ra)(?![\p{L}])|komend[ay]|policj|prokuratur|skarb\s+państwa|generaln\p{L}*\s+dyrekcj/iu,
+  /(?<![\p{L}])(szef|prezes|dyrektor)(?![\p{L}])|straż\p{L}*\s+pożarn|ochotnicz\p{L}*\s+straż/iu,
+  // organy udzielajace pomocy: "Burmistrz Zelowa", "Starosta Tatrzański"
+  /(?<![\p{L}])(burmistrz\p{L}*|starost\p{L}*|prezydent\p{L}*|wójt\p{L}*|inspektor\p{L}*|komendant\p{L}*|zarząd\p{L}*\s+(województwa|powiatu|gminy|miasta)|fundusz\p{L}*)(?![\p{L}])/iu,
+  /uniwersytet|politechnik|uczelni|szpital|muzeum|muzeal|teatr|filharmoni|bibliotek|oper[ay](?![\p{L}])/iu,
+  /parafi|kości[oó]ł|diecezj|caritas|zakon|zgromadzeni\p{L}*\s+(sióstr|zakonn)/iu,
+  /związ[ek]|zrzeszeni|towarzystw|federacj|lokaln\p{L}*\s+grup|grup\p{L}*\s+ryback|(?<![\p{L}])izb[ay](?![\p{L}])/iu,
+  /akademi\p{L}*\s+(nauk|sztuk|wojenn|medyczn|muzyczn|wychowania|ekonomiczn|górnicz|morsk|rolnicz|techniczn|pedagogiczn|teologi|marynarki|lotnicz|policji|obrony|finansów)|polsk\p{L}*\s+akademi\p{L}*\s+nauk|sieć\s+badawcz|łukasiewicz/iu,
+  // "PAN" tylko wielkimi literami (skrot Polskiej Akademii Nauk), "instytut" w dowolnej postaci.
+  /[Ii][Nn][Ss][Tt][Yy][Tt][Uu][Tt][\s\S]*(?<![\p{L}])PAN(?![\p{L}])/u,
+  // Slowa ogolne ("zakład", "centrum", "szkoła") licza sie tylko z przymiotnikiem,
+  // ktorego jednoosobowa firma nie uzyje: "Zakład Gospodarki Komunalnej",
+  // "Szkoła Podstawowa", "Krajowy Ośrodek Wsparcia Rolnictwa". Patron ("im.")
+  // tez sie liczy — imie wlasciciela i tak zatrzymuje krok 2.
+  /(zakład|centrum|ośrod|akademi|agencj|instytut|szkoł|przedszkol|zespół|park|przedsiębiorstw|bank|kas[ay]|dom\p{L}*\s+kultury)[\s\S]*((?<!nie)publiczn|miejsk|gminn|powiatow|wojewódzk|państwow|samorządow|komunaln|narodow|krajow|regionaln|podstawow|ponadpodstawow|społeczn|rozwoju|naukow|badawcz|ubezpiecze|kultury|zdrowia|szkół|wodociąg|kanalizac|energetyk|ciepłown|(?<![\p{L}])im\.|(?<![\p{L}])imienia(?![\p{L}]))/iu,
+  /((?<!nie)publiczn|miejsk|gminn|powiatow|wojewódzk|państwow|samorządow|komunaln|narodow|krajow|regionaln|naukow|polsk)\p{L}*\s+(zakład|centrum|ośrod|akademi|agencj|instytut|szkoł|przedszkol|zespół|park|przedsiębiorstw|bank|zasób|fundusz|rad[ay]|inspektorat|służb|biur)/iu,
+];
+
+// Nigdy z nazwy: spolka cywilna (umowa osob fizycznych) i wspolnota
+// mieszkaniowa (nazwa to adres budynku, w malej wspolnocie — kilku rodzin).
+const NIGDY = /(?<![\p{L}\p{N}])s\.\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna|wspólnot\p{L}*\s+mieszkaniow/iu;
+const KOD_POCZTOWY = /(?<!\d)\d{2}-\d{3}(?!\d)/;
+
+// Po tych slowach stoi patron w dopelniaczu: "im. Jana Pawła II", "pw. św. Józefa".
+const PATRON = new Set(['IM', 'IMIENIA', 'ŚW', 'ŚWIĘTEGO', 'ŚWIĘTEJ', 'ŚWIĘTYCH', 'BŁ', 'BŁOGOSŁAWIONEGO', 'BŁOGOSŁAWIONEJ', 'PW', 'WEZWANIEM']);
+const OKNO_PATRONA = 4;
+
+/**
+ * Dopelniacz imienia meskiego bywa zenskim imieniem w mianowniku:
+ * Jana/JANA, Józefa/JÓZEFA, Stanisława/STANISŁAWA, Aleksandra/ALEKSANDRA.
+ * Tylko w oknie patrona takie slowo nie swiadczy o osobie.
+ */
+function dopelniaczMeskiego(slowo: string): boolean {
+  if (!slowo.endsWith('A')) return false;
+  const rdzen = slowo.slice(0, -1);
+  return [rdzen, `${rdzen.slice(0, -1)}ER`, `${rdzen.slice(0, -1)}EK`, `${rdzen.slice(0, -1)}EŁ`]
+    .some((k) => k.length > 1 && IMIONA_MESKIE.has(k));
+}
+
+/** Czy w nazwie stoi imie w mianowniku — poza patronem instytucji. */
+export function zawieraImie(nazwa: string): boolean {
+  const slowa = nazwa.toLocaleUpperCase('pl').split(/[^\p{L}]+/u).filter(Boolean);
+  let okno = 0;
+  for (const s of slowa) {
+    if (PATRON.has(s)) {
+      okno = OKNO_PATRONA;
+      continue;
+    }
+    const wOknie = okno > 0;
+    if (okno > 0) okno--;
+    if (s.length < 2 || !IMIONA_PESEL.has(s)) continue;
+    if (wOknie && dopelniaczMeskiego(s)) continue;
+    return true;
+  }
+  return false;
+}
 
 export function nazwaPodmiotuJawna(nazwa: string | null | undefined): boolean {
   if (!nazwa || !nazwa.trim()) return false;
-  if (SPOLKA_CYWILNA.test(nazwa)) return false;
-  return ZNACZNIKI_PODMIOTU.some((w) => w.test(nazwa));
+  if (NIGDY.test(nazwa)) return false;
+  if (OSOBA_PRAWNA.some((w) => w.test(nazwa))) return true;
+  if (zawieraImie(nazwa) || KOD_POCZTOWY.test(nazwa)) return false;
+  return INSTYTUCJA.some((w) => w.test(nazwa));
 }
 
 /** Nazwa do wyswietlenia albo opis zastepczy — nigdy pusty napis. */

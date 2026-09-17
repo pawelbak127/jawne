@@ -64,6 +64,7 @@ npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubó
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 npm run import ludnosc                     # GUS BDL, ~10 s
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
+node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 
 # SUDOP — tylko ręcznie, tylko wskazane gminy (patrz Bezpieczeństwo)
 npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
@@ -92,11 +93,14 @@ npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow   # z zapisanych odpowied
    wprost. Nazwisko posła zostaje. Jedna reguła dla wszystkich — także gdy
    oskarżycielem jest polityk. Kod: `src/lib/prywatnosc.ts`.
    **To samo dotyczy beneficjentów** funduszy UE i pomocy publicznej
-   (decyzja z 17.09.2026, do potwierdzenia przez Pawła): nazwę pokazujemy
-   tylko, gdy widać w niej formę prawną albo instytucję (`nazwaDoPokazania`).
-   Pozostałych nie wymieniamy, ale zawsze podajemy ich liczbę i wliczamy
-   do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk w firmie — są w KRS;
-   spółki cywilnej nie (to umowa osób fizycznych).
+   i podmiotów udzielających pomocy (decyzja z 17.09.2026, do potwierdzenia
+   przez Pawła): nazwę pokazujemy tylko, gdy widać w niej formę prawną albo
+   instytucję, i nie ma w niej imienia z rejestru PESEL ani kodu pocztowego
+   (`nazwaDoPokazania`). Pozostałych nie wymieniamy, ale zawsze podajemy ich
+   liczbę i wliczamy do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk
+   w firmie — są w KRS; spółki cywilnej i wspólnoty mieszkaniowej nie.
+   Po każdej zmianie reguły: porównanie na wszystkich nazwach z bazy i przegląd
+   próbek (pierwsza wersja przepuszczała „Zakład Fryzjerski Anna …”).
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
    po słowach rejestru. Nie wybieramy „ważnych" według siebie.
 9. **Kwota w gminie zawsze na mieszkańca i z punktem odniesienia.** Mediana
@@ -208,6 +212,13 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 28. **Import SUDOP pisze do tej samej bazy przez kilkadziesiąt minut.**
     `busy_timeout = 60000` każe równoległemu etapowi czekać na zapis zamiast
     od razu zgłaszać `database is locked` (zabezpieczenie, błąd nie wystąpił).
+29. **„kości” (od „kościół”) trafia w ulicę Kościuszki**, „zakład”, „agencja”,
+    „centrum” — w nazwy jednoosobowych firm. Znacznik instytucji nie dowodzi,
+    że nazwa nie zawiera osoby; dlatego najpierw imię (lista PESEL).
+    Dopełniacz imienia męskiego („im. Jana”, „św. Józefa”) bywa żeńskim
+    imieniem w mianowniku — w oknie patrona sprawdzamy tylko imiona męskie.
+30. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
+    projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 
 ---
 
