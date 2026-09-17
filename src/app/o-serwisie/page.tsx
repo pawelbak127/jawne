@@ -19,6 +19,13 @@ export default function StronaOSerwisie() {
           liczbie znajdziesz odnośnik do źródła.
         </p>
         <p>
+          Na stronie każdej gminy łączymy to z publicznymi pieniędzmi: projektami
+          z Funduszy Europejskich (listy Ministerstwa Funduszy i Polityki Regionalnej)
+          i — na razie dla kilku gmin — pomocą publiczną dla firm z bazy SUDOP
+          prowadzonej przez UOKiK. Kwoty przeliczamy na mieszkańca według GUS,
+          a przypisanie gminy do okręgu wyborczego bierzemy z wyników PKW z 2023 roku.
+        </p>
+        <p>
           Serwis prowadzi jedna osoba prywatnie. Nie jesteśmy powiązani z żadną
           instytucją publiczną ani z żadnym klubem poselskim.
         </p>
@@ -44,6 +51,13 @@ export default function StronaOSerwisie() {
           nazwisk oskarżycieli ani ich pełnomocników. Rejestr Sejmu je podaje, ale to
           my sprawiamy, że da się je łatwo wyszukać. Nazwisko posła zostaje, a pełny
           tytuł jest pod odnośnikiem do rejestru.
+        </li>
+        <li>
+          <span className="font-medium text-atrament">Nazw beneficjentów, które mogą być osobą.</span>{' '}
+          Dotacje i pomoc publiczną dostają też rolnicy i jednoosobowe firmy, których
+          nazwą jest imię i nazwisko. Nazwę pokazujemy tylko wtedy, gdy widać w niej
+          formę prawną albo instytucję (np. „sp. z o.o.”, „gmina”, „szkoła”). Pozostałych
+          nie wymieniamy, ale zawsze podajemy, ilu ich jest, i wliczamy ich kwoty do sum.
         </li>
         <li>
           <span className="font-medium text-atrament">Barw partyjnych.</span>{' '}

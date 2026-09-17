@@ -581,3 +581,170 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
 
   return { fraza, poslowie, gminy, glosowania, glosowanWszystkich };
 }
+
+// ---------------------------------------------------------------------------
+// Gmina: ludnosc, fundusze UE, pomoc publiczna
+// ---------------------------------------------------------------------------
+
+export type GminaPelna = Gmina & {
+  okreg_nazwa: string | null;
+  ludnosc: number | null;
+  ludnosc_rok: number | null;
+};
+
+export function gminaPelna(teryt: string): GminaPelna | null {
+  return bezTabeli(
+    () => jeden<GminaPelna>(
+      `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat,
+              g.wojewodztwo as wojewodztwo, g.okreg_nr as okreg_nr, g.uprawnionych as uprawnionych,
+              o.nazwa as okreg_nazwa, l.osob as ludnosc, l.rok as ludnosc_rok
+         from gminy g
+         join okregi o on o.nr = g.okreg_nr
+         left join ludnosc l on l.teryt = g.teryt
+        where g.teryt = ?`,
+      teryt,
+    ),
+    null,
+  );
+}
+
+export function tytulyGmin(): string[] {
+  return bezTabeli(() => wszystkie<{ teryt: string }>('select teryt from gminy').map((r) => r.teryt), []);
+}
+
+export type FunduszeWOkresie = {
+  okres: string;
+  tylko_tu: number;
+  tylko_tu_wartosc: number | null;
+  tylko_tu_ue: number | null;
+  wspolnych: number;
+  w_powiecie: number;
+};
+
+/**
+ * Fundusze UE w gminie, osobno dla kazdego okresu.
+ * `teryt` Warszawy to 146501 — dzielnice (1465xx) dostaja dane calego miasta
+ * osobnym wywolaniem, bo lista UE nie rozpisuje Warszawy na dzielnice.
+ */
+export function funduszeGminy(teryt: string): FunduszeWOkresie[] {
+  return bezTabeli(
+    () => wszystkie<FunduszeWOkresie>(
+      `select o.okres as okres,
+              coalesce(g.tylko_tu, 0) as tylko_tu, g.tylko_tu_wartosc as tylko_tu_wartosc,
+              g.tylko_tu_ue as tylko_tu_ue, coalesce(g.wspolnych, 0) as wspolnych,
+              coalesce(p.projektow, 0) as w_powiecie
+         from (select '2021-2027' as okres union all select '2014-2020') o
+         left join fe_gminy g on g.teryt = ? and g.okres = o.okres
+         left join fe_powiaty p on p.teryt_powiatu = ? and p.okres = o.okres
+        order by o.okres desc`,
+      teryt, teryt.slice(0, 4),
+    ),
+    [],
+  );
+}
+
+/**
+ * Mediana dofinansowania UE na mieszkanca wsrod gmin tego samego wojewodztwa
+ * (projekty realizowane wylacznie w jednej gminie, dany okres). Kontekst dla
+ * jednej liczby — bez niej "300 zl na mieszkanca" nie znaczy nic.
+ * Gminy bez takich projektow licza sie jako zero: brak projektu to zmierzony
+ * brak, nie brak danych.
+ */
+export function medianaUeNaMieszkanca(wojewodztwo: string, okres: string): { mediana: number; gmin: number } | null {
+  const wiersze = bezTabeli(
+    () => wszystkie<{ na_osobe: number }>(
+      `select coalesce(f.tylko_tu_ue, 0) * 1.0 / l.osob as na_osobe
+         from gminy g
+         join ludnosc l on l.teryt = g.teryt
+         left join fe_gminy f on f.teryt = g.teryt and f.okres = ?
+        where g.wojewodztwo = ? and g.rodzaj <> 'dzielnica Warszawy' and l.osob > 0
+        order by na_osobe`,
+      okres, wojewodztwo,
+    ),
+    [],
+  );
+  if (!wiersze.length) return null;
+  const s = Math.floor(wiersze.length / 2);
+  const mediana = wiersze.length % 2 ? wiersze[s]!.na_osobe : (wiersze[s - 1]!.na_osobe + wiersze[s]!.na_osobe) / 2;
+  return { mediana, gmin: wiersze.length };
+}
+
+export type ProjektGminy = {
+  id: number;
+  okres: string;
+  tytul: string;
+  beneficjent: string | null;
+  program: string | null;
+  wartosc: number | null;
+  dofinansowanie_ue: number | null;
+  poczatek: string | null;
+  koniec: string | null;
+};
+
+/** Najwieksze projekty realizowane WYLACZNIE w tej gminie. */
+export function najwiekszeProjektyGminy(teryt: string, ile = 8): ProjektGminy[] {
+  return bezTabeli(
+    () => wszystkie<ProjektGminy>(
+      `select distinct p.id as id, p.okres as okres, p.tytul as tytul, p.beneficjent as beneficjent,
+              p.program as program, p.wartosc as wartosc, p.dofinansowanie_ue as dofinansowanie_ue,
+              p.poczatek as poczatek, p.koniec as koniec
+         from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+        where m.teryt = ? and p.miejsc = 1 and p.waluta = 'PLN'
+        order by p.dofinansowanie_ue desc
+        limit ?`,
+      teryt, ile,
+    ),
+    [],
+  );
+}
+
+export type ZrodloImportu = { kiedy: string; uwagi: string | null } | null;
+
+export function zrodloImportu(co: string): ZrodloImportu {
+  return bezTabeli(() => jeden<{ kiedy: string; uwagi: string | null }>('select kiedy, uwagi from import where co = ?', co), null);
+}
+
+export type PomocGminy = {
+  pobranie: { od: string; pobrano: string; wierszy: number } | null;
+  razem: { przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string } | null;
+  /** Nazwy WSZYSTKICH beneficjentow — do policzenia, ilu nie pokazujemy z nazwy. */
+  nazwyBeneficjentow: string[];
+  lata: { rok: string; przypadkow: number; brutto: number | null }[];
+  przeznaczenia: { nazwa: string; przypadkow: number; brutto: number | null }[];
+  udzielajacy: { nazwa: string; przypadkow: number; brutto: number | null }[];
+  beneficjenci: { nazwa: string; nip: string | null; przypadkow: number; brutto: number | null }[];
+};
+
+/** Pomoc publiczna z SUDOP dla beneficjentow z siedziba w gminie. */
+export function pomocGminy(teryt: string): PomocGminy {
+  const pusto: PomocGminy = { pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
+  return bezTabeli(() => {
+    const pobranie = jeden<{ od: string; pobrano: string; wierszy: number }>(
+      'select od, pobrano, wierszy from pomoc_publiczna_pobrania where teryt = ?', teryt,
+    );
+    if (!pobranie) return pusto;
+    const razem = jeden<{ przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string }>(
+      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow, sum(wartosc_brutto) as brutto,
+              min(dzien) as pierwszy, max(dzien) as ostatni
+         from pomoc_publiczna where teryt = ?`, teryt,
+    );
+    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null }>(
+      'select max(nazwa_beneficjenta) as nazwa from pomoc_publiczna where teryt = ? group by nip_beneficjenta', teryt,
+    ).map((r) => r.nazwa ?? '');
+    const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
+      `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from pomoc_publiczna where teryt = ? group by rok order by rok`, teryt,
+    );
+    const grupa = (kolumna: 'przeznaczenie' | 'udzielajacy') => wszystkie<{ nazwa: string; przypadkow: number; brutto: number | null }>(
+      `select coalesce(${kolumna}, '(brak w rejestrze)') as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from pomoc_publiczna where teryt = ? group by nazwa order by brutto desc nulls last limit 6`, teryt,
+    );
+    // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
+    // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
+    const beneficjenci = wszystkie<{ nazwa: string; nip: string | null; przypadkow: number; brutto: number | null }>(
+      `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from pomoc_publiczna where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
+    );
+    return { pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
+  }, pusto);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, zlote } from './format';
 
 describe('odmien', () => {
   it('forma pojedyncza tylko dla dokladnie jednego', () => {
@@ -91,5 +91,23 @@ describe('skroc', () => {
 
   it('krotki tekst zostaje bez wielokropka', () => {
     expect(skroc('Ustawa', 20)).toBe('Ustawa');
+  });
+});
+
+describe('zlote', () => {
+  it('skaluje do mln i mld z trzema cyframi znaczacymi', () => {
+    expect(zlote(80_779_188)).toBe('80,8 mln zł');
+    expect(zlote(8_151_033_446)).toBe('8,15 mld zł');
+    expect(zlote(362_200_000_000)).toBe('362 mld zł');
+    expect(zlote(45_600)).toBe('45,6 tys. zł');
+  });
+
+  it('male kwoty w calosci', () => {
+    expect(zlote(1234.4)).toBe('1234 zł');
+  });
+
+  it('brak kwoty to polpauza, nie zero', () => {
+    expect(zlote(null)).toBe('—');
+    expect(zlote(0)).toBe('0 zł');
   });
 });

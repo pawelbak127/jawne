@@ -58,7 +58,7 @@ export function Szukajka({
   const pozycje = useMemo(() => {
     if (!widoczne) return [];
     return [
-      ...widoczne.gminy.map((g) => ({ klucz: `g${g.teryt}`, adres: `/okreg/${g.okreg}?gmina=${g.teryt}` })),
+      ...widoczne.gminy.map((g) => ({ klucz: `g${g.teryt}`, adres: `/gmina/${g.teryt}` })),
       ...widoczne.poslowie.map((p) => ({ klucz: `p${p.slug}`, adres: `/posel/${p.slug}` })),
       ...widoczne.glosowania.map((g) => ({ klucz: `v${g.id}`, adres: `/glosowanie/${g.id}` })),
       { klucz: 'wszystko', adres: `/szukaj?q=${encodeURIComponent(q)}` },
@@ -151,9 +151,9 @@ export function Szukajka({
           ) : null}
 
           {widoczne.gminy.length ? (
-            <Grupa tytul="Twoja gmina → okręg wyborczy">
+            <Grupa tytul="Gminy — posłowie i publiczne pieniądze">
               {widoczne.gminy.map((g) => (
-                <Link key={g.teryt} href={`/okreg/${g.okreg}?gmina=${g.teryt}`} role="option" aria-selected={indeks(`g${g.teryt}`) === aktywny} className={klasaPozycji(`g${g.teryt}`)}>
+                <Link key={g.teryt} href={`/gmina/${g.teryt}`} role="option" aria-selected={indeks(`g${g.teryt}`) === aktywny} className={klasaPozycji(`g${g.teryt}`)}>
                   <span className="min-w-0 flex-1">
                     <span className="font-medium">{g.nazwa}</span>
                     <span className="block truncate text-xs text-atrament-3">{opisGminy(g)}</span>

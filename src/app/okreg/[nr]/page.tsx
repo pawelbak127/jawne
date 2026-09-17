@@ -241,11 +241,13 @@ export default async function StronaOkregu({
                 </p>
                 <ul className="mt-1.5 space-y-0.5 text-sm">
                   {lista.map((g) => (
-                    <li
-                      key={g.teryt}
-                      className={g.teryt === twojaGmina?.teryt ? 'font-semibold text-akcent' : 'text-atrament-2'}
-                    >
-                      {g.rodzaj === 'miasto' ? `${g.nazwa} (miasto)` : g.nazwa}
+                    <li key={g.teryt}>
+                      <Link
+                        href={`/gmina/${g.teryt}`}
+                        className={`hover:text-akcent hover:underline ${g.teryt === twojaGmina?.teryt ? 'font-semibold text-akcent' : 'text-atrament-2'}`}
+                      >
+                        {g.rodzaj === 'miasto' ? `${g.nazwa} (miasto)` : g.nazwa}
+                      </Link>
                     </li>
                   ))}
                 </ul>

@@ -42,13 +42,13 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
         <section className="mt-10">
           <h2 className="szryft text-2xl font-semibold">Gminy</h2>
           <p className="mt-1 text-sm text-atrament-2">
-            Kliknij swoją gminę, żeby zobaczyć, kto reprezentuje Twój okręg wyborczy.
+            Kliknij swoją gminę: zobaczysz jej posłów, fundusze unijne i pomoc publiczną dla firm z jej terenu.
           </p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {w.gminy.map((g) => (
               <li key={g.teryt}>
                 <Link
-                  href={`/okreg/${g.okreg_nr}?gmina=${g.teryt}`}
+                  href={`/gmina/${g.teryt}`}
                   className="group flex h-full flex-col rounded-xl border border-kreska bg-papier-2 p-4 transition-all hover:border-kreska-2 hover:shadow-karta"
                 >
                   <span className="font-medium group-hover:text-akcent">{g.nazwa}</span>

@@ -17,7 +17,6 @@ export default function StronaGlowna() {
   const glosowania = ostatnieGlosowania(6, { nadCaloscia: true });
   const glosowanNadCaloscia = liczbaGlosowan({ nadCaloscia: true });
   const listaOkregow = okregi();
-  const okregiLiczba = listaOkregow.length;
   const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
 
   const bloki: Blok[] = listaKlubow
@@ -48,8 +47,9 @@ export default function StronaGlowna() {
             Kto Cię reprezentuje w&nbsp;Sejmie — i&nbsp;jak naprawdę głosuje.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
-            Wpisz swoją miejscowość, a zobaczysz posłów ze swojego okręgu, ich głosy
-            i to, czy głosują tak jak ich klub. Przy każdej liczbie jest odnośnik do rejestru.
+            Wpisz swoją gminę: zobaczysz posłów ze swojego okręgu, ich głosy, to, czy
+            głosują jak klub, i publiczne pieniądze, które do niej trafiły. Przy każdej
+            liczbie jest odnośnik do rejestru.
           </p>
 
           <div className="mt-8 max-w-2xl">
@@ -77,9 +77,9 @@ export default function StronaGlowna() {
       <section className="obszar pb-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <Link href="/okregi" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje?</p>
+            <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje i co trafia do mojej gminy?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              {`${liczba(okregiLiczba)} okręgów, ${liczba(gminLiczba)} gmin. Znajdź swoją gminę i zobacz posłów wybranych w Twoim okręgu.`}
+              {`${liczba(gminLiczba)} gmin: posłowie z okręgu, projekty unijne i pomoc publiczna dla firm — zawsze w przeliczeniu na mieszkańca.`}
             </p>
           </Link>
           <Link href="/poslowie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
@@ -91,7 +91,7 @@ export default function StronaGlowna() {
           <Link href="/o-serwisie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
             <p className="font-medium group-hover:text-akcent">Skąd to wiadomo?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              Z rejestrów Sejmu i PKW. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
+              Z rejestrów Sejmu, PKW, GUS, ministerstwa funduszy i UOKiK. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
             </p>
           </Link>
         </div>

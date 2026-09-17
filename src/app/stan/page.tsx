@@ -19,6 +19,12 @@ const OPISY: Record<string, string> = {
   okregi: 'Okręgi wyborcze i gminy (PKW, wybory 2023)',
   'glosy-klubow': 'Sumy głosów klubów w każdym głosowaniu',
   'szukaj-glosowania': 'Indeks wyszukiwania głosowań',
+  'cechy-glosowan': 'Cechy głosowań (nad całością projektu, sprawy porządkowe)',
+  'porownania-poslow': 'Porównanie głosów posłów z resztą klubu',
+  ludnosc: 'Ludność gmin (GUS, Bank Danych Lokalnych)',
+  'fundusze-2021-2027': 'Projekty z Funduszy Europejskich 2021–2027',
+  'fundusze-2014-2020': 'Projekty z Funduszy Europejskich 2014–2020',
+  sudop: 'Pomoc publiczna (SUDOP, UOKiK) — tylko wybrane gminy',
 };
 
 export default function StronaStanu() {
@@ -75,6 +81,19 @@ export default function StronaStanu() {
           <li className="flex flex-wrap items-center gap-2">
             Posłowie, kluby, głosowania, głosy imienne i zdjęcia:
             <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="API Sejmu RP" />
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            Ludność gmin:
+            <Zrodlo adres="https://bdl.stat.gov.pl" etykieta="GUS — Bank Danych Lokalnych" />
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            Projekty z Funduszy Europejskich:
+            <Zrodlo adres="https://dane.gov.pl/pl/dataset/13939" etykieta="MFiPR — lista 2021–2027" />
+            <Zrodlo adres="https://dane.gov.pl/pl/dataset/1176" etykieta="MFiPR — lista 2014–2020" />
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            Pomoc publiczna dla przedsiębiorców:
+            <Zrodlo adres="https://sudop.uokik.gov.pl" etykieta="SUDOP — UOKiK" />
           </li>
           <li className="flex flex-wrap items-center gap-2">
             Przypisanie gmin do okręgów wyborczych:

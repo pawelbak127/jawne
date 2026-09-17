@@ -86,3 +86,23 @@ export function skroc(tekst: string, ile: number): string {
   const spacja = ciety.lastIndexOf(' ');
   return `${(spacja > ile * 0.6 ? ciety.slice(0, spacja) : ciety).replace(/[\s,;:.-]+$/, '')}…`;
 }
+
+/**
+ * Kwota w zlotych do naglowka: "80,8 mln zł", "8,15 mld zł", "45,6 tys. zł", "1234 zł".
+ * Brak kwoty to polpauza — nie "0 zł" (patrz `procent`).
+ * Zaokraglamy do trzech cyfr znaczacych: przy miliardach dokladnosc do zlotowki
+ * tylko udaje precyzje, ktorej zrodlo i tak nie gwarantuje.
+ */
+export function zlote(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  const skala = (dzielnik: number, jedn: string) => {
+    const v = n / dzielnik;
+    const miejsc = Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2;
+    return `${v.toFixed(miejsc).replace('.', ',')} ${jedn} zł`;
+  };
+  if (abs >= 1e9) return skala(1e9, 'mld');
+  if (abs >= 1e6) return skala(1e6, 'mln');
+  if (abs >= 1e4) return skala(1e3, 'tys.');
+  return `${liczba(Math.round(n))} zł`;
+}
