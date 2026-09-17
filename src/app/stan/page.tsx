@@ -22,6 +22,7 @@ const OPISY: Record<string, string> = {
   'cechy-glosowan': 'Cechy głosowań (nad całością projektu, sprawy porządkowe)',
   'porownania-poslow': 'Porównanie głosów posłów z resztą klubu',
   ludnosc: 'Ludność gmin (GUS, Bank Danych Lokalnych)',
+  budzety: 'Budżety gmin — dochody, dochody własne, wydatki (GUS, Bank Danych Lokalnych)',
   'fundusze-2021-2027': 'Projekty z Funduszy Europejskich 2021–2027',
   'fundusze-2014-2020': 'Projekty z Funduszy Europejskich 2014–2020',
   sudop: 'Pomoc publiczna (SUDOP, UOKiK) — tylko wybrane gminy',
@@ -83,7 +84,7 @@ export default function StronaStanu() {
             <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="API Sejmu RP" />
           </li>
           <li className="flex flex-wrap items-center gap-2">
-            Ludność gmin:
+            Ludność i budżety gmin:
             <Zrodlo adres="https://bdl.stat.gov.pl" etykieta="GUS — Bank Danych Lokalnych" />
           </li>
           <li className="flex flex-wrap items-center gap-2">

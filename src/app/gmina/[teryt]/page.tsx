@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, funduszeGminy, gminaPelna, kluby, ludnoscWarszawy, medianaUeNaMieszkanca,
-  najwiekszeProjektyGminy, pomocGminy, poslowieOkregu, TERYT_WARSZAWY, zrodloImportu,
-  type FunduszeWOkresie, type MedianaUe,
+  bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, kluby, ludnoscWarszawy,
+  medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
+  poslowieOkregu, TERYT_WARSZAWY, zrodloImportu,
+  type BudzetGminy, type FunduszeWOkresie, type MedianaUe,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { opisGminy } from '@/lib/wyszukiwanie';
@@ -16,6 +17,7 @@ import { Zrodlo } from '@/components/Zrodlo';
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
+const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
 const ZRODLO_SUDOP = 'https://sudop.uokik.gov.pl';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
@@ -61,6 +63,9 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const fundusze = funduszeGminy(terytFunduszy);
   const projekty = najwiekszeProjektyGminy(terytFunduszy, 8);
   const pomoc = pomocGminy(teryt);
+  // Warszawa ma w BDL jeden budzet, nie 18 dzielnicowych — jak przy funduszach.
+  const budzet = budzetGminy(terytFunduszy);
+  const ludnoscDoPrzeliczen = dzielnica ? ludnoscWarszawy() : g.ludnosc;
   const poslowie = poslowieOkregu(g.okreg_nr).filter((p) => p.aktywny === 1);
   const listaKlubow = kluby();
   const importFe = zrodloImportu('fundusze-2021-2027');
@@ -112,6 +117,11 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       </section>
 
       {/* ------------------------------------------------------------------ */}
+      {budzet ? (
+        <Budzet budzet={budzet} ludnosc={ludnoscDoPrzeliczen} wojewodztwo={g.wojewodztwo} dzielnica={dzielnica} />
+      ) : null}
+
+      {/* ------------------------------------------------------------------ */}
       <section className="mt-14">
         <h2 className="szryft text-3xl font-semibold">Fundusze Europejskie</h2>
         <p className="mt-2 max-w-3xl text-atrament-2">
@@ -125,7 +135,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             <KartaOkresu
               key={f.okres}
               f={f}
-              ludnosc={dzielnica ? ludnoscWarszawy() : g.ludnosc}
+              ludnosc={ludnoscDoPrzeliczen}
               wojewodztwo={g.wojewodztwo}
               tylkoPowiat={f.okres === '2014-2020' && !miastoPowiat && !dzielnica}
             />
@@ -176,6 +186,93 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       </section>
 
     </div>
+  );
+}
+
+/**
+ * Czy warto pokazac obie kwoty. W wiekszosci gmin wydatki majatkowe to w
+ * calosci inwestycje — powtorzenie tej samej liczby tylko zaciemnia.
+ */
+function rozniSie(a: number | null, b: number | null): boolean {
+  return a !== null && b !== null && a > 0 && (a - b) / a > 0.01;
+}
+
+function Budzet({ budzet, ludnosc, wojewodztwo, dzielnica }: {
+  budzet: BudzetGminy;
+  ludnosc: number | null;
+  wojewodztwo: string;
+  dzielnica: boolean;
+}) {
+  const naOsobe = naMieszkanca(budzet.dochody, ludnosc);
+  const mediana = ludnosc ? porownanieBudzetu(wojewodztwo, budzet.rok) : null;
+  const majatkoweNaOsobe = naMieszkanca(budzet.wydatki_majatkowe, ludnosc);
+  const udzialWlasnych = budzet.dochody && budzet.dochody_wlasne !== null
+    ? (100 * budzet.dochody_wlasne) / budzet.dochody
+    : null;
+  const udzialMajatkowych = budzet.wydatki && budzet.wydatki_majatkowe !== null
+    ? (100 * budzet.wydatki_majatkowe) / budzet.wydatki
+    : null;
+  return (
+    <section className="mt-14">
+      <h2 className="szryft text-3xl font-semibold">{`Budżet gminy — ${budzet.rok}`}</h2>
+      <p className="mt-2 max-w-3xl text-atrament-2">
+        {dzielnica
+          ? 'Dzielnice nie mają osobnych budżetów — pokazujemy budżet całej Warszawy.'
+          : 'Ile gmina miała pieniędzy, ile z tego wypracowała sama i ile przeznaczyła na inwestycje.'}
+      </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="liczby szryft text-4xl font-semibold">{zlote(naOsobe)}</p>
+          <p className="mt-1 text-sm font-medium">dochodów na mieszkańca</p>
+          <p className="mt-0.5 text-xs text-atrament-2">{`w sumie ${zlote(budzet.dochody)}`}</p>
+          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
+            {mediana
+              ? `mediana w województwie (${zOdmiana(mediana.gmin, 'gmina', 'gminy', 'gmin')}): ${zlote(mediana.dochodyNaOsobe)}`
+              : `wydatki ogółem: ${zlote(budzet.wydatki)}`}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="liczby szryft text-4xl font-semibold">{udzialWlasnych === null ? '—' : `${Math.round(udzialWlasnych)}%`}</p>
+          <p className="mt-1 text-sm font-medium">dochodów to dochody własne</p>
+          <p className="mt-0.5 text-xs text-atrament-2">{`podatki i opłaty gminy: ${zlote(budzet.dochody_wlasne)}`}</p>
+          {/*
+            Reszta to subwencje i dotacje z budzetu panstwa. Nie nazywamy tego
+            "samodzielnoscia" ani "uzaleznieniem" — to ocena, a my podajemy udzial.
+          */}
+          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
+            {mediana
+              ? `resztę stanowią subwencje i dotacje · mediana w województwie: ${Math.round(mediana.udzialWlasnych)}%`
+              : 'resztę stanowią subwencje i dotacje'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="liczby szryft text-4xl font-semibold">{zlote(majatkoweNaOsobe)}</p>
+          <p className="mt-1 text-sm font-medium">wydatków majątkowych na mieszkańca</p>
+          {/*
+            "Majatkowe", nie "inwestycyjne": ta pozycja obejmuje tez dotacje
+            inwestycyjne, np. dla spolki miejskiej budujacej metro. Sama czesc
+            inwestycyjna jest wezsza i podajemy ja obok, zeby nazwa zgadzala sie
+            z tym, co liczymy.
+          */}
+          <p className="mt-0.5 text-xs text-atrament-2">
+            {`w sumie ${zlote(budzet.wydatki_majatkowe)}${rozniSie(budzet.wydatki_majatkowe, budzet.wydatki_inwestycyjne) ? `, z tego na inwestycje ${zlote(budzet.wydatki_inwestycyjne)}` : ''}`}
+          </p>
+          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
+            {udzialMajatkowych === null
+              ? `wydatki ogółem: ${zlote(budzet.wydatki)}`
+              : `${Math.round(udzialMajatkowych)}% wydatków gminy${mediana ? ` · mediana w województwie: ${zlote(mediana.majatkoweNaOsobe)} na mieszkańca` : ''}`}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
+        <span>{`Źródło: GUS, Bank Danych Lokalnych, sprawozdania budżetowe gmin za ${budzet.rok} r.`}</span>
+        <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych" />
+      </p>
+    </section>
   );
 }
 

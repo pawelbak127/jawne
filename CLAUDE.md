@@ -63,6 +63,7 @@ npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 npm run import ludnosc                     # GUS BDL, ~10 s
+npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 
@@ -217,7 +218,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     że nazwa nie zawiera osoby; dlatego najpierw imię (lista PESEL).
     Dopełniacz imienia męskiego („im. Jana”, „św. Józefa”) bywa żeńskim
     imieniem w mianowniku — w oknie patrona sprawdzamy tylko imiona męskie.
-30. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
+30. **GUS BDL, poziom 6, ma pięć rodzajów jednostek.** Rodzaje 4 i 5 to miasto
+    i obszar wiejski **wewnątrz** gminy miejsko-wiejskiej — zsumowanie ich
+    z rodzajem 3 policzyłoby tę gminę drugi raz. Bierzemy 1, 2, 3.
+    Warszawa jest tam jedną jednostką (146501), a nie 18 dzielnicami.
+31. **„Wydatki majątkowe” ≠ „wydatki inwestycyjne”.** Majątkowe obejmują też
+    dotacje inwestycyjne (np. dla spółki miejskiej budującej metro): Warszawa
+    2025 to 3,07 mld zł majątkowych i 2,57 mld zł inwestycyjnych. Pokazujemy
+    majątkowe i nazywamy je majątkowymi.
+32. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 
 ---

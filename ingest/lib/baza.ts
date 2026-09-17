@@ -282,6 +282,23 @@ create table if not exists ludnosc (
   osob   integer not null
 );
 
+/*
+ * Budzety gmin z GUS BDL. Trzymamy kwoty calkowite, a nie "na mieszkanca":
+ * dzielimy sami przez ludnosc z tabeli "ludnosc", zeby mianownik byl ten sam,
+ * co przy funduszach UE i pomocy publicznej.
+ * TERYT Warszawy to 146501 — w BDL jest jedna jednostka, a nie 18 dzielnic.
+ */
+create table if not exists budzety_gmin (
+  teryt                text not null,            -- 6 cyfr
+  rok                  integer not null,
+  dochody              integer,
+  dochody_wlasne       integer,
+  wydatki              integer,
+  wydatki_majatkowe    integer,               -- inwestycje i dotacje inwestycyjne
+  wydatki_inwestycyjne integer,               -- sama czesc inwestycyjna wydatkow majatkowych
+  primary key (teryt, rok)
+);
+
 /* Tabele funduszy UE tworzy wylacznie etap "fundusze" (SCHEMAT_FE) — przebudowuje je w calosci. */
 create table if not exists import (
   co        text primary key,

@@ -25,9 +25,9 @@ npm run import zdjecia
 # 4. Głosy imienne: 2,1 mln wierszy, ~18 minut. Można w tle.
 npm run import glosy
 
-# 5. Gminy: okręgi (PKW, z pliku w repozytorium), ludność (GUS),
+# 5. Gminy: okręgi (PKW, z pliku w repozytorium), ludność i budżety (GUS),
 #    projekty unijne (listy MFiPR, ~3 min), na końcu wyliczenia
-npm run import okregi ludnosc fundusze wyliczenia
+npm run import okregi ludnosc budzety fundusze wyliczenia
 ```
 
 Pomoc publiczna (SUDOP) nie wchodzi do `import wszystko`. Pobiera się ją
@@ -46,7 +46,7 @@ się w całości z publicznego API Sejmu.
 |---|---|
 | `/` | półkole izby, wyszukiwarka (posłowie, gminy, głosowania), ostatnie głosowania |
 | `/okregi`, `/okreg/[nr]` | 41 okręgów: gminy, posłowie, jak głosowali |
-| `/gmina/[teryt]` | posłowie z okręgu, Fundusze Europejskie na mieszkańca, pomoc publiczna dla firm |
+| `/gmina/[teryt]` | posłowie z okręgu, budżet gminy, Fundusze Europejskie na mieszkańca, pomoc publiczna dla firm |
 | `/poslowie` | wszyscy posłowie, filtrowanie w przeglądarce |
 | `/posel/[slug]` | profil: rozkład głosów, udział, ostatnie głosowania |
 | `/glosowania` | wszystkie głosowania, stronicowane |
@@ -79,7 +79,7 @@ npx eslint src ingest
 
 - [API Sejmu RP](https://api.sejm.gov.pl/sejm/openapi/) — posłowie, kluby, głosowania,
 - [PKW, wybory 2023](https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach) — gminy w okręgach,
-- [GUS, Bank Danych Lokalnych](https://bdl.stat.gov.pl) — ludność gmin,
+- [GUS, Bank Danych Lokalnych](https://bdl.stat.gov.pl) — ludność i budżety gmin,
 - listy projektów Funduszy Europejskich MFiPR ([2021–2027](https://dane.gov.pl/pl/dataset/13939), [2014–2020](https://dane.gov.pl/pl/dataset/1176)),
 - [SUDOP, UOKiK](https://sudop.uokik.gov.pl) — pomoc publiczna, dla wybranych gmin.
 

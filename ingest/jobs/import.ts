@@ -684,6 +684,109 @@ async function importLudnosci(db: DatabaseSync): Promise<void> {
   throw new Error('GUS BDL: zaden z trzech ostatnich lat nie ma kompletu gmin');
 }
 
+/*
+ * Budzety gmin — GUS BDL, poziom 6.
+ *
+ * Zmienne wybrane tak, zeby odpowiedziec na cztery pytania czytelnika:
+ * ile gmina ma pieniedzy, ile z tego zarabia sama, ile wydaje i ile z tego
+ * inwestuje. Wskaznikow "na mieszkanca" z BDL nie bierzemy — dzielimy sami,
+ * zeby mianownik zgadzal sie z reszta serwisu.
+ */
+const ZMIENNE_BUDZETU: [kolumna: string, zmienna: number, opis: string][] = [
+  ['dochody', 76037, 'dochody ogolem'],
+  ['dochody_wlasne', 76070, 'dochody wlasne razem'],
+  ['wydatki', 76477, 'wydatki ogolem'],
+  // Majatkowe = inwestycje plus dotacje inwestycyjne (np. dla spolki miejskiej
+  // budujacej metro). To ta liczba jest w Polsce nazywana "wydatkami na
+  // inwestycje"; wezsza pozycja inwestycyjna zostaje jako uszczegolowienie.
+  ['wydatki_majatkowe', 76453, 'wydatki majatkowe ogolem'],
+  ['wydatki_inwestycyjne', 76450, 'wydatki majatkowe inwestycyjne'],
+];
+
+/** TERYT Warszawy: w BDL jest jedna jednostka, w naszej tabeli gmin — 18 dzielnic. */
+const TERYT_WARSZAWY = '146501';
+
+/**
+ * Jedna zmienna BDL dla wszystkich gmin w danym roku.
+ * Bierzemy rodzaje 1, 2, 3 (gmina miejska, wiejska, miejsko-wiejska).
+ * Rodzaje 4 i 5 to miasto i obszar wiejski WEWNATRZ gminy miejsko-wiejskiej —
+ * ich zsumowanie policzyloby te gmine drugi raz.
+ */
+async function bdlZmiennaGmin(zmienna: number, rok: number): Promise<Map<string, number>> {
+  const wartosci = new Map<string, number>();
+  let adres: string | null = `https://bdl.stat.gov.pl/api/v1/data/by-variable/${zmienna}?unit-level=6&year=${rok}&page-size=100&format=json`;
+  while (adres) {
+    const j: { results: { id: string; values: { year: string; val: number }[] }[]; links?: { next?: string } } = await pobierzJson(adres);
+    for (const r of j.results) {
+      if (!['1', '2', '3'].includes(r.id.slice(11))) continue;
+      const w = r.values.find((x) => x.year === String(rok));
+      if (!w || w.val === null) continue;
+      wartosci.set(`${r.id.slice(2, 4)}${r.id.slice(7, 11)}`, w.val);
+    }
+    adres = j.links?.next ?? null;
+    if (adres) await new Promise((ok) => setTimeout(ok, 300));
+  }
+  return wartosci;
+}
+
+async function importBudzetow(db: DatabaseSync): Promise<void> {
+  log('-> budzety gmin (GUS BDL)');
+  const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${ZMIENNE_BUDZETU[0]![1]}?format=json`);
+  const lata = [...zmienna.years].sort((a, b) => b - a);
+  // Warszawa jest w BDL jedna jednostka, wiec do kompletu liczymy gminy
+  // BEZ dzielnic i dokladamy sama Warszawe.
+  const oczekiwane = new Set(
+    (db.prepare("select teryt from gminy where rodzaj <> 'dzielnica Warszawy'").all() as unknown as { teryt: string }[]).map((r) => r.teryt),
+  );
+  oczekiwane.add(TERYT_WARSZAWY);
+
+  for (const rok of lata.slice(0, 3)) {
+    const kolumny = new Map<string, Map<string, number>>();
+    for (const [kolumna, id, opis] of ZMIENNE_BUDZETU) {
+      const w = await bdlZmiennaGmin(id, rok);
+      log(`   rok ${rok}, ${opis} (${id}): ${w.size} gmin`);
+      kolumny.set(kolumna, w);
+    }
+    const dochody = kolumny.get('dochody')!;
+    const komplet = [...oczekiwane].filter((t) => dochody.has(t)).length;
+    if (komplet < oczekiwane.size * 0.95) {
+      log(`   rok ${rok}: tylko ${komplet} z ${oczekiwane.size} gmin — GUS nie ma jeszcze tego roku, biore starszy`);
+      continue;
+    }
+
+    const wstaw = db.prepare(
+      `insert into budzety_gmin(teryt, rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne)
+       values (?,?,?,?,?,?,?)
+       on conflict(teryt, rok) do update set dochody=excluded.dochody, dochody_wlasne=excluded.dochody_wlasne,
+         wydatki=excluded.wydatki, wydatki_majatkowe=excluded.wydatki_majatkowe,
+         wydatki_inwestycyjne=excluded.wydatki_inwestycyjne`,
+    );
+    const zaokr = (w: Map<string, number>, t: string): number | null => {
+      const v = w.get(t);
+      return v === undefined ? null : Math.round(v);
+    };
+    db.exec('begin');
+    db.exec(`delete from budzety_gmin where rok = ${rok}`);
+    for (const teryt of oczekiwane) {
+      if (!dochody.has(teryt)) continue;
+      wstaw.run(
+        teryt, rok,
+        zaokr(dochody, teryt),
+        zaokr(kolumny.get('dochody_wlasne')!, teryt),
+        zaokr(kolumny.get('wydatki')!, teryt),
+        zaokr(kolumny.get('wydatki_majatkowe')!, teryt),
+        zaokr(kolumny.get('wydatki_inwestycyjne')!, teryt),
+      );
+    }
+    db.exec('commit');
+    const suma = [...oczekiwane].reduce((a, t) => a + (dochody.get(t) ?? 0), 0);
+    log(`   zapisano ${komplet} gmin za ${rok}, dochody razem ${(suma / 1e9).toFixed(1)} mld zl`);
+    odnotujImport(db, 'budzety', komplet, `GUS BDL, rok ${rok}, zmienne ${ZMIENNE_BUDZETU.map((z) => z[1]).join(', ')}; dochody razem ${Math.round(suma)} zl`);
+    return;
+  }
+  throw new Error('GUS BDL: zaden z trzech ostatnich lat nie ma kompletu budzetow gmin');
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -692,6 +795,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   zdjecia: importZdjec,
   okregi: importOkregow,
   ludnosc: importLudnosci,
+  budzety: importBudzetow,
   fundusze: importFunduszy,
   wyliczenia,
 };

@@ -718,6 +718,77 @@ export function medianaUeNaMieszkanca(wojewodztwo: string, okres: string): Media
   return { mediana, jednostek: wiersze.length, grupa: miasta ? 'miasta-na-prawach-powiatu' : 'wojewodztwo' };
 }
 
+export type BudzetGminy = {
+  rok: number;
+  dochody: number | null;
+  dochody_wlasne: number | null;
+  wydatki: number | null;
+  /** inwestycje plus dotacje inwestycyjne — to jest "budzet na inwestycje" */
+  wydatki_majatkowe: number | null;
+  /** sama czesc inwestycyjna wydatkow majatkowych */
+  wydatki_inwestycyjne: number | null;
+};
+
+/**
+ * Budzet gminy za ostatni rok, ktory GUS opublikowal.
+ * Warszawa ma w BDL jedna jednostke (146501), wiec dzielnica dostaje budzet
+ * calego miasta — tak samo jak przy funduszach UE.
+ */
+export function budzetGminy(teryt: string): BudzetGminy | null {
+  return bezTabeli(
+    () => jeden<BudzetGminy>(
+      `select rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne
+         from budzety_gmin where teryt = ? order by rok desc limit 1`,
+      teryt,
+    ),
+    null,
+  );
+}
+
+export type PorownanieBudzetu = {
+  gmin: number;
+  dochodyNaOsobe: number;
+  udzialWlasnych: number;
+  majatkoweNaOsobe: number;
+};
+
+/**
+ * Mediany budzetowe w wojewodztwie — kontekst dla trzech liczb ze strony gminy.
+ * Bez nich "8 900 zl na mieszkanca" i "84 % dochodow wlasnych" nie znacza nic.
+ *
+ * Liczymy tylko z gmin, ktore maja i budzet, i ludnosc: gmina bez danych to
+ * brak pomiaru, a nie zero (inaczej niz przy funduszach UE, gdzie brak projektu
+ * JEST zmierzonym zerem).
+ */
+export function porownanieBudzetu(wojewodztwo: string, rok: number): PorownanieBudzetu | null {
+  const wiersze = bezTabeli(
+    () => wszystkie<{ na_osobe: number; udzial: number | null; majatkowe: number | null }>(
+      `select b.dochody * 1.0 / j.osob as na_osobe,
+              case when b.dochody > 0 then b.dochody_wlasne * 100.0 / b.dochody end as udzial,
+              b.wydatki_majatkowe * 1.0 / j.osob as majatkowe
+         from (${JEDNOSTKI_FE}) j
+         join budzety_gmin b on b.teryt = j.teryt and b.rok = ?
+        where j.wojewodztwo = ? and j.osob > 0 and b.dochody is not null`,
+      rok, wojewodztwo,
+    ),
+    [],
+  );
+  if (!wiersze.length) return null;
+  const mediana = (liczby: number[]): number => {
+    const l = [...liczby].sort((a, b) => a - b);
+    const s = Math.floor(l.length / 2);
+    return l.length % 2 ? l[s]! : (l[s - 1]! + l[s]!) / 2;
+  };
+  const bezPustych = (f: (w: typeof wiersze[number]) => number | null): number[] =>
+    wiersze.map(f).filter((x): x is number => x !== null);
+  return {
+    gmin: wiersze.length,
+    dochodyNaOsobe: mediana(wiersze.map((w) => w.na_osobe)),
+    udzialWlasnych: mediana(bezPustych((w) => w.udzial)),
+    majatkoweNaOsobe: mediana(bezPustych((w) => w.majatkowe)),
+  };
+}
+
 export type ProjektGminy = {
   id: number;
   okres: string;

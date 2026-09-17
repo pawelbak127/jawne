@@ -12,7 +12,7 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 |---|---|---|---|
 | **API Sejmu** `api.sejm.gov.pl/sejm/term10` | posłowie, kluby, głosowania, 2,1 mln głosów imiennych, zdjęcia | bez klucza; F5 potrafi oddać `404 text/html` na poprawny adres przy pierwszym żądaniu | zmierzone |
 | **PKW, wybory do Sejmu 2023** — wyniki po gminach | przypisanie 2 494 gmin do 41 okręgów, liczba uprawnionych | plik CSV, kopia w `ingest/zrodla/pkw-2023/` | zmierzone |
-| **GUS Bank Danych Lokalnych** `bdl.stat.gov.pl/api/v1` | ludność gmin (zmienna 72305), rok 2025 | bez klucza, 10 000 zapytań / 7 dni; kod jednostki BDL zawiera TERYT | zmierzone |
+| **GUS Bank Danych Lokalnych** `bdl.stat.gov.pl/api/v1` | ludność gmin (72305) oraz budżety: dochody (76037), dochody własne (76070), wydatki (76477), wydatki majątkowe (76453) i inwestycyjne (76450) — rok 2025, 2 477 gmin | bez klucza, 10 000 zapytań / 7 dni; kod jednostki BDL zawiera TERYT | zmierzone |
 | **Listy projektów Funduszy Europejskich** (MFiPR, dane.gov.pl, zbiory 13939 i 1176) | 34 348 projektów 2021–2027 i 103 824 z 2014–2020: beneficjent, wartość, dofinansowanie UE, miejsce realizacji | XLSX aktualizowany co miesiąc; adres pliku zmienia się — pytamy katalog | zmierzone |
 | **SUDOP** (UOKiK) `api-sudop.uokik.gov.pl/sudop-api` | pomoc publiczna i de minimis: beneficjent z NIP, udzielający, forma, przeznaczenie, wartość, gmina siedziby | bez klucza, **kolejka**; 15 zapytań/min; okno 10 lat; tylko ręcznie, dla wskazanych gmin — patrz `docs/sudop.md` | zmierzone |
 | **Imiona w rejestrze PESEL** (MC, dane.gov.pl, zbiór 1667) | 2 324 imiona noszone przez ≥ 200 osób — do rozpoznawania nazw jednoosobowych firm | XLSX raz w roku; wynik w `src/lib/imiona-pesel.ts` | zmierzone |
