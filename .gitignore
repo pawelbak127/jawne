@@ -40,5 +40,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# lokalna baza (2,1 mln glosow) - odtwarzalna z API
+# Lokalna baza i wszystko, co pobrane.
+# dane/ to nie tylko rozmiar: leza tam surowe odpowiedzi SUDOP, ktore
+# ZAWIERAJA DANE OSOBOWE (nazwiska jednoosobowych firm, NIP-y). Nic z tego
+# nie ma prawa trafic do repozytorium — ani publicznego, ani prywatnego.
 dane/
+
+# robocze
+*.log
+scratchpad/
+.claude/
+.idea/
+.vscode/
