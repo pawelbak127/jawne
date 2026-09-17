@@ -824,7 +824,19 @@ export function zrodloImportu(co: string): ZrodloImportu {
   return bezTabeli(() => jeden<{ kiedy: string; uwagi: string | null }>('select kiedy, uwagi from import where co = ?', co), null);
 }
 
+/**
+ * Skad mamy dane o pomocy dla tej gminy:
+ *  - 'gmina'   — pobrano cale 10 lat tej gminy,
+ *  - 'dni'     — mamy tylko dni pobrane dla calego kraju (tryb przyrostowy).
+ * Roznica jest dla czytelnika zasadnicza: w drugim przypadku suma NIE jest
+ * suma calej pomocy w gminie, tylko z kilku dni.
+ */
+export type ZrodloPomocy =
+  | { rodzaj: 'gmina'; od: string; pobrano: string }
+  | { rodzaj: 'dni'; od: string; do: string; dni: number };
+
 export type PomocGminy = {
+  zrodlo: ZrodloPomocy | null;
   pobranie: { od: string; pobrano: string; wierszy: number } | null;
   razem: { przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string } | null;
   /** Nazwy WSZYSTKICH beneficjentow — do policzenia, ilu nie pokazujemy z nazwy. */
@@ -837,12 +849,26 @@ export type PomocGminy = {
 
 /** Pomoc publiczna z SUDOP dla beneficjentow z siedziba w gminie. */
 export function pomocGminy(teryt: string): PomocGminy {
-  const pusto: PomocGminy = { pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
+  const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
   return bezTabeli(() => {
     const pobranie = jeden<{ od: string; pobrano: string; wierszy: number }>(
       'select od, pobrano, wierszy from pomoc_publiczna_pobrania where teryt = ?', teryt,
     );
-    if (!pobranie) return pusto;
+    // Bez pelnego pobrania gminy zostaja dni pobrane dla calego kraju —
+    // pokazujemy je, ale mowimy wprost, ze to nie jest cala historia.
+    const dni = pobranie ? null : bezTabeli(
+      () => jeden<{ od: string; do: string; dni: number }>(
+        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_publiczna_dni',
+      ),
+      null,
+    );
+    const maWiersze = !pobranie && dni?.dni
+      ? (jeden<{ c: number }>('select count(*) as c from pomoc_publiczna where teryt = ?', teryt)?.c ?? 0) > 0
+      : false;
+    if (!pobranie && !maWiersze) return pusto;
+    const zrodlo: ZrodloPomocy = pobranie
+      ? { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }
+      : { rodzaj: 'dni', od: dni!.od, do: dni!.do, dni: dni!.dni };
     const razem = jeden<{ przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string }>(
       `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow, sum(wartosc_brutto) as brutto,
               min(dzien) as pierwszy, max(dzien) as ostatni
@@ -865,6 +891,6 @@ export function pomocGminy(teryt: string): PomocGminy {
       `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto
          from pomoc_publiczna where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
     );
-    return { pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
+    return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
   }, pusto);
 }

@@ -62,7 +62,9 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const terytFunduszy = dzielnica ? TERYT_WARSZAWY : teryt;
   const fundusze = funduszeGminy(terytFunduszy);
   const projekty = najwiekszeProjektyGminy(terytFunduszy, 8);
-  const pomoc = pomocGminy(teryt);
+  // Warszawa jest w SUDOP jednym miastem (146501), a jej dzielnice maja wlasne
+  // kody — wszystkie trzymamy pod miastem, tak jak fundusze UE i budzet.
+  const pomoc = pomocGminy(terytFunduszy);
   // Warszawa ma w BDL jeden budzet, nie 18 dzielnicowych — jak przy funduszach.
   const budzet = budzetGminy(terytFunduszy);
   const ludnoscDoPrzeliczen = dzielnica ? ludnoscWarszawy() : g.ludnosc;
@@ -182,7 +184,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
           Zwolnienia z podatków, dopłaty, preferencyjne pożyczki i pomoc de minimis udzielone
           przedsiębiorcom, którzy mają tu siedzibę — według systemu SUDOP prowadzonego przez UOKiK.
         </p>
-        {pomoc.pobranie && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
+        {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
       </section>
 
     </div>
@@ -333,7 +335,8 @@ function opisMediany(m: MedianaUe): string {
 
 function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const r = pomoc.razem!;
-  const p = pomoc.pobranie!;
+  const z = pomoc.zrodlo!;
+  const pobrano = pomoc.pobranie?.pobrano ?? null;
   const maxRok = Math.max(1, ...pomoc.lata.map((l) => l.brutto ?? 0));
   const jawni = pomoc.beneficjenci.filter((b) => nazwaPodmiotuJawna(b.nazwa));
   // Liczymy po WSZYSTKICH beneficjentach, nie po pokazanej czolowce — inaczej
@@ -341,6 +344,17 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const ukrytych = pomoc.nazwyBeneficjentow.filter((n) => !nazwaPodmiotuJawna(n)).length;
   return (
     <>
+      {/*
+        Dane z trybu przyrostowego to kilka dni dla calego kraju, a nie cala
+        historia gminy. Suma bez tego zdania czytalaby sie jak "tyle pomocy
+        dostaly firmy z tej gminy" — czyli falszywie.
+      */}
+      {z.rodzaj === 'dni' ? (
+        <p className="mt-6 rounded-2xl border border-kreska bg-papier-3 p-4 text-sm leading-relaxed text-atrament-2">
+          <span className="font-medium text-atrament">To nie jest cała historia tej gminy.</span>
+          {` Pełnych danych jeszcze nie pobraliśmy — poniżej jest wyłącznie pomoc udzielona ${z.dni === 1 ? 'w jednym dniu, który pobraliśmy' : `w ${liczba(z.dni)} dniach, które pobraliśmy`} dla całego kraju (${dataSlownie(z.od)}${z.od === z.do ? '' : ` – ${dataSlownie(z.do)}`}).`}
+        </p>
+      ) : null}
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_2fr]">
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
           <p className="liczby szryft text-4xl font-semibold">{zlote(r.brutto)}</p>
@@ -407,7 +421,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           <a href={ZRODLO_SUDOP} className="underline underline-offset-2 hover:text-akcent" target="_blank" rel="noreferrer">
             System Udostępniania Danych o Pomocy Publicznej (UOKiK)
           </a>
-          {`, dane pobrane ${dataSlownie(p.pobrano)}. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.`}
+          {`${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.`}
         </p>
       </div>
     </>

@@ -1,7 +1,13 @@
 /**
- * Import pomocy publicznej z SUDOP dla WSKAZANYCH gmin.
+ * Import pomocy publicznej z SUDOP.
  *
  *   npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
+ *   npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17
+ *
+ * Dwa tryby, dwa rozne koszty dla urzedu:
+ *  - GMINA: cale 10 lat jednej gminy, kilka zapytan (Zakopane: 5).
+ *  - PRZYROST: jeden dzien dla CALEGO KRAJU, jedno zapytanie. Zmierzone
+ *    18.09.2026: 3 531 przypadkow z 1 150 gmin zmiescilo sie w jednej stronie.
  *
  * Nie jest czescia `import wszystko` i nie bedzie. Kazda gmina to jedno
  * zgloszenie w kolejce urzedu, ktory napisal, ze ruch przekracza jego
@@ -17,8 +23,9 @@ import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
 import {
-  adresWyszukania, kodySudopGminy, kwota, poczatekOknaDanych, sprawdzPorcje, SUDOP_BAZA,
-  type KodGminySudop, type OdpowiedzSudop,
+  adresPrzyrostu, adresWyszukania, kluczePorcji, kodySudopGminy, kwota, poczatekOknaDanych,
+  sprawdzPorcje, sprawdzPorcjePrzyrostu, SUDOP_BAZA, terytGminyZKodu, TERYT_WARSZAWY,
+  type KodGminySudop, type OdpowiedzSudop, type PrzypadekPomocy,
 } from '../lib/sudop.js';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
@@ -41,12 +48,12 @@ async function get(url: string) {
 
 const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
 
-async function slownik(): Promise<KodGminySudop[]> {
-  const plik = join(KATALOG, 'slownik-gminy.json');
+/** Slowniki sa zasobem statycznym — nie tworza pozycji w kolejce. */
+async function slownik(nazwa: string): Promise<KodGminySudop[]> {
+  const plik = join(KATALOG, `slownik-${nazwa}.json`);
   if (!existsSync(plik)) {
-    // Slownik to zasob statyczny — nie tworzy pozycji w kolejce.
-    const r = await get(`${SUDOP_BAZA}/slownik/gmina-siedziby`);
-    if (r.status !== 200) throw new Error(`Slownik gmin: HTTP ${r.status}`);
+    const r = await get(`${SUDOP_BAZA}/slownik/${nazwa}`);
+    if (r.status !== 200) throw new Error(`Slownik ${nazwa}: HTTP ${r.status}`);
     writeFileSync(plik, r.tekst, 'utf8');
   }
   return JSON.parse(readFileSync(plik, 'utf8')) as KodGminySudop[];
@@ -79,35 +86,44 @@ async function wyszukaj(url: string, opis: string): Promise<OdpowiedzSudop> {
   throw new Error(`${opis}: brak wyniku po ${HORYZONT_MS / 60_000} min (wynik wygasa po godzinie)`);
 }
 
-function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSudop['wyniki'], zapytan: number, sekund: number) {
-  const problemy = sprawdzPorcje(wyniki, teryt);
-  if (problemy.length) {
-    throw new Error(`Gmina ${teryt}: porcja nie przeszla kontroli:\n  ${problemy.slice(0, 10).join('\n  ')}`);
-  }
+/**
+ * Wstawia porcje. Klucz z numerem powtorzenia — zrodlo ma prawdziwe wiersze
+ * identyczne na wszystkich polach (osobne transze tej samej pomocy).
+ */
+function wstawWiersze(db: DatabaseSync, wyniki: readonly PrzypadekPomocy[], terytZWiersza: (w: PrzypadekPomocy) => string): void {
   const wstaw = db.prepare(
     `insert into pomoc_publiczna(teryt, kod_gminy_sudop, dzien, nip_beneficjenta, nazwa_beneficjenta,
        wielkosc_kod, wielkosc, pkd, pkd_nazwa, nip_udzielajacego, udzielajacy, srodek_numer,
        srodek_nazwa, podstawa, przeznaczenie_kod, przeznaczenie, forma_kod, forma,
-       wartosc_nominalna, wartosc_brutto, wartosc_brutto_eur)
-     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       wartosc_nominalna, wartosc_brutto, wartosc_brutto_eur, klucz)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   );
-  db.exec('begin');
-  // Cala gmina jest zastepowana naraz: SUDOP koryguje stare przypadki, wiec
-  // dopisywanie zostawiloby w bazie wersje, ktorych urzad juz nie pokazuje.
-  db.prepare('delete from pomoc_publiczna where teryt = ?').run(teryt);
-  for (const w of wyniki) {
+  const klucze = kluczePorcji(wyniki);
+  wyniki.forEach((w, i) => {
     const podstawa = [w['podstawa-prawna-2a-nazwa'], w['podstawa-prawna-2b'], w['podstawa-prawna-2c']]
       .filter((x) => x && x.trim()).join(' — ') || null;
     wstaw.run(
-      teryt, w['gmina-siedziby-kod'], w['dzien-udzielenia-pomocy']!, w['nip-beneficjenta'],
+      terytZWiersza(w), w['gmina-siedziby-kod'], w['dzien-udzielenia-pomocy']!, w['nip-beneficjenta'],
       w['nazwa-beneficjenta'], w['wielkosc-beneficjenta-kod'], w['wielkosc-beneficjenta-nazwa'],
       w['sektor-dzialalnosci-kod'], w['sektor-dzialalnosci-nazwa'], w['nip-udzielajacego-pomocy'],
       w['nazwa-udzielajacego-pomocy'], w['srodek-pomocowy-numer'], w['srodek-pomocowy-nazwa'],
       podstawa, w['przeznaczenie-pomocy-kod'], w['przeznaczenie-pomocy-nazwa'],
       w['forma-pomocy-kod'], w['forma-pomocy-nazwa'], kwota(w['wartosc-nominalna-pln']),
-      kwota(w['wartosc-brutto-pln']), kwota(w['wartosc-brutto-eur']),
+      kwota(w['wartosc-brutto-pln']), kwota(w['wartosc-brutto-eur']), klucze[i]!,
     );
+  });
+}
+
+function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSudop['wyniki'], zapytan: number, sekund: number) {
+  const problemy = sprawdzPorcje(wyniki, teryt);
+  if (problemy.length) {
+    throw new Error(`Gmina ${teryt}: porcja nie przeszla kontroli:\n  ${problemy.slice(0, 10).join('\n  ')}`);
   }
+  db.exec('begin');
+  // Cala gmina jest zastepowana naraz: SUDOP koryguje stare przypadki, wiec
+  // dopisywanie zostawiloby w bazie wersje, ktorych urzad juz nie pokazuje.
+  db.prepare('delete from pomoc_publiczna where teryt = ?').run(teryt);
+  wstawWiersze(db, wyniki, () => teryt);
   db.prepare(
     `insert into pomoc_publiczna_pobrania(teryt, od, pobrano, wierszy, zapytan, sekund) values (?,?,?,?,?,?)
      on conflict(teryt) do update set od=excluded.od, pobrano=excluded.pobrano, wierszy=excluded.wierszy,
@@ -116,20 +132,103 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
   db.exec('commit');
 }
 
+/**
+ * Zapis porcji krajowej. Dzien jest jednostka autorytatywna: kasujemy wszystko
+ * z zakresu i wstawiamy od nowa, wiec korekta po stronie urzedu zastepuje
+ * nasza wersje zamiast dokladac sie do niej.
+ */
+function zapiszPrzyrost(db: DatabaseSync, od: string, doDnia: string, wyniki: PrzypadekPomocy[], znane: ReadonlySet<string>): { zapisanych: number; obce: number; nasze: PrzypadekPomocy[] } {
+  const problemy = sprawdzPorcjePrzyrostu(wyniki, od, doDnia);
+  if (problemy.length) {
+    throw new Error(`Porcja ${od}..${doDnia} nie przeszla kontroli: ${problemy.slice(0, 10).join('; ')}`);
+  }
+  // Gminy spoza naszej listy (np. kod "NZ" albo jednostka, ktorej nie ma
+  // w danych PKW) sa RAPORTOWANE, nie przerywaja importu.
+  const nasze = wyniki.filter((w) => {
+    const t = terytGminyZKodu(w['gmina-siedziby-kod']);
+    return t !== null && znane.has(t);
+  });
+  db.exec('begin');
+  db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
+  wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!);
+  const wstawDzien = db.prepare(
+    `insert into pomoc_publiczna_dni(dzien, pobrano, wierszy) values (?,?,?)
+     on conflict(dzien) do update set pobrano=excluded.pobrano, wierszy=excluded.wierszy`,
+  );
+  const naDzien = new Map<string, number>();
+  for (const w of nasze) {
+    const d = w['dzien-udzielenia-pomocy']!;
+    naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
+  }
+  // Dni bez ani jednego przypadku tez odnotowujemy — inaczej nie odroznimy
+  // "nie pytalismy" od "pytalismy i nic nie bylo".
+  for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+    const dzien = d.toISOString().slice(0, 10);
+    wstawDzien.run(dzien, new Date().toISOString(), naDzien.get(dzien) ?? 0);
+  }
+  db.exec('commit');
+  return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
+}
+
+async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>): Promise<void> {
+  const [od, doDnia] = zakres.split('..');
+  if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
+  const formy = (await slownik('forma-pomocy')).map((f) => String(f.number));
+  log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)`);
+  const start = Date.now();
+  const wyniki: PrzypadekPomocy[] = [];
+  let strona = 1;
+  let zapytan = 0;
+  for (;;) {
+    const plik = join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`);
+    let odp: OdpowiedzSudop;
+    if (existsSync(plik)) {
+      odp = JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
+      log(`   strona ${strona}: z pliku`);
+    } else {
+      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
+      zapytan++;
+      writeFileSync(plik, JSON.stringify(odp), 'utf8');
+    }
+    wyniki.push(...(odp.wyniki ?? []));
+    log(`   strona ${strona}: ${odp.wyniki?.length ?? 0} z ${odp['liczba-wynikow']}`);
+    if (wyniki.length >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
+    strona++;
+  }
+  const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane);
+  const sekund = Math.round((Date.now() - start) / 1000);
+  log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
+  if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
+  odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
+}
+
 async function main(): Promise<void> {
   const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1];
   const gminy = (arg('gminy') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const zakres = arg('przyrost');
   const zPlikow = process.argv.includes('--z-plikow');
-  if (!gminy.length) {
+  if (!gminy.length && !zakres) {
     log('Podaj gminy: --gminy=100101,100102   (TERYT, 6 cyfr)');
+    log('albo zakres dni dla calego kraju: --przyrost=2026-09-15..2026-09-17');
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
     process.exit(2);
   }
   mkdirSync(KATALOG, { recursive: true });
   const db = otworz(true);
   zalozSchemat(db);
+  // Warszawa jest w PKW 18 dzielnicami, a w SUDOP jednym miastem — jej pomoc
+  // trzymamy pod 146501, tak samo jak fundusze UE i budzet.
   const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
-  const kody = await slownik();
+  znane.add(TERYT_WARSZAWY);
+  if (zakres) {
+    try {
+      await przyrost(db, zakres, znane);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+  const kody = await slownik('gmina-siedziby');
   const od = poczatekOknaDanych(new Date());
   let porazekZRzedu = 0;
 

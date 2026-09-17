@@ -260,10 +260,18 @@ create table if not exists pomoc_publiczna (
   forma               text,
   wartosc_nominalna   real,
   wartosc_brutto      real,
-  wartosc_brutto_eur  real
+  wartosc_brutto_eur  real,
+  /*
+   * API nie zwraca identyfikatora przypadku, a ten sam przypadek przychodzi
+   * dwa razy: raz przy imporcie calej gminy, raz przy dociaganiu dnia dla
+   * calego kraju. Klucz to skrot wszystkich 28 pol — bez niego drugi import
+   * podwoilby kwoty.
+   */
+  klucz               text
 );
 create index if not exists pomoc_teryt on pomoc_publiczna(teryt);
 create index if not exists pomoc_nip on pomoc_publiczna(nip_beneficjenta);
+create unique index if not exists pomoc_klucz on pomoc_publiczna(klucz);
 
 /* Kiedy i w jakim zakresie pobrano SUDOP dla gminy — do metryczki przy danych. */
 create table if not exists pomoc_publiczna_pobrania (
@@ -273,6 +281,18 @@ create table if not exists pomoc_publiczna_pobrania (
   wierszy   integer not null,
   zapytan   integer not null,
   sekund    integer not null
+);
+
+/*
+ * Dni pobrane dla CALEGO KRAJU (tryb --przyrost). Osobno od pobran gminnych,
+ * bo znacza co innego: pobranie gminy to pelne 10 lat jednej gminy, a dzien
+ * to wszystkie gminy z jednej daty. Strona gminy musi umiec powiedziec,
+ * ktora z tych dwoch rzeczy pokazuje.
+ */
+create table if not exists pomoc_publiczna_dni (
+  dzien    text primary key,               -- RRRR-MM-DD
+  pobrano  text not null,
+  wierszy  integer not null
 );
 
 /* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */

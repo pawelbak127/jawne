@@ -19,6 +19,8 @@
  * zapytanie w toku, odpytywanie co 60 s.
  */
 
+import { createHash } from 'node:crypto';
+
 export const SUDOP_BAZA = 'https://api-sudop.uokik.gov.pl/sudop-api';
 export const SUDOP_ZRODLO_WWW = 'https://sudop.uokik.gov.pl';
 
@@ -58,13 +60,42 @@ export type PrzypadekPomocy = {
 
 export type OdpowiedzSudop = { 'liczba-wynikow': number; wyniki: PrzypadekPomocy[] };
 
-/** Wszystkie 7-cyfrowe kody SUDOP dla gminy o 6-cyfrowym TERYT. */
+/**
+ * TERYT gminy, pod ktorym trzymamy przypadek o danym kodzie SUDOP.
+ *
+ * ZMIERZONE 18.09.2026 na slowniku (4 170 pozycji) i na porcji krajowej:
+ *  - rodzaj 8 to 18 DZIELNIC Warszawy (1465xx8),
+ *  - rodzaj 9 to 19 DELEGATUR Lodzi, Krakowa, Wroclawia i Poznania
+ *    (np. 1061039 "LODZ-GORNA"), a miasto macierzyste ma kod xxxx011,
+ *  - rodzaj 0 (17 pozycji) to jednostki bez gminy — nie da sie przypisac.
+ *
+ * Jednego dnia przyszlo 265 przypadkow z kodem Warszawy i kilkanascie
+ * z delegatur. Bez tego przelozenia wypadalyby z serwisu po cichu.
+ * Warszawe trzymamy w calosci (146501), tak samo jak fundusze UE i budzet.
+ */
+export function terytGminyZKodu(kod: string | null | undefined): string | null {
+  if (!kod || !/^\d{7}$/.test(kod)) return null;
+  const rodzaj = kod[6]!;
+  if (rodzaj === '0') return null;
+  if (kod.startsWith('1465')) return TERYT_WARSZAWY;
+  if (rodzaj === '9') return `${kod.slice(0, 4)}01`;
+  return kod.slice(0, 6);
+}
+
+export const TERYT_WARSZAWY = '146501';
+
+/**
+ * Wszystkie 7-cyfrowe kody SUDOP, o ktore trzeba zapytac dla gminy o danym
+ * TERYT. Dla miasta z dzielnicami albo delegaturami to kod miasta ORAZ kody
+ * jego czesci — inaczej import Warszawy pominalby 18 dzielnic.
+ */
 export function kodySudopGminy(teryt6: string, slownik: readonly KodGminySudop[]): string[] {
   if (!/^\d{6}$/.test(teryt6)) throw new Error(`TERYT gminy ma miec 6 cyfr: "${teryt6}"`);
-  return slownik
-    .map((k) => String(k.number))
-    .filter((k) => k.length === 7 && k.startsWith(teryt6))
-    .sort();
+  const kody = slownik.map((k) => String(k.number)).filter((k) => k.length === 7);
+  const czesciMiasta = teryt6.endsWith('01')
+    ? kody.filter((k) => k.startsWith(teryt6.slice(0, 4)) && ['8', '9'].includes(k[6]!))
+    : [];
+  return [...new Set([...kody.filter((k) => k.startsWith(teryt6)), ...czesciMiasta])].sort();
 }
 
 /** Adres rejestracji wyszukania. Gmina jest parametrem tablicowym. */
@@ -76,6 +107,94 @@ export function adresWyszukania(kody: readonly string[], od: string, strona = 1)
   p.set('dzien-udzielenia-pomocy-od', od);
   p.set('strona', String(strona));
   return `${SUDOP_BAZA}/api/przypadki-pomocy?${p}`;
+}
+
+/**
+ * Adres rejestracji wyszukania KRAJOWEGO po zakresie dni.
+ *
+ * ZMIERZONE 18.09.2026: zapytanie o same daty konczy sie `HTTP 400`
+ * ("Nie podano zadnych wymaganych kryteriow"), ale parametr `forma-pomocy-kod`
+ * mozna powtarzac tak samo jak gmine. Podanie calego slownika form (70 kodow)
+ * daje caly kraj: 3 531 przypadkow z jednego dnia, 1 150 gmin, jedna strona.
+ */
+export function adresPrzyrostu(formy: readonly string[], od: string, doDnia: string, strona = 1): string {
+  if (!formy.length) throw new Error('Brak kodow form pomocy — API odrzuci zapytanie o same daty');
+  for (const d of [od, doDnia]) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error(`Data ma format RRRR-MM-DD: "${d}"`);
+  }
+  if (od > doDnia) throw new Error(`Zakres od "${od}" do "${doDnia}" jest odwrocony`);
+  const p = new URLSearchParams();
+  for (const k of formy) p.append('forma-pomocy-kod', k);
+  p.set('dzien-udzielenia-pomocy-od', od);
+  p.set('dzien-udzielenia-pomocy-do', doDnia);
+  p.set('strona', String(strona));
+  return `${SUDOP_BAZA}/api/przypadki-pomocy?${p}`;
+}
+
+/** TERYT gminy (6 cyfr) z 7-cyfrowego kodu SUDOP; null, gdy kod jest inny. */
+export function terytZKoduSudop(kod: string | null | undefined): string | null {
+  return kod && /^\d{7}$/.test(kod) ? kod.slice(0, 6) : null;
+}
+
+/**
+ * Klucz jednoznaczny przypadku pomocy.
+ *
+ * API nie zwraca zadnego identyfikatora, a ten sam przypadek moze przyjsc
+ * dwa razy: raz przy imporcie calej gminy, raz przy dociaganiu dnia dla
+ * calego kraju. Bez klucza drugi import podwoilby kwoty.
+ * Bierzemy wszystkie pola, bo kazde moze rozniic dwa podobne przypadki
+ * (ta sama firma potrafi dostac tego samego dnia dwie transze tej samej formy).
+ */
+export function kluczPrzypadku(w: PrzypadekPomocy): string {
+  const pola = Object.keys(w).sort().map((k) => `${k}=${w[k as keyof PrzypadekPomocy] ?? ''}`);
+  return createHash('sha1').update(pola.join('')).digest('hex');
+}
+
+/**
+ * Klucze calej porcji — z numerem porzadkowym powtorzen.
+ *
+ * ZMIERZONE: w 80 698 pobranych przypadkach jest 2 392 grupy wierszy
+ * identycznych na wszystkich 28 polach, razem 5 200 wierszy (np. szesc razy
+ * 1 550 zl dla tej samej firmy tego samego dnia). To NIE sa bledy zrodla —
+ * to osobne transze. Sam skrot pol zlaczylby je w jeden wiersz i zanizyl
+ * sume o 2 808 przypadkow, wiec do klucza dokladamy numer w grupie.
+ *
+ * Numeracja jest stabilna: ta sama porcja (ta sama gmina albo ten sam dzien
+ * dla kraju) zawsze daje te same klucze, wiec powtorzony import niczego
+ * nie dubluje.
+ */
+export function kluczePorcji(wyniki: readonly PrzypadekPomocy[]): string[] {
+  const licznik = new Map<string, number>();
+  return wyniki.map((w) => {
+    const skrot = kluczPrzypadku(w);
+    const n = licznik.get(skrot) ?? 0;
+    licznik.set(skrot, n + 1);
+    return `${skrot}#${n}`;
+  });
+}
+
+/**
+ * Kontrola dziedziny porcji krajowej: data w zadanym zakresie i kod gminy,
+ * ktory da sie przelozyc na TERYT.
+ */
+export function sprawdzPorcjePrzyrostu(wyniki: readonly PrzypadekPomocy[], od: string, doDnia: string): string[] {
+  const problemy: string[] = [];
+  wyniki.forEach((w, i) => {
+    const d = w['dzien-udzielenia-pomocy'] ?? '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) problemy.push(`wiersz ${i}: data "${d}"`);
+    else if (d < od || d > doDnia) problemy.push(`wiersz ${i}: data ${d} spoza zakresu ${od}..${doDnia}`);
+    const kod = w['gmina-siedziby-kod'] ?? '';
+    // Kod rodzaju 0 ("jednostka nieznana") jest dopuszczalny — takie wiersze
+    // pomijamy przy zapisie i raportujemy, ale nie przerywaja importu.
+    if (!/^\d{7}$/.test(kod)) problemy.push(`wiersz ${i}: kod gminy "${kod}"`);
+    try {
+      kwota(w['wartosc-brutto-pln']);
+      kwota(w['wartosc-nominalna-pln']);
+    } catch (e) {
+      problemy.push(`wiersz ${i}: ${e instanceof Error ? e.message : e}`);
+    }
+  });
+  return problemy;
 }
 
 /**
@@ -105,7 +224,8 @@ export function sprawdzPorcje(wyniki: readonly PrzypadekPomocy[], teryt6: string
   const problemy: string[] = [];
   wyniki.forEach((w, i) => {
     const kod = w['gmina-siedziby-kod'] ?? '';
-    if (!kod.startsWith(teryt6)) problemy.push(`wiersz ${i}: gmina ${kod || '(brak)'} zamiast ${teryt6}`);
+    // Dzielnica i delegatura naleza do miasta — porownujemy po przelozeniu.
+    if (terytGminyZKodu(kod) !== teryt6) problemy.push(`wiersz ${i}: gmina ${kod || '(brak)'} zamiast ${teryt6}`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(w['dzien-udzielenia-pomocy'] ?? '')) problemy.push(`wiersz ${i}: data "${w['dzien-udzielenia-pomocy']}"`);
     try {
       kwota(w['wartosc-brutto-pln']);

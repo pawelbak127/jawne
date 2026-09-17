@@ -98,6 +98,19 @@ sumuje zbiory, a liczby się domykają.
 **Cały kraj z jednego dnia mieści się w jednej stronie odpowiedzi**
 (limit 10 000 wierszy) i kosztuje urząd jedno zapytanie.
 
+**Import umie już oba tryby** (`ingest/jobs/sudop.ts`):
+
+```
+--gminy=100101,100102          cale 10 lat wskazanych gmin
+--przyrost=2026-09-15..2026-09-17   wszystkie gminy z tych dni, jedno zapytanie na strone
+```
+
+Tryb przyrostowy sprawdzony na prawdziwej odpowiedzi z 15.09 (bez dodatkowego
+zapytania do urzędu): 3 531 wierszy, zapisane 3 530 z 1 026 gmin, pominięty
+1 wiersz jednostki bez gminy. Dla trzech gmin pobranych wcześniej osobno
+liczby i kwoty wyszły **identyczne** — dwie niezależne drogi zapytań dają ten
+sam wynik.
+
 **Co z tego wynika dla importu.**
 
 | Zadanie | Sposób | Koszt dla urzędu |

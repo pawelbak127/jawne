@@ -67,9 +67,10 @@ npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 
-# SUDOP — tylko ręcznie, tylko wskazane gminy (patrz Bezpieczeństwo)
-npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
-npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow   # z zapisanych odpowiedzi, bez sieci
+# SUDOP — tylko ręcznie (patrz Bezpieczeństwo). Dwa tryby:
+npx tsx ingest/jobs/sudop.ts --gminy=100101,100102          # 10 lat jednej gminy
+npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17  # dzień dla CAŁEGO kraju
+npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow      # z zapisanych odpowiedzi, bez sieci
 ```
 
 ---
@@ -222,11 +223,20 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     i obszar wiejski **wewnątrz** gminy miejsko-wiejskiej — zsumowanie ich
     z rodzajem 3 policzyłoby tę gminę drugi raz. Bierzemy 1, 2, 3.
     Warszawa jest tam jedną jednostką (146501), a nie 18 dzielnicami.
-31. **„Wydatki majątkowe” ≠ „wydatki inwestycyjne”.** Majątkowe obejmują też
+31. **SUDOP ma jednostki mniejsze niż gmina.** 18 dzielnic Warszawy (kod
+    kończy się na 8) i 19 delegatur Łodzi, Krakowa, Wrocławia i Poznania
+    (kończy się na 9). W jednym dniu przyszło 265 przypadków z kodem Warszawy
+    i kilkanaście z delegatur — bez przełożenia na miasto macierzyste
+    (`terytGminyZKodu`) wypadały z serwisu po cichu.
+32. **Ten sam przypadek pomocy potrafi wystąpić kilka razy.** W 80 698
+    pobranych wierszach jest 2 392 grupy identyczne na wszystkich 28 polach
+    (5 200 wierszy) — to osobne transze, nie błąd źródła. Klucz jednoznaczny
+    musi mieć numer w grupie, inaczej import gubi 2 808 przypadków.
+33. **„Wydatki majątkowe” ≠ „wydatki inwestycyjne”.** Majątkowe obejmują też
     dotacje inwestycyjne (np. dla spółki miejskiej budującej metro): Warszawa
     2025 to 3,07 mld zł majątkowych i 2,57 mld zł inwestycyjnych. Pokazujemy
     majątkowe i nazywamy je majątkowymi.
-32. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
+34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 
 ---

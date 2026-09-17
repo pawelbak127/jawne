@@ -25,7 +25,8 @@ const OPISY: Record<string, string> = {
   budzety: 'Budżety gmin — dochody, dochody własne, wydatki (GUS, Bank Danych Lokalnych)',
   'fundusze-2021-2027': 'Projekty z Funduszy Europejskich 2021–2027',
   'fundusze-2014-2020': 'Projekty z Funduszy Europejskich 2014–2020',
-  sudop: 'Pomoc publiczna (SUDOP, UOKiK) — tylko wybrane gminy',
+  sudop: 'Pomoc publiczna (SUDOP, UOKiK) — pełne dane wybranych gmin',
+  'sudop-przyrost': 'Pomoc publiczna (SUDOP) — dni pobrane dla całego kraju',
 };
 
 export default function StronaStanu() {
