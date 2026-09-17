@@ -839,12 +839,13 @@ export type PomocGminy = {
   zrodlo: ZrodloPomocy | null;
   pobranie: { od: string; pobrano: string; wierszy: number } | null;
   razem: { przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string } | null;
-  /** Nazwy WSZYSTKICH beneficjentow — do policzenia, ilu nie pokazujemy z nazwy. */
-  nazwyBeneficjentow: string[];
+  /** WSZYSCY beneficjenci (nazwa + najwieksza pojedyncza pomoc) — do policzenia, ilu nie pokazujemy z nazwy. */
+  nazwyBeneficjentow: { nazwa: string; max_eur: number | null }[];
   lata: { rok: string; przypadkow: number; brutto: number | null }[];
   przeznaczenia: { nazwa: string; przypadkow: number; brutto: number | null }[];
   udzielajacy: { nazwa: string; przypadkow: number; brutto: number | null }[];
-  beneficjenci: { nazwa: string; nip: string | null; przypadkow: number; brutto: number | null }[];
+  /** `max_eur` to NAJWIEKSZA POJEDYNCZA pomoc — do progu jawnosci nazwiska. */
+  beneficjenci: { nazwa: string; nip: string | null; przypadkow: number; brutto: number | null; max_eur: number | null }[];
 };
 
 /** Pomoc publiczna z SUDOP dla beneficjentow z siedziba w gminie. */
@@ -874,9 +875,10 @@ export function pomocGminy(teryt: string): PomocGminy {
               min(dzien) as pierwszy, max(dzien) as ostatni
          from pomoc_publiczna where teryt = ?`, teryt,
     );
-    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null }>(
-      'select max(nazwa_beneficjenta) as nazwa from pomoc_publiczna where teryt = ? group by nip_beneficjenta', teryt,
-    ).map((r) => r.nazwa ?? '');
+    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null }>(
+      `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur
+         from pomoc_publiczna where teryt = ? group by nip_beneficjenta`, teryt,
+    ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur }));
     const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
       `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
          from pomoc_publiczna where teryt = ? group by rok order by rok`, teryt,
@@ -887,8 +889,9 @@ export function pomocGminy(teryt: string): PomocGminy {
     );
     // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
     // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
-    const beneficjenci = wszystkie<{ nazwa: string; nip: string | null; przypadkow: number; brutto: number | null }>(
-      `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+    const beneficjenci = wszystkie<{ nazwa: string; nip: string | null; przypadkow: number; brutto: number | null; max_eur: number | null }>(
+      `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto,
+              max(wartosc_brutto_eur) as max_eur
          from pomoc_publiczna where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
     );
     return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };

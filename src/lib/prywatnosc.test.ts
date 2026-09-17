@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska, zawieraImie } from './prywatnosc';
+import {
+  bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska,
+  PROG_JAWNOSCI_EUR, zawieraImie,
+} from './prywatnosc';
 
 /*
  * NAZWISKA W TYCH TESTACH SA ZMYSLONE. Budowa zdan jest przepisana z tytulow
@@ -127,5 +130,32 @@ describe('nazwaDoPokazania', () => {
   it('zawsze daje tekst, nigdy pusty napis', () => {
     expect(nazwaDoPokazania('Jan Kowalski')).toEqual({ tekst: 'nazwa pominięta — może to być osoba fizyczna', pominieta: true });
     expect(nazwaDoPokazania(' Gmina Przykładowo ')).toEqual({ tekst: 'Gmina Przykładowo', pominieta: false });
+  });
+});
+
+describe('prog jawnosci osoby fizycznej', () => {
+  const osoba = 'Zakład Stolarski Jan Przykładowski';
+
+  it('bez progu nazwisko zostaje ukryte niezaleznie od kwoty', () => {
+    expect(nazwaDoPokazania(osoba, { pomocEur: 5_000_000 }).pominieta).toBe(true);
+  });
+
+  it('z progiem duza pomoc odslania nazwe', () => {
+    expect(nazwaDoPokazania(osoba, { pomocEur: PROG_JAWNOSCI_EUR, progAktywny: true })).toEqual({ tekst: osoba, pominieta: false });
+  });
+
+  it('pomoc ponizej progu nadal jest anonimowa', () => {
+    expect(nazwaDoPokazania(osoba, { pomocEur: PROG_JAWNOSCI_EUR - 1, progAktywny: true }).pominieta).toBe(true);
+    expect(nazwaDoPokazania(osoba, { pomocEur: null, progAktywny: true }).pominieta).toBe(true);
+  });
+
+  // Spolka cywilna i wspolnota mieszkaniowa sa ukryte ZAWSZE — prog ich nie znosi.
+  it('prog nie omija listy "nigdy"', () => {
+    expect(nazwaDoPokazania('"U&B" s.c.', { pomocEur: 9_000_000, progAktywny: true }).pominieta).toBe(true);
+    expect(nazwaDoPokazania('Wspólnota Mieszkaniowa przy ul. Przykładowej 1', { pomocEur: 9_000_000, progAktywny: true }).pominieta).toBe(true);
+  });
+
+  it('spolka jest jawna takze bez progu i bez kwoty', () => {
+    expect(nazwaDoPokazania('Przykład Sp. z o.o.').pominieta).toBe(false);
   });
 });

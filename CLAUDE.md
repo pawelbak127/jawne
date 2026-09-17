@@ -95,10 +95,13 @@ npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow      # z zapisanych odpow
    wprost. Nazwisko posła zostaje. Jedna reguła dla wszystkich — także gdy
    oskarżycielem jest polityk. Kod: `src/lib/prywatnosc.ts`.
    **To samo dotyczy beneficjentów** funduszy UE i pomocy publicznej
-   i podmiotów udzielających pomocy (decyzja z 17.09.2026, do potwierdzenia
-   przez Pawła): nazwę pokazujemy tylko, gdy widać w niej formę prawną albo
-   instytucję, i nie ma w niej imienia z rejestru PESEL ani kodu pocztowego
-   (`nazwaDoPokazania`). Pozostałych nie wymieniamy, ale zawsze podajemy ich
+   i podmiotów udzielających pomocy (decyzja z 17.09.2026, próg kwotowy
+   zatwierdzony przez Pawła 18.09.2026): nazwę pokazujemy, gdy widać w niej
+   formę prawną albo instytucję i nie ma w niej imienia z rejestru PESEL ani
+   kodu pocztowego — **albo** gdy pojedyncza pomoc przekroczyła
+   `PROG_JAWNOSCI_EUR` (100 tys. EUR, próg GBER) i ustawiony jest
+   `JAWNE_KONTAKT` (`nazwaDoPokazania`). Bez adresu do sprzeciwu próg nie
+   działa — to warunek techniczny, nie deklaracja. Pozostałych nie wymieniamy, ale zawsze podajemy ich
    liczbę i wliczamy do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk
    w firmie — są w KRS; spółki cywilnej i wspólnoty mieszkaniowej nie.
    Po każdej zmianie reguły: porównanie na wszystkich nazwach z bazy i przegląd

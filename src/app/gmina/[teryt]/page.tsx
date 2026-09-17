@@ -9,7 +9,8 @@ import {
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { opisGminy } from '@/lib/wyszukiwanie';
-import { nazwaDoPokazania, nazwaPodmiotuJawna } from '@/lib/prywatnosc';
+import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
+import { KONTAKT } from '@/lib/adres';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
@@ -338,10 +339,14 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const z = pomoc.zrodlo!;
   const pobrano = pomoc.pobranie?.pobrano ?? null;
   const maxRok = Math.max(1, ...pomoc.lata.map((l) => l.brutto ?? 0));
-  const jawni = pomoc.beneficjenci.filter((b) => nazwaPodmiotuJawna(b.nazwa));
+  // Prog kwotowy dziala tylko wtedy, gdy jest gdzie zlozyc sprzeciw.
+  const progAktywny = Boolean(KONTAKT);
+  const widoczna = (nazwa: string, maxEur: number | null) =>
+    !nazwaDoPokazania(nazwa, { pomocEur: maxEur, progAktywny }).pominieta;
+  const jawni = pomoc.beneficjenci.filter((b) => widoczna(b.nazwa, b.max_eur));
   // Liczymy po WSZYSTKICH beneficjentach, nie po pokazanej czolowce — inaczej
   // spolki spoza czolowki trafialy do "niewymienionych z nazwy".
-  const ukrytych = pomoc.nazwyBeneficjentow.filter((n) => !nazwaPodmiotuJawna(n)).length;
+  const ukrytych = pomoc.nazwyBeneficjentow.filter((n) => !widoczna(n.nazwa, n.max_eur)).length;
   return (
     <>
       {/*
@@ -411,8 +416,13 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           ))}
         </ul>
         <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-          {`Pokazujemy tylko podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje). ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
+          {`Pokazujemy podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje)${progAktywny ? `, oraz te, których pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — tyle wynosi unijny próg publikowania pomocy indywidualnej` : ''}. ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
         </p>
+        {progAktywny ? (
+          <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+            {`Jeśli jesteś osobą, której nazwisko tu widać, i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy je bez pytania o powód.`}
+          </p>
+        ) : null}
       </div>
 
       {/*

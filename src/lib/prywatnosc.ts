@@ -158,8 +158,41 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined): boolean {
   return INSTYTUCJA.some((w) => w.test(nazwa));
 }
 
+/**
+ * Prog, powyzej ktorego pokazujemy z nazwy takze osobe fizyczna.
+ *
+ * DECYZJA (18.09.2026, Pawel): 100 000 EUR na POJEDYNCZY przypadek pomocy —
+ * tyle wynosi unijny prog publikowania pomocy indywidualnej (GBER), wiec nie
+ * jest to liczba wymyslona przez nas. Wyrok TSUE w sprawach C-92/09 i C-93/09
+ * (Schecke, Eifert) uniewaznil przepisy nakazujace publikowanie danych
+ * WSZYSTKICH beneficjentow bez roznicowania m.in. wedlug kwoty — rozniczkowanie
+ * progiem jest wiec droga, ktora prawo UE uznalo za proporcjonalna.
+ *
+ * ZMIERZONE na 84 211 przypadkach: prog odslania 63 z 12 907 ukrytych nazw
+ * (0,5 %), lacznie 78,2 mln zl pomocy. Prog 500 tys. EUR odslonilby dwie.
+ *
+ * Prog NIE znosi listy `NIGDY`: spolka cywilna i wspolnota mieszkaniowa
+ * zostaja ukryte niezaleznie od kwoty (w pomiarze wpadla tam "U&B s.c.").
+ */
+export const PROG_JAWNOSCI_EUR = 100_000;
+
+export type OpcjeNazwy = {
+  /** Najwieksza POJEDYNCZA pomoc dla tego podmiotu, w euro. */
+  pomocEur?: number | null;
+  /**
+   * Czy prog kwotowy dziala. Warunkiem jest podany adres kontaktowy — bez
+   * drogi zlozenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk w ogole.
+   */
+  progAktywny?: boolean;
+};
+
 /** Nazwa do wyswietlenia albo opis zastepczy — nigdy pusty napis. */
-export function nazwaDoPokazania(nazwa: string | null | undefined): { tekst: string; pominieta: boolean } {
+export function nazwaDoPokazania(nazwa: string | null | undefined, opcje: OpcjeNazwy = {}): { tekst: string; pominieta: boolean } {
   if (nazwaPodmiotuJawna(nazwa)) return { tekst: nazwa!.trim(), pominieta: false };
+  const nadProgiem = opcje.progAktywny === true
+    && (opcje.pomocEur ?? 0) >= PROG_JAWNOSCI_EUR
+    && Boolean(nazwa?.trim())
+    && !NIGDY.test(nazwa!);
+  if (nadProgiem) return { tekst: nazwa!.trim(), pominieta: false };
   return { tekst: 'nazwa pominięta — może to być osoba fizyczna', pominieta: true };
 }

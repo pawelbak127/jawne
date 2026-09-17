@@ -56,6 +56,10 @@ się w całości z publicznego API Sejmu.
 
 ## Wdrożenie
 
+`JAWNE_KONTAKT` (np. w `.env.local`) to adres, pod który można zgłosić sprzeciw
+wobec pokazania nazwiska. Dopóki go nie ma, serwis nie pokazuje nazwisk osób
+fizycznych w ogóle — patrz [docs/nazwiska.md](docs/nazwiska.md).
+
 Przed buildem produkcyjnym ustaw publiczny adres serwisu — inaczej obrazki
 podglądu linków będą wskazywać na `localhost`:
 

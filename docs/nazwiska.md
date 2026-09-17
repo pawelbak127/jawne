@@ -1,5 +1,9 @@
 # Nazwiska w danych o pieniądzach publicznych — co wolno pokazać
 
+**DECYZJA PAWŁA z 18.09.2026: wariant B (próg kwotowy). Wdrożony.**
+Działa po ustawieniu `JAWNE_KONTAKT` — bez adresu do sprzeciwu próg jest
+wyłączony i nie pokazujemy żadnych nazwisk osób fizycznych.
+
 Zapis z 18.09.2026. Dotyczy beneficjentów pomocy publicznej (SUDOP),
 projektów z Funduszy Europejskich i przyszłych zamówień publicznych.
 
@@ -42,18 +46,26 @@ w przepisach rolnych — do sprawdzenia, zanim się na nią powołamy publicznie
 | **B. Próg kwotowy** — osoba fizyczna z nazwy dopiero powyżej progu | dochodzą pojedyncze duże przypadki | średnie, ale oparte na logice, którą prawo UE już zastosowało | czytelnik widzi duże pieniądze, drobne wsparcie zostaje anonimowe |
 | **C. Wszystko** — powtarzamy dane jak w rejestrze | wszyscy | największe: profilowanie, prawo sprzeciwu, skarga do UODO, a przy pomocy covidowej także wniosek o kondycji firmy | pełny obraz |
 
-## Rekomendacja: wariant B, z czterema zabezpieczeniami
+## Wariant B — jak został wdrożony
 
-1. **Próg.** Proponuję 100 000 EUR na pojedynczy przypadek pomocy — tyle wynosi
-   unijny próg publikowania indywidualnych przypadków pomocy w GBER, więc nie
-   jest to liczba wymyślona przez nas. Poniżej progu: „osoba fizyczna
-   prowadząca działalność gospodarczą”, kwota, gmina, przeznaczenie, udzielający.
+1. **Próg: 100 000 EUR na pojedynczy przypadek pomocy** (`PROG_JAWNOSCI_EUR`),
+   tyle wynosi unijny próg publikowania pomocy indywidualnej w GBER.
+   Zmierzone na 84 211 przypadkach: odsłania **63 z 12 907** ukrytych nazw
+   (0,5 %), łącznie 78,2 mln zł. Próg 500 tys. EUR odsłoniłby dwie nazwy.
+   Poniżej progu zostaje kwota, gmina, przeznaczenie i udzielający — bez nazwy.
+   Próg **nie znosi listy „nigdy”**: spółka cywilna i wspólnota mieszkaniowa
+   zostają ukryte niezależnie od kwoty (w pomiarze wpadła tam „U&B s.c.”).
+   Stosujemy go tam, gdzie źródło samo podaje kwotę w euro, czyli w SUDOP;
+   listy Funduszy Europejskich podają tylko złote i zostają przy zasadzie
+   zachowawczej.
 2. **Nigdy do indeksu.** Nazwisko osoby fizycznej nie trafia do naszej
    wyszukiwarki, do tytułu strony ani do podglądu linku. Znosi to główny
    argument „to my sprawiamy, że da się to wygooglować”.
-3. **Ścieżka sprzeciwu.** Widoczny adres kontaktowy i zobowiązanie, że sprzeciw
-   z art. 21 RODO realizujemy bez pytania o powód, w kilka dni, a wpis wraca
-   do postaci anonimowej. Wymaga to opisu w polityce prywatności.
+3. **Ścieżka sprzeciwu — warunek techniczny, nie deklaracja.** Próg działa
+   tylko wtedy, gdy ustawiony jest `JAWNE_KONTAKT`; bez adresu kod wraca do
+   wariantu zachowawczego. Przy liście beneficjentów stoi zdanie: „Jeśli jesteś
+   osobą, której nazwisko tu widać, i nie chcesz tego — napisz na …. Usuniemy
+   je bez pytania o powód”.
 4. **Test równowagi na piśmie.** Jedna strona: cel, dlaczego dane są konieczne,
    co zrobiliśmy, by ograniczyć skutki. To dokument, który pokazuje się UODO,
    gdy pyta — nie po fakcie, tylko od razu.

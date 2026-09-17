@@ -18,3 +18,13 @@ export const ADRES_SERWISU = new URL(
 );
 
 export const ADRES_JEST_LOKALNY = ADRES_SERWISU.hostname === 'localhost';
+
+/**
+ * Adres, pod ktory mozna zglosic sprzeciw wobec pokazania nazwiska
+ * (art. 21 RODO). Dopoki go nie ma, prog kwotowy z `prywatnosc.ts` NIE dziala
+ * i nie pokazujemy zadnych nazwisk osob fizycznych — droga sprzeciwu jest
+ * warunkiem, nie ozdobnikiem.
+ *
+ * Ustawia sie go zmienna srodowiskowa JAWNE_KONTAKT (np. w .env.local).
+ */
+export const KONTAKT = process.env.JAWNE_KONTAKT?.trim() || null;
