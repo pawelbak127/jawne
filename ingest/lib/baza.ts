@@ -21,12 +21,58 @@ export function otworz(doZapisu = false): DatabaseSync {
   // WAL: czytanie ze stron w trakcie trwajacego importu nie blokuje sie.
   db.exec('pragma journal_mode = WAL');
   db.exec('pragma foreign_keys = on');
+  // Import SUDOP trwa minutami i moze pracowac rownolegle z innymi etapami.
+  // Bez tego drugi zapis dostaje od razu SQLITE_BUSY zamiast chwile poczekac.
+  db.exec('pragma busy_timeout = 60000');
   if (doZapisu) {
     // Import to setki tysiecy wstawek. Bez tego kazda transakcja czeka na fsync.
     db.exec('pragma synchronous = normal');
   }
   return db;
 }
+
+/*
+  Tabele funduszy UE osobno: etap "fundusze" odbudowuje je w calosci
+  (drop + create), wiec zmiana kolumn nie wymaga migracji danych.
+*/
+export const SCHEMAT_FE = `
+/*
+  Projekty z Funduszy Europejskich (lista MFiPR na dane.gov.pl). Lokalizacje
+  osobno, bo projekt bywa realizowany w wielu miejscach — kwoty takiego
+  projektu NIE dzielimy miedzy gminy, bo to byloby zmyslanie.
+*/
+create table if not exists fe_projekty (
+  id                 integer primary key,
+  okres              text not null,       -- '2021-2027' | '2014-2020'
+  numer_umowy        text,
+  tytul              text not null,
+  beneficjent        text,
+  fundusz            text,
+  program            text,
+  wartosc            real,
+  dofinansowanie_ue  real,
+  waluta             text not null,       -- 'PLN' | 'EUR' (Interreg 2014-2020)
+  poczatek           text,
+  koniec             text,
+  miejsc             integer not null,    -- liczba miejsc realizacji
+  lokalizacja        text                 -- surowy tekst z listy
+);
+
+create table if not exists fe_miejsca (
+  projekt_id   integer not null,
+  poziom       text not null,             -- 'gmina' | 'powiat' | 'wojewodztwo' | 'kraj'
+  teryt        text,                      -- 6 cyfr: gmina albo miasto na prawach powiatu
+  teryt_powiatu text,                     -- 4 cyfry, gdy znany powiat
+  wojewodztwo  text,
+  powiat       text,
+  gmina        text,
+  foreign key (projekt_id) references fe_projekty(id)
+);
+create index if not exists fe_miejsca_teryt on fe_miejsca(teryt);
+create index if not exists fe_miejsca_powiat on fe_miejsca(teryt_powiatu);
+create index if not exists fe_miejsca_projekt on fe_miejsca(projekt_id);
+
+`;
 
 export const SCHEMAT = `
 create table if not exists kluby (
@@ -187,6 +233,56 @@ create virtual table if not exists glosowania_szukaj using fts5(
   tokenize = 'trigram'
 );
 
+/*
+  Pomoc publiczna i de minimis z SUDOP (UOKiK), po gminie siedziby
+  beneficjenta. Wypelniana WYLACZNIE recznym uruchomieniem ingest/jobs/sudop.ts.
+  Kwoty REAL, bo porownujemy je z innymi kwotami, a nie ksiegujemy.
+*/
+create table if not exists pomoc_publiczna (
+  id                  integer primary key,
+  teryt               text not null,     -- 6 cyfr, gmina siedziby beneficjenta
+  kod_gminy_sudop     text,              -- 7 cyfr, jak w SUDOP
+  dzien               text not null,
+  nip_beneficjenta    text,
+  nazwa_beneficjenta  text,
+  wielkosc_kod        text,
+  wielkosc            text,
+  pkd                 text,
+  pkd_nazwa           text,
+  nip_udzielajacego   text,
+  udzielajacy         text,
+  srodek_numer        text,
+  srodek_nazwa        text,
+  podstawa            text,
+  przeznaczenie_kod   text,
+  przeznaczenie       text,
+  forma_kod           text,
+  forma               text,
+  wartosc_nominalna   real,
+  wartosc_brutto      real,
+  wartosc_brutto_eur  real
+);
+create index if not exists pomoc_teryt on pomoc_publiczna(teryt);
+create index if not exists pomoc_nip on pomoc_publiczna(nip_beneficjenta);
+
+/* Kiedy i w jakim zakresie pobrano SUDOP dla gminy — do metryczki przy danych. */
+create table if not exists pomoc_publiczna_pobrania (
+  teryt     text primary key,
+  od        text not null,
+  pobrano   text not null,
+  wierszy   integer not null,
+  zapytan   integer not null,
+  sekund    integer not null
+);
+
+/* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */
+create table if not exists ludnosc (
+  teryt  text primary key,               -- 6 cyfr
+  rok    integer not null,
+  osob   integer not null
+);
+
+/* Tabele funduszy UE tworzy wylacznie etap "fundusze" (SCHEMAT_FE) — przebudowuje je w calosci. */
 create table if not exists import (
   co        text primary key,
   kiedy     text not null,

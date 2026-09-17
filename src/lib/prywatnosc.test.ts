@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bezNazwiskOsobPrywatnych as bez, pominietoNazwiska } from './prywatnosc';
+import { bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska } from './prywatnosc';
 
 /*
  * NAZWISKA W TYCH TESTACH SA ZMYSLONE. Budowa zdan jest przepisana z tytulow
@@ -63,5 +63,34 @@ describe('bezNazwiskOsobPrywatnych', () => {
   it('zglasza, ze cos pominieto', () => {
     expect(pominietoNazwiska('oskarżyciela prywatnego Jana Nowaka')).toBe(true);
     expect(pominietoNazwiska(null)).toBe(false);
+  });
+});
+
+// Nazwy zmyslone, zbudowane jak w prawdziwych listach beneficjentow.
+describe('nazwaPodmiotuJawna', () => {
+  const jawne = [
+    'Przykładowa Sp. z o.o.', 'PRZYKŁAD SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ', 'Przykład S.A.', 'Fundusz Przykładowy SA',
+    'Gmina Przykładowo', 'Powiat przykładowski', 'Uniwersytet Przykładowy', 'Fundacja Przykładu',
+    'Stowarzyszenie Przyjaciół Przykładu', 'Szpital Wojewódzki w Przykładowie', 'Lokalna Grupa Działania Przykład',
+    'Przykład spółka komandytowa', 'Przykład Sp.k.', 'Generalna Dyrekcja Dróg Krajowych i Autostrad',
+    'Szef Urzędu do Spraw Przykładów', 'Przedsiębiorstwo Wodociągów i Kanalizacji w Przykładowie',
+  ];
+  for (const n of jawne) it(`pokazuje: ${n}`, () => expect(nazwaPodmiotuJawna(n)).toBe(true));
+
+  const ukryte = [
+    'Jan Kowalski', 'ANNA NOWAK', 'SMART BUSINESS Jan Kowalski', 'Biuro Projektowe PRZYKŁAD Anna Nowak',
+    'Kowalski i Nowak s.c.', 'PRZYKŁAD SPÓŁKA CYWILNA Jan Kowalski', '', null,
+  ];
+  for (const n of ukryte) it(`ukrywa: ${String(n)}`, () => expect(nazwaPodmiotuJawna(n)).toBe(false));
+
+  it('nie myli "sa" w srodku slowa z forma prawna', () => {
+    expect(nazwaPodmiotuJawna('Jan Sadowski')).toBe(false);
+  });
+});
+
+describe('nazwaDoPokazania', () => {
+  it('zawsze daje tekst, nigdy pusty napis', () => {
+    expect(nazwaDoPokazania('Jan Kowalski')).toEqual({ tekst: 'nazwa pominięta — może to być osoba fizyczna', pominieta: true });
+    expect(nazwaDoPokazania(' Gmina Przykładowo ')).toEqual({ tekst: 'Gmina Przykładowo', pominieta: false });
   });
 });

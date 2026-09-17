@@ -1,0 +1,193 @@
+/**
+ * Import pomocy publicznej z SUDOP dla WSKAZANYCH gmin.
+ *
+ *   npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
+ *
+ * Nie jest czescia `import wszystko` i nie bedzie. Kazda gmina to jedno
+ * zgloszenie w kolejce urzedu, ktory napisal, ze ruch przekracza jego
+ * mozliwosci. Stad:
+ *  - zawsze jedno zapytanie w toku, nigdy rownolegle,
+ *  - odpytywanie kolejki co 60 s (list UOKiK), najdluzej 62 min,
+ *  - przerwa po trzech nieudanych gminach z rzedu,
+ *  - zapisujemy surowa odpowiedz, zeby powtorny zapis nie wymagal
+ *    ponownego pytania urzedu (`--z-plikow`).
+ */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { DatabaseSync } from 'node:sqlite';
+import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
+import {
+  adresWyszukania, kodySudopGminy, kwota, poczatekOknaDanych, sprawdzPorcje, SUDOP_BAZA,
+  type KodGminySudop, type OdpowiedzSudop,
+} from '../lib/sudop.js';
+
+const log = (s: string) => process.stdout.write(`${s}\n`);
+const spij = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const UA = 'jawne.pl/0.1 (serwis obywatelski; import reczny, jedno zapytanie w toku)';
+const KATALOG = join(process.cwd(), 'dane', 'zrodla', 'sudop');
+const CO_ILE_MS = 60_000;
+const HORYZONT_MS = 62 * 60_000;
+const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
+
+async function get(url: string) {
+  // redirect: 'manual' — inaczej fetch sam idzie za 303 i gubi adres kolejki.
+  const odp = await fetch(url, {
+    redirect: 'manual',
+    headers: { 'User-Agent': UA, Accept: 'application/json' },
+    signal: AbortSignal.timeout(120_000),
+  });
+  return { status: odp.status, location: odp.headers.get('location'), tekst: await odp.text() };
+}
+
+const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
+
+async function slownik(): Promise<KodGminySudop[]> {
+  const plik = join(KATALOG, 'slownik-gminy.json');
+  if (!existsSync(plik)) {
+    // Slownik to zasob statyczny — nie tworzy pozycji w kolejce.
+    const r = await get(`${SUDOP_BAZA}/slownik/gmina-siedziby`);
+    if (r.status !== 200) throw new Error(`Slownik gmin: HTTP ${r.status}`);
+    writeFileSync(plik, r.tekst, 'utf8');
+  }
+  return JSON.parse(readFileSync(plik, 'utf8')) as KodGminySudop[];
+}
+
+/** Jedno wyszukanie od rejestracji do wyniku. */
+async function wyszukaj(url: string, opis: string): Promise<OdpowiedzSudop> {
+  const rej = await get(url);
+  if (rej.status !== 303 || !rej.location) {
+    throw new Error(`${opis}: rejestracja zwrocila ${rej.status} ${rej.tekst.slice(0, 200)}`);
+  }
+  const kolejka = pelny(rej.location);
+  const start = Date.now();
+  while (Date.now() - start < HORYZONT_MS) {
+    await spij(CO_ILE_MS);
+    const min = ((Date.now() - start) / 60_000).toFixed(0);
+    const r = await get(kolejka);
+    if (r.status === 200) {
+      log(`   ${opis}: czeka (${min} min)`);
+      continue;
+    }
+    if (r.status === 303 && r.location) {
+      const w = await get(pelny(r.location));
+      if (w.status !== 200) throw new Error(`${opis}: wynik zwrocil ${w.status}`);
+      log(`   ${opis}: gotowe po ${min} min`);
+      return JSON.parse(w.tekst) as OdpowiedzSudop;
+    }
+    throw new Error(`${opis}: kolejka zwrocila ${r.status} ${r.tekst.slice(0, 200)}`);
+  }
+  throw new Error(`${opis}: brak wyniku po ${HORYZONT_MS / 60_000} min (wynik wygasa po godzinie)`);
+}
+
+function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSudop['wyniki'], zapytan: number, sekund: number) {
+  const problemy = sprawdzPorcje(wyniki, teryt);
+  if (problemy.length) {
+    throw new Error(`Gmina ${teryt}: porcja nie przeszla kontroli:\n  ${problemy.slice(0, 10).join('\n  ')}`);
+  }
+  const wstaw = db.prepare(
+    `insert into pomoc_publiczna(teryt, kod_gminy_sudop, dzien, nip_beneficjenta, nazwa_beneficjenta,
+       wielkosc_kod, wielkosc, pkd, pkd_nazwa, nip_udzielajacego, udzielajacy, srodek_numer,
+       srodek_nazwa, podstawa, przeznaczenie_kod, przeznaczenie, forma_kod, forma,
+       wartosc_nominalna, wartosc_brutto, wartosc_brutto_eur)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+  db.exec('begin');
+  // Cala gmina jest zastepowana naraz: SUDOP koryguje stare przypadki, wiec
+  // dopisywanie zostawiloby w bazie wersje, ktorych urzad juz nie pokazuje.
+  db.prepare('delete from pomoc_publiczna where teryt = ?').run(teryt);
+  for (const w of wyniki) {
+    const podstawa = [w['podstawa-prawna-2a-nazwa'], w['podstawa-prawna-2b'], w['podstawa-prawna-2c']]
+      .filter((x) => x && x.trim()).join(' — ') || null;
+    wstaw.run(
+      teryt, w['gmina-siedziby-kod'], w['dzien-udzielenia-pomocy']!, w['nip-beneficjenta'],
+      w['nazwa-beneficjenta'], w['wielkosc-beneficjenta-kod'], w['wielkosc-beneficjenta-nazwa'],
+      w['sektor-dzialalnosci-kod'], w['sektor-dzialalnosci-nazwa'], w['nip-udzielajacego-pomocy'],
+      w['nazwa-udzielajacego-pomocy'], w['srodek-pomocowy-numer'], w['srodek-pomocowy-nazwa'],
+      podstawa, w['przeznaczenie-pomocy-kod'], w['przeznaczenie-pomocy-nazwa'],
+      w['forma-pomocy-kod'], w['forma-pomocy-nazwa'], kwota(w['wartosc-nominalna-pln']),
+      kwota(w['wartosc-brutto-pln']), kwota(w['wartosc-brutto-eur']),
+    );
+  }
+  db.prepare(
+    `insert into pomoc_publiczna_pobrania(teryt, od, pobrano, wierszy, zapytan, sekund) values (?,?,?,?,?,?)
+     on conflict(teryt) do update set od=excluded.od, pobrano=excluded.pobrano, wierszy=excluded.wierszy,
+       zapytan=excluded.zapytan, sekund=excluded.sekund`,
+  ).run(teryt, od, new Date().toISOString(), wyniki.length, zapytan, sekund);
+  db.exec('commit');
+}
+
+async function main(): Promise<void> {
+  const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1];
+  const gminy = (arg('gminy') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const zPlikow = process.argv.includes('--z-plikow');
+  if (!gminy.length) {
+    log('Podaj gminy: --gminy=100101,100102   (TERYT, 6 cyfr)');
+    log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
+    process.exit(2);
+  }
+  mkdirSync(KATALOG, { recursive: true });
+  const db = otworz(true);
+  zalozSchemat(db);
+  const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
+  const kody = await slownik();
+  const od = poczatekOknaDanych(new Date());
+  let porazekZRzedu = 0;
+
+  try {
+    for (const teryt of gminy) {
+      if (!znane.has(teryt)) {
+        log(`-> ${teryt}: nie ma takiej gminy w danych PKW — pomijam`);
+        continue;
+      }
+      const kodyGminy = kodySudopGminy(teryt, kody);
+      if (!kodyGminy.length) {
+        log(`-> ${teryt}: brak kodu w slowniku SUDOP — pomijam`);
+        continue;
+      }
+      log(`-> gmina ${teryt} (kody SUDOP: ${kodyGminy.join(', ')}), pomoc od ${od}`);
+      const start = Date.now();
+      try {
+        const wyniki: OdpowiedzSudop['wyniki'] = [];
+        let strona = 1;
+        let zapytan = 0;
+        for (;;) {
+          const plik = join(KATALOG, `${teryt}-od-${od}-s${strona}.json`);
+          let odp: OdpowiedzSudop;
+          if (zPlikow || existsSync(plik)) {
+            if (!existsSync(plik)) throw new Error(`brak pliku ${plik}`);
+            odp = JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
+            log(`   strona ${strona}: z pliku`);
+          } else {
+            odp = await wyszukaj(adresWyszukania(kodyGminy, od, strona), `strona ${strona}`);
+            zapytan++;
+            writeFileSync(plik, JSON.stringify(odp), 'utf8');
+          }
+          wyniki.push(...(odp.wyniki ?? []));
+          log(`   strona ${strona}: ${odp.wyniki?.length ?? 0} z ${odp['liczba-wynikow']}`);
+          if (wyniki.length >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
+          strona++;
+        }
+        const sekund = Math.round((Date.now() - start) / 1000);
+        zapisz(db, teryt, od, wyniki, zapytan, sekund);
+        log(`   zapisano ${wyniki.length} przypadkow (${zapytan} zapytan, ${sekund} s)`);
+        porazekZRzedu = 0;
+      } catch (e) {
+        porazekZRzedu++;
+        log(`   BLAD: ${e instanceof Error ? e.message : e}`);
+        if (porazekZRzedu >= 3) {
+          log('Trzy gminy z rzedu bez wyniku — przerywam, zeby nie obciazac kolejki urzedu.');
+          break;
+        }
+      }
+    }
+    const lacznie = (db.prepare('select count(*) as c from pomoc_publiczna').get() as { c: number }).c;
+    odnotujImport(db, 'sudop', lacznie, `gmin: ${(db.prepare('select count(*) as c from pomoc_publiczna_pobrania').get() as { c: number }).c}`);
+  } finally {
+    db.close();
+  }
+}
+
+main().catch((e) => {
+  log(`BLAD: ${e instanceof Error ? e.message : e}`);
+  process.exit(1);
+});

@@ -8,17 +8,23 @@
  *   npx tsx ingest/jobs/import.ts kluby poslowie glosowania glosy
  *   npx tsx ingest/jobs/import.ts wszystko
  */
-import { otworz, zalozSchemat, odnotujImport } from '../lib/baza.js';
+import { otworz, zalozSchemat, odnotujImport, SCHEMAT_FE } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
-import { dlaKazdego, pobierzBajty } from '../lib/http.js';
+import { dlaKazdego, pobierzBajty, pobierzJson } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import ExcelJS from 'exceljs';
+import {
+  czytajLokalizacje, dopasujGmine, dopasujPowiat, indeksGmin, indeksPowiatow, sprawdzNaglowek, UKLAD, wierszNaProjekt,
+  type GminaDoDopasowania, type Okres,
+} from '../lib/fe.js';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 
@@ -424,6 +430,52 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log(`   ${glosowania.length} glosowan w indeksie`);
   odnotujImport(db, 'szukaj-glosowania', glosowania.length);
 
+  log('-> wyliczenia: fundusze UE w gminach i powiatach');
+  const maFundusze = db.prepare("select count(*) as c from sqlite_master where name = 'fe_miejsca'").get() as { c: number };
+  if (maFundusze.c) {
+    db.exec('begin');
+    db.exec(`
+      drop table if exists fe_gminy;
+      create table fe_gminy (
+        teryt            text not null,
+        okres            text not null,
+        tylko_tu         integer not null,   -- projekty realizowane WYLACZNIE w tej gminie
+        tylko_tu_wartosc real,               -- ich wartosc (tylko PLN)
+        tylko_tu_ue      real,               -- ich dofinansowanie z UE (tylko PLN)
+        wspolnych        integer not null,   -- projekty tu I gdzie indziej — kwot nie dzielimy
+        primary key (teryt, okres)
+      ) without rowid;
+      insert into fe_gminy
+      select teryt, okres, sum(miejsc = 1),
+             sum(case when miejsc = 1 and waluta = 'PLN' then wartosc end),
+             sum(case when miejsc = 1 and waluta = 'PLN' then dofinansowanie_ue end),
+             sum(miejsc > 1)
+        from (select distinct m.teryt as teryt, p.id, p.okres as okres, p.miejsc as miejsc,
+                     p.waluta as waluta, p.wartosc as wartosc, p.dofinansowanie_ue as dofinansowanie_ue
+                from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+               where m.teryt is not null)
+       group by teryt, okres;
+
+      drop table if exists fe_powiaty;
+      create table fe_powiaty (
+        teryt_powiatu text not null,
+        okres         text not null,
+        projektow     integer not null,      -- projekty wskazane tylko do poziomu powiatu
+        primary key (teryt_powiatu, okres)
+      ) without rowid;
+      insert into fe_powiaty
+      select m.teryt_powiatu, p.okres, count(distinct p.id)
+        from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+       where m.poziom = 'powiat' and m.teryt_powiatu is not null
+       group by m.teryt_powiatu, p.okres;
+    `);
+    db.exec('commit');
+    const g = db.prepare('select count(*) as c, sum(tylko_tu) as p from fe_gminy').get() as { c: number; p: number };
+    log(`   ${g.c} wierszy gmina x okres, ${g.p} projektow przypisanych do jednej gminy`);
+  } else {
+    log('   brak tabel funduszy — uruchom etap "fundusze"');
+  }
+
   log('-> wyliczenia: cechy glosowan');
   const wstawCechy = db.prepare(
     'insert into glosowania_cechy(posiedzenie, numer, nad_caloscia, porzadkowe) values (?,?,?,?)',
@@ -441,6 +493,197 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'cechy-glosowan', glosowania.length, `nad caloscia: ${nadCaloscia}`);
 }
 
+/**
+ * Najnowszy plik XLSX zbioru z dane.gov.pl. Adres pliku zmienia sie co miesiac,
+ * wiec pytamy katalog, zamiast wpisywac adres na sztywno.
+ * Zmierzone: stronicowanie katalogu potrafi zwrocic ten sam zasob dwa razy.
+ */
+async function najnowszyXlsx(zbior: number): Promise<{ url: string; data: string }> {
+  const zasoby: { data: string; url: string; format: string }[] = [];
+  for (let strona = 1; strona <= 10; strona++) {
+    const r = await fetch(`https://api.dane.gov.pl/1.4/datasets/${zbior}/resources?per_page=50&page=${strona}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(60_000),
+    });
+    const j = (await r.json()) as { data?: { attributes: { data_date?: string; link?: string; format?: string } }[] };
+    if (!j.data?.length) break;
+    for (const d of j.data) {
+      zasoby.push({ data: d.attributes.data_date ?? '', url: d.attributes.link ?? '', format: d.attributes.format ?? '' });
+    }
+  }
+  const xlsx = zasoby.filter((z) => z.format === 'xlsx' && z.url).sort((a, b) => b.data.localeCompare(a.data));
+  if (!xlsx[0]) throw new Error(`Zbior ${zbior}: brak pliku XLSX w katalogu`);
+  return xlsx[0];
+}
+
+const ZBIORY_FE: { okres: Okres; zbior: number }[] = [
+  { okres: '2021-2027', zbior: 13939 },
+  { okres: '2014-2020', zbior: 1176 },
+];
+
+async function importFunduszy(db: DatabaseSync): Promise<void> {
+  log('-> fundusze europejskie (listy projektow MFiPR z dane.gov.pl)');
+  const gminy = db.prepare('select teryt, nazwa, rodzaj, powiat, wojewodztwo from gminy').all() as unknown as GminaDoDopasowania[];
+  if (!gminy.length) throw new Error('Brak gmin w bazie — uruchom najpierw etap "okregi".');
+  const indeks = indeksGmin(gminy);
+  const powiaty = indeksPowiatow(gminy);
+  const katalog = join(process.cwd(), 'dane', 'zrodla');
+  mkdirSync(katalog, { recursive: true });
+
+  // Odbudowa w calosci: listy ministerstwa zmieniaja sie wstecz co miesiac.
+  db.exec('drop table if exists fe_miejsca; drop table if exists fe_projekty;');
+  db.exec(SCHEMAT_FE);
+  const wstawP = db.prepare(
+    `insert into fe_projekty(okres, numer_umowy, tytul, beneficjent, fundusz, program, wartosc,
+       dofinansowanie_ue, waluta, poczatek, koniec, miejsc, lokalizacja) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+  const wstawM = db.prepare(
+    'insert into fe_miejsca(projekt_id, poziom, teryt, teryt_powiatu, wojewodztwo, powiat, gmina) values (?,?,?,?,?,?,?)',
+  );
+
+  for (const { okres, zbior } of ZBIORY_FE) {
+    const { url, data } = await najnowszyXlsx(zbior);
+    const plik = join(katalog, `fe-${okres}-${data}.xlsx`);
+    if (!existsSync(plik)) {
+      log(`   pobieram ${url}`);
+      writeFileSync(plik, await pobierzBajty(url));
+    }
+    const skrot = createHash('sha256').update(readFileSync(plik)).digest('hex');
+    log(`   ${okres}: plik z ${data}, sha256 ${skrot.slice(0, 12)}…`);
+
+    const st = { projektow: 0, segGminy: 0, dopasowanych: 0, niedopasowanych: 0, powiat: 0, powiatDopas: 0, powiatMiasto: 0, woj: 0, kraj: 0, eur: 0 };
+    const niedopasowane = new Map<string, number>();
+    const uklad = UKLAD[okres];
+    const czytnik = new ExcelJS.stream.xlsx.WorkbookReader(plik, {
+      sharedStrings: 'cache', worksheets: 'emit', hyperlinks: 'ignore', styles: 'ignore',
+    });
+    db.exec('begin');
+    try {
+      for await (const arkusz of czytnik) {
+        for await (const wiersz of arkusz) {
+          const v = wiersz.values as unknown[];
+          if (wiersz.number === uklad.wierszNaglowka) {
+            const bledy = sprawdzNaglowek(okres, v);
+            if (bledy.length) throw new Error(`${okres}: zmienil sie uklad kolumn:\n  ${bledy.join('\n  ')}`);
+            continue;
+          }
+          if (wiersz.number < uklad.pierwszyWiersz) continue;
+          const p = wierszNaProjekt(okres, v);
+          if (!p) continue;
+          const segmenty = czytajLokalizacje(p.lokalizacja);
+          const { lastInsertRowid } = wstawP.run(
+            p.okres, p.numerUmowy, p.tytul, p.beneficjent, p.fundusz, p.program, p.wartosc,
+            p.dofinansowanieUe, p.waluta, p.poczatek, p.koniec, segmenty.length, p.lokalizacja,
+          );
+          st.projektow++;
+          if (p.waluta === 'EUR') st.eur++;
+          for (const s of segmenty) {
+            if (s.poziom === 'gmina') {
+              st.segGminy++;
+              const teryt = dopasujGmine(s, indeks);
+              if (teryt) st.dopasowanych++;
+              else {
+                st.niedopasowanych++;
+                const k = `${s.wojewodztwo} / ${s.powiat ?? '-'} / ${s.gmina}${s.wiejska ? ' (wiejska)' : ''}`;
+                niedopasowane.set(k, (niedopasowane.get(k) ?? 0) + 1);
+              }
+              const powG = s.powiat ? dopasujPowiat(s.wojewodztwo, s.powiat, powiaty) : null;
+              wstawM.run(lastInsertRowid, 'gmina', teryt, teryt ? teryt.slice(0, 4) : (powG?.kod ?? null), s.wojewodztwo, s.powiat, s.gmina);
+            } else if (s.poziom === 'powiat') {
+              st.powiat++;
+              const pow = dopasujPowiat(s.wojewodztwo, s.powiat, powiaty);
+              if (pow) st.powiatDopas++;
+              if (pow?.gminaMiasto) st.powiatMiasto++;
+              // Miasto na prawach powiatu JEST gmina — tylko wtedy wpisujemy TERYT gminy.
+              wstawM.run(lastInsertRowid, pow?.gminaMiasto ? 'gmina' : 'powiat', pow?.gminaMiasto ?? null, pow?.kod ?? null, s.wojewodztwo, s.powiat, null);
+            } else if (s.poziom === 'wojewodztwo') {
+              st.woj++;
+              wstawM.run(lastInsertRowid, 'wojewodztwo', null, null, s.wojewodztwo, null, null);
+            } else {
+              st.kraj++;
+              wstawM.run(lastInsertRowid, 'kraj', null, null, null, null, null);
+            }
+          }
+        }
+        break; // lista ma jeden arkusz; kolejne (jesli sa) to objasnienia
+      }
+      db.exec('commit');
+    } catch (e) {
+      db.exec('rollback');
+      throw e;
+    }
+
+    const proc = st.segGminy ? ((st.dopasowanych / st.segGminy) * 100).toFixed(1) : '0';
+    log(`   ${okres}: ${st.projektow} projektow; gmin w lokalizacjach ${st.segGminy}, dopasowanych ${st.dopasowanych} (${proc}%)`);
+    log(`   ${okres}: poziom powiatu ${st.powiat} (dopasowanych ${st.powiatDopas}, w tym miast na prawach powiatu ${st.powiatMiasto}); wojewodztwa ${st.woj}, kraju ${st.kraj}; w euro: ${st.eur}`);
+    if (niedopasowane.size) {
+      // Raport, nie blad: niedopasowana gmina zostaje w bazie z nazwa, bez TERYT.
+      const top = [...niedopasowane].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      log(`   niedopasowane (${niedopasowane.size} nazw), najczestsze:`);
+      for (const [k, n] of top) log(`     ${n} × ${k}`);
+    }
+    odnotujImport(db, `fundusze-${okres}`, st.projektow,
+      `plik z ${data}; ${url}; sha256 ${skrot}; gminy dopasowane ${st.dopasowanych}/${st.segGminy}`);
+  }
+}
+
+/**
+ * Ludnosc gmin z GUS BDL — mianownik kwot "na mieszkanca".
+ * Zmierzone: zmienna 72305 ("ogolem") ma poziom 6 (gminy), 3 918 jednostek
+ * (gminy, ich czesci miejskie i wiejskie, dzielnice). Kod jednostki BDL ma
+ * 12 znakow i zawiera TERYT: "011212001011" -> woj 12, pow 01, gm 01, rodzaj 1.
+ * Limit anonimowy: 10 000 zapytan na 7 dni.
+ */
+async function importLudnosci(db: DatabaseSync): Promise<void> {
+  log('-> ludnosc gmin (GUS BDL, zmienna 72305)');
+  const zmienna = await pobierzJson<{ years: number[] }>('https://bdl.stat.gov.pl/api/v1/variables/72305?format=json');
+  const lata = [...zmienna.years].sort((a, b) => b - a);
+  const gminy = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
+
+  for (const rok of lata.slice(0, 3)) {
+    const wartosci = new Map<string, { rodzaj: string; osob: number }[]>();
+    let adres: string | null = `https://bdl.stat.gov.pl/api/v1/data/by-variable/72305?unit-level=6&year=${rok}&page-size=100&format=json`;
+    let stron = 0;
+    while (adres) {
+      const j: { results: { id: string; values: { year: string; val: number }[] }[]; links?: { next?: string } } = await pobierzJson(adres);
+      stron++;
+      for (const r of j.results) {
+        const w = r.values.find((x) => x.year === String(rok));
+        if (!w) continue;
+        const teryt = `${r.id.slice(2, 4)}${r.id.slice(7, 11)}`;
+        const lista = wartosci.get(teryt) ?? [];
+        lista.push({ rodzaj: r.id.slice(11), osob: w.val });
+        wartosci.set(teryt, lista);
+      }
+      adres = j.links?.next ?? null;
+      if (adres) await new Promise((ok) => setTimeout(ok, 300));
+    }
+    // Gmina miejsko-wiejska ma trzy wpisy (3 cala gmina, 4 miasto, 5 wies) —
+    // bierzemy CALA gmine. Dla pozostalych jest jeden wpis.
+    const doZapisu: [string, number][] = [];
+    for (const [teryt, lista] of wartosci) {
+      if (!gminy.has(teryt)) continue;
+      const cala = lista.find((x) => ['1', '2', '3', '8'].includes(x.rodzaj));
+      if (cala) doZapisu.push([teryt, cala.osob]);
+    }
+    log(`   rok ${rok}: ${stron} stron, gmin z wartoscia ${doZapisu.length} z ${gminy.size}`);
+    if (doZapisu.length < gminy.size * 0.95) {
+      log(`   rok ${rok}: za malo gmin — GUS nie opublikowal jeszcze tego roku, biore starszy`);
+      continue;
+    }
+    const wstaw = db.prepare('insert into ludnosc(teryt, rok, osob) values (?,?,?) on conflict(teryt) do update set rok=excluded.rok, osob=excluded.osob');
+    db.exec('begin');
+    db.exec('delete from ludnosc');
+    for (const [teryt, osob] of doZapisu) wstaw.run(teryt, rok, osob);
+    db.exec('commit');
+    const suma = doZapisu.reduce((a, [, o]) => a + o, 0);
+    log(`   zapisano ${doZapisu.length} gmin, lacznie ${suma} osob (rok ${rok})`);
+    odnotujImport(db, 'ludnosc', doZapisu.length, `GUS BDL, zmienna 72305, rok ${rok}; suma ${suma}`);
+    return;
+  }
+  throw new Error('GUS BDL: zaden z trzech ostatnich lat nie ma kompletu gmin');
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -448,6 +691,8 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosy: importGlosow,
   zdjecia: importZdjec,
   okregi: importOkregow,
+  ludnosc: importLudnosci,
+  fundusze: importFunduszy,
   wyliczenia,
 };
 
