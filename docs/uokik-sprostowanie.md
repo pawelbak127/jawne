@@ -51,14 +51,16 @@ przesłance niż wcześniej: nie na tym, że usługa nie działa, tylko na skali
   pobierać w plasterkach — po gminie, formie pomocy albo przeznaczeniu.
 - Jedna strona odpowiedzi to najwyżej 10 000 rekordów, a każda kolejna strona
   jest osobnym zapytaniem stojącym w kolejce.
-- Trzy gminy o łącznej liczbie 89 tysięcy mieszkańców dały 80 698 przypadków,
-  co dla kraju oznacza rząd wielkości kilkunastu milionów rekordów, czyli
-  tysiące zapytań i tygodnie pracy kolejki.
+- Jedno zapytanie obejmujące wszystkie formy pomocy i jeden dzień zwróciło
+  3 531 przypadków z całego kraju (1 150 gmin) — czyli **bieżące dane dla całej
+  Polski to jedno zapytanie na dobę**. Kosztowna jest wyłącznie historia:
+  przy ok. 20 mln rekordów z dziesięciu lat to około dwóch tysięcy zapytań.
 - W strukturze danych nie ma pola daty modyfikacji rekordu, więc nie da się
   pobierać wyłącznie tego, co się zmieniło. Zapytanie po dniu udzielenia pomocy
   pozwala dociągać nowe przypadki, ale nie wychwyci korekt wcześniejszych.
 
-Dlatego ponawiam prośbę o **eksport zbiorczy poza kolejką** — plik na
+Dlatego ponawiam prośbę o **eksport zbiorczy poza kolejką** dla danych
+historycznych — plik na
 województwo albo na gminę, odświeżany raz na dobę i pobierany zwykłym `GET`-em.
 Obciążałby Państwa serwer raz dziennie, niezależnie od liczby pytających.
 Gdyby taki eksport nie był możliwy, proszę o wskazanie tempa odpytywania, które

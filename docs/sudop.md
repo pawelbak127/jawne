@@ -83,28 +83,32 @@ własnym zapytaniem, nie przepisane z notatek.
 - Słowniki (bez kolejki, zwykły `GET`): formy pomocy 70, przeznaczenia 450,
   środki pomocowe 1 848, sektory 3 518, gminy 4 155.
 
-**Pomiar krajowy: jeden dzień, dwie formy pomocy.**
+**Pomiar krajowy: cała Polska z jednego dnia, jednym zapytaniem.**
 
 ```
-forma-pomocy-kod=A1.1 & forma-pomocy-kod=A2.5, dzień 2026-09-15
+70 × forma-pomocy-kod (cały słownik) + dzień 2026-09-15
 303 -> kolejka, gotowe po 4 min
-2 933 przypadki, 1 028 gmin, 97 podmiotów udzielających, 3,5 MB
+3 531 przypadków, 1 150 gmin, 19 form, 4,3 MB — JEDNA strona
 ```
 
-W trzech pobranych gminach te dwie formy to 63,5 % rekordów, więc cała Polska
-w jednym dniu to rząd **4–5 tysięcy przypadków — mieści się w jednej stronie
-odpowiedzi (10 000 wierszy)**.
+Kontrola spójności na dwóch mniejszych zapytaniach tego samego dnia:
+A1.1 sam → 311, A1.1+A1.4 → 480, A1.1+A2.5 → 2 933. Powtórzony parametr
+sumuje zbiory, a liczby się domykają.
+
+**Cały kraj z jednego dnia mieści się w jednej stronie odpowiedzi**
+(limit 10 000 wierszy) i kosztuje urząd jedno zapytanie.
 
 **Co z tego wynika dla importu.**
 
 | Zadanie | Sposób | Koszt dla urzędu |
 |---|---|---|
-| Przyrost dzienny dla całego kraju | jedno zapytanie: wszystkie formy pomocy + zakres jednego dnia | **1–2 zapytania na dobę** |
+| Przyrost dzienny dla całego kraju | jedno zapytanie: 70 form pomocy + zakres jednego dnia | **1 zapytanie na dobę** (zmierzone) |
 | Uzupełnienie historii (10 lat) | cięcie po formie pomocy i miesiącach, strony po 10 tys. | tysiące zapytań — to jest ta część, na którą trzeba zgody |
 
-Lata 2020–2021 mają w naszych danych ~7,8 razy więcej przypadków niż rok
-zwykły (pomoc covidowa). Stąd szacunek dla kraju na 10 lat: **rzędu 20–30 mln
-rekordów**, czyli 2–3 tys. stron po 10 tys. wierszy i **15–20 GB w bazie**.
+Zwykły dzień to 3 531 przypadków, czyli ok. 0,9 mln na rok roboczy. Lata
+2020–2021 mają w naszych danych 7,8 razy więcej przypadków niż rok zwykły
+(pomoc covidowa). Stąd szacunek dla kraju na 10 lat: **około 20 mln rekordów**,
+czyli ~2 tys. stron po 10 tys. wierszy i **13–15 GB w bazie**.
 
 ## Co z tego wynika — do decyzji Pawła
 
@@ -112,11 +116,11 @@ rekordów**, czyli 2–3 tys. stron po 10 tys. wierszy i **15–20 GB w bazie**.
 zachodzi.** Zostaje przesłanka mocniejsza: urząd napisał, że ruch przekracza
 jego możliwości. Skala importu całego kraju:
 
-- szacunek **20–30 mln przypadków** na cały kraj (z pomiaru krajowego wyżej,
+- szacunek **około 20 mln przypadków** na cały kraj (z pomiaru krajowego wyżej,
   nie z ekstrapolacji po liczbie mieszkańców),
-- to **2–3 tys. zapytań** przy cięciu po formie pomocy (a nie 4–6 tys. przy
-  pytaniu o każdą gminę), po 2–7 minut każde → **ok. 8–15 dni ciągłej pracy**
-  przy jednym zapytaniu naraz,
+- to **ok. 2 tys. zapytań** przy cięciu po dniach albo formach (a nie 4–6 tys.
+  przy pytaniu o każdą gminę), po 2–9 minut każde → **ok. 7–12 dni ciągłej
+  pracy** przy jednym zapytaniu naraz,
 - **rozmiar**: 80 698 przypadków to 114 MB surowego JSON-u i 56 MB w SQLite
   (z indeksami), czyli ok. 700 bajtów na rekord. Cały kraj: **15–20 GB bazy**.
 
@@ -125,7 +129,7 @@ jego możliwości. Skala importu całego kraju:
 | | Koszt dla urzędu | Co daje | Rekomendacja |
 |---|---|---|---|
 | **Przyrost dzienny** (cały kraj, jedno zapytanie na dobę) | 1–2 zapytania | serwis pokazuje nową pomoc dla wszystkich 2 477 gmin | zacząć, ale dopiero po odpowiedzi urzędu albo po wyraźnej zgodzie Pawła — D13 mówi o zamiarze, nie o liczbie zapytań |
-| **Historia 10 lat** | 2–3 tys. zapytań, 8–15 dni | pełne dane wstecz | nie robić bez zgody urzędu; prosić o eksport zbiorczy |
+| **Historia 10 lat** | ok. 2 tys. zapytań, 7–12 dni | pełne dane wstecz | nie robić bez zgody urzędu; prosić o eksport zbiorczy |
 | **Gminy pokazowe na żądanie** | kilka zapytań na gminę | strona gminy działa tam, gdzie pobrano | robić dalej, ręcznie |
 
 Rozmiar bazy przy pełnej historii (15–20 GB) i tak wymusiłby zmianę: trzymamy
