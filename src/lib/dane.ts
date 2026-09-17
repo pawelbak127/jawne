@@ -608,8 +608,20 @@ export function gminaPelna(teryt: string): GminaPelna | null {
   );
 }
 
-export function tytulyGmin(): string[] {
-  return bezTabeli(() => wszystkie<{ teryt: string }>('select teryt from gminy').map((r) => r.teryt), []);
+export function terytyGmin(): string[] {
+  return bezTabeli(() => wszystkie<{ teryt: string }>('select teryt from gminy order by teryt').map((r) => r.teryt), []);
+}
+
+export type GlosowanieDoMapy = Pick<Glosowanie, 'posiedzenie' | 'numer' | 'data' | 'tytul' | 'temat' | 'opis'>;
+
+/** Wszystkie glosowania z polami potrzebnymi mapie strony (i decyzji o noindex). */
+export function glosowaniaDoMapy(): GlosowanieDoMapy[] {
+  return bezTabeli(
+    () => wszystkie<GlosowanieDoMapy>(
+      `select posiedzenie, numer, data, tytul, temat, opis from glosowania order by posiedzenie, numer`,
+    ),
+    [],
+  );
 }
 
 export type FunduszeWOkresie = {

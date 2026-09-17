@@ -1,0 +1,27 @@
+import type { MetadataRoute } from 'next';
+import { ADRES_SERWISU } from '@/lib/adres';
+import { bazaDostepna, glosowaniaDoMapy, okregi, slugiPoslow, terytyGmin } from '@/lib/dane';
+import { pominietoNazwiska } from '@/lib/prywatnosc';
+
+/**
+ * Mapa strony — okolo 7,7 tys. adresow, ponizej limitu 50 tys. jednego pliku.
+ * Dopoki layout ma `noindex` (serwis przed premiera), mapa niczego nie
+ * wystawia; jest gotowa na dzien, w ktorym Pawel zdejmie blokade.
+ *
+ * Glosowania z pominietymi nazwiskami osob prywatnych nie trafiaja do mapy —
+ * te same, ktore strona glosowania oznacza `noindex` na stale.
+ */
+export default function sitemap(): MetadataRoute.Sitemap {
+  const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
+  const stale = ['/', '/okregi', '/poslowie', '/glosowania', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
+  if (!bazaDostepna()) return stale;
+  return [
+    ...stale,
+    ...slugiPoslow().map((s) => ({ url: adres(`/posel/${s}`) })),
+    ...okregi().map((o) => ({ url: adres(`/okreg/${o.nr}`) })),
+    ...terytyGmin().map((t) => ({ url: adres(`/gmina/${t}`) })),
+    ...glosowaniaDoMapy()
+      .filter((g) => !pominietoNazwiska(g.tytul) && !pominietoNazwiska(g.temat) && !pominietoNazwiska(g.opis))
+      .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data })),
+  ];
+}
