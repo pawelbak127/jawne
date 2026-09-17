@@ -1,8 +1,9 @@
 # jawne
 
-Serwis pokazujący dane publiczne o Sejmie RP: kto jak głosował, kto zasiada
-w izbie i skąd to wiadomo. Przy każdej liczbie stoi odnośnik do oficjalnego
-rejestru.
+Serwis pokazujący dane publiczne o Sejmie RP i o publicznych pieniądzach
+w gminach: kto jak głosował, kto reprezentuje Twoją gminę, ile trafiło do niej
+z Funduszy Europejskich i jakiej pomocy publicznej udzielono tutejszym firmom.
+Przy każdej liczbie stoi odnośnik do oficjalnego rejestru.
 
 ## Uruchomienie
 
@@ -23,6 +24,17 @@ npm run import zdjecia
 
 # 4. Głosy imienne: 2,1 mln wierszy, ~18 minut. Można w tle.
 npm run import glosy
+
+# 5. Gminy: okręgi (PKW, z pliku w repozytorium), ludność (GUS),
+#    projekty unijne (listy MFiPR, ~3 min), na końcu wyliczenia
+npm run import okregi ludnosc fundusze wyliczenia
+```
+
+Pomoc publiczna (SUDOP) nie wchodzi do `import wszystko`. Pobiera się ją
+ręcznie dla wskazanych gmin — dlaczego, opisuje [docs/sudop.md](docs/sudop.md):
+
+```bash
+npx tsx ingest/jobs/sudop.ts --gminy=100101,100102   # kilka minut na gminę
 ```
 
 Baza powstaje w `dane/sejm.db` i nie jest trzymana w repozytorium — odtwarza
@@ -32,11 +44,14 @@ się w całości z publicznego API Sejmu.
 
 | Ścieżka | |
 |---|---|
-| `/` | półkole izby, wyszukiwarka posła, ostatnie głosowania |
+| `/` | półkole izby, wyszukiwarka (posłowie, gminy, głosowania), ostatnie głosowania |
+| `/okregi`, `/okreg/[nr]` | 41 okręgów: gminy, posłowie, jak głosowali |
+| `/gmina/[teryt]` | posłowie z okręgu, Fundusze Europejskie na mieszkańca, pomoc publiczna dla firm |
 | `/poslowie` | wszyscy posłowie, filtrowanie w przeglądarce |
 | `/posel/[slug]` | profil: rozkład głosów, udział, ostatnie głosowania |
 | `/glosowania` | wszystkie głosowania, stronicowane |
 | `/glosowanie/[posiedzenie]-[numer]` | kto jak zagłosował, imiennie |
+| `/szukaj` | wyniki wyszukiwania |
 | `/stan` | co i kiedy zaimportowano oraz czego brakuje |
 
 ## Wdrożenie
@@ -60,7 +75,17 @@ npm test
 npx eslint src ingest
 ```
 
-## Źródło danych
+## Źródła danych
 
-[API Sejmu RP](https://api.sejm.gov.pl/sejm/openapi/) — publiczne, bez klucza.
-Serwis nie jest powiązany z Kancelarią Sejmu ani z żadnym klubem poselskim.
+- [API Sejmu RP](https://api.sejm.gov.pl/sejm/openapi/) — posłowie, kluby, głosowania,
+- [PKW, wybory 2023](https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach) — gminy w okręgach,
+- [GUS, Bank Danych Lokalnych](https://bdl.stat.gov.pl) — ludność gmin,
+- listy projektów Funduszy Europejskich MFiPR ([2021–2027](https://dane.gov.pl/pl/dataset/13939), [2014–2020](https://dane.gov.pl/pl/dataset/1176)),
+- [SUDOP, UOKiK](https://sudop.uokik.gov.pl) — pomoc publiczna, dla wybranych gmin.
+
+Wszystkie publiczne i bez klucza. Pełny katalog, także źródeł jeszcze
+niewykorzystanych (KRS, zamówienia publiczne, budżety gmin), jest
+w [docs/zrodla.md](docs/zrodla.md).
+
+Serwis nie jest powiązany z Kancelarią Sejmu, z urzędami, których dane
+pokazuje, ani z żadnym klubem poselskim.

@@ -8,8 +8,9 @@ repozytorium **zmierzone**, a nie założone.
 ## Czym to jest
 
 Serwis civic tech pokazujący dane publiczne o Sejmie: posłów, głosowania,
-drogę ustaw. Docelowo także pieniądze publiczne i wyszukiwarkę firm — stąd
-nazwa nie zawężona do Sejmu. Prowadzi to jedna osoba (Paweł), bootstrapowo.
+drogę ustaw — i publiczne pieniądze w gminach (Fundusze Europejskie, pomoc
+publiczna dla firm). Docelowo także wyszukiwarka firm — stąd nazwa
+nie zawężona do Sejmu. Prowadzi to jedna osoba (Paweł), bootstrapowo.
 
 **Wiarygodność jest produktem.** Błąd w liczbie przy czyimś nazwisku kosztuje
 więcej niż tydzień opóźnienia.
@@ -35,12 +36,14 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
 | `src/components/` | komponenty; `'use client'` tylko tam, gdzie potrzebna interakcja |
-| `ingest/` | import z API Sejmu do SQLite |
+| `ingest/` | import do SQLite: Sejm, PKW, GUS, listy FE; SUDOP osobnym, ręcznym skryptem |
+| `docs/zrodla.md` | katalog źródeł danych publicznych (też o firmach) ze statusem: zmierzone / z dokumentacji / odrzucone |
+| `docs/sudop.md` | jak działa API SUDOP, co przeoczono w starym projekcie, decyzja do podjęcia |
 | `dane/sejm.db` | baza — **nie w repozytorium**, odtwarzalna w ~20 minut |
 
 ---
@@ -54,11 +57,17 @@ npm run typecheck
 npm test
 npx eslint src ingest
 
-npm run import wszystko                    # pełny import (~20 min)
+npm run import wszystko                    # pełny import (~25 min), bez SUDOP
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
+npm run import ludnosc                     # GUS BDL, ~10 s
+npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
+
+# SUDOP — tylko ręcznie, tylko wskazane gminy (patrz Bezpieczeństwo)
+npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
+npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow   # z zapisanych odpowiedzi, bez sieci
 ```
 
 ---
@@ -82,8 +91,20 @@ npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
    i z naszego indeksu wyszukiwania; strona dostaje `noindex` i mówi o tym
    wprost. Nazwisko posła zostaje. Jedna reguła dla wszystkich — także gdy
    oskarżycielem jest polityk. Kod: `src/lib/prywatnosc.ts`.
+   **To samo dotyczy beneficjentów** funduszy UE i pomocy publicznej
+   (decyzja z 17.09.2026, do potwierdzenia przez Pawła): nazwę pokazujemy
+   tylko, gdy widać w niej formę prawną albo instytucję (`nazwaDoPokazania`).
+   Pozostałych nie wymieniamy, ale zawsze podajemy ich liczbę i wliczamy
+   do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk w firmie — są w KRS;
+   spółki cywilnej nie (to umowa osób fizycznych).
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
    po słowach rejestru. Nie wybieramy „ważnych" według siebie.
+9. **Kwota w gminie zawsze na mieszkańca i z punktem odniesienia.** Mediana
+   w województwie (2021–2027) albo wśród miast na prawach powiatu (2014–2020).
+   Grupa porównawcza musi mieć te same szanse na niezerową wartość.
+10. **Dane SUDOP pokazujemy z warunkami UOKiK** tuż przy liczbach: źródło,
+    data pobrania, „dane mogą ulec zmianie”, odpowiedzialność podmiotów
+    udzielających, charakter pomocniczy, RODO.
 
 ---
 
@@ -162,6 +183,32 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     w `kluby.ts` obok następców — inaczej wykres z 2023 r. przestawiał je
     politycznie.
 
+20. **Listy FE mają twarde spacje (U+00A0) w nagłówkach.** Kontrola nagłówka
+    normalizuje `\s+`; bez tego zatrzymała import na „Miejsce realizacji”.
+21. **Lista FE 2014–2020 ma miejsce realizacji tylko do powiatu.** Do gminy
+    trafiają wyłącznie projekty miast na prawach powiatu. Pozostałe gminy
+    dostają dla tego okresu wyjaśnienie, nie zero. Mediana liczona po
+    wszystkich gminach dawała przez to „0 zł”.
+22. **Plik ministerstwa ma U+FFFD już u źródła** („Mst��w”) i nazwy ucięte
+    limitem komórki. Nie naprawiamy zgadywaniem — 81 lokalizacji zostaje
+    niedopasowanych i jest to raportowane.
+23. **Interreg 2014–2020 podaje kwoty w euro** (kolumna `waluta`). Sumy tylko PLN.
+24. **Warszawa: lista FE ma jedną gminę 146501, PKW i GUS — 18 dzielnic.**
+    Ludność Warszawy składamy z dzielnic (`ludnoscWarszawy`).
+25. **228 nazw gmin powtarza się w 470 gminach.** Tytuł strony zawiera
+    rodzaj i powiat, inaczej dwie strony mają ten sam tytuł.
+26. **API SUDOP:** rejestracja zapytania oddaje `303` na `/api/kolejka/{id}`;
+    potem co 60 s: `200` = czekaj, `303` = wynik gotowy. `fetch` musi mieć
+    `redirect: 'manual'`. Kod gminy ma 7 cyfr (TERYT + rodzaj), parametr
+    powtarzany. Daty `RRRR-MM-DD`, okno 10 lat, 10 000 wierszy na stronę.
+    **`?csv=true` jest wadliwy** (przecinki bez cudzysłowu) — tylko JSON.
+    Źródłem tych ustaleń jest instrukcja UOKiK (dane.gov.pl, zbiór 6068).
+27. **`exceljs` ciągnie `uuid` < 11.1.1** (podatność) — `overrides` w
+    `package.json`; `exceljs` tylko w devDependencies, bo używa go import.
+28. **Import SUDOP pisze do tej samej bazy przez kilkadziesiąt minut.**
+    `busy_timeout = 60000` każe równoległemu etapowi czekać na zapis zamiast
+    od razu zgłaszać `database is locked` (zabezpieczenie, błąd nie wystąpił).
+
 ---
 
 ## Wzorce obowiązujące
@@ -195,9 +242,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 
 - **Nie otwieramy `C:\Projects\obywatel\.env.local`** — zawiera klucz omijający
   zabezpieczenia tamtej bazy. Ten projekt nie potrzebuje żadnych poświadczeń.
-- **Nie odpytujemy API UOKiK/SUDOP.** To nie jest ograniczenie techniczne:
-  Paweł czeka na odpowiedź urzędu na oficjalne pismo, a każde zapytanie tworzy
-  pozycję w kolejce. Dotyczy osób trzecich — **zapytaj, zanim cokolwiek dotkniesz**.
+- **API UOKiK/SUDOP odpytujemy tylko ręcznie i oszczędnie.** 17.09.2026 Paweł
+  poprosił o ponowne sprawdzenie; ścieżka z kolejką działa (`docs/sudop.md`)
+  i zaimportowano trzy gminy pokazowe. **Import całego kraju to decyzja Pawła**
+  (D13 w starym projekcie): urząd pisał, że ruch przekracza jego możliwości,
+  a każde zapytanie tworzy pozycję w kolejce. Nigdy na żądanie czytelnika,
+  nigdy z crona bez tej decyzji. Jedno zapytanie naraz, odpytywanie co 60 s.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 
