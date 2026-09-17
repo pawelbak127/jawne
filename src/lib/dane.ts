@@ -643,30 +643,67 @@ export function funduszeGminy(teryt: string): FunduszeWOkresie[] {
   );
 }
 
+export const TERYT_WARSZAWY = '146501';
+
+// Warszawa jest w liscie UE jedna gmina (146501), a w PKW i GUS — 18 dzielnic.
+// Do przeliczen na mieszkanca skladamy ja z dzielnic; inaczej wypadalaby
+// z porownan jako jedyne miasto bez ludnosci.
+const JEDNOSTKI_FE = `
+  select g.teryt as teryt, g.wojewodztwo as wojewodztwo, g.rodzaj as rodzaj, l.osob as osob
+    from gminy g join ludnosc l on l.teryt = g.teryt
+   where g.rodzaj <> 'dzielnica Warszawy'
+  union all
+  select '${TERYT_WARSZAWY}', min(g.wojewodztwo), 'miasto na prawach powiatu', sum(l.osob)
+    from gminy g join ludnosc l on l.teryt = g.teryt
+   where g.rodzaj = 'dzielnica Warszawy'
+  having count(*) > 0`;
+
+export function ludnoscWarszawy(): number | null {
+  return bezTabeli(
+    () => jeden<{ osob: number | null }>(
+      `select sum(l.osob) as osob from gminy g join ludnosc l on l.teryt = g.teryt where g.rodzaj = 'dzielnica Warszawy'`,
+    )?.osob ?? null,
+    null,
+  );
+}
+
+export type MedianaUe = {
+  mediana: number;
+  jednostek: number;
+  /** z kim porownujemy — tekst na stronie zalezy od grupy */
+  grupa: 'wojewodztwo' | 'miasta-na-prawach-powiatu';
+};
+
 /**
- * Mediana dofinansowania UE na mieszkanca wsrod gmin tego samego wojewodztwa
- * (projekty realizowane wylacznie w jednej gminie, dany okres). Kontekst dla
- * jednej liczby — bez niej "300 zl na mieszkanca" nie znaczy nic.
+ * Mediana dofinansowania UE na mieszkanca w grupie porownawczej (projekty
+ * realizowane wylacznie w jednej gminie, dany okres). Kontekst dla jednej
+ * liczby — bez niej "300 zl na mieszkanca" nie znaczy nic.
  * Gminy bez takich projektow licza sie jako zero: brak projektu to zmierzony
  * brak, nie brak danych.
+ *
+ * 2021–2027: gminy tego samego wojewodztwa.
+ * 2014–2020: miasta na prawach powiatu w calym kraju. Ta lista podaje miejsce
+ * realizacji tylko do powiatu, wiec projekty "tylko w tej gminie" maja wylacznie
+ * takie miasta. Mediana po wszystkich gminach wojewodztwa wychodzila 0 zl
+ * (Krakow: 182 gminy, prawie wszystkie z zerem z powodu formatu listy).
  */
-export function medianaUeNaMieszkanca(wojewodztwo: string, okres: string): { mediana: number; gmin: number } | null {
+export function medianaUeNaMieszkanca(wojewodztwo: string, okres: string): MedianaUe | null {
+  const miasta = okres === '2014-2020';
   const wiersze = bezTabeli(
     () => wszystkie<{ na_osobe: number }>(
-      `select coalesce(f.tylko_tu_ue, 0) * 1.0 / l.osob as na_osobe
-         from gminy g
-         join ludnosc l on l.teryt = g.teryt
-         left join fe_gminy f on f.teryt = g.teryt and f.okres = ?
-        where g.wojewodztwo = ? and g.rodzaj <> 'dzielnica Warszawy' and l.osob > 0
+      `select coalesce(f.tylko_tu_ue, 0) * 1.0 / j.osob as na_osobe
+         from (${JEDNOSTKI_FE}) j
+         left join fe_gminy f on f.teryt = j.teryt and f.okres = ?
+        where ${miasta ? "j.rodzaj = 'miasto na prawach powiatu'" : 'j.wojewodztwo = ?'} and j.osob > 0
         order by na_osobe`,
-      okres, wojewodztwo,
+      ...(miasta ? [okres] : [okres, wojewodztwo]),
     ),
     [],
   );
   if (!wiersze.length) return null;
   const s = Math.floor(wiersze.length / 2);
   const mediana = wiersze.length % 2 ? wiersze[s]!.na_osobe : (wiersze[s - 1]!.na_osobe + wiersze[s]!.na_osobe) / 2;
-  return { mediana, gmin: wiersze.length };
+  return { mediana, jednostek: wiersze.length, grupa: miasta ? 'miasta-na-prawach-powiatu' : 'wojewodztwo' };
 }
 
 export type ProjektGminy = {

@@ -39,6 +39,14 @@ const NAWIGACJA = [
   { adres: '/glosowania', etykieta: 'Głosowania' },
 ];
 
+const ZRODLA_STOPKI: [string, string][] = [
+  ['https://api.sejm.gov.pl/sejm/openapi/', 'API Sejmu RP'],
+  ['https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach', 'PKW — wybory 2023'],
+  ['https://bdl.stat.gov.pl', 'GUS — Bank Danych Lokalnych'],
+  ['https://dane.gov.pl/pl/dataset/13939', 'Listy projektów Funduszy Europejskich'],
+  ['https://sudop.uokik.gov.pl', 'SUDOP — pomoc publiczna (UOKiK)'],
+];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl" className={`${inter.variable} ${serif.variable}`} suppressHydrationWarning>
@@ -103,16 +111,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="text-sm">
               <p className="font-medium">Dane</p>
               <ul className="mt-2 space-y-1.5 text-atrament-2">
-                <li>
-                  <a className="hover:text-akcent hover:underline" href="https://api.sejm.gov.pl/sejm/openapi/" target="_blank" rel="noreferrer">
-                    API Sejmu RP
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-akcent hover:underline" href="https://www.sejm.gov.pl" target="_blank" rel="noreferrer">
-                    sejm.gov.pl
-                  </a>
-                </li>
+                {ZRODLA_STOPKI.map(([adres, nazwa]) => (
+                  <li key={adres}>
+                    <a className="hover:text-akcent hover:underline" href={adres} target="_blank" rel="noreferrer">
+                      {nazwa}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
             <div className="text-sm">
@@ -124,8 +129,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div className="obszar border-t border-kreska py-5 text-xs text-atrament-3">
-            Dane pochodzą z rejestrów publicznych Sejmu RP. Serwis nie jest powiązany
-            z Kancelarią Sejmu ani z żadnym klubem poselskim.
+            Dane pochodzą z rejestrów publicznych. Serwis nie jest powiązany z Kancelarią
+            Sejmu, z urzędami, których dane pokazuje, ani z żadnym klubem poselskim.
           </div>
         </footer>
       </body>

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, funduszeGminy, gminaPelna, kluby, medianaUeNaMieszkanca, najwiekszeProjektyGminy,
-  pomocGminy, poslowieOkregu, zrodloImportu, type FunduszeWOkresie,
+  bazaDostepna, funduszeGminy, gminaPelna, kluby, ludnoscWarszawy, medianaUeNaMieszkanca,
+  najwiekszeProjektyGminy, pomocGminy, poslowieOkregu, TERYT_WARSZAWY, zrodloImportu,
+  type FunduszeWOkresie, type MedianaUe,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { opisGminy } from '@/lib/wyszukiwanie';
@@ -12,7 +13,6 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 
-const TERYT_WARSZAWY = '146501';
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
@@ -23,9 +23,23 @@ export async function generateMetadata({ params }: { params: Promise<{ teryt: st
   const g = /^\d{6}$/.test(teryt) && bazaDostepna() ? gminaPelna(teryt) : null;
   if (!g) return { title: 'Nie ma takiej gminy' };
   return {
-    title: `${g.nazwa} — posłowie i publiczne pieniądze`,
-    description: `${g.nazwa} (${opisGminy(g)}): kto reprezentuje gminę w Sejmie, ile trafiło tu z Funduszy Europejskich i jakiej pomocy publicznej udzielono firmom z jej terenu.`,
+    title: `${tytulGminy(g)} — posłowie i publiczne pieniądze`,
+    description: `${nazwaWlasna(g)} (${opisGminy(g)}): kto reprezentuje gminę w Sejmie, ile trafiło tu z Funduszy Europejskich i jakiej pomocy publicznej udzielono firmom z jej terenu.`,
   };
+}
+
+// 228 nazw powtarza sie w 470 gminach (miasto i gmina wiejska o tej samej
+// nazwie, Dabrowa w kilku powiatach). Unikalna jest dopiero para rodzaj + powiat,
+// wiec tytul musi je zawierac — inaczej dwie strony dostaja ten sam tytul.
+function nazwaWlasna(g: { nazwa: string; rodzaj: string }): string {
+  if (g.rodzaj === 'dzielnica Warszawy') return `Warszawa, dzielnica ${g.nazwa}`;
+  if (g.rodzaj === 'gmina') return `Gmina ${g.nazwa}`;
+  return g.nazwa;
+}
+
+function tytulGminy(g: { nazwa: string; rodzaj: string; powiat: string }): string {
+  const nazwa = nazwaWlasna(g);
+  return g.rodzaj === 'gmina' || g.rodzaj === 'miasto' ? `${nazwa} (pow. ${g.powiat})` : nazwa;
 }
 
 function naMieszkanca(kwota: number | null, ludnosc: number | null): number | null {
@@ -60,7 +74,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       </p>
 
       <header className="mt-3">
-        <h1 className="szryft text-4xl font-semibold sm:text-5xl">{dzielnica ? `Warszawa — ${g.nazwa}` : g.nazwa}</h1>
+        <h1 className="szryft text-4xl font-semibold sm:text-5xl">{nazwaWlasna(g)}</h1>
         <p className="mt-2 text-atrament-2">{opisGminy(g)}</p>
       </header>
 
@@ -111,7 +125,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             <KartaOkresu
               key={f.okres}
               f={f}
-              ludnosc={dzielnica ? null : g.ludnosc}
+              ludnosc={dzielnica ? ludnoscWarszawy() : g.ludnosc}
               wojewodztwo={g.wojewodztwo}
               tylkoPowiat={f.okres === '2014-2020' && !miastoPowiat && !dzielnica}
             />
@@ -199,7 +213,7 @@ function KartaOkresu({ f, ludnosc, wojewodztwo, tylkoPowiat }: {
               <span className="liczby font-semibold">{zlote(naOsobe)}</span>
               {' na mieszkańca'}
               {mediana ? (
-                <span className="text-atrament-2">{` · mediana w województwie (${zOdmiana(mediana.gmin, 'gmina', 'gminy', 'gmin')}): ${zlote(mediana.mediana)}`}</span>
+                <span className="text-atrament-2">{` · ${opisMediany(mediana)}: ${zlote(mediana.mediana)}`}</span>
               ) : null}
             </p>
           ) : null}
@@ -212,6 +226,12 @@ function KartaOkresu({ f, ludnosc, wojewodztwo, tylkoPowiat }: {
       )}
     </div>
   );
+}
+
+function opisMediany(m: MedianaUe): string {
+  return m.grupa === 'wojewodztwo'
+    ? `mediana w województwie (${zOdmiana(m.jednostek, 'gmina', 'gminy', 'gmin')})`
+    : `mediana miast na prawach powiatu (${zOdmiana(m.jednostek, 'miasto', 'miasta', 'miast')})`;
 }
 
 function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
