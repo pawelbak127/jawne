@@ -358,7 +358,11 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_2fr]">
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
           <p className="liczby szryft text-4xl font-semibold">{zlote(r.brutto)}</p>
-          <p className="mt-1 text-sm font-medium">wartość pomocy brutto</p>
+          {/* Mianownik przy samej liczbie, nie tylko w ramce obok — to liczba,
+              ktora ktos wytnie do udostepnienia. */}
+          <p className="mt-1 text-sm font-medium">
+            {z.rodzaj === 'dni' ? 'wartość pomocy brutto w pobranych dniach' : 'wartość pomocy brutto'}
+          </p>
           <p className="mt-0.5 text-xs text-atrament-2">
             {`${zOdmiana(r.przypadkow, 'przypadek pomocy', 'przypadki pomocy', 'przypadków pomocy')} dla ${zOdmiana(r.beneficjentow, 'beneficjenta', 'beneficjentów', 'beneficjentów')}, udzielonych od ${dataSlownie(r.pierwszy)} do ${dataSlownie(r.ostatni)}`}
           </p>
