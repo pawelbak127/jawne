@@ -48,6 +48,16 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 ---
 
+## Pierwsza rzecz w sesji
+
+```powershell
+npm run stan
+```
+
+Mówi, co już mamy w bazie, ile dni pomocy publicznej brakuje i jakim
+poleceniem to dociągnąć. Nie zmienia niczego i nie pyta żadnego urzędu.
+**Zaczynaj od tego** — inaczej łatwo pobrać drugi raz to, co już jest.
+
 ## Komendy
 
 ```powershell
@@ -71,6 +81,8 @@ node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (l
 npx tsx ingest/jobs/sudop.ts --gminy=100101,100102          # 10 lat jednej gminy
 npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17  # dzień dla CAŁEGO kraju
 npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow      # z zapisanych odpowiedzi, bez sieci
+npx tsx ingest/jobs/sudop.ts --przyrost=… --tylko-pobierz   # bez bazy (GitHub Actions)
+npm run sudop:artefakty -- --import                         # zaciąga to, co pobrał cron w Actions
 ```
 
 ---
@@ -103,7 +115,9 @@ npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow      # z zapisanych odpow
    `JAWNE_KONTAKT` (`nazwaDoPokazania`). Bez adresu do sprzeciwu próg nie
    działa — to warunek techniczny, nie deklaracja. Pozostałych nie wymieniamy, ale zawsze podajemy ich
    liczbę i wliczamy do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk
-   w firmie — są w KRS; spółki cywilnej i wspólnoty mieszkaniowej nie.
+   w firmie — są w KRS. Spółka cywilna podlega progowi tak jak osoba fizyczna
+   (jej wspólnicy to osoby fizyczne), a wspólnota mieszkaniowa jest jawna:
+   ma własny NIP, a jej nazwa to adres budynku, nie nazwisko.
    Po każdej zmianie reguły: porównanie na wszystkich nazwach z bazy i przegląd
    próbek (pierwsza wersja przepuszczała „Zakład Fryzjerski Anna …”).
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane

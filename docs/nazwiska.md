@@ -50,11 +50,14 @@ w przepisach rolnych — do sprawdzenia, zanim się na nią powołamy publicznie
 
 1. **Próg: 100 000 EUR na pojedynczy przypadek pomocy** (`PROG_JAWNOSCI_EUR`),
    tyle wynosi unijny próg publikowania pomocy indywidualnej w GBER.
-   Zmierzone na 84 211 przypadkach: odsłania **63 z 12 907** ukrytych nazw
-   (0,5 %), łącznie 78,2 mln zł. Próg 500 tys. EUR odsłoniłby dwie nazwy.
+   Zmierzone: odsłania **76 z 39 269** ukrytych nazw (0,2 %), łącznie
+   89,9 mln zł. Próg 500 tys. EUR odsłoniłby dwie nazwy.
    Poniżej progu zostaje kwota, gmina, przeznaczenie i udzielający — bez nazwy.
-   Próg **nie znosi listy „nigdy”**: spółka cywilna i wspólnota mieszkaniowa
-   zostają ukryte niezależnie od kwoty (w pomiarze wpadła tam „U&B s.c.”).
+   **Spółka cywilna podlega temu samemu progowi** co nazwisko: nie ma
+   osobowości prawnej, przedsiębiorcami są wspólnicy — osoby fizyczne.
+   Pierwsza wersja ukrywała ją zawsze i to było niespójne (Paweł, 18.09.2026).
+   **Wspólnota mieszkaniowa jest jawna**: ma zdolność prawną i własny NIP,
+   a jej nazwa to adres budynku, nie nazwisko.
    Stosujemy go tam, gdzie źródło samo podaje kwotę w euro, czyli w SUDOP;
    listy Funduszy Europejskich podają tylko złote i zostają przy zasadzie
    zachowawczej.

@@ -1,0 +1,67 @@
+# Dzienny przyrost pomocy publicznej z SUDOP.
+#
+# Jedno zapytanie na dobe obejmuje CALY kraj (zmierzone 18.09.2026: 3 531
+# przypadkow z 1 150 gmin zmiescilo sie w jednej stronie odpowiedzi).
+# Dlatego ten przebieg nie obciaza urzedu bardziej niz jeden czlowiek
+# klikajacy raz dziennie w wyszukiwarce.
+#
+# CO ROBI: pobiera dzien i zostawia surowa odpowiedz jako artefakt.
+# CZEGO NIE ROBI: nie zapisuje niczego do repozytorium — odpowiedzi zawieraja
+# dane osobowe, a repozytorium moze byc publiczne. Import do bazy robi sie
+# na komputerze: `npm run sudop:artefakty`, a potem `--przyrost=...`.
+#
+# UWAGA: w publicznym repozytorium GitHub po cichu wylacza harmonogram po
+# 60 dniach bez aktywnosci. Jesli przebiegi znikna — wejdz w zakladke Actions
+# i wlacz go z powrotem.
+name: SUDOP — przyrost dzienny
+
+on:
+  schedule:
+    # 04:17 UTC, czyli poza pelna godzina: o rownych godzinach GitHub opoznia
+    # zadania przy duzym obciazeniu.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      zakres:
+        description: 'Zakres dni RRRR-MM-DD..RRRR-MM-DD (puste = wczoraj)'
+        required: false
+        default: ''
+
+jobs:
+  pobierz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ustal zakres dni
+        id: zakres
+        run: |
+          if [ -n "${{ inputs.zakres }}" ]; then
+            echo "wartosc=${{ inputs.zakres }}" >> "$GITHUB_OUTPUT"
+          else
+            D=$(date -u -d 'yesterday' +%F)
+            echo "wartosc=$D..$D" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pobierz z SUDOP
+        run: npx tsx ingest/jobs/sudop.ts --przyrost=${{ steps.zakres.outputs.wartosc }} --tylko-pobierz
+
+      - name: Spakuj odpowiedzi
+        run: gzip -9 dane/zrodla/sudop/przyrost-*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sudop-${{ steps.zakres.outputs.wartosc }}
+          path: dane/zrodla/sudop/przyrost-*.json.gz
+          # 90 dni to maksimum dla repozytorium publicznego. Prywatne moze miec
+          # 400 — jesli repozytorium jest prywatne, podnies te liczbe.
+          retention-days: 90
+          if-no-files-found: error

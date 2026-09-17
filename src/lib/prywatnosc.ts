@@ -100,6 +100,10 @@ const INSTYTUCJA: readonly RegExp[] = [
   /uniwersytet|politechnik|uczelni|szpital|muzeum|muzeal|teatr|filharmoni|bibliotek|oper[ay](?![\p{L}])/iu,
   /parafi|kości[oó]ł|diecezj|caritas|zakon|zgromadzeni\p{L}*\s+(sióstr|zakonn)/iu,
   /związ[ek]|zrzeszeni|towarzystw|federacj|lokaln\p{L}*\s+grup|grup\p{L}*\s+ryback|(?<![\p{L}])izb[ay](?![\p{L}])/iu,
+  // Wspolnota mieszkaniowa ma zdolnosc prawna i wlasny NIP, a jej nazwa to
+  // adres budynku, nie nazwisko. Dotacje (np. termomodernizacja) trafiaja
+  // do niej, a nie do konkretnej osoby.
+  /wspólnot\p{L}*\s+mieszkaniow/iu,
   /akademi\p{L}*\s+(nauk|sztuk|wojenn|medyczn|muzyczn|wychowania|ekonomiczn|górnicz|morsk|rolnicz|techniczn|pedagogiczn|teologi|marynarki|lotnicz|policji|obrony|finansów)|polsk\p{L}*\s+akademi\p{L}*\s+nauk|sieć\s+badawcz|łukasiewicz/iu,
   // "PAN" tylko wielkimi literami (skrot Polskiej Akademii Nauk), "instytut" w dowolnej postaci.
   /[Ii][Nn][Ss][Tt][Yy][Tt][Uu][Tt][\s\S]*(?<![\p{L}])PAN(?![\p{L}])/u,

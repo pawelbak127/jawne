@@ -72,6 +72,20 @@ Plik `dane/sejm.db` trzeba dostarczyć obok aplikacji — bundler go nie zabierz
 Strony główna, `/okregi` i `/stan` są generowane przy buildzie, więc po imporcie
 nowych danych trzeba przebudować serwis.
 
+## Co jeszcze trzeba dociągnąć
+
+```bash
+npm run stan
+```
+
+Raport: co jest w bazie, ile dni pomocy publicznej brakuje i jakie polecenie
+je pobierze. Dzienny przyrost może zbierać GitHub Actions
+(`.github/workflows/sudop-przyrost.yml`); wtedy lokalnie wystarczy:
+
+```bash
+npm run sudop:artefakty -- --import
+```
+
 ## Sprawdzenie
 
 ```bash

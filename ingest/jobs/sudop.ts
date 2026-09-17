@@ -19,6 +19,7 @@
  *    ponownego pytania urzedu (`--z-plikow`).
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
@@ -47,6 +48,17 @@ async function get(url: string) {
 }
 
 const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
+
+/**
+ * Zapisana wczesniej odpowiedz, zwykla albo spakowana. Spakowane pliki robi
+ * `scripts/sudop-artefakty.mjs` — bez tego odczytu powtorny import pytalby
+ * urzad o cos, co juz mamy na dysku.
+ */
+function zapisanaOdpowiedz(plik: string): OdpowiedzSudop | null {
+  if (existsSync(plik)) return JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
+  if (existsSync(`${plik}.gz`)) return JSON.parse(gunzipSync(readFileSync(`${plik}.gz`)).toString('utf8')) as OdpowiedzSudop;
+  return null;
+}
 
 /** Slowniki sa zasobem statycznym — nie tworza pozycji w kolejce. */
 async function slownik(nazwa: string): Promise<KodGminySudop[]> {
@@ -170,9 +182,12 @@ function zapiszPrzyrost(db: DatabaseSync, od: string, doDnia: string, wyniki: Pr
   return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
 }
 
-async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>): Promise<void> {
-  const [od, doDnia] = zakres.split('..');
-  if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
+/**
+ * Samo pobranie zakresu dni — bez bazy. Uzywane przez `--tylko-pobierz`
+ * (GitHub Actions nie ma pliku bazy; zapisuje surowe odpowiedzi i zostawia
+ * je jako artefakt do zaimportowania na komputerze).
+ */
+async function pobierzPrzyrost(od: string, doDnia: string): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number }> {
   const formy = (await slownik('forma-pomocy')).map((f) => String(f.number));
   log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)`);
   const start = Date.now();
@@ -182,8 +197,9 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
   for (;;) {
     const plik = join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`);
     let odp: OdpowiedzSudop;
-    if (existsSync(plik)) {
-      odp = JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
+    const zapisana = zapisanaOdpowiedz(plik);
+    if (zapisana) {
+      odp = zapisana;
       log(`   strona ${strona}: z pliku`);
     } else {
       odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
@@ -195,8 +211,14 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
     if (wyniki.length >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
     strona++;
   }
+  return { wyniki, zapytan, sekund: Math.round((Date.now() - start) / 1000) };
+}
+
+async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>): Promise<void> {
+  const [od, doDnia] = zakres.split('..');
+  if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
+  const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia);
   const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane);
-  const sekund = Math.round((Date.now() - start) / 1000);
   log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
   odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
@@ -211,9 +233,21 @@ async function main(): Promise<void> {
     log('Podaj gminy: --gminy=100101,100102   (TERYT, 6 cyfr)');
     log('albo zakres dni dla calego kraju: --przyrost=2026-09-15..2026-09-17');
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
+    log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     process.exit(2);
   }
   mkdirSync(KATALOG, { recursive: true });
+
+  // Tryb dla GitHub Actions: pobierz i zapisz surowe odpowiedzi, nie dotykaj
+  // bazy (w CI jej nie ma). Import robi sie potem na komputerze z plikow.
+  if (zakres && process.argv.includes('--tylko-pobierz')) {
+    const [od, doDnia] = zakres.split('..');
+    if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
+    const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia);
+    log(`   pobrano ${wyniki.length} przypadkow w ${zapytan} zapytaniach (${sekund} s); pliki w ${KATALOG}`);
+    return;
+  }
+
   const db = otworz(true);
   zalozSchemat(db);
   // Warszawa jest w PKW 18 dzielnicami, a w SUDOP jednym miastem — jej pomoc
@@ -252,9 +286,10 @@ async function main(): Promise<void> {
         for (;;) {
           const plik = join(KATALOG, `${teryt}-od-${od}-s${strona}.json`);
           let odp: OdpowiedzSudop;
-          if (zPlikow || existsSync(plik)) {
-            if (!existsSync(plik)) throw new Error(`brak pliku ${plik}`);
-            odp = JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
+          const zapisana = zapisanaOdpowiedz(plik);
+          if (zPlikow || zapisana) {
+            if (!zapisana) throw new Error(`brak pliku ${plik}`);
+            odp = zapisana;
             log(`   strona ${strona}: z pliku`);
           } else {
             odp = await wyszukaj(adresWyszukania(kodyGminy, od, strona), `strona ${strona}`);
