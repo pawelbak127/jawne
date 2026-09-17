@@ -41,7 +41,9 @@ dotyczył w istocie naszego błędu w użyciu interfejsu.
 **Prostuję też zdanie o niepobieraniu danych.** W dniu wysłania pisma było ono
 prawdziwe; 17 września pobrałem dane trzech gmin (Bełchatów miasto, Bełchatów
 gmina wiejska, Zakopane) — łącznie 80 698 przypadków pomocy w dziesięciu
-zapytaniach, po jednym naraz, oraz jedno zapytanie kontrolne.
+zapytaniach, po jednym naraz, oraz jedno zapytanie kontrolne. 18 września
+wykonałem cztery zapytania sprawdzające zachowanie interfejsu; najdłuższe
+czekało w kolejce dziewięć minut.
 
 **Co z tego wynika dla mojej prośby.** Podtrzymuję ją, ale opieram na innej
 przesłance niż wcześniej: nie na tym, że usługa nie działa, tylko na skali.
@@ -59,10 +61,11 @@ przesłance niż wcześniej: nie na tym, że usługa nie działa, tylko na skali
   pobierać wyłącznie tego, co się zmieniło. Zapytanie po dniu udzielenia pomocy
   pozwala dociągać nowe przypadki, ale nie wychwyci korekt wcześniejszych.
 
-Dlatego ponawiam prośbę o **eksport zbiorczy poza kolejką** dla danych
-historycznych — plik na
-województwo albo na gminę, odświeżany raz na dobę i pobierany zwykłym `GET`-em.
-Obciążałby Państwa serwer raz dziennie, niezależnie od liczby pytających.
+Dlatego ponawiam prośbę o **eksport zbiorczy poza kolejką dla danych
+historycznych** — na przykład plik na województwo albo na rok, pobierany
+zwykłym `GET`-em. Dane bieżące jestem w stanie utrzymywać jednym zapytaniem
+na dobę i tak chciałbym to robić, jeśli uznają Państwo takie tempo za
+dopuszczalne.
 Gdyby taki eksport nie był możliwy, proszę o wskazanie tempa odpytywania, które
 byłoby dla Państwa akceptowalne — dostosujemy się do niego.
 
