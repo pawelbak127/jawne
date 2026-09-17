@@ -1,10 +1,10 @@
 import type { MetadataRoute } from 'next';
 import { ADRES_SERWISU } from '@/lib/adres';
-import { bazaDostepna, glosowaniaDoMapy, okregi, slugiPoslow, terytyGmin } from '@/lib/dane';
-import { pominietoNazwiska } from '@/lib/prywatnosc';
+import { bazaDostepna, beneficjenciDoMapy, glosowaniaDoMapy, okregi, slugiPoslow, terytyGmin } from '@/lib/dane';
+import { nazwaPodmiotuJawna, pominietoNazwiska } from '@/lib/prywatnosc';
 
 /**
- * Mapa strony — okolo 7,7 tys. adresow, ponizej limitu 50 tys. jednego pliku.
+ * Mapa strony — ponizej limitu 50 tys. adresow w jednym pliku.
  * Dopoki layout ma `noindex` (serwis przed premiera), mapa niczego nie
  * wystawia; jest gotowa na dzien, w ktorym Pawel zdejmie blokade.
  *
@@ -20,6 +20,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...slugiPoslow().map((s) => ({ url: adres(`/posel/${s}`) })),
     ...okregi().map((o) => ({ url: adres(`/okreg/${o.nr}`) })),
     ...terytyGmin().map((t) => ({ url: adres(`/gmina/${t}`) })),
+    // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
+    // bylaby sprzecznoscia.
+    ...beneficjenciDoMapy().filter((b) => nazwaPodmiotuJawna(b.nazwa)).map((b) => ({ url: adres(`/firma/${b.nip}`) })),
     ...glosowaniaDoMapy()
       .filter((g) => !pominietoNazwiska(g.tytul) && !pominietoNazwiska(g.temat) && !pominietoNazwiska(g.opis))
       .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data })),

@@ -14,12 +14,12 @@ import { KONTAKT } from '@/lib/adres';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
+import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
 const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
-const ZRODLO_SUDOP = 'https://sudop.uokik.gov.pl';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
   const { teryt } = await params;
@@ -409,7 +409,11 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         <ul className="mt-3 divide-y divide-kreska">
           {jawni.slice(0, 10).map((b) => (
             <li key={b.nip ?? b.nazwa} className="flex items-baseline gap-4 py-2 text-sm">
-              <span className="min-w-0 flex-1">{b.nazwa}</span>
+              <span className="min-w-0 flex-1">
+                {b.nip ? (
+                  <Link href={`/firma/${b.nip}`} className="hover:text-akcent hover:underline">{b.nazwa}</Link>
+                ) : b.nazwa}
+              </span>
               <span className="liczby shrink-0 text-xs text-atrament-3">{zOdmiana(b.przypadkow, 'przypadek', 'przypadki', 'przypadków')}</span>
               <span className="liczby w-24 shrink-0 text-right font-medium">{zlote(b.brutto)}</span>
             </li>
@@ -425,19 +429,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         ) : null}
       </div>
 
-      {/*
-        Warunki ponownego wykorzystania danych SUDOP z instrukcji UOKiK
-        (dane.gov.pl, zbior 6068). Maja stac BEZPOSREDNIO przy danych.
-      */}
-      <div className="mt-4 rounded-xl border border-kreska bg-papier-3 px-4 py-3 text-xs leading-relaxed text-atrament-2">
-        <p>
-          <span className="font-medium text-atrament">Źródło:</span>{' '}
-          <a href={ZRODLO_SUDOP} className="underline underline-offset-2 hover:text-akcent" target="_blank" rel="noreferrer">
-            System Udostępniania Danych o Pomocy Publicznej (UOKiK)
-          </a>
-          {`${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.`}
-        </p>
-      </div>
+      <WarunkiSudop pobrano={pobrano} />
     </>
   );
 }

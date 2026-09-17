@@ -789,6 +789,92 @@ export function porownanieBudzetu(wojewodztwo: string, rok: number): PorownanieB
   };
 }
 
+export type Firma = {
+  nip: string;
+  nazwa: string;
+  /** Najwieksza POJEDYNCZA pomoc w euro — decyduje o pokazaniu nazwy osoby fizycznej. */
+  max_eur: number | null;
+  wielkosc: string | null;
+  /** 0 mikro, 1 maly, 2 sredni, 3 inny (duzy); "b.d." gdy zrodlo nie podalo */
+  wielkosc_kod: string | null;
+  pkd: string | null;
+  pkd_nazwa: string | null;
+  teryt: string | null;
+  gmina: string | null;
+  gmina_rodzaj: string | null;
+  przypadkow: number;
+  brutto: number | null;
+  pierwszy: string;
+  ostatni: string;
+};
+
+export type PrzypadekFirmy = {
+  dzien: string;
+  brutto: number | null;
+  nominalna: number | null;
+  przeznaczenie: string | null;
+  forma: string | null;
+  udzielajacy: string | null;
+  srodek: string | null;
+};
+
+/** Beneficjent pomocy publicznej po NIP — podsumowanie. */
+export function firma(nip: string): Firma | null {
+  return bezTabeli(
+    () => jeden<Firma>(
+      // Nazwa, wielkosc i PKD MUSZA pochodzic z jednego wiersza: osobne max()
+      // sklejalo kod PKD z nazwa z innego przypadku (74.10 opisane jako para wodna).
+      // Bierzemy najnowszy przypadek — dane sprzed lat bywaja nieaktualne.
+      `with ostatni as (
+         select nazwa_beneficjenta, wielkosc, wielkosc_kod, pkd, pkd_nazwa, teryt
+           from pomoc_publiczna where nip_beneficjenta = ? order by dzien desc, id desc limit 1
+       )
+       select p.nip_beneficjenta as nip, o.nazwa_beneficjenta as nazwa, max(p.wartosc_brutto_eur) as max_eur,
+              o.wielkosc as wielkosc, o.wielkosc_kod as wielkosc_kod, o.pkd as pkd, o.pkd_nazwa as pkd_nazwa,
+              o.teryt as teryt, g.nazwa as gmina, g.rodzaj as gmina_rodzaj,
+              count(*) as przypadkow, sum(p.wartosc_brutto) as brutto,
+              min(p.dzien) as pierwszy, max(p.dzien) as ostatni
+         from pomoc_publiczna p
+         join ostatni o
+         left join gminy g on g.teryt = o.teryt
+        where p.nip_beneficjenta = ?
+        group by p.nip_beneficjenta`,
+      nip, nip,
+    ),
+    null,
+  );
+}
+
+/**
+ * Beneficjenci do mapy strony: NIP i nazwa, zeby mapa wzieła tylko tych,
+ * ktorych nazwe wolno pokazac BEZ progu kwotowego. Osoby fizyczne odslaniane
+ * progiem maja `noindex` i do mapy nie trafiaja.
+ */
+export function beneficjenciDoMapy(): { nip: string; nazwa: string }[] {
+  return bezTabeli(
+    () => wszystkie<{ nip: string; nazwa: string }>(
+      `select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa
+         from pomoc_publiczna where nip_beneficjenta is not null
+        group by nip_beneficjenta`,
+    ),
+    [],
+  );
+}
+
+/** Pojedyncze przypadki pomocy dla firmy, od najnowszych. */
+export function przypadkiFirmy(nip: string, ile = 50): PrzypadekFirmy[] {
+  return bezTabeli(
+    () => wszystkie<PrzypadekFirmy>(
+      `select dzien, wartosc_brutto as brutto, wartosc_nominalna as nominalna, przeznaczenie, forma,
+              udzielajacy, srodek_nazwa as srodek
+         from pomoc_publiczna where nip_beneficjenta = ?
+        order by dzien desc, wartosc_brutto desc limit ?`,
+      nip, ile,
+    ),
+    [],
+  );
+}
+
 export type ProjektGminy = {
   id: number;
   okres: string;

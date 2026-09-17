@@ -36,7 +36,7 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
