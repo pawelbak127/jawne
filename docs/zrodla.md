@@ -32,6 +32,16 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 | **SRPP** `srpp.minrol.gov.pl` | pomoc publiczna w rolnictwie i rybołówstwie | serwis WWW | z dokumentacji Komisji Europejskiej: Polska publikuje tam pomoc rolną zamiast w TAM |
 | **Rejestr korzyści i oświadczenia majątkowe posłów** (sejm.gov.pl) | majątek, funkcje, udziały | PDF, w dużej części skany | zmierzone w projekcie „obywatel”; bez API, ręczne przepisywanie z podwójną kontrolą |
 
+## Zagraniczne źródła z polskimi danymi — zmierzone 18.09.2026
+
+| Źródło | Co daje dla Polski | Dostęp | Uwagi |
+|---|---|---|---|
+| **GLEIF** `api.gleif.org/api/v1/lei-records` | 43 030 polskich podmiotów z identyfikatorem LEI; pole `registeredAs` to numer KRS | bez klucza, JSON:API | **zmierzone.** Gotowy pomost LEI ↔ KRS ↔ nazwa. Obejmuje tylko podmioty, które wystąpiły o LEI (głównie spółki z rynku finansowego i większe firmy). |
+| **TED** `api.ted.europa.eu/v3/notices/search` | ogłoszenia o zamówieniach powyżej progów unijnych, w tym polskie, z danymi zamawiającego i wykonawcy | bez klucza (zapytanie POST, składnia `buyer-country="POL"`) | **zmierzone.** Uzupełnia BZP, który ma zamówienia krajowe. |
+| **CORDIS** `cordis.europa.eu/data` | projekty Horizon Europe i H2020 z polskimi uczestnikami, kwoty dofinansowania | ZIP z CSV, 36 MB, bez klucza | **zmierzone (nagłówek HTTP).** Pieniądze, których nie ma w polskich listach — Komisja płaci bezpośrednio beneficjentowi. |
+| **Kohesio** `kohesio.ec.europa.eu`, SPARQL `query.linkedopendata.eu` | projekty polityki spójności 2014–2020 z beneficjentami, dla całej UE | CSV/XLSX i RDF, bez klucza | z dokumentacji. Dla Polski nie daje nic ponad listy MFiPR, ale pozwala porównać gminę z regionami w UE. |
+| **TAM** (unijny rejestr pomocy państwa) | **nic** | — | **sprawdzone 18.09.2026: Polska nie korzysta z TAM.** Publikuje w SUDOP (przemysł) i SRPP (rolnictwo). Nie ma unijnej drogi na skróty do polskiej pomocy publicznej. |
+
 ## Wymagają klucza — do decyzji
 
 | Źródło | Co daje | Klucz |

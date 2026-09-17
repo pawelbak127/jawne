@@ -1,6 +1,6 @@
 # SUDOP — co przeoczyliśmy i co z tego wynika
 
-Zapis z 17.09.2026. Dotyczy też projektu „obywatel”, w którym obowiązuje
+Zapis z 17–18.09.2026. Dotyczy też projektu „obywatel”, w którym obowiązuje
 decyzja D13 („nie automatyzujemy wyszukiwarki SUDOP”).
 
 ## Wynik w jednym zdaniu
@@ -63,56 +63,85 @@ beneficjentów, a nie samą kwotę.
 Kształt odpowiedzi potwierdza specyfikację: 28 pól, `gmina-siedziby-kod` ma
 7 cyfr (TERYT + rodzaj), kwoty jako tekst z kropką dziesiętną.
 
+## Pomiary z 18.09.2026 — specyfikacja i własne zapytania
+
+Wszystko poniżej odczytane ze specyfikacji OpenAPI usługi albo zmierzone
+własnym zapytaniem, nie przepisane z notatek.
+
+**Kształt interfejsu.**
+
+- **Wszystkie parametry są opcjonalne**, ale zapytanie o same daty dostaje
+  `HTTP 400`: „Nie podano żadnych wymaganych kryteriów. Dodaj kryteria
+  wyszukiwania inne niż strona oraz dzień udzielenia pomocy”. Odmowa przychodzi
+  natychmiast i **nie zajmuje miejsca w kolejce** — takie próby są darmowe.
+- **Parametr można powtarzać** — nie tylko `gmina-siedziby-kod`, ale też
+  `forma-pomocy-kod`. To zmienia sposób cięcia zbioru: nie trzeba pytać
+  o 2 477 gmin osobno.
+- **Rekord nie ma daty modyfikacji** (28 pól, żadne nie mówi o aktualizacji).
+  Przyrost da się dociągać po `dzien-udzielenia-pomocy`, ale korekt starych
+  wpisów nie da się wychwycić inaczej niż ponownym pobraniem.
+- Słowniki (bez kolejki, zwykły `GET`): formy pomocy 70, przeznaczenia 450,
+  środki pomocowe 1 848, sektory 3 518, gminy 4 155.
+
+**Pomiar krajowy: jeden dzień, dwie formy pomocy.**
+
+```
+forma-pomocy-kod=A1.1 & forma-pomocy-kod=A2.5, dzień 2026-09-15
+303 -> kolejka, gotowe po 4 min
+2 933 przypadki, 1 028 gmin, 97 podmiotów udzielających, 3,5 MB
+```
+
+W trzech pobranych gminach te dwie formy to 63,5 % rekordów, więc cała Polska
+w jednym dniu to rząd **4–5 tysięcy przypadków — mieści się w jednej stronie
+odpowiedzi (10 000 wierszy)**.
+
+**Co z tego wynika dla importu.**
+
+| Zadanie | Sposób | Koszt dla urzędu |
+|---|---|---|
+| Przyrost dzienny dla całego kraju | jedno zapytanie: wszystkie formy pomocy + zakres jednego dnia | **1–2 zapytania na dobę** |
+| Uzupełnienie historii (10 lat) | cięcie po formie pomocy i miesiącach, strony po 10 tys. | tysiące zapytań — to jest ta część, na którą trzeba zgody |
+
+Lata 2020–2021 mają w naszych danych ~7,8 razy więcej przypadków niż rok
+zwykły (pomoc covidowa). Stąd szacunek dla kraju na 10 lat: **rzędu 20–30 mln
+rekordów**, czyli 2–3 tys. stron po 10 tys. wierszy i **15–20 GB w bazie**.
+
 ## Co z tego wynika — do decyzji Pawła
 
 **Przesłanka D13 „kolejka nie oddaje wyniku przed jego wygaśnięciem” dziś nie
 zachodzi.** Zostaje przesłanka mocniejsza: urząd napisał, że ruch przekracza
 jego możliwości. Skala importu całego kraju:
 
-- trzy gminy dały 0,4–1,6 przypadku na mieszkańca (średnio 0,9) — to gminy
-  nietypowe (siedziba PGE, turystyka i pomoc covidowa), więc szacunek jest zgrubny:
-  **15–34 mln przypadków** na cały kraj,
-- to **3,5–5,5 tys. zapytań** (każda gmina co najmniej jedno, duże po kilka
-  stron po 10 tys. wierszy), przy 2–7 minutach na zapytanie
-  → **od tygodnia do miesiąca ciągłej pracy** przy jednym zapytaniu naraz,
+- szacunek **20–30 mln przypadków** na cały kraj (z pomiaru krajowego wyżej,
+  nie z ekstrapolacji po liczbie mieszkańców),
+- to **2–3 tys. zapytań** przy cięciu po formie pomocy (a nie 4–6 tys. przy
+  pytaniu o każdą gminę), po 2–7 minut każde → **ok. 8–15 dni ciągłej pracy**
+  przy jednym zapytaniu naraz,
 - **rozmiar**: 80 698 przypadków to 114 MB surowego JSON-u i 56 MB w SQLite
-  (z indeksami). Cały kraj: **20–50 GB JSON-u i 10–25 GB bazy**. Tego nie da się
-  wdrożyć obok aplikacji jak dzisiejszej `sejm.db` — przy pełnym imporcie
-  trzeba by trzymać tylko agregaty gmin i czołówkę beneficjentów,
-  a szczegóły zostawić pod odnośnikiem do SUDOP.
+  (z indeksami), czyli ok. 700 bajtów na rekord. Cały kraj: **15–20 GB bazy**.
 
-Trzy drogi:
+**Decyzja rozpada się na dwie, bo koszty są nieporównywalne.**
 
-1. **Wysłać urzędowi pismo** (projekt w `obywatel/docs/uokik-odpowiedz-projekt.md`)
-   uzupełnione o dzisiejszy pomiar i konkretną prośbę: eksport zbiorczy albo
-   zgoda na powolny import (np. jedno zapytanie na 10 minut, nocą).
-2. **Importować powoli bez zgody** — technicznie gotowe, ale to dokładnie ta
-   sytuacja, przed którą chroni D13.
-3. **Zostać przy gminach pokazowych** i czekać na odpowiedź urzędu.
+| | Koszt dla urzędu | Co daje | Rekomendacja |
+|---|---|---|---|
+| **Przyrost dzienny** (cały kraj, jedno zapytanie na dobę) | 1–2 zapytania | serwis pokazuje nową pomoc dla wszystkich 2 477 gmin | zacząć, ale dopiero po odpowiedzi urzędu albo po wyraźnej zgodzie Pawła — D13 mówi o zamiarze, nie o liczbie zapytań |
+| **Historia 10 lat** | 2–3 tys. zapytań, 8–15 dni | pełne dane wstecz | nie robić bez zgody urzędu; prosić o eksport zbiorczy |
+| **Gminy pokazowe na żądanie** | kilka zapytań na gminę | strona gminy działa tam, gdzie pobrano | robić dalej, ręcznie |
 
-Rekomendacja: 1, a do czasu odpowiedzi — 3.
+Rozmiar bazy przy pełnej historii (15–20 GB) i tak wymusiłby zmianę: trzymamy
+agregaty gmin i czołówkę beneficjentów, a nie 25 mln pojedynczych rekordów.
 
-### Projekt pisma w starym repozytorium trzeba przepisać przed wysłaniem
+### Pismo zostało wysłane w starej formie — potrzebne sprostowanie
 
-`obywatel/docs/uokik-odpowiedz-projekt.md` (status: niewysłane) po dzisiejszym
-pomiarze zawiera dwa zdania, które **nie są już prawdziwe**, i jedno niepełne:
+Paweł wysłał pismo z `obywatel/docs/uokik-odpowiedz-projekt.md` **przed** tymi
+pomiarami. Zawiera ono dwa zdania, które pomiar z 17.09 obala: że wynik nie może
+zostać odebrany oraz że nie pobieramy przez API żadnych danych. Pierwsze jest
+zarzutem wobec systemu urzędu opartym na naszym błędzie (odpytywaliśmy wariant
+`bez-kolejki`). Projekt sprostowania: [`uokik-sprostowanie.md`](uokik-sprostowanie.md).
 
-1. **„W żadnym z dwóch przypadków wynik nie stał się dostępny (…) wynik nie może
-   zostać odebrany niezależnie od cierpliwości odpytującego”.** Ścieżka z kolejką
-   oddała wynik po 3–7 minutach, za każdym z zapytań. 12.09 używaliśmy
-   drugiego wariantu wyszukiwania, nie tego, który opisał urząd.
-2. **Niepełne: „odpytujemy wyłącznie adres zwrócony w nagłówku `Location`”.**
-   To prawda, ale pismo nie mówi, że rejestrowaliśmy wyszukanie przez
-   `przypadki-pomocy-bez-kolejki`. Uczciwiej napisać wprost, że to był nasz
-   wybór i że w wariancie z kolejką usługa działa.
-3. **„Dziś nie pobieramy przez API żadnych danych o przypadkach pomocy”** —
-   17.09 pobraliśmy przez API dane trzech gmin (liczba zapytań w tabeli wyżej,
-   plus jedno kontrolne).
-
-Co w piśmie zostaje aktualne i najcenniejsze: kim jesteśmy, że chcemy jednego
-zapytania na gminę, prośba o **eksport zbiorczy** i o przyrost „zmienione po
-dacie”. Do tego warto dopisać konkretną skalę: ile zapytań wymaga cały kraj
-(szacunek wyżej) i propozycję tempa, na które urząd mógłby się zgodzić.
+**Wniosek na przyszłość:** wniosek z cudzego pomiaru (także z naszego sprzed
+tygodnia) nie jest faktem, dopóki go nie powtórzymy. Pismo do instytucji
+powtarza pomiar w dniu wysłania.
 
 ## Warunki ponownego wykorzystania (z instrukcji UOKiK)
 
