@@ -264,9 +264,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 35. **Przegląd krajowy liczy tylko dni z `pomoc_publiczna_dni`.** W tej samej
     tabeli leży pełna 10-letnia historia gmin pokazowych — bez filtra Bełchatów
     dodałby do sumy krajowej 13 mld zł.
-36. **GUS BDL odpowiada 429 po kilkuset zapytaniach.** `http.ts` respektuje
-    `Retry-After`, import budżetów robi 1 s przerwy między stronami i pomija
-    lata już kompletne w bazie (wznawianie bez `--od-nowa`).
+36. **GUS BDL: najciaśniejszy jest limit 15-minutowy** — 100 zapytań bez
+    klucza, 500 z kluczem (`GUS_BDL_KLUCZ` w `.env.local`, nagłówek
+    `X-ClientId`). Przerwa 1 s go przekraczała. `przerwaBdlMs()` w `http.ts`
+    dobiera tempo do klucza, `http.ts` respektuje `Retry-After`, a import
+    budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 

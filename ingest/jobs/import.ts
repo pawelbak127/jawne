@@ -11,7 +11,7 @@
 import { otworz, zalozSchemat, odnotujImport, SCHEMAT_FE } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
-import { dlaKazdego, pobierzBajty, pobierzJson } from '../lib/http.js';
+import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
@@ -656,7 +656,7 @@ async function importLudnosci(db: DatabaseSync): Promise<void> {
         wartosci.set(teryt, lista);
       }
       adres = j.links?.next ?? null;
-      if (adres) await new Promise((ok) => setTimeout(ok, 300));
+      if (adres) await new Promise((ok) => setTimeout(ok, przerwaBdlMs()));
     }
     // Gmina miejsko-wiejska ma trzy wpisy (3 cala gmina, 4 miasto, 5 wies) —
     // bierzemy CALA gmine. Dla pozostalych jest jeden wpis.
@@ -724,8 +724,7 @@ async function bdlZmiennaGmin(zmienna: number, rok: number): Promise<Map<string,
       wartosci.set(`${r.id.slice(2, 4)}${r.id.slice(7, 11)}`, w.val);
     }
     adres = j.links?.next ?? null;
-    // 1 s miedzy stronami: przy 300 ms GUS po kilkuset zapytaniach odpowiadal 429.
-    if (adres) await new Promise((ok) => setTimeout(ok, 1000));
+    if (adres) await new Promise((ok) => setTimeout(ok, przerwaBdlMs()));
   }
   return wartosci;
 }
@@ -740,7 +739,7 @@ async function bdlZmiennaGmin(zmienna: number, rok: number): Promise<Map<string,
  */
 async function importBudzetow(db: DatabaseSync): Promise<void> {
   const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? 5);
-  log(`-> budzety gmin (GUS BDL, ostatnie ${ileLat} lat z kompletem danych)`);
+  log(`-> budzety gmin (GUS BDL, ostatnie ${ileLat} lat z kompletem danych; ${kluczBdl() ? 'z kluczem' : 'bez klucza — wolno, 100 zapytan na 15 min'})`);
   const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${ZMIENNE_BUDZETU[0]![1]}?format=json`);
   const lata = [...zmienna.years].sort((a, b) => b - a);
   // Warszawa jest w BDL jedna jednostka, wiec do kompletu liczymy gminy
@@ -841,6 +840,8 @@ if (nieznane.length) {
 // Zawiniete w funkcje, bo projekt jest CJS (Next nie potrzebuje "type":"module"),
 // a tsx nie przepuszcza w takim pliku awaitu na najwyzszym poziomie.
 async function main(): Promise<void> {
+  // Klucze API (np. GUS_BDL_KLUCZ) trzymamy w .env.local — poza repozytorium.
+  if (existsSync('.env.local')) process.loadEnvFile('.env.local');
   const db = otworz(true);
   zalozSchemat(db);
   const start = Date.now();

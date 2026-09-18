@@ -28,6 +28,21 @@ function zwolnij(): void {
 
 const spij = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Klucz API GUS BDL z `.env.local` (GUS_BDL_KLUCZ); bez niego dzialamy anonimowo.
+ * Funkcja, nie stala: moduly laduja sie przed kodem skryptu, wiec stala
+ * przeczytalaby zmienne, zanim import wczyta `.env.local`.
+ */
+export const kluczBdl = (): string | null => process.env.GUS_BDL_KLUCZ?.trim() || null;
+
+/**
+ * Przerwa miedzy zapytaniami do BDL, dobrana do limitu 15-minutowego
+ * (api.stat.gov.pl/Home/BdlApi): anonimowo 100 zapytan / 15 min, z kluczem 500.
+ * Najciasniejszy jest wlasnie limit 15-minutowy — przerwa 1 s (60 na minute)
+ * przekraczala go wielokrotnie i GUS odpowiadal 429.
+ */
+export const przerwaBdlMs = (): number => (kluczBdl() ? 1_900 : 9_500);
+
 export type Postep = (opis: string) => void;
 
 const DO_PONOWIENIA = new Set([408, 425, 429, 500, 502, 503, 504]);
@@ -57,6 +72,9 @@ export async function pobierz(url: string, opcje: { json?: boolean } = {}): Prom
           headers: {
             'Accept': opcje.json === false ? '*/*' : 'application/json',
             'User-Agent': 'jawne.pl/0.1 (agregator danych publicznych)',
+            // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
+            // Wysylamy go tylko do BDL — innym serwerom nic po nim.
+            ...(kluczBdl() && url.startsWith('https://bdl.stat.gov.pl/') ? { 'X-ClientId': kluczBdl()! } : {}),
           },
           signal: AbortSignal.timeout(45_000),
         });

@@ -18,7 +18,7 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | do napisania, szkic w [nazwiska.md](nazwiska.md) |
 | 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | do kupienia |
 | 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła |
-| 5a | **Klucz API GUS BDL** (darmowy, rejestracja na bdl.stat.gov.pl) | Bez klucza limit to 1 000 zapytań na 12 godzin — pełne odświeżenie danych gmin go przekracza. Rejestrację robi Paweł, klucz trafia do `.env.local` | do zrobienia |
+| 5a | **Klucz API GUS BDL** (darmowy, portal api.stat.gov.pl) | Bez klucza 100 zapytań na 15 minut — import jest 5 razy wolniejszy. Rejestrację robi Paweł; klucz do `.env.local` jako `GUS_BDL_KLUCZ` | do zrobienia |
 | 6 | ~~**Obrazki podglądu linku dla stron gmin**~~ | Mamy je dla głosowań i posłów; strona gminy jest teraz najbardziej „udostępnialna” | **zrobione 19.09.2026**: nazwa, powiat, dochody i UE na mieszkańca, każda liczba z mianownikiem |
 
 ---
