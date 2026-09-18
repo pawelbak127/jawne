@@ -123,6 +123,34 @@ Zwykły dzień to 3 531 przypadków, czyli ok. 0,9 mln na rok roboczy. Lata
 (pomoc covidowa). Stąd szacunek dla kraju na 10 lat: **około 20 mln rekordów**,
 czyli ~2 tys. stron po 10 tys. wierszy i **13–15 GB w bazie**.
 
+## Pomiary z 18.09.2026 — pierwszy przebieg w GitHub Actions
+
+**Dzień pobrany następnego dnia jest niekompletny.** Czwartek 17.09 pobrany
+18.09 miał 200 przypadków; czwartki pobrane po 3–4 tygodniach — 5 657 i 7 850.
+Powód jest w przepisach: podmiot udzielający pomocy ma **7 dni** na przesłanie
+sprawozdania do SHRIMP, a korekty kolejne 7 dni od uzyskania informacji
+(§ 6 ust. 2 rozporządzenia RM z 7.08.2008, [UOKiK](https://uokik.gov.pl/sprawozdawanie-udzielonej-pomocy-publicznej)).
+
+Z tego wynika reguła: **dzień jest ustalony, gdy od jego daty do pobrania
+minęło 14 dni** (7 dni ustawowych i tydzień zapasu na publikację w SUDOP).
+Strony liczą sumy wyłącznie z dni ustalonych (`DNI_DO_USTALENIA` w
+`src/lib/dane.ts`) i mówią, ile świeżych pominęły. Dlatego każdy dzień
+pobieramy dwa razy: dzień później (świeży, dla „co nowego”) i po 14 dniach
+(`--odswiez`). To dwa zapytania na dobę, nie jedno.
+
+**Weekendy są prawie puste**: 18–124 przypadków wobec 4–20 tys. w dni robocze.
+Wtorki potrafią mieć 14–20 tys. (zbiorcze decyzje, np. dopłaty do wynagrodzeń).
+
+**Pora dnia ma znaczenie.** Przebieg zaplanowany na 04:17 UTC GitHub uruchomił
+o 09:00 UTC (opóźnienie harmonogramu po stronie GitHuba), a kolejka urzędu
+w godzinach pracy czekała **54 minuty** — w nocy 2–9. Przy 62-minutowym
+horyzoncie to blisko porażki. Cron przesunięty na 01:17 UTC.
+
+**Data pobrania jest w pliku, nie w chwili importu.** Dane z Actions
+importujemy lokalnie nawet kilka dni później; gdyby liczyła się data importu,
+świeży dzień wyglądałby na ustalony. Każda zapisana odpowiedź ma pole
+`pobrano`, a nowsza wersja pliku wygrywa ze starszą.
+
 ## Co z tego wynika — do decyzji Pawła
 
 **Przesłanka D13 „kolejka nie oddaje wyniku przed jego wygaśnięciem” dziś nie

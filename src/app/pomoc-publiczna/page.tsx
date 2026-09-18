@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { bazaDostepna, przegladPomocy, zrodloImportu } from '@/lib/dane';
+import { bazaDostepna, DNI_DO_USTALENIA, przegladPomocy, zrodloImportu } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania } from '@/lib/prywatnosc';
@@ -62,6 +62,12 @@ export default function StronaPomocy() {
         <span className="font-medium text-atrament">{`Dane z ${zOdmiana(p.dni, 'dnia', 'dni', 'dni')}: od ${dataSlownie(p.od)} do ${dataSlownie(p.do)}.`}</span>
         {' '}Rejestr obejmuje dziesięć lat, a my pobieramy go stopniowo — wszystkie liczby poniżej dotyczą
         wyłącznie tych dni, nie całego roku.
+        {p.swiezych ? (
+          <>
+            {' '}
+            {`Pomijamy ${zOdmiana(p.swiezych, 'świeży dzień', 'świeże dni', 'świeżych dni')}: urzędy mają 7 dni na zgłoszenie pomocy, więc dzień wliczamy dopiero ${DNI_DO_USTALENIA} dni po jego dacie.`}
+          </>
+        ) : null}
       </p>
 
       <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

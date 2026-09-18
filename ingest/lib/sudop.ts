@@ -58,7 +58,16 @@ export type PrzypadekPomocy = {
   'wartosc-brutto-eur': string | null;
 };
 
-export type OdpowiedzSudop = { 'liczba-wynikow': number; wyniki: PrzypadekPomocy[] };
+export type OdpowiedzSudop = {
+  'liczba-wynikow': number;
+  wyniki: PrzypadekPomocy[];
+  /**
+   * NASZE pole, nie urzedu: kiedy odpowiedz zostala pobrana. Zapisujemy je
+   * w pliku, bo o tym, czy dzien jest juz ustalony, decyduje czas POBRANIA,
+   * a nie importu — dane z GitHub Actions importujemy nawet kilka dni pozniej.
+   */
+  pobrano?: string;
+};
 
 /**
  * TERYT gminy, pod ktorym trzymamy przypadek o danym kodzie SUDOP.

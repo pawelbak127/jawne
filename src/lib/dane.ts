@@ -903,6 +903,8 @@ export type PrzegladPomocy = {
   od: string;
   do: string;
   dni: number;
+  /** Dni pobrane, ale jeszcze nieustalone — pominiete w sumach. */
+  swiezych: number;
   przypadkow: number;
   beneficjentow: number;
   gmin: number;
@@ -929,11 +931,16 @@ export type PrzegladPomocy = {
  */
 export function przegladPomocy(): PrzegladPomocy | null {
   return bezTabeli(() => {
+    // Tylko dni ustalone: swiezy dzien ma dopiero czesc zgloszen i zanizylby
+    // sumy (patrz DNI_DO_USTALENIA).
     const zakres = jeden<{ od: string | null; do: string | null; dni: number }>(
-      'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_publiczna_dni',
+      `select min(dzien) as od, max(dzien) as do, count(*) as dni from ${DNI_USTALONE}`,
     );
     if (!zakres?.od || !zakres.do) return null;
-    const Z = `(select * from pomoc_publiczna where dzien in (select dzien from pomoc_publiczna_dni))`;
+    const swiezych = (jeden<{ c: number }>(
+      `select count(*) as c from pomoc_publiczna_dni where dzien not in ${DNI_USTALONE}`,
+    )?.c ?? 0);
+    const Z = `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
     const razem = jeden<{ przypadkow: number; beneficjentow: number; gmin: number; brutto: number | null }>(
       `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow,
               count(distinct teryt) as gmin, sum(wartosc_brutto) as brutto from ${Z}`,
@@ -970,7 +977,7 @@ export function przegladPomocy(): PrzegladPomocy | null {
         order by z.wartosc_brutto desc nulls last limit 15`,
     );
     return {
-      od: zakres.od, do: zakres.do, dni: zakres.dni, ...razem,
+      od: zakres.od, do: zakres.do, dni: zakres.dni, swiezych, ...razem,
       udzielajacy: grupa('udzielajacy', 12),
       przeznaczenia: grupa('przeznaczenie', 12),
       formy: grupa('forma', 8),
@@ -1015,6 +1022,21 @@ export function zrodloImportu(co: string): ZrodloImportu {
 }
 
 /**
+ * Po ilu dniach od daty udzielenia pomocy uznajemy dzien za USTALONY.
+ *
+ * Podmioty udzielajace pomocy maja 7 dni na zgloszenie jej do UOKiK
+ * (par. 6 ust. 2 rozporzadzenia RM z 7.08.2008), korekty tez 7 dni.
+ * ZMIERZONE: czwartek pobrany dzien pozniej mial 200 przypadkow, czwartki
+ * pobrane po 3-4 tygodniach — 5 657 i 7 850. Dajemy tydzien zapasu na
+ * publikacje w SUDOP: 14 dni.
+ */
+export const DNI_DO_USTALENIA = 14;
+
+/** Dni pobrane dla calego kraju, ktore juz sie ustalily (SQL). */
+const DNI_USTALONE = `(select dzien from pomoc_publiczna_dni
+  where julianday(substr(pobrano, 1, 10)) - julianday(dzien) >= ${DNI_DO_USTALENIA})`;
+
+/**
  * Skad mamy dane o pomocy dla tej gminy:
  *  - 'gmina'   — pobrano cale 10 lat tej gminy,
  *  - 'dni'     — mamy tylko dni pobrane dla calego kraju (tryb przyrostowy).
@@ -1047,14 +1069,19 @@ export function pomocGminy(teryt: string): PomocGminy {
     );
     // Bez pelnego pobrania gminy zostaja dni pobrane dla calego kraju —
     // pokazujemy je, ale mowimy wprost, ze to nie jest cala historia.
+    // Swieze dni sa niepelne (urzedy zglaszaja pomoc do 7 dni po fakcie),
+    // wiec w trybie dni liczymy tylko dni ustalone — patrz DNI_DO_USTALENIA.
     const dni = pobranie ? null : bezTabeli(
       () => jeden<{ od: string; do: string; dni: number }>(
-        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_publiczna_dni',
+        `select min(dzien) as od, max(dzien) as do, count(*) as dni from ${DNI_USTALONE}`,
       ),
       null,
     );
+    // Pelne pobranie gminy obejmuje wszystkie jej wiersze; tryb dni — tylko
+    // dni ustalone. Jedna podkwerenda zamiast warunku w kazdym zapytaniu.
+    const P = pobranie ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
     const maWiersze = !pobranie && dni?.dni
-      ? (jeden<{ c: number }>('select count(*) as c from pomoc_publiczna where teryt = ?', teryt)?.c ?? 0) > 0
+      ? (jeden<{ c: number }>(`select count(*) as c from ${P} where teryt = ?`, teryt)?.c ?? 0) > 0
       : false;
     if (!pobranie && !maWiersze) return pusto;
     const zrodlo: ZrodloPomocy = pobranie
@@ -1063,26 +1090,26 @@ export function pomocGminy(teryt: string): PomocGminy {
     const razem = jeden<{ przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string }>(
       `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow, sum(wartosc_brutto) as brutto,
               min(dzien) as pierwszy, max(dzien) as ostatni
-         from pomoc_publiczna where teryt = ?`, teryt,
+         from ${P} where teryt = ?`, teryt,
     );
     const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null }>(
       `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur
-         from pomoc_publiczna where teryt = ? group by nip_beneficjenta`, teryt,
+         from ${P} where teryt = ? group by nip_beneficjenta`, teryt,
     ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur }));
     const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
       `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from pomoc_publiczna where teryt = ? group by rok order by rok`, teryt,
+         from ${P} where teryt = ? group by rok order by rok`, teryt,
     );
     const grupa = (kolumna: 'przeznaczenie' | 'udzielajacy') => wszystkie<{ nazwa: string; przypadkow: number; brutto: number | null }>(
       `select coalesce(${kolumna}, '(brak w rejestrze)') as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from pomoc_publiczna where teryt = ? group by nazwa order by brutto desc nulls last limit 6`, teryt,
+         from ${P} where teryt = ? group by nazwa order by brutto desc nulls last limit 6`, teryt,
     );
     // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
     // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
     const beneficjenci = wszystkie<{ nazwa: string; nip: string | null; przypadkow: number; brutto: number | null; max_eur: number | null }>(
       `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto,
               max(wartosc_brutto_eur) as max_eur
-         from pomoc_publiczna where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
+         from ${P} where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
     );
     return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
   }, pusto);

@@ -11,6 +11,9 @@ import { existsSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const PLIK = 'dane/sejm.db';
+// Musi sie zgadzac z DNI_DO_USTALENIA w src/lib/dane.ts: urzedy maja 7 dni na
+// zgloszenie pomocy, dzien pobrany wczesniej jest niepelny.
+const DNI_DO_USTALENIA = 14;
 const KATALOG_SUDOP = 'dane/zrodla/sudop';
 const DZIS = new Date();
 const dzien = (d) => d.toISOString().slice(0, 10);
@@ -68,7 +71,12 @@ nl();
 nl('== Pomoc publiczna (SUDOP)');
 const wierszy = jeden('select count(*) as c from pomoc_publiczna')?.c ?? 0;
 const gminy = wszystkie('select teryt, wierszy from pomoc_publiczna_pobrania order by teryt');
-const dni = wszystkie('select dzien, wierszy from pomoc_publiczna_dni order by dzien');
+const dni = wszystkie('select dzien, wierszy, pobrano from pomoc_publiczna_dni order by dzien');
+const poDniach = (a, b) => Math.round((new Date(`${a}T00:00:00Z`) - new Date(`${b}T00:00:00Z`)) / 86_400_000);
+// Dzien niepelny: pobrany mniej niz DNI_DO_USTALENIA dni po swojej dacie.
+const niepelne = dni.filter((d) => poDniach(d.pobrano.slice(0, 10), d.dzien) < DNI_DO_USTALENIA);
+// Do odswiezenia: niepelne, ktore JUZ zdazyly sie ustalic (minelo 14 dni).
+const doOdswiezenia = niepelne.filter((d) => poDniach(dzien(DZIS), d.dzien) >= DNI_DO_USTALENIA);
 nl(`   przypadków w bazie: ${liczba(wierszy)}`);
 nl(`   gminy pobrane w całości (10 lat): ${gminy.length}${gminy.length ? ` — ${gminy.map((g) => g.teryt).join(', ')}` : ''}`);
 
@@ -87,6 +95,7 @@ if (!dni.length) {
   nl(`   dni pobrane dla całego kraju: ${dni.length} (${od} … ${doDnia})`);
   nl(`   to ${(100 * dni.length / wszystkichDni).toFixed(1)}% okna rejestru (${liczba(wszystkichDni)} dni od ${POCZATEK_OKNA})`);
   if (brakiWSrodku.length) nl(`   UWAGA: dziury w środku zakresu: ${brakiWSrodku.length} dni, np. ${brakiWSrodku.slice(0, 5).join(', ')}`);
+  nl(`   dni niepełnych (pobrane < ${DNI_DO_USTALENIA} dni po dacie, pomijane w sumach): ${niepelne.length}`);
 }
 
 nl();
@@ -126,6 +135,18 @@ if (przerwane.length || zakresyDziur.length) {
   nl('   0. Dziury — najpierw te, bo przerwane pobieranie zostawiło już część stron:');
   for (const z of przerwane) nl(`      npx tsx ingest/jobs/sudop.ts --przyrost=${z}   (część stron na dysku)`);
   for (const [od, doD] of zakresyDziur.slice(0, 5)) nl(`      npx tsx ingest/jobs/sudop.ts --przyrost=${od}..${doD}`);
+}
+
+if (doOdswiezenia.length) {
+  // Ciagle zakresy, jedno polecenie na zakres.
+  const zakresy = [];
+  for (const d of doOdswiezenia.map((x) => x.dzien)) {
+    const ost = zakresy[zakresy.length - 1];
+    if (ost && poDniach(d, ost[1]) === 1) ost[1] = d;
+    else zakresy.push([d, d]);
+  }
+  nl(`   0b. Odśwież dni, które już się ustaliły (${doOdswiezenia.length}):`);
+  for (const [od, doD] of zakresy.slice(0, 5)) nl(`      npx tsx ingest/jobs/sudop.ts --przyrost=${od}..${doD} --odswiez`);
 }
 
 if (!ostatni || ostatni < wczoraj) {

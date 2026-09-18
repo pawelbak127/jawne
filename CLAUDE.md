@@ -253,6 +253,10 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     dotacje inwestycyjne (np. dla spółki miejskiej budującej metro): Warszawa
     2025 to 3,07 mld zł majątkowych i 2,57 mld zł inwestycyjnych. Pokazujemy
     majątkowe i nazywamy je majątkowymi.
+37. **Dzień SUDOP ustala się po 14 dniach.** Urzędy mają 7 dni na zgłoszenie
+    pomocy; dzień pobrany następnego dnia miał 200 przypadków zamiast ~6 tys.
+    Sumy liczymy tylko z dni ustalonych, a o tym decyduje data POBRANIA
+    zapisana w pliku odpowiedzi (`pobrano`), nie data importu.
 35. **Przegląd krajowy liczy tylko dni z `pomoc_publiczna_dni`.** W tej samej
     tabeli leży pełna 10-letnia historia gmin pokazowych — bez filtra Bełchatów
     dodałby do sumy krajowej 13 mld zł.

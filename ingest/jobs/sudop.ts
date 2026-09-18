@@ -18,7 +18,7 @@
  *  - zapisujemy surowa odpowiedz, zeby powtorny zapis nie wymagal
  *    ponownego pytania urzedu (`--z-plikow`).
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -149,7 +149,9 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
  * z zakresu i wstawiamy od nowa, wiec korekta po stronie urzedu zastepuje
  * nasza wersje zamiast dokladac sie do niej.
  */
-function zapiszPrzyrost(db: DatabaseSync, od: string, doDnia: string, wyniki: PrzypadekPomocy[], znane: ReadonlySet<string>): { zapisanych: number; obce: number; nasze: PrzypadekPomocy[] } {
+function zapiszPrzyrost(
+  db: DatabaseSync, od: string, doDnia: string, wyniki: PrzypadekPomocy[], znane: ReadonlySet<string>, pobrano: string | null,
+): { zapisanych: number; obce: number; nasze: PrzypadekPomocy[] } {
   const problemy = sprawdzPorcjePrzyrostu(wyniki, od, doDnia);
   if (problemy.length) {
     throw new Error(`Porcja ${od}..${doDnia} nie przeszla kontroli: ${problemy.slice(0, 10).join('; ')}`);
@@ -176,7 +178,11 @@ function zapiszPrzyrost(db: DatabaseSync, od: string, doDnia: string, wyniki: Pr
   // "nie pytalismy" od "pytalismy i nic nie bylo".
   for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
     const dzien = d.toISOString().slice(0, 10);
-    wstawDzien.run(dzien, new Date().toISOString(), naDzien.get(dzien) ?? 0);
+    // Stary plik bez naszej metryczki: zostawiamy date pobrania, ktora juz
+    // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
+    const istniejaca = pobrano ? null
+      : (db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(dzien) as { pobrano: string } | undefined)?.pobrano;
+    wstawDzien.run(dzien, pobrano ?? istniejaca ?? new Date().toISOString(), naDzien.get(dzien) ?? 0);
   }
   db.exec('commit');
   return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
@@ -187,38 +193,47 @@ function zapiszPrzyrost(db: DatabaseSync, od: string, doDnia: string, wyniki: Pr
  * (GitHub Actions nie ma pliku bazy; zapisuje surowe odpowiedzi i zostawia
  * je jako artefakt do zaimportowania na komputerze).
  */
-async function pobierzPrzyrost(od: string, doDnia: string): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number }> {
+async function pobierzPrzyrost(od: string, doDnia: string, odswiez = false): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number; pobrano: string | null }> {
   const formy = (await slownik('forma-pomocy')).map((f) => String(f.number));
-  log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)`);
+  log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)${odswiez ? ' — odswiezenie' : ''}`);
   const start = Date.now();
+  const dzis = new Date().toISOString().slice(0, 10);
   const wyniki: PrzypadekPomocy[] = [];
+  let pobrano: string | null = null;
   let strona = 1;
   let zapytan = 0;
   for (;;) {
     const plik = join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`);
     let odp: OdpowiedzSudop;
     const zapisana = zapisanaOdpowiedz(plik);
-    if (zapisana) {
+    // Przy odswiezeniu stary plik sie nie liczy — chyba ze pobralismy go
+    // dzisiaj (wtedy to wznowienie przerwanego odswiezenia, nie stara wersja).
+    if (zapisana && (!odswiez || zapisana.pobrano?.slice(0, 10) === dzis)) {
       odp = zapisana;
       log(`   strona ${strona}: z pliku`);
     } else {
       odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
+      odp.pobrano = new Date().toISOString();
       zapytan++;
       writeFileSync(plik, JSON.stringify(odp), 'utf8');
+      // Stara spakowana wersja tej strony jest juz nieaktualna.
+      if (existsSync(`${plik}.gz`)) rmSync(`${plik}.gz`);
     }
+    // Dzien jest tak swiezy jak jego NAJSTARSZA strona.
+    if (odp.pobrano && (!pobrano || odp.pobrano < pobrano)) pobrano = odp.pobrano;
     wyniki.push(...(odp.wyniki ?? []));
     log(`   strona ${strona}: ${odp.wyniki?.length ?? 0} z ${odp['liczba-wynikow']}`);
     if (wyniki.length >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
     strona++;
   }
-  return { wyniki, zapytan, sekund: Math.round((Date.now() - start) / 1000) };
+  return { wyniki, zapytan, sekund: Math.round((Date.now() - start) / 1000), pobrano };
 }
 
-async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>): Promise<void> {
+async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>, odswiez: boolean): Promise<void> {
   const [od, doDnia] = zakres.split('..');
   if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
-  const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia);
-  const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane);
+  const { wyniki, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez);
+  const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane, pobrano);
   log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
   odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
@@ -234,6 +249,7 @@ async function main(): Promise<void> {
     log('albo zakres dni dla calego kraju: --przyrost=2026-09-15..2026-09-17');
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
+    log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
     process.exit(2);
   }
   mkdirSync(KATALOG, { recursive: true });
@@ -243,7 +259,7 @@ async function main(): Promise<void> {
   if (zakres && process.argv.includes('--tylko-pobierz')) {
     const [od, doDnia] = zakres.split('..');
     if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
-    const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia);
+    const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia, process.argv.includes('--odswiez'));
     log(`   pobrano ${wyniki.length} przypadkow w ${zapytan} zapytaniach (${sekund} s); pliki w ${KATALOG}`);
     return;
   }
@@ -256,7 +272,7 @@ async function main(): Promise<void> {
   znane.add(TERYT_WARSZAWY);
   if (zakres) {
     try {
-      await przyrost(db, zakres, znane);
+      await przyrost(db, zakres, znane, process.argv.includes('--odswiez'));
     } finally {
       db.close();
     }

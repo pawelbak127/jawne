@@ -5,7 +5,13 @@
 # Dlatego ten przebieg nie obciaza urzedu bardziej niz jeden czlowiek
 # klikajacy raz dziennie w wyszukiwarce.
 #
-# CO ROBI: pobiera dzien i zostawia surowa odpowiedz jako artefakt.
+# CO ROBI: pobiera DWA dni i zostawia surowe odpowiedzi jako artefakt:
+#  - wczoraj — swiezy, NIEPELNY (urzedy maja 7 dni na zgloszenie pomocy;
+#    zmierzone: czwartek pobrany dzien pozniej mial 200 przypadkow, czwartki
+#    pobrane po 3-4 tygodniach — 5 657 i 7 850),
+#  - dzien sprzed 14 dni — odswiezony, juz USTALONY. Dopiero ten wchodzi
+#    do sum na stronach (src/lib/dane.ts, DNI_DO_USTALENIA).
+# Dwa zapytania na dobe.
 # CZEGO NIE ROBI: nie zapisuje niczego do repozytorium — odpowiedzi zawieraja
 # dane osobowe, a repozytorium moze byc publiczne. Import do bazy robi sie
 # na komputerze: `npm run sudop:artefakty`, a potem `--przyrost=...`.
@@ -17,9 +23,11 @@ name: SUDOP — przyrost dzienny
 
 on:
   schedule:
-    # 04:17 UTC, czyli poza pelna godzina: o rownych godzinach GitHub opoznia
-    # zadania przy duzym obciazeniu.
-    - cron: '17 4 * * *'
+    # 01:17 UTC, poza pelna godzina. ZMIERZONE 18.09.2026: przebieg zaplanowany
+    # na 04:17 GitHub uruchomil o 09:00 UTC, a kolejka UOKiK w godzinach pracy
+    # urzedu czekala 54 min (w nocy 2-9 min). Wczesniejsza godzina daje zapas
+    # na opoznienie GitHuba.
+    - cron: '17 1 * * *'
   workflow_dispatch:
     inputs:
       zakres:
@@ -30,7 +38,8 @@ on:
 jobs:
   pobierz:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Dwa pobrania, kazde moze czekac w kolejce do 62 min.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -41,25 +50,32 @@ jobs:
 
       - run: npm ci
 
-      - name: Ustal zakres dni
+      - name: Ustal zakresy dni
         id: zakres
         run: |
           if [ -n "${{ inputs.zakres }}" ]; then
-            echo "wartosc=${{ inputs.zakres }}" >> "$GITHUB_OUTPUT"
+            echo "swiezy=${{ inputs.zakres }}" >> "$GITHUB_OUTPUT"
+            echo "ustalany=" >> "$GITHUB_OUTPUT"
           else
             D=$(date -u -d 'yesterday' +%F)
-            echo "wartosc=$D..$D" >> "$GITHUB_OUTPUT"
+            U=$(date -u -d '14 days ago' +%F)
+            echo "swiezy=$D..$D" >> "$GITHUB_OUTPUT"
+            echo "ustalany=$U..$U" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Pobierz z SUDOP
-        run: npx tsx ingest/jobs/sudop.ts --przyrost=${{ steps.zakres.outputs.wartosc }} --tylko-pobierz
+      - name: Pobierz swiezy dzien
+        run: npx tsx ingest/jobs/sudop.ts --przyrost=${{ steps.zakres.outputs.swiezy }} --tylko-pobierz
+
+      - name: Odswiez dzien sprzed 14 dni
+        if: steps.zakres.outputs.ustalany != ''
+        run: npx tsx ingest/jobs/sudop.ts --przyrost=${{ steps.zakres.outputs.ustalany }} --tylko-pobierz --odswiez
 
       - name: Spakuj odpowiedzi
         run: gzip -9 dane/zrodla/sudop/przyrost-*.json
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sudop-${{ steps.zakres.outputs.wartosc }}
+          name: sudop-${{ steps.zakres.outputs.swiezy }}
           path: dane/zrodla/sudop/przyrost-*.json.gz
           # 90 dni to maksimum dla repozytorium publicznego. Prywatne moze miec
           # 400 — jesli repozytorium jest prywatne, podnies te liczbe.
