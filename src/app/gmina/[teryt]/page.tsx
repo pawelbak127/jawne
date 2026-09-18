@@ -466,9 +466,13 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-          {`Pokazujemy podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje)${progAktywny ? `, oraz te, których pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — tyle wynosi unijny próg publikowania pomocy indywidualnej` : ''}. ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
-        </p>
+        {/* Zdanie o regule tylko wtedy, gdy regula kogos ukryla — w trybie
+            lokalnym bez filtra "0 beneficjentow nie wymieniamy" byloby szumem. */}
+        {ukrytych ? (
+          <p className="mt-3 text-xs leading-relaxed text-atrament-3">
+            {`Pokazujemy podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje)${progAktywny ? `, oraz te, których pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — tyle wynosi unijny próg publikowania pomocy indywidualnej` : ''}. ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
+          </p>
+        ) : null}
         {progAktywny ? (
           <p className="mt-2 text-xs leading-relaxed text-atrament-3">
             {`Jeśli jesteś osobą, której nazwisko tu widać, i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy je bez pytania o powód.`}

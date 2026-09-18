@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   bezNazwiskOsobPrywatnych as bez, nazwaDoPokazania, nazwaPodmiotuJawna, pominietoNazwiska,
-  PROG_JAWNOSCI_EUR, zawieraImie,
+  PROG_JAWNOSCI_EUR, trybBezFiltra, zawieraImie,
 } from './prywatnosc';
 
 /*
@@ -159,5 +159,27 @@ describe('prog jawnosci osoby fizycznej', () => {
 
   it('spolka jest jawna takze bez progu i bez kwoty', () => {
     expect(nazwaDoPokazania('Przykład Sp. z o.o.').pominieta).toBe(false);
+  });
+});
+
+describe('trybBezFiltra', () => {
+  // Lokalnie Pawel widzi wszystkie nazwy; w buildzie produkcyjnym filtr
+  // wraca sam, niezaleznie od zmiennej.
+  it('dziala tylko ze zmienna i poza produkcja', () => {
+    expect(trybBezFiltra({ JAWNE_BEZ_FILTRA_NAZW: '1', NODE_ENV: 'development' })).toBe(true);
+    expect(trybBezFiltra({ JAWNE_BEZ_FILTRA_NAZW: '1', NODE_ENV: 'production' })).toBe(false);
+    expect(trybBezFiltra({ NODE_ENV: 'development' })).toBe(false);
+  });
+
+  it('w trybie lokalnym pokazuje nazwe osoby, poza nim ja ukrywa', () => {
+    const przed = { ...process.env };
+    try {
+      process.env.JAWNE_BEZ_FILTRA_NAZW = '1';
+      expect(nazwaDoPokazania('Zakład Fryzjerski Anna Przykładowa').pominieta).toBe(false);
+      delete process.env.JAWNE_BEZ_FILTRA_NAZW;
+      expect(nazwaDoPokazania('Zakład Fryzjerski Anna Przykładowa').pominieta).toBe(true);
+    } finally {
+      process.env = przed;
+    }
   });
 });

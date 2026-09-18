@@ -4,6 +4,7 @@ import Link from 'next/link';
 import './globals.css';
 import { PrzelacznikMotywu } from '@/components/PrzelacznikMotywu';
 import { ADRES_SERWISU } from '@/lib/adres';
+import { trybBezFiltra } from '@/lib/prywatnosc';
 
 // latin-ext jest OBOWIAZKOWE: szablon create-next-app ma tu samo "latin",
 // przy ktorym "ą", "ę", "ł", "ń", "ś", "ź", "ż" lecą na font zastepczy
@@ -33,10 +34,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const NAWIGACJA = [
+const NAWIGACJA: { adres: string; etykieta: string; krotka?: string }[] = [
   { adres: '/okregi', etykieta: 'Okręgi' },
   { adres: '/poslowie', etykieta: 'Posłowie' },
   { adres: '/glosowania', etykieta: 'Głosowania' },
+  // Na telefonie "Pomoc" — pelna nazwa nie miesci sie obok trzech pozostalych.
+  { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', krotka: 'Pomoc' },
 ];
 
 const ZRODLA_STOPKI: [string, string][] = [
@@ -69,6 +72,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Przejdź do treści
         </a>
 
+        {/*
+          Tryb lokalny bez filtra nazw jest widoczny na kazdej stronie — zrzut
+          ekranu z niego nie moze uchodzic za wersje publiczna.
+        */}
+        {trybBezFiltra() ? (
+          <div className="bg-akcent px-4 py-1.5 text-center text-xs font-medium text-papier">
+            Tryb lokalny: nazwy beneficjentów nie są filtrowane. W buildzie produkcyjnym filtr wraca sam.
+          </div>
+        ) : null}
+
         <header className="sticky top-0 z-40 border-b border-kreska bg-papier/85 backdrop-blur-md">
           <div className="obszar flex h-16 items-center gap-3 sm:gap-6">
             <Link href="/" className="flex items-baseline gap-2 shrink-0">
@@ -78,15 +91,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
 
-            {/* Na 390 px trzy pozycje i przelacznik wystawaly poza ekran — stad mniejsze odstepy. */}
+            {/* Na 390 px cztery pozycje i przelacznik mieszcza sie tylko z krotkimi
+                etykietami i mniejszymi odstepami. */}
             <nav className="ml-auto flex min-w-0 items-center text-[13px] sm:gap-1 sm:text-sm">
               {NAWIGACJA.map((p) => (
                 <Link
                   key={p.adres}
                   href={p.adres}
-                  className="rounded-lg px-2 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
+                  className="rounded-lg px-1.5 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
                 >
-                  {p.etykieta}
+                  {p.krotka ? (
+                    <>
+                      <span className="sm:hidden">{p.krotka}</span>
+                      <span className="hidden sm:inline">{p.etykieta}</span>
+                    </>
+                  ) : p.etykieta}
                 </Link>
               ))}
               <PrzelacznikMotywu />

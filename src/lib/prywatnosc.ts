@@ -190,8 +190,23 @@ export type OpcjeNazwy = {
   progAktywny?: boolean;
 };
 
+/**
+ * Tryb lokalny bez filtra nazw — decyzja Pawla z 19.09.2026: serwis dziala
+ * tylko na jego komputerze, wiec lokalnie chce widziec wszystkie nazwy.
+ *
+ * Wlacza go JAWNE_BEZ_FILTRA_NAZW=1 w .env.local, ale TYLKO poza buildem
+ * produkcyjnym: `next build` / `next start` ustawiaja NODE_ENV=production
+ * i wtedy filtr wraca sam. Gdybysmy kiedys wyslali serwis na serwer,
+ * ochrona nazwisk nie zalezy od tego, czy ktos pamietal o zmiennej.
+ * Funkcja, nie stala — zeby test mogl sprawdzic oba stany.
+ */
+export function trybBezFiltra(env: Record<string, string | undefined> = process.env): boolean {
+  return env.JAWNE_BEZ_FILTRA_NAZW === '1' && env.NODE_ENV !== 'production';
+}
+
 /** Nazwa do wyswietlenia albo opis zastepczy — nigdy pusty napis. */
 export function nazwaDoPokazania(nazwa: string | null | undefined, opcje: OpcjeNazwy = {}): { tekst: string; pominieta: boolean } {
+  if (trybBezFiltra() && nazwa?.trim()) return { tekst: nazwa.trim(), pominieta: false };
   if (nazwaPodmiotuJawna(nazwa)) return { tekst: nazwa!.trim(), pominieta: false };
   const nadProgiem = opcje.progAktywny === true
     && (opcje.pomocEur ?? 0) >= PROG_JAWNOSCI_EUR
