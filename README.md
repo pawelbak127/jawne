@@ -47,6 +47,7 @@ się w całości z publicznego API Sejmu.
 | `/` | półkole izby, wyszukiwarka (posłowie, gminy, głosowania), ostatnie głosowania |
 | `/okregi`, `/okreg/[nr]` | 41 okręgów: gminy, posłowie, jak głosowali |
 | `/gmina/[teryt]` | posłowie z okręgu, budżet gminy, Fundusze Europejskie na mieszkańca, pomoc publiczna dla firm |
+| `/gmina/[teryt]/csv/[zestaw]` | dane gminy do pobrania: `budzet`, `fundusze`, `pomoc` (CSV pod polskiego Excela) |
 | `/firma/[nip]` | pomoc publiczna dla jednego beneficjenta — tylko gdy jego nazwę wolno pokazać |
 | `/pomoc-publiczna` | przegląd krajowy: kto udziela pomocy, na co, jakim firmom, w których województwach |
 | `/poslowie` | wszyscy posłowie, filtrowanie w przeglądarce |

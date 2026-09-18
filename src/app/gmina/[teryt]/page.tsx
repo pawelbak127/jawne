@@ -196,6 +196,32 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
       </section>
 
+      {/*
+        Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
+        zakresy i ta sama regula nazw (src/app/gmina/[teryt]/csv/[zestaw]).
+      */}
+      <section className="mt-14 rounded-2xl border border-kreska bg-papier-2 p-6">
+        <h2 className="text-lg font-medium">Pobierz dane tej gminy</h2>
+        <p className="mt-1 text-sm text-atrament-2">
+          Pliki CSV przygotowane pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.
+        </p>
+        <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+          {[
+            ['budzet', 'budżet rok po roku', Boolean(budzet)],
+            ['fundusze', 'projekty unijne', fundusze.some((f) => f.tylko_tu || f.wspolnych)],
+            ['pomoc', 'pomoc publiczna', Boolean(pomoc.zrodlo && pomoc.razem)],
+          ].filter(([, , jest]) => jest).map(([zestaw, opis]) => (
+            <li key={String(zestaw)}>
+              <a
+                href={`/gmina/${g.teryt}/csv/${String(zestaw)}`}
+                className="inline-block rounded-full border border-kreska-2 px-3 py-1 text-atrament-2 transition-colors hover:border-akcent hover:text-akcent"
+              >
+                {`${String(opis)} (CSV)`}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

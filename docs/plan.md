@@ -37,9 +37,10 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    pobranych dla całego kraju (historia gmin pokazowych nie jest wmieszana).
    Pierwszy wniosek z danych: mikroprzedsiębiorstwa to 86 % przypadków, ale
    27 % pieniędzy; duże firmy — 2 % przypadków i 42 % pieniędzy.
-3. **Dane do pobrania przez czytelnika** — CSV dla gminy (budżet, projekty UE,
-   pomoc publiczna w granicach reguły o nazwiskach). Serwis o otwartych danych
-   powinien je oddawać.
+3. ~~**Dane do pobrania przez czytelnika**~~ **Zrobione 19.09.2026** —
+   `/gmina/{teryt}/csv/{budzet|fundusze|pomoc}`. Format pod polskiego Excela
+   (średnik, przecinek dziesiętny, UTF-8 z BOM). Te same zakresy i ta sama
+   reguła nazw co strona; NIP tylko razem z jawną nazwą.
 4. **Pełniejsza strona firmy.** Dziś pomoc publiczna z SUDOP. Dołożyć:
    - zamówienia publiczne z TED (zmierzone, bez klucza),
    - identyfikatory z GLEIF (43 030 polskich podmiotów, pole `registeredAs` to KRS),

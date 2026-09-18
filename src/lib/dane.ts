@@ -986,6 +986,72 @@ export function przegladPomocy(): PrzegladPomocy | null {
   }, null);
 }
 
+// ---------------------------------------------------------------------------
+// Eksport CSV — te same zakresy i reguly co na stronie gminy
+// ---------------------------------------------------------------------------
+
+export type WierszBudzetu = RokBudzetu & { dochody_wlasne: number | null; wydatki_inwestycyjne: number | null };
+
+export function budzetDoEksportu(teryt: string): WierszBudzetu[] {
+  return bezTabeli(
+    () => wszystkie<WierszBudzetu>(
+      `select rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne
+         from budzety_gmin where teryt = ? order by rok`,
+      teryt,
+    ),
+    [],
+  );
+}
+
+export type ProjektDoEksportu = {
+  okres: string; numer_umowy: string | null; tytul: string; beneficjent: string | null;
+  program: string | null; fundusz: string | null; wartosc: number | null; dofinansowanie_ue: number | null;
+  waluta: string | null; poczatek: string | null; koniec: string | null; miejsc: number;
+};
+
+/** Wszystkie projekty UE, ktore dotycza gminy — takze wielomiejscowe (kolumna `miejsc`). */
+export function projektyDoEksportu(teryt: string): ProjektDoEksportu[] {
+  return bezTabeli(
+    () => wszystkie<ProjektDoEksportu>(
+      `select distinct p.okres, p.numer_umowy, p.tytul, p.beneficjent, p.program, p.fundusz, p.wartosc,
+              p.dofinansowanie_ue, p.waluta, p.poczatek, p.koniec, p.miejsc
+         from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+        where m.teryt = ?
+        order by p.okres desc, p.dofinansowanie_ue desc`,
+      teryt,
+    ),
+    [],
+  );
+}
+
+export type PomocDoEksportu = {
+  dzien: string; nip_beneficjenta: string | null; nazwa_beneficjenta: string | null;
+  /** najwieksza POJEDYNCZA pomoc tego beneficjenta w euro — do progu jawnosci */
+  max_eur_beneficjenta: number | null;
+  wielkosc: string | null; pkd: string | null; udzielajacy: string | null; przeznaczenie: string | null;
+  forma: string | null; wartosc_nominalna: number | null; wartosc_brutto: number | null; wartosc_brutto_eur: number | null;
+};
+
+/**
+ * Przypadki pomocy gminy w tym samym zakresie co strona: cale pobranie gminy
+ * albo — gdy go nie ma — tylko dni ustalone.
+ */
+export function pomocDoEksportu(teryt: string): PomocDoEksportu[] {
+  return bezTabeli(() => {
+    const pelna = jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c;
+    const P = pelna ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
+    return wszystkie<PomocDoEksportu>(
+      `select z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta,
+              (select max(x.wartosc_brutto_eur) from ${P} x where x.teryt = z.teryt and x.nip_beneficjenta = z.nip_beneficjenta) as max_eur_beneficjenta,
+              z.wielkosc, z.pkd, z.udzielajacy, z.przeznaczenie, z.forma,
+              z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur
+         from ${P} z where z.teryt = ?
+        order by z.dzien desc, z.wartosc_brutto desc`,
+      teryt,
+    );
+  }, []);
+}
+
 export type ProjektGminy = {
   id: number;
   okres: string;

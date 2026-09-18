@@ -115,7 +115,7 @@ sam wynik.
 
 | Zadanie | Sposób | Koszt dla urzędu |
 |---|---|---|
-| Przyrost dzienny dla całego kraju | jedno zapytanie: 70 form pomocy + zakres jednego dnia | **1 zapytanie na dobę** (zmierzone) |
+| Przyrost dzienny dla całego kraju | 70 form pomocy + jeden dzień; każdy dzień dwa razy (świeży i po 14 dniach) | **2 zapytania na dobę** (zmierzone) |
 | Uzupełnienie historii (10 lat) | cięcie po formie pomocy i miesiącach, strony po 10 tys. | tysiące zapytań — to jest ta część, na którą trzeba zgody |
 
 Zwykły dzień to 3 531 przypadków, czyli ok. 0,9 mln na rok roboczy. Lata
