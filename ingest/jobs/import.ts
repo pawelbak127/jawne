@@ -729,8 +729,17 @@ async function bdlZmiennaGmin(zmienna: number, rok: number): Promise<Map<string,
   return wartosci;
 }
 
+/**
+ * Budzety gmin za kilka ostatnich lat.
+ *
+ * Jeden rok to punkt, kilka lat to trend — a dopiero trend odpowiada na
+ * pytanie "czy gmina ma coraz mniej pieniedzy". Liczbe lat ustawia
+ * `--lata=N` (domyslnie 5). Rok bez kompletu gmin pomijamy: GUS publikuje
+ * dane etapami i niepelny rok wygladalby jak zapasc dochodow.
+ */
 async function importBudzetow(db: DatabaseSync): Promise<void> {
-  log('-> budzety gmin (GUS BDL)');
+  const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? 5);
+  log(`-> budzety gmin (GUS BDL, ostatnie ${ileLat} lat z kompletem danych)`);
   const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${ZMIENNE_BUDZETU[0]![1]}?format=json`);
   const lata = [...zmienna.years].sort((a, b) => b - a);
   // Warszawa jest w BDL jedna jednostka, wiec do kompletu liczymy gminy
@@ -740,31 +749,35 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   );
   oczekiwane.add(TERYT_WARSZAWY);
 
-  for (const rok of lata.slice(0, 3)) {
+  const wstaw = db.prepare(
+    `insert into budzety_gmin(teryt, rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne)
+     values (?,?,?,?,?,?,?)
+     on conflict(teryt, rok) do update set dochody=excluded.dochody, dochody_wlasne=excluded.dochody_wlasne,
+       wydatki=excluded.wydatki, wydatki_majatkowe=excluded.wydatki_majatkowe,
+       wydatki_inwestycyjne=excluded.wydatki_inwestycyjne`,
+  );
+  const zaokr = (w: Map<string, number>, t: string): number | null => {
+    const v = w.get(t);
+    return v === undefined ? null : Math.round(v);
+  };
+
+  const zapisaneLata: number[] = [];
+  let ostatniaSuma = 0;
+  // Przegladamy o dwa lata wiecej, niz chcemy zapisac: najswiezszy rok bywa
+  // niepelny, a najstarsze lata w slowniku bywaja bez czesci gmin.
+  for (const rok of lata.slice(0, ileLat + 2)) {
+    if (zapisaneLata.length >= ileLat) break;
     const kolumny = new Map<string, Map<string, number>>();
-    for (const [kolumna, id, opis] of ZMIENNE_BUDZETU) {
-      const w = await bdlZmiennaGmin(id, rok);
-      log(`   rok ${rok}, ${opis} (${id}): ${w.size} gmin`);
-      kolumny.set(kolumna, w);
+    for (const [kolumna, id] of ZMIENNE_BUDZETU) {
+      kolumny.set(kolumna, await bdlZmiennaGmin(id, rok));
     }
     const dochody = kolumny.get('dochody')!;
     const komplet = [...oczekiwane].filter((t) => dochody.has(t)).length;
     if (komplet < oczekiwane.size * 0.95) {
-      log(`   rok ${rok}: tylko ${komplet} z ${oczekiwane.size} gmin — GUS nie ma jeszcze tego roku, biore starszy`);
+      log(`   rok ${rok}: tylko ${komplet} z ${oczekiwane.size} gmin — pomijam`);
       continue;
     }
 
-    const wstaw = db.prepare(
-      `insert into budzety_gmin(teryt, rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne)
-       values (?,?,?,?,?,?,?)
-       on conflict(teryt, rok) do update set dochody=excluded.dochody, dochody_wlasne=excluded.dochody_wlasne,
-         wydatki=excluded.wydatki, wydatki_majatkowe=excluded.wydatki_majatkowe,
-         wydatki_inwestycyjne=excluded.wydatki_inwestycyjne`,
-    );
-    const zaokr = (w: Map<string, number>, t: string): number | null => {
-      const v = w.get(t);
-      return v === undefined ? null : Math.round(v);
-    };
     db.exec('begin');
     db.exec(`delete from budzety_gmin where rok = ${rok}`);
     for (const teryt of oczekiwane) {
@@ -780,11 +793,17 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
     }
     db.exec('commit');
     const suma = [...oczekiwane].reduce((a, t) => a + (dochody.get(t) ?? 0), 0);
-    log(`   zapisano ${komplet} gmin za ${rok}, dochody razem ${(suma / 1e9).toFixed(1)} mld zl`);
-    odnotujImport(db, 'budzety', komplet, `GUS BDL, rok ${rok}, zmienne ${ZMIENNE_BUDZETU.map((z) => z[1]).join(', ')}; dochody razem ${Math.round(suma)} zl`);
-    return;
+    log(`   rok ${rok}: ${komplet} gmin, dochody razem ${(suma / 1e9).toFixed(1)} mld zl`);
+    zapisaneLata.push(rok);
+    if (zapisaneLata.length === 1) ostatniaSuma = suma;
   }
-  throw new Error('GUS BDL: zaden z trzech ostatnich lat nie ma kompletu budzetow gmin');
+
+  if (!zapisaneLata.length) throw new Error('GUS BDL: zaden rok nie ma kompletu budzetow gmin');
+  const gmin = (db.prepare('select count(distinct teryt) as c from budzety_gmin').get() as { c: number }).c;
+  odnotujImport(
+    db, 'budzety', gmin,
+    `GUS BDL, lata ${zapisaneLata[zapisaneLata.length - 1]}–${zapisaneLata[0]}; dochody ${zapisaneLata[0]}: ${Math.round(ostatniaSuma)} zl`,
+  );
 }
 
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
