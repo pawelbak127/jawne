@@ -88,6 +88,8 @@ describe('nazwaPodmiotuJawna', () => {
     // organy udzielajace pomocy
     'BURMISTRZ PRZYKŁADOWA', 'Starosta Przykładowski', 'Prezydent Miasta Przykładowa', 'Bankowy Fundusz Przykładowy',
     'Polski Instytut Przykładów',
+    // zwiazek metropolitalny udziela pomocy jak kazdy organ
+    'Przewodniczący Zarządu Przykładowej Metropolii',
     'STAROSTA POWIATU JAROSŁAW', 'Przykład Anna Przykładna Jan Przykładny sp. jawna',
   ];
   for (const n of jawne) it(`pokazuje: ${n}`, () => expect(nazwaPodmiotuJawna(n)).toBe(true));

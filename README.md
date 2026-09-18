@@ -48,6 +48,7 @@ się w całości z publicznego API Sejmu.
 | `/okregi`, `/okreg/[nr]` | 41 okręgów: gminy, posłowie, jak głosowali |
 | `/gmina/[teryt]` | posłowie z okręgu, budżet gminy, Fundusze Europejskie na mieszkańca, pomoc publiczna dla firm |
 | `/firma/[nip]` | pomoc publiczna dla jednego beneficjenta — tylko gdy jego nazwę wolno pokazać |
+| `/pomoc-publiczna` | przegląd krajowy: kto udziela pomocy, na co, jakim firmom, w których województwach |
 | `/poslowie` | wszyscy posłowie, filtrowanie w przeglądarce |
 | `/posel/[slug]` | profil: rozkład głosów, udział, ostatnie głosowania |
 | `/glosowania` | wszystkie głosowania, stronicowane |

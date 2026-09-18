@@ -13,7 +13,7 @@ import { nazwaPodmiotuJawna, pominietoNazwiska } from '@/lib/prywatnosc';
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
-  const stale = ['/', '/okregi', '/poslowie', '/glosowania', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
+  const stale = ['/', '/okregi', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
   if (!bazaDostepna()) return stale;
   return [
     ...stale,

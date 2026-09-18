@@ -745,6 +745,28 @@ export function budzetGminy(teryt: string): BudzetGminy | null {
   );
 }
 
+export type RokBudzetu = {
+  rok: number;
+  dochody: number | null;
+  wydatki: number | null;
+  wydatki_majatkowe: number | null;
+};
+
+/**
+ * Budzet gminy rok po roku, od najstarszego. Kwoty calkowite w cenach
+ * biezacych — ludnosc mamy tylko z jednego roku, wiec "na mieszkanca" dla
+ * starszych lat dzielilibysmy przez zly mianownik.
+ */
+export function historiaBudzetu(teryt: string): RokBudzetu[] {
+  return bezTabeli(
+    () => wszystkie<RokBudzetu>(
+      `select rok, dochody, wydatki, wydatki_majatkowe from budzety_gmin where teryt = ? order by rok`,
+      teryt,
+    ),
+    [],
+  );
+}
+
 export type PorownanieBudzetu = {
   gmin: number;
   dochodyNaOsobe: number;
@@ -873,6 +895,88 @@ export function przypadkiFirmy(nip: string, ile = 50): PrzypadekFirmy[] {
     ),
     [],
   );
+}
+
+export type WierszPrzegladu = { nazwa: string; przypadkow: number; brutto: number | null };
+
+export type PrzegladPomocy = {
+  od: string;
+  do: string;
+  dni: number;
+  przypadkow: number;
+  beneficjentow: number;
+  gmin: number;
+  brutto: number | null;
+  udzielajacy: WierszPrzegladu[];
+  przeznaczenia: WierszPrzegladu[];
+  formy: WierszPrzegladu[];
+  wielkosc: (WierszPrzegladu & { kod: string | null })[];
+  wojewodztwa: { wojewodztwo: string; przypadkow: number; brutto: number | null; osob: number | null }[];
+  najwieksze: {
+    nip: string | null; nazwa: string; max_eur: number | null; dzien: string; brutto: number | null;
+    przeznaczenie: string | null; udzielajacy: string | null; teryt: string; gmina: string | null;
+  }[];
+};
+
+/**
+ * Pomoc publiczna w calym kraju — WYLACZNIE z dni pobranych dla calego kraju.
+ *
+ * W tej samej tabeli leza pelne 10 lat trzech gmin pokazowych. Bez filtra po
+ * `pomoc_publiczna_dni` Belchatow i Zakopane doszlyby do sum krajowych ze
+ * swoja cala historia i zawyzylyby je o miliardy.
+ * Warszawa (146501) nie ma wiersza w tabeli gmin (sa dzielnice), wiec jej
+ * wojewodztwo podajemy wprost.
+ */
+export function przegladPomocy(): PrzegladPomocy | null {
+  return bezTabeli(() => {
+    const zakres = jeden<{ od: string | null; do: string | null; dni: number }>(
+      'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_publiczna_dni',
+    );
+    if (!zakres?.od || !zakres.do) return null;
+    const Z = `(select * from pomoc_publiczna where dzien in (select dzien from pomoc_publiczna_dni))`;
+    const razem = jeden<{ przypadkow: number; beneficjentow: number; gmin: number; brutto: number | null }>(
+      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow,
+              count(distinct teryt) as gmin, sum(wartosc_brutto) as brutto from ${Z}`,
+    )!;
+    const grupa = (kolumna: string, ile: number) => wszystkie<WierszPrzegladu>(
+      `select ${kolumna} as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from ${Z} where ${kolumna} is not null group by ${kolumna} order by brutto desc nulls last limit ?`,
+      ile,
+    );
+    const wielkosc = wszystkie<WierszPrzegladu & { kod: string | null }>(
+      `select wielkosc_kod as kod, max(wielkosc) as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from ${Z} group by wielkosc_kod order by wielkosc_kod`,
+    );
+    const wojewodztwa = wszystkie<{ wojewodztwo: string; przypadkow: number; brutto: number | null; osob: number | null }>(
+      `with p as (
+         select case when z.teryt = '${TERYT_WARSZAWY}' then 'mazowieckie' else g.wojewodztwo end as wojewodztwo,
+                z.wartosc_brutto
+           from ${Z} z left join gminy g on g.teryt = z.teryt
+       ),
+       l as (
+         select g.wojewodztwo, sum(l.osob) as osob from gminy g join ludnosc l on l.teryt = g.teryt group by g.wojewodztwo
+       )
+       select p.wojewodztwo as wojewodztwo, count(*) as przypadkow, sum(p.wartosc_brutto) as brutto, l.osob as osob
+         from p left join l on l.wojewodztwo = p.wojewodztwo
+        where p.wojewodztwo is not null
+        group by p.wojewodztwo order by p.wojewodztwo`,
+    );
+    const najwieksze = wszystkie<PrzegladPomocy['najwieksze'][number]>(
+      `select z.nip_beneficjenta as nip, z.nazwa_beneficjenta as nazwa, z.wartosc_brutto_eur as max_eur,
+              z.dzien as dzien, z.wartosc_brutto as brutto, z.przeznaczenie as przeznaczenie,
+              z.udzielajacy as udzielajacy, z.teryt as teryt,
+              case when z.teryt = '${TERYT_WARSZAWY}' then 'Warszawa' else g.nazwa end as gmina
+         from ${Z} z left join gminy g on g.teryt = z.teryt
+        order by z.wartosc_brutto desc nulls last limit 15`,
+    );
+    return {
+      od: zakres.od, do: zakres.do, dni: zakres.dni, ...razem,
+      udzielajacy: grupa('udzielajacy', 12),
+      przeznaczenia: grupa('przeznaczenie', 12),
+      formy: grupa('forma', 8),
+      wielkosc, wojewodztwa, najwieksze,
+    };
+  }, null);
 }
 
 export type ProjektGminy = {

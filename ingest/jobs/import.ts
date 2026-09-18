@@ -724,7 +724,8 @@ async function bdlZmiennaGmin(zmienna: number, rok: number): Promise<Map<string,
       wartosci.set(`${r.id.slice(2, 4)}${r.id.slice(7, 11)}`, w.val);
     }
     adres = j.links?.next ?? null;
-    if (adres) await new Promise((ok) => setTimeout(ok, 300));
+    // 1 s miedzy stronami: przy 300 ms GUS po kilkuset zapytaniach odpowiadal 429.
+    if (adres) await new Promise((ok) => setTimeout(ok, 1000));
   }
   return wartosci;
 }
@@ -765,8 +766,17 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   let ostatniaSuma = 0;
   // Przegladamy o dwa lata wiecej, niz chcemy zapisac: najswiezszy rok bywa
   // niepelny, a najstarsze lata w slowniku bywaja bez czesci gmin.
+  const odNowa = process.argv.includes('--od-nowa');
   for (const rok of lata.slice(0, ileLat + 2)) {
     if (zapisaneLata.length >= ileLat) break;
+    // Wznawianie: rok, ktory juz ma komplet gmin, zostaje — przerwany import
+    // (np. GUS odpowiedzial 429) nie musi pobierac wszystkiego od poczatku.
+    const juzJest = (db.prepare('select count(*) as c from budzety_gmin where rok = ? and dochody is not null').get(rok) as { c: number }).c;
+    if (!odNowa && juzJest >= oczekiwane.size * 0.95) {
+      log(`   rok ${rok}: juz w bazie (${juzJest} gmin) — pomijam; --od-nowa pobiera ponownie`);
+      zapisaneLata.push(rok);
+      continue;
+    }
     const kolumny = new Map<string, Map<string, number>>();
     for (const [kolumna, id] of ZMIENNE_BUDZETU) {
       kolumny.set(kolumna, await bdlZmiennaGmin(id, rok));

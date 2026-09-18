@@ -7,10 +7,11 @@
  * i na poczatku kazdej sesji: nie zmienia niczego, tylko czyta baze i mowi,
  * co zrobic dalej. Zadnych zapytan do zadnego urzedu.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const PLIK = 'dane/sejm.db';
+const KATALOG_SUDOP = 'dane/zrodla/sudop';
 const DZIS = new Date();
 const dzien = (d) => d.toISOString().slice(0, 10);
 const wczoraj = dzien(new Date(DZIS.getTime() - 24 * 3600_000));
@@ -60,6 +61,9 @@ for (const [co, opis] of [
   nl(w ? `   ${opis.padEnd(22)} ${String(liczba(w.ile)).padStart(9)}   ${kiedyTekst}` : `   ${opis.padEnd(22)}         —   nie importowano`);
 }
 
+// Dni brakujace w srodku pobranego zakresu — zwykle przerwane pobieranie.
+const brakiWSrodku = [];
+
 nl();
 nl('== Pomoc publiczna (SUDOP)');
 const wierszy = jeden('select count(*) as c from pomoc_publiczna')?.c ?? 0;
@@ -76,7 +80,6 @@ if (!dni.length) {
   // Dziury w srodku zakresu: dzien, ktorego nie ma w tabeli, nie zostal
   // pobrany — to co innego niz dzien pobrany, w ktorym nic nie bylo.
   const mamy = new Set(dni.map((d) => d.dzien));
-  const brakiWSrodku = [];
   for (let d = new Date(`${od}T00:00:00Z`); dzien(d) <= doDnia; d.setUTCDate(d.getUTCDate() + 1)) {
     if (!mamy.has(dzien(d))) brakiWSrodku.push(dzien(d));
   }
@@ -90,6 +93,40 @@ nl();
 nl('== Co dociągnąć (każde polecenie to osobne zapytania do UOKiK)');
 const ostatni = dni.length ? dni[dni.length - 1].dzien : null;
 const pierwszy = dni.length ? dni[0].dzien : null;
+
+// Przerwane pobieranie zostawia pliki stron nazwane zakresem, o ktory pytano
+// (przyrost-OD-DO-sN.json). Import uzyje ich TYLKO przy identycznym zakresie,
+// wiec najpierw proponujemy dokladnie te zakresy — inaczej te same strony
+// zostalyby pobrane od urzedu drugi raz.
+const dniZakresu = (od, doD) => {
+  const w = [];
+  for (let d = new Date(`${od}T00:00:00Z`); dzien(d) <= doD; d.setUTCDate(d.getUTCDate() + 1)) w.push(dzien(d));
+  return w;
+};
+const mamyDni = new Set(dni.map((d) => d.dzien));
+const przerwane = existsSync(KATALOG_SUDOP)
+  ? [...new Set(readdirSync(KATALOG_SUDOP)
+    .map((p) => /^przyrost-(\d{4}-\d{2}-\d{2})-(\d{4}-\d{2}-\d{2})-s\d+\.json(\.gz)?$/.exec(p))
+    .filter(Boolean)
+    .map((m) => `${m[1]}..${m[2]}`))]
+    .filter((z) => dniZakresu(...z.split('..')).some((d) => !mamyDni.has(d)))
+    .sort()
+  : [];
+const pokryte = new Set(przerwane.flatMap((z) => dniZakresu(...z.split('..'))));
+
+// Pozostale dziury skladamy w ciagle zakresy: jedno polecenie na zakres.
+const zakresyDziur = [];
+for (const d of brakiWSrodku.filter((x) => !pokryte.has(x))) {
+  const ost = zakresyDziur[zakresyDziur.length - 1];
+  const nastepny = ost ? dzien(new Date(new Date(`${ost[1]}T00:00:00Z`).getTime() + 86_400_000)) : null;
+  if (ost && nastepny === d) ost[1] = d;
+  else zakresyDziur.push([d, d]);
+}
+if (przerwane.length || zakresyDziur.length) {
+  nl('   0. Dziury — najpierw te, bo przerwane pobieranie zostawiło już część stron:');
+  for (const z of przerwane) nl(`      npx tsx ingest/jobs/sudop.ts --przyrost=${z}   (część stron na dysku)`);
+  for (const [od, doD] of zakresyDziur.slice(0, 5)) nl(`      npx tsx ingest/jobs/sudop.ts --przyrost=${od}..${doD}`);
+}
 
 if (!ostatni || ostatni < wczoraj) {
   const od = ostatni ? dzien(new Date(new Date(`${ostatni}T00:00:00Z`).getTime() + 86_400_000)) : wczoraj;

@@ -25,13 +25,18 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 ## Kolejne kroki — uzgodnione 18.09.2026
 
 1. **Dokończyć pieniądze w gminie.**
-   - budżety za kilka lat wstecz (dziś tylko 2025) — pokazać trend zamiast punktu,
+   - ~~budżety za kilka lat wstecz~~ — **zrobione 19.09.2026**: import `--lata=N`
+     ze wznawianiem, na stronie gminy „rok po roku” (dochody i wydatki majątkowe,
+     dwa osobne wykresy, kwoty nominalne z adnotacją o inflacji),
    - szczegół z Ministerstwa Finansów: na co gmina wydaje (oświata, drogi,
      pomoc społeczna) — sprawozdania Rb-27S/Rb-28S, zbiór 872 na dane.gov.pl,
    - udziały gmin w PIT i CIT (zbiory 3313, 1878).
-2. **Krajowy przegląd pomocy publicznej.** Mamy dni dla całej Polski, więc da się
-   pokazać, kto rozdaje publiczne pieniądze: instytucje udzielające, przeznaczenia,
-   branże, wielkość beneficjentów. Strona, która sama się udostępnia.
+2. ~~**Krajowy przegląd pomocy publicznej.**~~ **Zrobione 19.09.2026** —
+   `/pomoc-publiczna`: kto udziela, na co, w jakiej formie, jakim firmom,
+   województwa na mieszkańca, największe przypadki. Liczone WYŁĄCZNIE z dni
+   pobranych dla całego kraju (historia gmin pokazowych nie jest wmieszana).
+   Pierwszy wniosek z danych: mikroprzedsiębiorstwa to 86 % przypadków, ale
+   27 % pieniędzy; duże firmy — 2 % przypadków i 42 % pieniędzy.
 3. **Dane do pobrania przez czytelnika** — CSV dla gminy (budżet, projekty UE,
    pomoc publiczna w granicach reguły o nazwiskach). Serwis o otwartych danych
    powinien je oddawać.

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, kluby, ludnoscWarszawy,
+  bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
   poslowieOkregu, TERYT_WARSZAWY, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type MedianaUe,
@@ -15,11 +15,14 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
+import { SlupkiLat } from '@/components/SlupkiLat';
+import { Zestawienie } from '@/components/Zestawienie';
 
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
 const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
+const ZRODLO_GUS_INFLACJA = 'https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
   const { teryt } = await params;
@@ -121,7 +124,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
 
       {/* ------------------------------------------------------------------ */}
       {budzet ? (
-        <Budzet budzet={budzet} ludnosc={ludnoscDoPrzeliczen} wojewodztwo={g.wojewodztwo} dzielnica={dzielnica} />
+        <Budzet teryt={terytFunduszy} budzet={budzet} ludnosc={ludnoscDoPrzeliczen} wojewodztwo={g.wojewodztwo} dzielnica={dzielnica} />
       ) : null}
 
       {/* ------------------------------------------------------------------ */}
@@ -180,7 +183,12 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
 
       {/* ------------------------------------------------------------------ */}
       <section className="mt-14">
-        <h2 className="szryft text-3xl font-semibold">Pomoc publiczna dla firm z tej gminy</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="szryft text-3xl font-semibold">Pomoc publiczna dla firm z tej gminy</h2>
+          <Link href="/pomoc-publiczna" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
+            cała Polska →
+          </Link>
+        </div>
         <p className="mt-2 max-w-3xl text-atrament-2">
           Zwolnienia z podatków, dopłaty, preferencyjne pożyczki i pomoc de minimis udzielone
           przedsiębiorcom, którzy mają tu siedzibę — według systemu SUDOP prowadzonego przez UOKiK.
@@ -200,7 +208,8 @@ function rozniSie(a: number | null, b: number | null): boolean {
   return a !== null && b !== null && a > 0 && (a - b) / a > 0.01;
 }
 
-function Budzet({ budzet, ludnosc, wojewodztwo, dzielnica }: {
+function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
+  teryt: string;
   budzet: BudzetGminy;
   ludnosc: number | null;
   wojewodztwo: string;
@@ -208,6 +217,7 @@ function Budzet({ budzet, ludnosc, wojewodztwo, dzielnica }: {
 }) {
   const naOsobe = naMieszkanca(budzet.dochody, ludnosc);
   const mediana = ludnosc ? porownanieBudzetu(wojewodztwo, budzet.rok) : null;
+  const historia = historiaBudzetu(teryt);
   const majatkoweNaOsobe = naMieszkanca(budzet.wydatki_majatkowe, ludnosc);
   const udzialWlasnych = budzet.dochody && budzet.dochody_wlasne !== null
     ? (100 * budzet.dochody_wlasne) / budzet.dochody
@@ -271,8 +281,31 @@ function Budzet({ budzet, ludnosc, wojewodztwo, dzielnica }: {
         </div>
       </div>
 
+      {historia.length >= 2 ? (
+        <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="font-medium">{`Rok po roku, ${historia[0]!.rok}–${historia[historia.length - 1]!.rok}`}</p>
+          {/*
+            Dwa osobne wykresy, nie jedna os: dochody sa kilka razy wieksze niz
+            wydatki majatkowe i na wspolnej skali inwestycje wygladalyby na zero.
+          */}
+          <div className="mt-4 grid gap-6 sm:grid-cols-2">
+            <SlupkiLat tytul="Dochody" wiersze={historia.map((h) => ({ rok: h.rok, wartosc: h.dochody }))} />
+            <SlupkiLat tytul="Wydatki majątkowe" wiersze={historia.map((h) => ({ rok: h.rok, wartosc: h.wydatki_majatkowe }))} />
+          </div>
+          {/*
+            Kwoty nominalne. Nie liczymy "realnego" wzrostu: wskaznik cen w BDL
+            jest kwartalny i w nowej klasyfikacji, a korekta wlasna bylaby liczba
+            wyprowadzona przez nas. Mowimy wprost, czego kwoty nie uwzgledniaja.
+          */}
+          <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-relaxed text-atrament-3">
+            <span>Kwoty w cenach bieżących, bez korekty o inflację — złotówka sprzed kilku lat była warta więcej niż dzisiejsza.</span>
+            <Zrodlo adres={ZRODLO_GUS_INFLACJA} etykieta="inflacja według GUS" />
+          </p>
+        </div>
+      ) : null}
+
       <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
-        <span>{`Źródło: GUS, Bank Danych Lokalnych, sprawozdania budżetowe gmin za ${budzet.rok} r.`}</span>
+        <span>{`Źródło: GUS, Bank Danych Lokalnych, sprawozdania budżetowe gmin za ${historia.length >= 2 ? `lata ${historia[0]!.rok}–${historia[historia.length - 1]!.rok}` : `${budzet.rok} r.`}`}</span>
         <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych" />
       </p>
     </section>
@@ -338,7 +371,6 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const r = pomoc.razem!;
   const z = pomoc.zrodlo!;
   const pobrano = pomoc.pobranie?.pobrano ?? null;
-  const maxRok = Math.max(1, ...pomoc.lata.map((l) => l.brutto ?? 0));
   // Prog kwotowy dziala tylko wtedy, gdy jest gdzie zlozyc sprzeciw.
   const progAktywny = Boolean(KONTAKT);
   const widoczna = (nazwa: string, maxEur: number | null) =>
@@ -382,18 +414,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         </div>
 
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="text-sm font-medium">Według roku udzielenia</p>
-          <ul className="mt-3 space-y-1.5">
-            {pomoc.lata.map((l) => (
-              <li key={l.rok} className="grid grid-cols-[3rem_1fr_6rem] items-center gap-3 text-sm">
-                <span className="liczby text-atrament-2">{l.rok}</span>
-                <span className="h-2.5 overflow-hidden rounded-full bg-papier-3">
-                  <span className="block h-full rounded-full bg-akcent" style={{ width: `${((l.brutto ?? 0) / maxRok) * 100}%` }} />
-                </span>
-                <span className="liczby text-right text-xs">{zlote(l.brutto)}</span>
-              </li>
-            ))}
-          </ul>
+          <SlupkiLat tytul="Według roku udzielenia" wiersze={pomoc.lata.map((l) => ({ rok: l.rok, wartosc: l.brutto }))} />
         </div>
       </div>
 
@@ -434,28 +455,6 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   );
 }
 
-function Zestawienie({ tytul, wiersze, ukrywajOsoby = false }: {
-  tytul: string;
-  wiersze: { nazwa: string; przypadkow: number; brutto: number | null }[];
-  ukrywajOsoby?: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-      <p className="text-sm font-medium">{tytul}</p>
-      <ul className="mt-3 divide-y divide-kreska">
-        {wiersze.map((w) => {
-          const n = ukrywajOsoby ? nazwaDoPokazania(w.nazwa) : { tekst: w.nazwa, pominieta: false };
-          return (
-            <li key={w.nazwa} className="flex items-baseline gap-4 py-2 text-sm">
-              <span className={`min-w-0 flex-1 leading-snug ${n.pominieta ? 'text-atrament-3 italic' : ''}`}>{skroc(n.tekst, 110)}</span>
-              <span className="liczby w-24 shrink-0 text-right font-medium">{zlote(w.brutto)}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
 
 function BrakPomocy() {
   return (

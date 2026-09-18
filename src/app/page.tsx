@@ -75,7 +75,7 @@ export default function StronaGlowna() {
       </section>
 
       <section className="obszar pb-4">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link href="/okregi" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
             <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje i co trafia do mojej gminy?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
@@ -86,6 +86,12 @@ export default function StronaGlowna() {
             <p className="font-medium group-hover:text-akcent">Czy mój poseł głosuje jak klub?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
               {`Każdy głos porównany z resztą klubu — w ${liczba(stan.glosowan)} głosowaniach, zawsze z mianownikiem.`}
+            </p>
+          </Link>
+          <Link href="/pomoc-publiczna" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Kto rozdaje publiczne pieniądze firmom?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              Dotacje, ulgi i pomoc de minimis w całej Polsce: kto udziela, na co i jakim firmom.
             </p>
           </Link>
           <Link href="/o-serwisie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">

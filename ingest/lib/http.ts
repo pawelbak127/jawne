@@ -67,6 +67,15 @@ export async function pobierz(url: string, opcje: { json?: boolean } = {}): Prom
           throw new Error(`${url} -> HTTP ${odp.status}`);
         }
         ostatniBlad = `HTTP ${odp.status}`;
+        // 429 = serwer prosi, zeby zwolnic. Jesli mowi, na ile — sluchamy
+        // (do 5 minut); jesli nie mowi, czekamy minute. Wykladnicze 2-16 s
+        // nie wystarczylo: GUS BDL odmawial dalej po czterech probach.
+        if (odp.status === 429 && proba < PROB) {
+          const naglowek = Number(odp.headers.get('retry-after'));
+          const czekaj = Number.isFinite(naglowek) && naglowek > 0 ? Math.min(naglowek, 300) * 1000 : 60_000;
+          await spij(czekaj);
+          continue;
+        }
       } catch (e) {
         if (e instanceof Error && e.message.includes('-> HTTP')) throw e;
         ostatniBlad = e instanceof Error ? e.name : String(e);

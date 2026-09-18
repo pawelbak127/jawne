@@ -96,7 +96,7 @@ const INSTYTUCJA: readonly RegExp[] = [
   /ministerstw|(?<![\p{L}])minist(er|ra)(?![\p{L}])|komend[ay]|policj|prokuratur|skarb\s+państwa|generaln\p{L}*\s+dyrekcj/iu,
   /(?<![\p{L}])(szef|prezes|dyrektor)(?![\p{L}])|straż\p{L}*\s+pożarn|ochotnicz\p{L}*\s+straż/iu,
   // organy udzielajace pomocy: "Burmistrz Zelowa", "Starosta Tatrzański"
-  /(?<![\p{L}])(burmistrz\p{L}*|starost\p{L}*|prezydent\p{L}*|wójt\p{L}*|inspektor\p{L}*|komendant\p{L}*|zarząd\p{L}*\s+(województwa|powiatu|gminy|miasta)|fundusz\p{L}*)(?![\p{L}])/iu,
+  /(?<![\p{L}])(burmistrz\p{L}*|starost\p{L}*|prezydent\p{L}*|wójt\p{L}*|inspektor\p{L}*|komendant\p{L}*|zarząd\p{L}*\s+(województwa|powiatu|gminy|miasta)|fundusz\p{L}*|przewodnicząc\p{L}*\s+zarządu|metropoli\p{L}*)(?![\p{L}])/iu,
   /uniwersytet|politechnik|uczelni|szpital|muzeum|muzeal|teatr|filharmoni|bibliotek|oper[ay](?![\p{L}])/iu,
   /parafi|kości[oó]ł|diecezj|caritas|zakon|zgromadzeni\p{L}*\s+(sióstr|zakonn)/iu,
   /związ[ek]|zrzeszeni|towarzystw|federacj|lokaln\p{L}*\s+grup|grup\p{L}*\s+ryback|(?<![\p{L}])izb[ay](?![\p{L}])/iu,

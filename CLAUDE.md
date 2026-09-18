@@ -36,7 +36,7 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
@@ -253,6 +253,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     dotacje inwestycyjne (np. dla spółki miejskiej budującej metro): Warszawa
     2025 to 3,07 mld zł majątkowych i 2,57 mld zł inwestycyjnych. Pokazujemy
     majątkowe i nazywamy je majątkowymi.
+35. **Przegląd krajowy liczy tylko dni z `pomoc_publiczna_dni`.** W tej samej
+    tabeli leży pełna 10-letnia historia gmin pokazowych — bez filtra Bełchatów
+    dodałby do sumy krajowej 13 mld zł.
+36. **GUS BDL odpowiada 429 po kilkuset zapytaniach.** `http.ts` respektuje
+    `Retry-After`, import budżetów robi 1 s przerwy między stronami i pomija
+    lata już kompletne w bazie (wznawianie bez `--od-nowa`).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 
