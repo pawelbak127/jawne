@@ -253,6 +253,10 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     dotacje inwestycyjne (np. dla spółki miejskiej budującej metro): Warszawa
     2025 to 3,07 mld zł majątkowych i 2,57 mld zł inwestycyjnych. Pokazujemy
     majątkowe i nazywamy je majątkowymi.
+38. **Zadanie w tle przeżywa zamknięcie sesji.** Pobieranie SUDOP z poprzedniej
+    sesji wciąż czekało w kolejce urzędu, gdy uruchomiliśmy drugie — dwa
+    zapytania naraz. Teraz `ingest/jobs/sudop.ts` trzyma blokadę
+    (`dane/zrodla/sudop/.blokada` z PID-em) i drugi proces odmawia startu.
 37. **Dzień SUDOP ustala się po 14 dniach.** Urzędy mają 7 dni na zgłoszenie
     pomocy; dzień pobrany następnego dnia miał 200 przypadków zamiast ~6 tys.
     Sumy liczymy tylko z dni ustalonych, a o tym decyduje data POBRANIA

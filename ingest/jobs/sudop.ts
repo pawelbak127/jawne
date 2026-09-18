@@ -239,6 +239,45 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
   odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
 }
 
+/**
+ * Blokada "jedno pobieranie naraz" — w kodzie, nie w dyscyplinie.
+ *
+ * ZMIERZONE 19.09.2026: zadanie z poprzedniej sesji przezylo jej zamkniecie
+ * i czekalo w kolejce urzedu, kiedy uruchomilismy drugie. Dwa zapytania
+ * naraz to dokladnie to, czego obiecalismy UOKiK nie robic. Plik blokady
+ * trzyma PID; drugi proces sprawdza, czy ten PID zyje, i odmawia startu.
+ */
+function zalozBlokade(): void {
+  const plik = join(KATALOG, '.blokada');
+  if (existsSync(plik)) {
+    try {
+      const b = JSON.parse(readFileSync(plik, 'utf8')) as { pid: number; start: string; argv: string };
+      process.kill(b.pid, 0); // rzuca ESRCH, jesli proces nie zyje
+      log(`Juz trwa inne pobieranie z SUDOP (PID ${b.pid}, od ${b.start}): ${b.argv}`);
+      log('Poczekaj, az skonczy, albo zatrzymaj je. Jedno zapytanie do urzedu naraz.');
+      process.exit(3);
+    } catch (e) {
+      // EPERM = proces zyje, ale nie nasz: tez nie startujemy.
+      if (e instanceof Error && 'code' in e && e.code === 'EPERM') process.exit(3);
+      // ESRCH albo zepsuty plik: blokada po martwym procesie — przejmujemy.
+    }
+  }
+  writeFileSync(plik, JSON.stringify({ pid: process.pid, start: new Date().toISOString(), argv: process.argv.slice(2).join(' ') }));
+  const zdejmij = () => {
+    try {
+      const b = JSON.parse(readFileSync(plik, 'utf8')) as { pid: number };
+      if (b.pid === process.pid) rmSync(plik);
+    } catch { /* juz nie ma */ }
+  };
+  process.on('exit', zdejmij);
+  for (const sygnal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(sygnal, () => {
+      zdejmij();
+      process.exit(130);
+    });
+  }
+}
+
 async function main(): Promise<void> {
   const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1];
   const gminy = (arg('gminy') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -253,6 +292,8 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   mkdirSync(KATALOG, { recursive: true });
+  // Z plikow nie pytamy urzedu — blokada potrzebna tylko, gdy moze pojsc zapytanie.
+  if (!zPlikow) zalozBlokade();
 
   // Tryb dla GitHub Actions: pobierz i zapisz surowe odpowiedzi, nie dotykaj
   // bazy (w CI jej nie ma). Import robi sie potem na komputerze z plikow.
