@@ -46,7 +46,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    (średnik, przecinek dziesiętny, UTF-8 z BOM). Te same zakresy i ta sama
    reguła nazw co strona; NIP tylko razem z jawną nazwą.
 4. **Pełniejsza strona firmy.** Dziś pomoc publiczna z SUDOP. Dołożyć:
-   - zamówienia publiczne z TED (zmierzone, bez klucza),
+   - zamówienia publiczne z TED — **zmierzone 19.09.2026: wyszukiwanie po NIP
+     wykonawcy działa** (`winner-identifier`). Zamiast pytać TED przy każdym
+     wejściu na stronę: import wszystkich polskich ogłoszeń o udzieleniu
+     zamówienia do lokalnej tabeli i złączenie po NIP. To samo da potem
+     „zamówienia w gminie” (po zamawiającym). Kwota ogłoszenia obejmuje
+     wszystkie części i wykonawców — trzeba zejść do poziomu części albo
+     pokazywać ją z tym zastrzeżeniem,
    - identyfikatory z GLEIF (43 030 polskich podmiotów, pole `registeredAs` to KRS),
    - projekty unijne dopasowane po nazwie (listy FE nie mają NIP-u — dopasowanie
      po nazwie musi mieć próg pewności i być oznaczone jako niepewne).
