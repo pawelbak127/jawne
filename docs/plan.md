@@ -18,7 +18,8 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | do napisania, szkic w [nazwiska.md](nazwiska.md) |
 | 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | do kupienia |
 | 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła |
-| 6 | **Obrazki podglądu linku dla stron gmin** | Mamy je dla głosowań i posłów; strona gminy jest teraz najbardziej „udostępnialna”, a wygląda w linku najgorzej | do zrobienia |
+| 5a | **Klucz API GUS BDL** (darmowy, rejestracja na bdl.stat.gov.pl) | Bez klucza limit to 1 000 zapytań na 12 godzin — pełne odświeżenie danych gmin go przekracza. Rejestrację robi Paweł, klucz trafia do `.env.local` | do zrobienia |
+| 6 | ~~**Obrazki podglądu linku dla stron gmin**~~ | Mamy je dla głosowań i posłów; strona gminy jest teraz najbardziej „udostępnialna” | **zrobione 19.09.2026**: nazwa, powiat, dochody i UE na mieszkańca, każda liczba z mianownikiem |
 
 ---
 
@@ -28,8 +29,11 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    - ~~budżety za kilka lat wstecz~~ — **zrobione 19.09.2026**: import `--lata=N`
      ze wznawianiem, na stronie gminy „rok po roku” (dochody i wydatki majątkowe,
      dwa osobne wykresy, kwoty nominalne z adnotacją o inflacji),
-   - szczegół z Ministerstwa Finansów: na co gmina wydaje (oświata, drogi,
-     pomoc społeczna) — sprawozdania Rb-27S/Rb-28S, zbiór 872 na dane.gov.pl,
+   - na co gmina wydaje (oświata, drogi, pomoc społeczna) — GUS BDL ma to
+     w podziale na działy (temat P2920 i osobne tematy P2635–P2644), więc
+     nie trzeba plików Ministerstwa Finansów. **Wstrzymane 19.09.2026 przez
+     limit GUS: 1 000 zapytań na 12 godzin** — import 12 działów to ok. 480
+     zapytań, wejdzie po odnowieniu limitu,
    - udziały gmin w PIT i CIT (zbiory 3313, 1878).
 2. ~~**Krajowy przegląd pomocy publicznej.**~~ **Zrobione 19.09.2026** —
    `/pomoc-publiczna`: kto udziela, na co, w jakiej formie, jakim firmom,
