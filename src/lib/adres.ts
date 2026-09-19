@@ -9,12 +9,16 @@
  *
  * Domena nie jest jeszcze kupiona, wiec wartosc przychodzi ze zmiennej
  * srodowiskowej. Na Vercelu wystarczy jego wlasna VERCEL_URL.
+ *
+ * Pusta wartosc (`JAWNE_ADRES_SERWISU=` w pliku ustawien serwera) znaczy
+ * "nie ustawiono" — `??` przepuscilby pusty napis do `new URL('')`, ktory
+ * wywraca i build, i strone.
  */
 export const ADRES_SERWISU = new URL(
-  process.env.JAWNE_ADRES_SERWISU
-    ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
-    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-    ?? 'http://localhost:3000',
+  process.env.JAWNE_ADRES_SERWISU?.trim()
+    || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || 'http://localhost:3000',
 );
 
 export const ADRES_JEST_LOKALNY = ADRES_SERWISU.hostname === 'localhost';
