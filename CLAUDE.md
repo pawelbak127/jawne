@@ -58,6 +58,11 @@ Mówi, co już mamy w bazie, ile dni pomocy publicznej brakuje i jakim
 poleceniem to dociągnąć. Nie zmienia niczego i nie pyta żadnego urzędu.
 **Zaczynaj od tego** — inaczej łatwo pobrać drugi raz to, co już jest.
 
+Potem **`docs/plan.md`** — co zrobione, co następne, blokery przed premierą
+i plan serwera. To żywy dokument: aktualizuj go przy każdym zamkniętym kroku.
+Jeśli GitHub Actions działa, najpierw `npm run sudop:artefakty -- --import`
+(bez zapytań do urzędu).
+
 ## Komendy
 
 ```powershell

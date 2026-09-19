@@ -6,6 +6,19 @@ z datą — chcemy widzieć, co odrzuciliśmy i dlaczego.
 
 ---
 
+## Jak zacząć nową sesję
+
+1. Otwórz Claude Code **w katalogu `C:\Projects\jawne`** — wtedy automatycznie
+   wczytuje się `CLAUDE.md` tego projektu (w `C:\Projects\obywatel` wczytuje
+   się stary).
+2. `npm run stan` — co mamy, czego brakuje, jakim poleceniem to dociągnąć.
+3. Ten plik — co jest zrobione, co następne.
+
+Długa rozmowa to nie pamięć projektu. Wszystko, co trzeba wiedzieć, jest
+w `CLAUDE.md` i w `docs/`; nowa sesja jest tańsza i nie traci niczego ważnego.
+
+---
+
 ## Przed premierą — blokery
 
 Serwis ma dziś `robots: { index: false }` w `src/app/layout.tsx`.
@@ -56,6 +69,40 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    - identyfikatory z GLEIF (43 030 polskich podmiotów, pole `registeredAs` to KRS),
    - projekty unijne dopasowane po nazwie (listy FE nie mają NIP-u — dopasowanie
      po nazwie musi mieć próg pewności i być oznaczone jako niepewne).
+
+---
+
+## Serwer testowy na AWS — plan z 19.09.2026
+
+Paweł ma okres próbny AWS: 6 miesięcy i 200 USD kredytu. Cele: pobieranie
+danych bez komputera Pawła i bez limitu czasu GitHub Actions (nocny przebieg
+z 19.09 trwał 1 h 50 min przy limicie 150 min), oraz strona testowa pod
+adresem, który można komuś pokazać.
+
+**Decyzje**
+- Jedna maszyna EC2 na ARM (np. `t4g.small`: 2 vCPU, 2 GB RAM) w regionie
+  `eu-central-1` (Frankfurt) i dysk gp3 ok. 60 GB. Rząd wielkości 15–20 USD
+  miesięcznie — przed założeniem sprawdzić w kalkulatorze AWS.
+- Na serwerze: Node 24, repozytorium z GitHuba, `dane/` na dysku maszyny,
+  `next build && next start` za Caddy (HTTPS sam, gdy będzie domena).
+- Build produkcyjny sam włącza filtr nazwisk; `noindex` zostaje.
+- Harmonogram przez systemd timers:
+  - SUDOP dzienny: świeży dzień + dzień sprzed 14 dni,
+  - **SUDOP historia: tylko w nocy, jedno zapytanie naraz, 20–30 zapytań
+    na noc** — ok. 2 tys. zapytań w 2–3 miesiące. Serwer nie zmniejsza
+    obciążenia urzędu; zmniejsza je tylko tempo. Sprostowanie do UOKiK
+    prosi właśnie o wskazanie dopuszczalnego tempa,
+  - Sejm codziennie, listy UE i GUS co miesiąc.
+- GitHub Actions wyłączyć po uruchomieniu serwera — inaczej pytamy urząd
+  dwa razy o to samo.
+- Bezpieczeństwo: klucz SSH, port 22 tylko z IP Pawła, 80/443 publicznie,
+  automatyczne aktualizacje, sekrety w pliku na serwerze, nie w repozytorium.
+
+**Kto co robi**
+- Paweł: konto AWS, **alarm budżetowy (np. 10 i 50 USD) jako pierwszy krok**,
+  utworzenie instancji według instrukcji, podanie adresu.
+- Claude (następna sesja): `docs/serwer.md` z gotowymi poleceniami, skrypt
+  instalacyjny, jednostki systemd, harmonogram historii SUDOP.
 
 ---
 
