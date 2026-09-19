@@ -9,6 +9,7 @@
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
 #   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST (pyta o wartosc)
+#   sudo jawne kopia         baza + odpowiedzi SUDOP do /tmp, do sciagniecia przez scp
 set -euo pipefail
 
 KATALOG=/srv/jawne
@@ -87,6 +88,22 @@ wgraj() {
   exec bash "$KATALOG/deploy/instaluj.sh"
 }
 
+# Kopia do sciagniecia na komputer. Plik w /tmp nalezy do tego, kto wywolal
+# sudo (ubuntu), bo scp loguje sie jako ubuntu. Zawiera dane osobowe: 600.
+kopia() {
+  local plik
+  plik=/tmp/jawne-kopia-$(date +%F).tgz
+  # .backup SQLite: spojna kopia mimo trwajacych zapisow (WAL).
+  jako sqlite3 dane/sejm.db '.backup dane/sejm-z-serwera.db'
+  tar -czf "$plik" --exclude=.blokada -C "$KATALOG/dane" sejm-z-serwera.db zrodla/sudop
+  rm -f "$KATALOG/dane/sejm-z-serwera.db"
+  chown "${SUDO_USER:-root}" "$plik"
+  chmod 600 "$plik"
+  echo "Gotowe: $plik ($(du -h "$plik" | cut -f1)). Na komputerze:"
+  echo "   scp jawne:$plik ."
+  echo "   ssh jawne rm $plik"
+}
+
 # Wpis do /etc/jawne/jawne.env bez edytora. Wartosc wpisuje sie po pytaniu,
 # nie w poleceniu — klucz nie zostaje w historii powloki.
 ustaw() {
@@ -141,8 +158,9 @@ case "${1:-stan}" in
     ;;
   wgraj) wgraj "${2:-}" "${3:-}" ;;
   ustaw) ustaw "${2:-}" ;;
+  kopia) kopia ;;
   *)
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac
