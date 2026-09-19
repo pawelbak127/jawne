@@ -104,6 +104,9 @@ case "${1:-stan}" in
     ;;
   sprawdz) sprawdz ;;
   aktualizuj)
+    # Jedno "sudo git ..." w /srv/jawne zostawia w .git pliki roota
+    # i kolejny pull jako jawne konczy sie "Permission denied" (zmierzone).
+    chown -R jawne:jawne "$KATALOG/.git"
     jako git pull --ff-only
     exec bash "$KATALOG/deploy/instaluj.sh"
     ;;
