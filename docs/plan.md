@@ -98,11 +98,47 @@ adresem, który można komuś pokazać.
 - Bezpieczeństwo: klucz SSH, port 22 tylko z IP Pawła, 80/443 publicznie,
   automatyczne aktualizacje, sekrety w pliku na serwerze, nie w repozytorium.
 
-**Kto co robi**
-- Paweł: konto AWS, **alarm budżetowy (np. 10 i 50 USD) jako pierwszy krok**,
-  utworzenie instancji według instrukcji, podanie adresu.
-- Claude (następna sesja): `docs/serwer.md` z gotowymi poleceniami, skrypt
-  instalacyjny, jednostki systemd, harmonogram historii SUDOP.
+### Plan działania
+
+**Faza 0 — Paweł, ok. godziny**
+- konto AWS i **alarm budżetowy (np. 10 i 50 USD) jako pierwszy krok**,
+- klucz API GUS do `.env.local` (`GUS_BDL_KLUCZ`),
+- decyzja: czy wysłać sprostowanie do UOKiK (`docs/uokik-sprostowanie.md`).
+
+**Faza 1 — sesja z Pawłem: serwer i dane.** Prompt: [`start-sesji.md`](start-sesji.md).
+- `docs/serwer.md` z gotowymi poleceniami, skrypt instalacyjny, jednostki
+  systemd dla danych, strona testowa za Caddy.
+- GitHub Actions wyłączone, gdy serwer przejmie przyrost SUDOP.
+- **Gotowe, gdy:** timery działają 48 godzin bez błędu, `npm run stan` na
+  serwerze nie pokazuje dziur, strona testowa odpowiada.
+
+**Faza 2 — autopilot: Claude Code na serwerze co 5 godzin.**
+Instrukcje stałe: [`autopilot.md`](autopilot.md) (projekt do zatwierdzenia).
+- Timer systemd uruchamia Claude Code w trybie nieinteraktywnym z tym plikiem
+  jako poleceniem. Każdy przebieg: stan danych → naprawy → jedno zadanie
+  z planu → pull request → wpis w zgłoszeniu „Dziennik autopilota”.
+- **Pobieranie danych robią timery, nie autopilot.** Model sprawdza, czy
+  działa, i naprawia kod — nie wysyła zapytań do urzędów sam.
+- Zmiany tylko przez pull request; scala Paweł.
+- Najpierw tydzień próbny: 2 przebiegi na dobę, potem co 5 godzin.
+- **Do potwierdzenia przy konfiguracji:**
+  - sposób logowania Claude Code na serwerze (token subskrypcji albo klucz API),
+  - dokładne flagi trybu nieinteraktywnego i lista dozwolonych narzędzi,
+  - zużycie: przebieg co 5 godzin korzysta z tych samych limitów subskrypcji,
+    z których Paweł pracuje sam.
+- Bezpieczeństwo: token GitHub drobnoziarnisty, tylko do tego repozytorium
+  (treść i pull requesty), bez uprawnień administratora.
+- **Gotowe, gdy:** co najmniej 3 z 4 pull requestów przechodzą przegląd bez
+  poprawek.
+
+**Faza 3 — przegląd po dwóch tygodniach**
+Jakość pull requestów, rachunek AWS i zużycie limitów, postęp historii
+SUDOP. Na tej podstawie decyzja o częstotliwości autopilota i tempie danych.
+
+**Rozważona alternatywa:** zaplanowane sesje Claude w chmurze Anthropic
+(bez serwera). Pracują na repozytorium z GitHuba, ale nie widzą bazy ani
+logów serwera — nie sprawdzą, jak idzie pobieranie. Dlatego autopilot
+na serwerze, obok danych.
 
 ---
 
