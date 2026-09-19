@@ -3,11 +3,17 @@
  *
  *   npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
  *   npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17
+ *   npx tsx ingest/jobs/sudop.ts --dzienny                     (serwer, co noc)
+ *   npx tsx ingest/jobs/sudop.ts --historia --maks-zapytan=25  (serwer, co noc)
+ *   npx tsx ingest/jobs/sudop.ts --historia --plan             (co by pobral — bez pytania urzedu)
  *
  * Dwa tryby, dwa rozne koszty dla urzedu:
  *  - GMINA: cale 10 lat jednej gminy, kilka zapytan (Zakopane: 5).
  *  - PRZYROST: jeden dzien dla CALEGO KRAJU, jedno zapytanie. Zmierzone
  *    18.09.2026: 3 531 przypadkow z 1 150 gmin zmiescilo sie w jednej stronie.
+ * Tryby serwera skladaja sie z przyrostow: --dzienny to wczoraj i dzien
+ * sprzed 14 dni, --historia to kolejne zakresy z planHistorii (ingest/lib/
+ * harmonogram.ts) do limitu zapytan i tylko w oknie godzin.
  *
  * Nie jest czescia `import wszystko` i nie bedzie. Kazda gmina to jedno
  * zgloszenie w kolejce urzedu, ktory napisal, ze ruch przekracza jego
@@ -18,11 +24,14 @@
  *  - zapisujemy surowa odpowiedz, zeby powtorny zapis nie wymagal
  *    ponownego pytania urzedu (`--z-plikow`).
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
+import {
+  dodajDni, DNI_DO_USTALENIA, dzienWarszawa, planHistorii, ustalony, wOknie, zakresyZPlikow, type DzienPobrany,
+} from '../lib/harmonogram.js';
 import {
   adresPrzyrostu, adresWyszukania, kluczePorcji, kodySudopGminy, kwota, poczatekOknaDanych,
   sprawdzPorcje, sprawdzPorcjePrzyrostu, SUDOP_BAZA, terytGminyZKodu, TERYT_WARSZAWY,
@@ -48,6 +57,18 @@ async function get(url: string) {
 }
 
 const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
+
+/** Przydzial jednego przebiegu: ile zapytan i w jakich godzinach wolno zaczac nowe. */
+type Budzet = { maks: number; uzyte: number; okno: string | null };
+
+/** Koniec przydzialu — nie blad. Pobrane strony zostaja na dysku do wznowienia. */
+class KoniecPrzydzialu extends Error {}
+
+function sprawdzBudzet(b: Budzet | null): void {
+  if (!b) return;
+  if (b.uzyte >= b.maks) throw new KoniecPrzydzialu(`wykorzystano ${b.maks} zapytan`);
+  if (b.okno && !wOknie(new Date(), b.okno)) throw new KoniecPrzydzialu(`koniec okna ${b.okno} (czas polski)`);
+}
 
 /**
  * Zapisana wczesniej odpowiedz, zwykla albo spakowana. Spakowane pliki robi
@@ -193,13 +214,18 @@ function zapiszPrzyrost(
  * (GitHub Actions nie ma pliku bazy; zapisuje surowe odpowiedzi i zostawia
  * je jako artefakt do zaimportowania na komputerze).
  */
-async function pobierzPrzyrost(od: string, doDnia: string, odswiez = false): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number; pobrano: string | null }> {
+async function pobierzPrzyrost(
+  od: string, doDnia: string, odswiez = false, budzet: Budzet | null = null,
+): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number; pobrano: string | null }> {
   const formy = (await slownik('forma-pomocy')).map((f) => String(f.number));
   log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)${odswiez ? ' — odswiezenie' : ''}`);
   const start = Date.now();
-  const dzis = new Date().toISOString().slice(0, 10);
-  const wyniki: PrzypadekPomocy[] = [];
+  const dzis = dzienWarszawa(new Date());
+  let wyniki: PrzypadekPomocy[] = [];
   let pobrano: string | null = null;
+  let liczba: number | null = null;
+  // Po wykryciu stron z roznych chwil: strony starsze niz ta data nie ida z dysku.
+  let swiezeOd: string | null = null;
   let strona = 1;
   let zapytan = 0;
   for (;;) {
@@ -208,16 +234,40 @@ async function pobierzPrzyrost(od: string, doDnia: string, odswiez = false): Pro
     const zapisana = zapisanaOdpowiedz(plik);
     // Przy odswiezeniu stary plik sie nie liczy — chyba ze pobralismy go
     // dzisiaj (wtedy to wznowienie przerwanego odswiezenia, nie stara wersja).
-    if (zapisana && (!odswiez || zapisana.pobrano?.slice(0, 10) === dzis)) {
+    const dzisiejsza = zapisana?.pobrano !== undefined && dzienWarszawa(new Date(zapisana.pobrano)) === dzis;
+    const dosycSwieza = !swiezeOd || (zapisana?.pobrano ?? '') >= swiezeOd;
+    if (zapisana && (!odswiez || dzisiejsza) && dosycSwieza) {
       odp = zapisana;
       log(`   strona ${strona}: z pliku`);
     } else {
+      sprawdzBudzet(budzet);
       odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
       odp.pobrano = new Date().toISOString();
       zapytan++;
+      if (budzet) budzet.uzyte++;
       writeFileSync(plik, JSON.stringify(odp), 'utf8');
       // Stara spakowana wersja tej strony jest juz nieaktualna.
       if (existsSync(`${plik}.gz`)) rmSync(`${plik}.gz`);
+    }
+    // Kazda strona to osobne zapytanie, a wznowiony zakres sklada strony
+    // z roznych nocy. Jesli urzad w miedzyczasie dopisal przypadki, strony
+    // sa wzgledem siebie przesuniete: sklejone dalyby duplikaty (policzone
+    // potem jako osobne transze) albo luki. Liczba wynikow musi sie zgadzac.
+    // ZMIERZONE: strony pobrane jednym ciagiem maja ja identyczna (33 409
+    // na 4 stronach, 45 377 na 5).
+    if (liczba === null) {
+      liczba = odp['liczba-wynikow'];
+    } else if (odp['liczba-wynikow'] !== liczba) {
+      if (swiezeOd) {
+        throw new Error(`${od}..${doDnia}: liczba wynikow zmienia sie w trakcie pobierania (${liczba} -> ${odp['liczba-wynikow']}) — sprobuje nastepnym razem`);
+      }
+      log(`   strona ${strona}: ${odp['liczba-wynikow']} wynikow, a strona 1 miala ${liczba} — strony z roznych chwil, starsze pobieram ponownie`);
+      swiezeOd = odp.pobrano ?? new Date().toISOString();
+      wyniki = [];
+      pobrano = null;
+      liczba = null;
+      strona = 1;
+      continue;
     }
     // Dzien jest tak swiezy jak jego NAJSTARSZA strona.
     if (odp.pobrano && (!pobrano || odp.pobrano < pobrano)) pobrano = odp.pobrano;
@@ -229,14 +279,98 @@ async function pobierzPrzyrost(od: string, doDnia: string, odswiez = false): Pro
   return { wyniki, zapytan, sekund: Math.round((Date.now() - start) / 1000), pobrano };
 }
 
-async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>, odswiez: boolean): Promise<void> {
+/**
+ * Strony zapisanego zakresu pakujemy: historia calego kraju to ok. 28 GB
+ * zwyklego JSON-u (1,4 KB na przypadek), spakowana — kilka razy mniej.
+ * Odczyt i wznowienie rozumieja oba formaty.
+ */
+function spakujStrony(od: string, doDnia: string): void {
+  const wzor = new RegExp(`^przyrost-${od}-${doDnia}-s\\d+\\.json$`);
+  for (const nazwa of readdirSync(KATALOG).filter((n) => wzor.test(n))) {
+    const plik = join(KATALOG, nazwa);
+    writeFileSync(`${plik}.gz`, gzipSync(readFileSync(plik), { level: 9 }));
+    rmSync(plik);
+  }
+}
+
+async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>, odswiez: boolean, budzet: Budzet | null = null): Promise<void> {
   const [od, doDnia] = zakres.split('..');
   if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
-  const { wyniki, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez);
+  const { wyniki, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez, budzet);
   const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane, pobrano);
+  spakujStrony(od, doDnia);
   log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
   odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
+}
+
+/**
+ * Zadanie dzienne serwera: wczoraj (swiezy, niepelny — do "co nowego")
+ * i dzien sprzed 14 dni (juz ustalony — ten wchodzi do sum). Drugiego nie
+ * pobieramy, jesli w bazie jest juz jego ustalona wersja.
+ */
+async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<void> {
+  const dzis = dzienWarszawa(new Date());
+  const swiezy = dodajDni(dzis, -1);
+  const doUstalenia = dodajDni(dzis, -DNI_DO_USTALENIA);
+  // Zwykly dzien to 1–2 strony; wiecej niz 8 znaczy, ze dzieje sie cos dziwnego.
+  const budzet: Budzet = { maks: 8, uzyte: 0, okno: null };
+  await przyrost(db, `${swiezy}..${swiezy}`, znane, false, budzet);
+  const w = db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(doUstalenia) as { pobrano: string } | undefined;
+  if (w && ustalony(doUstalenia, w.pobrano)) {
+    log(`-> ${doUstalenia}: juz ustalony (pobrany ${w.pobrano.slice(0, 10)}) — nie pytam ponownie`);
+  } else {
+    await przyrost(db, `${doUstalenia}..${doUstalenia}`, znane, true, budzet);
+  }
+  log(`Zapytan do urzedu: ${budzet.uzyte}`);
+}
+
+/**
+ * Zadanie nocne serwera: kolejne zakresy z planHistorii, az do limitu
+ * zapytan albo konca okna godzin. Plan liczony od nowa po kazdym zakresie.
+ * Nowego zapytania nie zaczyna poza oknem — "tylko noca" pilnuje kod,
+ * nie tylko harmonogram systemd.
+ */
+async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: number; okno: string; tylkoPlan: boolean }): Promise<void> {
+  const dzis = dzienWarszawa(new Date());
+  const plan = () => planHistorii({
+    dni: db.prepare('select dzien, pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
+    zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
+    dzis,
+    poczatekOkna: poczatekOknaDanych(new Date()),
+  });
+  if (o.tylkoPlan) {
+    const p = plan();
+    log(p.length ? 'Kolejnosc (po kazdym zakresie plan liczy sie od nowa):' : 'Nic do pobrania.');
+    for (const z of p.slice(0, 10)) log(`   ${z.powod.padEnd(12)} ${z.od}..${z.do}${z.odswiez ? '  (odswiezenie)' : ''}`);
+    return;
+  }
+  if (!wOknie(new Date(), o.okno)) {
+    log(`Poza oknem ${o.okno} (czas polski) — nie pytam urzedu.`);
+    return;
+  }
+  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno };
+  let poprzedni = '';
+  try {
+    for (;;) {
+      const z = plan()[0];
+      if (!z) {
+        log('Nic wiecej do pobrania — historia kompletna.');
+        break;
+      }
+      const zakres = `${z.od}..${z.do}`;
+      if (zakres === poprzedni) {
+        throw new Error(`Zakres ${zakres} po pobraniu wciaz jest w planie — przerywam, zeby nie pytac urzedu w kolko`);
+      }
+      poprzedni = zakres;
+      log(`== ${z.powod}: ${zakres}`);
+      await przyrost(db, zakres, znane, z.odswiez, budzet);
+    }
+  } catch (e) {
+    if (!(e instanceof KoniecPrzydzialu)) throw e;
+    log(`Koniec na te noc: ${e.message}. Pobrane strony zostaja na dysku — nastepna noc je wznowi.`);
+  }
+  log(`Zapytan do urzedu tej nocy: ${budzet.uzyte} z ${budzet.maks}`);
 }
 
 /**
@@ -283,17 +417,30 @@ async function main(): Promise<void> {
   const gminy = (arg('gminy') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const zakres = arg('przyrost');
   const zPlikow = process.argv.includes('--z-plikow');
-  if (!gminy.length && !zakres) {
+  const dzienny = process.argv.includes('--dzienny');
+  const historia = process.argv.includes('--historia');
+  const tylkoPlan = process.argv.includes('--plan');
+  if (!gminy.length && !zakres && !dzienny && !historia) {
     log('Podaj gminy: --gminy=100101,100102   (TERYT, 6 cyfr)');
     log('albo zakres dni dla calego kraju: --przyrost=2026-09-15..2026-09-17');
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
+    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=25] [--okno=01:00-06:00]');
+    log('        --historia --plan pokazuje, co pobralaby noc — bez pytania urzedu.');
     process.exit(2);
   }
+  // Obietnica wobec UOKiK: 20–30 zapytan na noc. Limit w kodzie, zeby nie
+  // dalo sie go "podkrecic" samym parametrem w harmonogramie.
+  const maks = Number(arg('maks-zapytan') ?? 25);
+  if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 30)) {
+    throw new Error(`--maks-zapytan musi byc liczba 1–30 (jest: ${arg('maks-zapytan')})`);
+  }
+  const okno = arg('okno') ?? '01:00-06:00';
+  wOknie(new Date(), okno); // sprawdza zapis okna, zanim cokolwiek sie zacznie
   mkdirSync(KATALOG, { recursive: true });
-  // Z plikow nie pytamy urzedu — blokada potrzebna tylko, gdy moze pojsc zapytanie.
-  if (!zPlikow) zalozBlokade();
+  // Z plikow i sam plan nie pytaja urzedu — blokada potrzebna tylko, gdy moze pojsc zapytanie.
+  if (!zPlikow && !tylkoPlan) zalozBlokade();
 
   // Tryb dla GitHub Actions: pobierz i zapisz surowe odpowiedzi, nie dotykaj
   // bazy (w CI jej nie ma). Import robi sie potem na komputerze z plikow.
@@ -311,6 +458,21 @@ async function main(): Promise<void> {
   // trzymamy pod 146501, tak samo jak fundusze UE i budzet.
   const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
   znane.add(TERYT_WARSZAWY);
+  // Bez listy gmin kazdy przypadek z przyrostu bylby "spoza listy", a dzien
+  // zapisalby sie jako pobrany i pusty — zero tam, gdzie powinno byc "nie wiemy".
+  if ((zakres || dzienny || historia) && znane.size < 2000) {
+    db.close();
+    throw new Error(`W bazie jest ${znane.size} gmin zamiast ok. 2 500. Najpierw: npm run import okregi`);
+  }
+  if (dzienny || historia) {
+    try {
+      if (dzienny) await dzienne(db, znane);
+      else await nocne(db, znane, { maks, okno, tylkoPlan });
+    } finally {
+      db.close();
+    }
+    return;
+  }
   if (zakres) {
     try {
       await przyrost(db, zakres, znane, process.argv.includes('--odswiez'));
