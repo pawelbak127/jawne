@@ -1,0 +1,18 @@
+[Unit]
+Description=jawne — SUDOP: historia nocą, najwyżej 25 zapytań, jedno naraz
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jawne
+Group=jawne
+WorkingDirectory=/srv/jawne
+EnvironmentFile=/etc/jawne/jawne.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh sudop-historia
+TimeoutStartSec=6h
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full

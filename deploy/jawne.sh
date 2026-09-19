@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Polecenie administracyjne na serwerze (instaluje je deploy/instaluj.sh):
+#
+#   sudo jawne stan          dane (npm run stan), harmonogram, wynik ostatnich przebiegow, dysk
+#   sudo jawne plan          co pobierze najblizsza noc z SUDOP — bez pytania urzedu
+#   sudo jawne logi [zad]    dziennik: sudop-dzien, sudop-historia, sejm, gus, fundusze, strona
+#   sudo jawne uruchom zad   uruchom zadanie teraz i poczekaj na koniec (np. sejm)
+#   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
+#   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
+set -euo pipefail
+
+KATALOG=/srv/jawne
+USTAWIENIA=/etc/jawne/jawne.env
+ZADANIA='sudop-dzien sudop-historia sejm gus fundusze'
+
+[ "$(id -u)" = 0 ] || { echo "Uruchom przez sudo: sudo jawne ${1:-stan}"; exit 1; }
+jako() { (cd "$KATALOG" && sudo -u jawne -H "$@"); }
+# Node ostrzega przy kazdym uzyciu node:sqlite — w wyniku dla czlowieka to szum.
+bez_szumu() { grep -v -e 'ExperimentalWarning: SQLite' -e 'node --trace-warnings' || true; }
+
+stan() {
+  jako npm run --silent stan 2>&1 | bez_szumu
+  echo
+  echo "== Harmonogram"
+  systemctl list-timers 'jawne-*' --no-pager | head -n -3
+  echo
+  echo "== Ostatnie przebiegi"
+  local z wynik kiedy
+  for z in $ZADANIA; do
+    wynik=$(systemctl show -p Result --value "jawne-$z.service")
+    kiedy=$(systemctl show -p ExecMainExitTimestamp --value "jawne-$z.service")
+    printf '   %-16s %-10s %s\n' "$z" "${kiedy:+$wynik}" "${kiedy:-jeszcze nie uruchomione}"
+  done
+  printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona)"
+  echo
+  echo "== Dysk"
+  df -h "$KATALOG" | tail -1 | awk '{print "   zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
+  echo "   dane: $(du -sh "$KATALOG/dane" 2>/dev/null | cut -f1)"
+  if [ -f /var/run/reboot-required ]; then echo "   czeka restart po aktualizacji systemu (sam o 12:30)"; fi
+}
+
+sprawdz() {
+  local host adres sciezka kod plik bledow=0
+  host=$(sed -n 's/^JAWNE_HOST=//p' "$USTAWIENIA")
+  plik=$(mktemp)
+  for adres in http://127.0.0.1:3000 ${host:+https://$host}; do
+    echo "== $adres"
+    for sciezka in / /stan /poslowie /glosowania /pomoc-publiczna /gmina/100101; do
+      kod=$(curl -s -o "$plik" -w '%{http_code}' --max-time 60 "$adres$sciezka" || true)
+      # noindex zostaje do premiery — strona bez niego to blad, nie drobiazg.
+      if [ "$kod" = 200 ] && grep -q 'noindex' "$plik"; then
+        printf '   OK   %-18s %s\n' "$sciezka" "$(grep -o '<title>[^<]*' "$plik" | head -1 | sed 's/<title>//')"
+      else
+        printf '   BLAD %-18s HTTP %s%s\n' "$sciezka" "$kod" "$(grep -q noindex "$plik" || echo ', brak noindex')"
+        bledow=$((bledow + 1))
+      fi
+    done
+  done
+  rm -f "$plik"
+  if [ -z "$host" ]; then echo "(JAWNE_HOST pusty — sprawdz w przegladarce http://<publiczne IP>)"; fi
+  [ "$bledow" = 0 ] && echo "Wszystko odpowiada." || { echo "Bledow: $bledow"; exit 1; }
+}
+
+case "${1:-stan}" in
+  stan) stan ;;
+  plan) jako node_modules/.bin/tsx ingest/jobs/sudop.ts --historia --plan 2>&1 | bez_szumu ;;
+  logi)
+    if [ -n "${2:-}" ]; then
+      journalctl -u "jawne-$2" --since -48h --no-pager | bez_szumu | tail -n 300
+    else
+      journalctl -u 'jawne-*' --since -24h --no-pager | bez_szumu | tail -n 200
+    fi
+    ;;
+  uruchom)
+    [ -n "${2:-}" ] || { echo "Ktore? $ZADANIA"; exit 2; }
+    echo "Uruchamiam jawne-$2 i czekam na koniec (log: sudo jawne logi $2)..."
+    systemctl start "jawne-$2.service" || true
+    echo "Wynik: $(systemctl show -p Result --value "jawne-$2.service")  (success = dobrze)"
+    ;;
+  sprawdz) sprawdz ;;
+  aktualizuj)
+    jako git pull --ff-only
+    exec bash "$KATALOG/deploy/instaluj.sh"
+    ;;
+  *)
+    sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+    exit 2
+    ;;
+esac

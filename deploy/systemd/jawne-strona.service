@@ -1,0 +1,22 @@
+[Unit]
+Description=jawne — strona testowa (next start, za Caddy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jawne
+Group=jawne
+WorkingDirectory=/srv/jawne
+EnvironmentFile=/etc/jawne/jawne.env
+Environment=NODE_ENV=production
+# Tylko 127.0.0.1: z zewnatrz strona idzie wylacznie przez Caddy (HTTPS).
+ExecStart=/srv/jawne/node_modules/.bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=jawne — SUDOP historia co noc o 02:00 (zapytania tylko 01:00–06:00)
+
+[Timer]
+# Persistent=false: przegapiona noc NIE nadrabia sie w dzien. Okno 01:00-06:00
+# pilnuje tez kod (sudop.ts --okno) — poza nim nie zacznie zapytania.
+OnCalendar=*-*-* 02:00:00 Europe/Warsaw
+Persistent=false
+
+[Install]
+WantedBy=timers.target

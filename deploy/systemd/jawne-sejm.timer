@@ -1,0 +1,9 @@
+[Unit]
+Description=jawne — Sejm codziennie o 07:15
+
+[Timer]
+OnCalendar=*-*-* 07:15:00 Europe/Warsaw
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+# Wzor dla /etc/caddy/Caddyfile. Plik na serwerze generuje deploy/instaluj.sh:
+# ADRES zamienia na JAWNE_HOST z /etc/jawne/jawne.env (np. 3-121-45-67.sslip.io,
+# potem domena), a przy pustym JAWNE_HOST na ":80" — sam HTTP pod adresem IP.
+# Zmiany rob tutaj, w repozytorium, nie na serwerze.
+#
+# Celowo BEZ dziennika wejsc: adres IP czytelnika to dana osobowa, a nam
+# do niczego niepotrzebna.
+
+ADRES {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}

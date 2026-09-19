@@ -2,3 +2,7 @@
 # Bez tego core.autocrlf=true wycina CR z pliku PKW w repozytorium
 # (zmierzone: 2586 znakow, inna suma SHA-256 niz w ZRODLO.md).
 ingest/zrodla/** -text
+
+# Skrypty i pliki serwera: zawsze LF. Bash na Linuksie nie znosi CR
+# ("$'\r': command not found"), a core.autocrlf=true dodalby go przy checkoucie.
+deploy/** text eol=lf

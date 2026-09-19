@@ -1,0 +1,9 @@
+[Unit]
+Description=jawne — GUS co miesiąc, 3. dnia o 10:00
+
+[Timer]
+OnCalendar=*-*-03 10:00:00 Europe/Warsaw
+Persistent=true
+
+[Install]
+WantedBy=timers.target
