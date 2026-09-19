@@ -59,7 +59,11 @@ git push
 
 ## 1. Alarmy budżetowe ☁
 
-Pierwszy krok, zanim cokolwiek zacznie kosztować.
+Pierwszy krok, zanim cokolwiek zacznie kosztować. Przy okazji: **włącz MFA
+na koncie głównym** (prawy górny róg → Security credentials → Assign MFA
+device). Przejęte konto AWS z kartą to najczęściej rachunek za cudzą
+koparkę kryptowalut. Kluczy dostępowych (access keys) dla konta głównego nie
+twórz — nie są potrzebne.
 
 1. Konsola AWS → wyszukaj **Budgets** → **Create budget**.
 2. **Customize (advanced)** → **Cost budget** → Next.
@@ -98,17 +102,25 @@ do AWS idzie tylko część publiczna, która jest teraz w schowku.
 | Pole | Wartość |
 |---|---|
 | Name | `jawne` |
-| Application and OS Images | **Ubuntu Server 24.04 LTS**, Architecture **64-bit (Arm)** |
+| Application and OS Images | **Ubuntu Server 24.04 LTS (HVM), SSD Volume Type**, Architecture **64-bit (Arm)**. **Nie „Ubuntu Pro”** — jest płatne za godzinę |
 | Instance type | **t4g.small** |
 | Key pair | `jawne-pawel` |
-| Network settings → Firewall | **Create security group**; ✔ Allow SSH traffic from **My IP**; ✔ Allow HTTPS traffic from the internet; ✔ Allow HTTP traffic from the internet |
-| Configure storage | **60** GiB, **gp3**; Advanced → Encrypted: **Encrypted** (domyślny klucz) |
+| Network settings → Edit | VPC: domyślny; Subnet: No preference; Auto-assign public IP: **Enable** |
+| Firewall | **Create security group**, nazwa `jawne-sg`; reguły: **SSH 22 — My IP**, **HTTP 80 — Anywhere**, **HTTPS 443 — Anywhere**. Nic więcej |
+| Configure storage | **60** GiB, **gp3** (IOPS 3000, throughput 125 — domyślne); Advanced → Encrypted: **Encrypted**, klucz `aws/ebs`; Delete on termination: Yes |
+| Advanced details → IAM instance profile | **brak** — serwer nie potrzebuje dostępu do API AWS |
 | Advanced details → Termination protection | **Enable** |
-| Advanced details → Metadata version | **V2 only (token required)** |
+| Advanced details → Detailed CloudWatch monitoring | **Disable** (płatne) |
+| Advanced details → Credit specification | zostaw domyślne (**Unlimited**); po instalacji przełącz na Standard (krok 9) |
+| Advanced details → Metadata accessible / version | **Enabled** / **V2 only (token required)** — `instaluj.sh` czyta stąd publiczny IP |
+| Advanced details → User data | **puste** — instalację uruchamiasz sam, widząc każdy krok |
+| Summary → Number of instances | **1** |
 
-→ **Launch instance**.
+→ **Launch instance**. Pozostałe pola zostaw domyślne.
 
 - Port 80 musi być otwarty: przez niego Caddy dostaje certyfikat HTTPS.
+- **Nie otwieraj** portu 22 dla „Anywhere” ani portu 3000 — strona idzie
+  wyłącznie przez Caddy.
 - Szyfrowanie dysku nic nie kosztuje, a na dysku będą surowe odpowiedzi SUDOP
   z danymi osobowymi.
 - Jeśli kreator nie pozwoli wybrać `t4g.small` (ograniczenia planu próbnego) —
@@ -209,6 +221,12 @@ sudo jawne plan
 
 Otwórz w przeglądarce adres z `sudo jawne stan` → `/stan` albo z końca
 kroku 8 (`https://<ip-z-myślnikami>.sslip.io`).
+
+☁ Po udanym sprawdzeniu: **EC2 → Instances → `jawne` → Actions → Instance
+settings → Change credit specification → odznacz Unlimited (= Standard)**.
+Instalacja i budowa potrzebowały pełnej mocy; potem obciążenie jest lekkie,
+a w trybie Standard zawieszony proces zwalnia maszynę zamiast dopisywać
+opłaty za dodatkowy czas procesora.
 
 **Przyślij mi wynik `sudo jawne stan` i `sudo jawne sprawdz`** — po pierwszej
 nocy także `sudo jawne logi sudop-historia`.
