@@ -34,6 +34,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Strony bez parametrow (/, /poslowie, /stan, 499 stron poslow) Next renderuje
+// RAZ, przy `next build`. ZMIERZONE 19.09.2026 w prerender-manifest.json:
+// initialRevalidateSeconds: false — na serwerze nocny import zmienialby baze,
+// a strona pokazywalaby stan z dnia budowania. Godzina wystarcza: dane
+// zmieniaja sie raz na dobe, a strona wciaz nie pyta bazy przy kazdym wejsciu.
+export const revalidate = 3600;
+
 const NAWIGACJA: { adres: string; etykieta: string; krotka?: string }[] = [
   { adres: '/okregi', etykieta: 'Okręgi' },
   { adres: '/poslowie', etykieta: 'Posłowie' },

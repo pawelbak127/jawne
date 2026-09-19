@@ -11,6 +11,9 @@ import { nazwaPodmiotuJawna, pominietoNazwiska } from '@/lib/prywatnosc';
  * Glosowania z pominietymi nazwiskami osob prywatnych nie trafiaja do mapy —
  * te same, ktore strona glosowania oznacza `noindex` na stale.
  */
+// Mapa nie dziedziczy ustawienia z layoutu — bez tego zostaje z dnia budowania.
+export const revalidate = 3600;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
   const stale = ['/', '/okregi', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
