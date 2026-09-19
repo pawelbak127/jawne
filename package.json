@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "import": "tsx ingest/jobs/import.ts",
     "stan": "node scripts/stan-danych.mjs",
-    "sudop:artefakty": "node scripts/sudop-artefakty.mjs"
+    "sudop:artefakty": "node scripts/sudop-artefakty.mjs",
+    "paczka-na-serwer": "node scripts/paczka-na-serwer.mjs"
   },
   "dependencies": {
     "next": "16.3.5",

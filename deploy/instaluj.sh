@@ -134,7 +134,7 @@ EOF
   if [ ! -f "$KATALOG/dane/sejm.db" ]; then
     krok "Brak bazy danych"
     echo "System gotowy, ale nie ma $KATALOG/dane/sejm.db."
-    echo "Wgraj dane z komputera (docs/serwer.md, krok 7) i uruchom ten skrypt ponownie."
+    echo "Wgraj dane z komputera (docs/serwer.md, krok 8): sudo jawne wgraj /tmp/do-serwera.tgz"
     echo "Harmonogram NIE jest wlaczony — bez bazy nie ma czego uzupelniac."
     exit 0
   fi

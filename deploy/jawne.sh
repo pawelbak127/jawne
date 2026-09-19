@@ -7,6 +7,7 @@
 #   sudo jawne uruchom zad   uruchom zadanie teraz i poczekaj na koniec (np. sejm)
 #   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
+#   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
 set -euo pipefail
 
 KATALOG=/srv/jawne
@@ -61,6 +62,30 @@ sprawdz() {
   [ "$bledow" = 0 ] && echo "Wszystko odpowiada." || { echo "Bledow: $bledow"; exit 1; }
 }
 
+# Wgranie paczki z komputera. Normalnie raz — potem zrodlem danych jest serwer.
+wgraj() {
+  local paczka=${1:-}
+  [ -f "$paczka" ] || { echo "Podaj plik: sudo jawne wgraj /tmp/do-serwera.tgz"; exit 2; }
+  if [ -f "$KATALOG/dane/sejm.db" ] && [ "${2:-}" != --nadpisz ]; then
+    echo "Na serwerze jest juz baza. Wgranie ja NADPISZE — dni SUDOP pobrane przez serwer przepadna"
+    echo "i noc zapyta o nie urzad ponownie. Jesli na pewno: sudo jawne wgraj $paczka --nadpisz"
+    exit 1
+  fi
+  if systemctl is-active --quiet jawne-sudop-dzien jawne-sudop-historia; then
+    echo "Trwa pobieranie z SUDOP — nie przerywam go. Sprobuj po jego koncu (sudo jawne stan)."
+    exit 1
+  fi
+  systemctl stop jawne-strona 'jawne-*.timer' 2>/dev/null || true
+  jako mkdir -p dane
+  jako tar -xzf "$paczka" -C dane
+  # Stary -wal obok nowej bazy to przepis na uszkodzony plik.
+  rm -f "$KATALOG/dane/sejm.db-wal" "$KATALOG/dane/sejm.db-shm"
+  jako mv -f dane/do-serwera.db dane/sejm.db
+  rm -f "$paczka"
+  echo "Wgrane: $(du -h "$KATALOG/dane/sejm.db" | cut -f1) bazy, paczka usunieta z $paczka"
+  exec bash "$KATALOG/deploy/instaluj.sh"
+}
+
 case "${1:-stan}" in
   stan) stan ;;
   plan) jako node_modules/.bin/tsx ingest/jobs/sudop.ts --historia --plan 2>&1 | bez_szumu ;;
@@ -82,8 +107,9 @@ case "${1:-stan}" in
     jako git pull --ff-only
     exec bash "$KATALOG/deploy/instaluj.sh"
     ;;
+  wgraj) wgraj "${2:-}" "${3:-}" ;;
   *)
-    sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac
