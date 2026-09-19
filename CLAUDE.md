@@ -44,6 +44,7 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 | `ingest/` | import do SQLite: Sejm, PKW, GUS, listy FE; SUDOP osobnym, ręcznym skryptem |
 | `docs/zrodla.md` | katalog źródeł danych publicznych (też o firmach) ze statusem: zmierzone / z dokumentacji / odrzucone |
 | `docs/sudop.md` | jak działa API SUDOP, co przeoczono w starym projekcie, decyzja do podjęcia |
+| `deploy/` | serwer: `instaluj.sh`, zadania danych, jednostki systemd, Caddy, polecenie `sudo jawne …`; instrukcja w `docs/serwer.md` |
 | `dane/sejm.db` | baza — **nie w repozytorium**, odtwarzalna w ~20 minut |
 
 ---
@@ -88,6 +89,10 @@ npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17  # dzień dla CA�
 npx tsx ingest/jobs/sudop.ts --gminy=100101 --z-plikow      # z zapisanych odpowiedzi, bez sieci
 npx tsx ingest/jobs/sudop.ts --przyrost=… --tylko-pobierz   # bez bazy (GitHub Actions)
 npm run sudop:artefakty -- --import                         # zaciąga to, co pobrał cron w Actions
+npx tsx ingest/jobs/sudop.ts --historia --plan              # co pobierze noc serwera — bez sieci
+npm run paczka-na-serwer                                    # baza + odpowiedzi SUDOP dla serwera
+
+# Serwer (docs/serwer.md): sudo jawne stan | plan | logi ZAD | sprawdz | aktualizuj
 ```
 
 ---
@@ -276,6 +281,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+39. **Strony bez parametrów Next renderuje raz, przy `next build`.** `/`,
+    `/stan`, `/pomoc-publiczna` i 499 stron posłów miały w manifeście
+    `initialRevalidateSeconds: false` — na serwerze pokazywałyby stan z dnia
+    budowania. `revalidate = 3600` w `layout.tsx` (i osobno w `sitemap.ts`).
+40. **`??` przepuszcza pusty napis.** `JAWNE_ADRES_SERWISU=` w pliku ustawień
+    dawało `new URL('')` i wywracało build. Zmienne z pliku: `?.trim() ||`.
+41. **Strony SUDOP z różnych chwil się przesuwają.** Wznowiony zakres składa
+    strony pobrane różnego dnia; strona 1 zakresu 2–14.09 z 18.09 miała
+    62 177 wyników, a urząd dopisuje dalej. Strony z jednego ciągu mają liczbę
+    identyczną (33 409 × 4, 45 377 × 5) — `pobierzPrzyrost` to sprawdza
+    i przy rozjeździe pobiera starsze strony ponownie.
 
 ---
 
@@ -316,6 +332,10 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   (D13 w starym projekcie): urząd pisał, że ruch przekracza jego możliwości,
   a każde zapytanie tworzy pozycję w kolejce. Nigdy na żądanie czytelnika,
   nigdy z crona bez tej decyzji. Jedno zapytanie naraz, odpytywanie co 60 s.
+  **Decyzja Pawła z 19.09.2026:** historia całego kraju od pierwszej nocy
+  serwera — najwyżej 25 zapytań na noc (kod odrzuca więcej niż 30), nowe
+  zapytanie tylko 01:00–06:00 czasu polskiego. Tempa nie stroimy parametrem;
+  zmiana to decyzja Pawła.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 

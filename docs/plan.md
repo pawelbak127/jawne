@@ -1,6 +1,7 @@
 # Plan i pomysły
 
-Żywy dokument. Zapis z 18.09.2026. Trzy części: **blokery przed premierą**,
+Żywy dokument. Zapis z 18.09.2026, uzupełniany (ostatnio 19.09.2026: faza 1
+przygotowana). Trzy części: **blokery przed premierą**,
 **kolejne kroki** (uzgodnione), **pomysły** (do oceny). Skreślone wpisy zostają
 z datą — chcemy widzieć, co odrzuciliśmy i dlaczego.
 
@@ -31,7 +32,7 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | do napisania, szkic w [nazwiska.md](nazwiska.md) |
 | 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | do kupienia |
 | 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła |
-| 5a | **Klucz API GUS BDL** (darmowy, portal api.stat.gov.pl) | Bez klucza 100 zapytań na 15 minut — import jest 5 razy wolniejszy. Rejestrację robi Paweł; klucz do `.env.local` jako `GUS_BDL_KLUCZ` | do zrobienia |
+| 5a | **Klucz API GUS BDL** (darmowy, portal api.stat.gov.pl) | Bez klucza 100 zapytań na 15 minut — import jest 5 razy wolniejszy. Rejestrację robi Paweł; klucz do `.env.local` jako `GUS_BDL_KLUCZ`, na serwerze `sudo jawne ustaw GUS_BDL_KLUCZ` | do zrobienia (19.09: w `.env.local` go nie ma) |
 | 6 | ~~**Obrazki podglądu linku dla stron gmin**~~ | Mamy je dla głosowań i posłów; strona gminy jest teraz najbardziej „udostępnialna” | **zrobione 19.09.2026**: nazwa, powiat, dochody i UE na mieszkańca, każda liczba z mianownikiem |
 
 ---
@@ -81,8 +82,9 @@ adresem, który można komuś pokazać.
 
 **Decyzje**
 - Jedna maszyna EC2 na ARM (np. `t4g.small`: 2 vCPU, 2 GB RAM) w regionie
-  `eu-central-1` (Frankfurt) i dysk gp3 ok. 60 GB. Rząd wielkości 15–20 USD
-  miesięcznie — przed założeniem sprawdzić w kalkulatorze AWS.
+  `eu-central-1` (Frankfurt) i dysk gp3 ok. 60 GB. ~~Rząd wielkości 15–20 USD~~
+  **ok. 23–24 USD miesięcznie** (poprawka 19.09: szacunek pomijał opłatę
+  za publiczny IPv4, ok. 3,7 USD) — przed założeniem sprawdzić w kalkulatorze AWS.
 - Na serwerze: Node 24, repozytorium z GitHuba, `dane/` na dysku maszyny,
   `next build && next start` za Caddy (HTTPS sam, gdy będzie domena).
 - Build produkcyjny sam włącza filtr nazwisk; `noindex` zostaje.
@@ -91,7 +93,11 @@ adresem, który można komuś pokazać.
   - **SUDOP historia: tylko w nocy, jedno zapytanie naraz, 20–30 zapytań
     na noc** — ok. 2 tys. zapytań w 2–3 miesiące. Serwer nie zmniejsza
     obciążenia urzędu; zmniejsza je tylko tempo. Sprostowanie do UOKiK
-    prosi właśnie o wskazanie dopuszczalnego tempa,
+    prosi właśnie o wskazanie dopuszczalnego tempa. **Decyzja Pawła
+    z 19.09.2026: od pierwszej nocy serwera**, 25 zapytań, okno 01:00–06:00,
+  - **strona testowa otwarta dla każdego, kto zna adres** (decyzja Pawła
+    z 19.09.2026); `noindex` zostaje, nazwy osób fizycznych ukryte do czasu
+    `JAWNE_KONTAKT`,
   - Sejm codziennie, listy UE i GUS co miesiąc.
 - GitHub Actions wyłączyć po uruchomieniu serwera — inaczej pytamy urząd
   dwa razy o to samo.
@@ -101,14 +107,32 @@ adresem, który można komuś pokazać.
 ### Plan działania
 
 **Faza 0 — Paweł, ok. godziny**
-- konto AWS i **alarm budżetowy (np. 10 i 50 USD) jako pierwszy krok**,
-- klucz API GUS do `.env.local` (`GUS_BDL_KLUCZ`),
-- decyzja: czy wysłać sprostowanie do UOKiK (`docs/uokik-sprostowanie.md`).
+- ~~konto AWS~~ **jest (19.09)**; **alarm budżetowy (10 i 50 USD) — jeszcze
+  nie**, to krok 1 w [`serwer.md`](serwer.md),
+- klucz API GUS — jeszcze nie (`sudo jawne ustaw GUS_BDL_KLUCZ` na serwerze),
+- sprostowanie do UOKiK (`docs/uokik-sprostowanie.md`) — stan niepotwierdzony
+  w sesji 19.09.
 
 **Faza 1 — sesja z Pawłem: serwer i dane.** Prompt: [`start-sesji.md`](start-sesji.md).
-- `docs/serwer.md` z gotowymi poleceniami, skrypt instalacyjny, jednostki
-  systemd dla danych, strona testowa za Caddy.
-- GitHub Actions wyłączone, gdy serwer przejmie przyrost SUDOP.
+- ~~`docs/serwer.md` z gotowymi poleceniami, skrypt instalacyjny, jednostki
+  systemd dla danych, strona testowa za Caddy.~~ **Przygotowane 19.09.2026:**
+  [`serwer.md`](serwer.md) (kroki 0–9), `deploy/instaluj.sh`, `deploy/zadanie.sh`,
+  5 timerów + strona w `deploy/systemd/`, `sudo jawne stan|plan|logi|uruchom|
+  sprawdz|aktualizuj|wgraj|ustaw`, `npm run paczka-na-serwer`.
+  W kodzie: tryby `sudop.ts --dzienny` i `--historia` (plan nocy w
+  `ingest/lib/harmonogram.ts`, limit 1–30 i okno godzin pilnowane w kodzie),
+  kontrola stron z różnych chwil, strony odświeżane co godzinę (ISR).
+- Sprawdzone w kontenerze Ubuntu 24.04 z systemd, bez zapytań do urzędów
+  (lista w `serwer.md`, ostatnia sekcja). Fałszywy serwer SUDOP: strona 1
+  z dysku (62 177) wobec nowych (62 500) → rozjazd wykryty, strona 1 pobrana
+  ponownie, strona 2 wzięta z dysku; limit 4 zatrzymał przebieg z czterema
+  stronami na dysku; drugi przebieg (limit 3) wziął s1–s4 z dysku, dopytał
+  o s5–s7 i zapisał 62 500 przypadków — dokładnie liczbę wyników, bez
+  duplikatów — a na następnym zakresie stanął na limicie przed zapytaniem.
+- **Czeka na Pawła:** kroki 0–9 z `serwer.md` (maszyna jeszcze nie istnieje).
+- GitHub Actions wyłączone, gdy serwer przejmie przyrost SUDOP — krok 8
+  (`gh workflow disable sudop-przyrost.yml`); plik workflow zostaje, żeby dało
+  się wrócić jednym poleceniem.
 - **Gotowe, gdy:** timery działają 48 godzin bez błędu, `npm run stan` na
   serwerze nie pokazuje dziur, strona testowa odpowiada.
 

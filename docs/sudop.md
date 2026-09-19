@@ -176,6 +176,14 @@ jego możliwości. Skala importu całego kraju:
 Rozmiar bazy przy pełnej historii (15–20 GB) i tak wymusiłby zmianę: trzymamy
 agregaty gmin i czołówkę beneficjentów, a nie 25 mln pojedynczych rekordów.
 
+**Decyzja Pawła z 19.09.2026: historia od pierwszej nocy serwera.** Tempo:
+najwyżej 25 zapytań na noc, nowe zapytanie tylko 01:00–06:00 czasu polskiego,
+jedno naraz — ok. 80 nocy na całe okno. Pilnuje tego kod (`sudop.ts
+--historia`: limit powyżej 30 odrzucony, poza oknem zapytanie się nie zaczyna),
+nie tylko harmonogram. Kolejność nocy: przerwane zakresy, dni do odświeżenia,
+dziury, historia tygodniami wstecz (`ingest/lib/harmonogram.ts`). Serwer:
+[`serwer.md`](serwer.md).
+
 ### Pismo zostało wysłane w starej formie — potrzebne sprostowanie
 
 Paweł wysłał pismo z `obywatel/docs/uokik-odpowiedz-projekt.md` **przed** tymi
