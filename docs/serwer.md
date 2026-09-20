@@ -273,6 +273,7 @@ Pełna historia 10 lat to ok. 2 tys. zapytań, czyli **ok. 80 nocy**.
 | `sudo jawne uruchom sejm` | zadanie teraz, z czekaniem na koniec |
 | `sudo jawne sprawdz` | czy strona odpowiada |
 | `sudo jawne aktualizuj` | `git pull` i przebudowa (strona kilka minut niedostępna) |
+| ⚠ nie rób | `git pull`, `npm`, `sudo chown` ręcznie w `/srv/jawne` — katalog należy do użytkownika `jawne`, a ręczne polecenia zabierają mu go i strona traci prawo zapisu |
 | `sudo jawne ustaw GUS_BDL_KLUCZ` | wpis klucza — pyta o wartość, nie zostaje w historii |
 | `sudo jawne kopia` | kopia bazy i odpowiedzi SUDOP do ściągnięcia na komputer |
 
@@ -332,7 +333,7 @@ kosztują — to decyzja o rachunku, nie techniczna.
 | strona pod `sslip.io` nie wstaje, a `jawne sprawdz` lokalnie jest OK | certyfikat: `sudo journalctl -u caddy -n 50`. Awaryjnie sam HTTP: `sudo jawne ustaw JAWNE_HOST` (Enter = pusto), `sudo jawne aktualizuj`, adres `http://<IP>` |
 | `instaluj.sh` pada przy `npm run build` | pamięć: `free -h` (swap powinien mieć 2 GB). Przyślij mi ostatnie 30 linii |
 | przebieg z wynikiem innym niż `success` | `sudo jawne logi <zadanie>` i przyślij mi ostatnie 50 linii. Nie uruchamiaj SUDOP ręcznie w kółko |
-| `jawne aktualizuj`: `Permission denied` w `.git` | po `sudo git …` w `/srv/jawne`; `aktualizuj` sam to naprawia, ponów |
+| `dubious ownership`, `Permission denied` w `.git`, `attempt to write a readonly database` | katalog przestał należeć do użytkownika `jawne` (po ręcznym `git pull` albo `sudo chown`). Napraw: `sudo chown -R jawne:jawne /srv/jawne`, potem `sudo systemctl restart jawne-strona`. `sudo jawne stan` ostrzega o tym na górze |
 
 ---
 

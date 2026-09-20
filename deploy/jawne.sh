@@ -22,6 +22,15 @@ jako() { (cd "$KATALOG" && sudo -u jawne -H "$@"); }
 bez_szumu() { grep -v -e 'ExperimentalWarning: SQLite' -e 'node --trace-warnings' || true; }
 
 stan() {
+  # Wlasciciel katalogu to pierwsza rzecz, ktora sie psuje po recznym
+  # "sudo git" albo "sudo chown" — i psuje sie cicho, dopiero przy zapisie.
+  local wlasciciel
+  wlasciciel=$(stat -c %U "$KATALOG/dane/sejm.db" 2>/dev/null || echo brak)
+  if [ "$wlasciciel" != jawne ] && [ "$wlasciciel" != brak ]; then
+    echo "UWAGA: dane naleza do uzytkownika \"$wlasciciel\", nie do jawne — zapisy beda odrzucane."
+    echo "       Napraw: sudo chown -R jawne:jawne $KATALOG"
+    echo
+  fi
   jako npm run --silent stan 2>&1 | bez_szumu
   echo
   echo "== Harmonogram"
@@ -150,9 +159,12 @@ case "${1:-stan}" in
     ;;
   sprawdz) sprawdz ;;
   aktualizuj)
-    # Jedno "sudo git ..." w /srv/jawne zostawia w .git pliki roota
-    # i kolejny pull jako jawne konczy sie "Permission denied" (zmierzone).
-    chown -R jawne:jawne "$KATALOG/.git"
+    # ZMIERZONE 20.09.2026 na serwerze: "git pull" wykonany jako ubuntu konczy
+    # sie "dubious ownership", a ratunkowy "sudo chown -R ubuntu:ubuntu
+    # /srv/jawne" zabiera katalog uzytkownikowi jawne — wtedy strona i zadania
+    # dostaja "attempt to write a readonly database". Oddajemy CALY katalog,
+    # nie samo .git: git sprawdza wlasciciela katalogu roboczego.
+    chown -R jawne:jawne "$KATALOG"
     jako git pull --ff-only
     exec bash "$KATALOG/deploy/instaluj.sh"
     ;;
