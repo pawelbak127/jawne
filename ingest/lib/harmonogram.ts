@@ -49,6 +49,19 @@ export function ustalony(dzien: string, pobrano: string): boolean {
 }
 
 /**
+ * Co zadanie dzienne ma zrobic z dniem sprzed 14 dni.
+ *
+ * „brak" to nie to samo co „nieustalony": dnia, ktorego w ogole nie mamy,
+ * nie odswiezamy pojedynczo — jest dziura i wejdzie w zakres nocny razem
+ * z sasiadami. Pytanie o niego osobno to jedno zapytanie do urzedu wiecej
+ * za te same dane.
+ */
+export function stanDnia(dzien: string, pobrano: string | null | undefined): 'brak' | 'ustalony' | 'nieustalony' {
+  if (!pobrano) return 'brak';
+  return ustalony(dzien, pobrano) ? 'ustalony' : 'nieustalony';
+}
+
+/**
  * Czy chwila miesci sie w oknie godzin (czas polski), np. "01:00-06:00".
  * Okno moze przechodzic przez polnoc: "23:00-05:00".
  */

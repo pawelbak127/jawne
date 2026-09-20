@@ -30,7 +30,7 @@ import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
 import {
-  dodajDni, DNI_DO_USTALENIA, dzienWarszawa, planHistorii, ustalony, wOknie, zakresyZPlikow, type DzienPobrany,
+  dodajDni, DNI_DO_USTALENIA, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow, type DzienPobrany,
 } from '../lib/harmonogram.js';
 import {
   adresPrzyrostu, adresWyszukania, kluczePorcji, kodySudopGminy, kwota, poczatekOknaDanych,
@@ -317,10 +317,15 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
   const budzet: Budzet = { maks: 8, uzyte: 0, okno: null };
   await przyrost(db, `${swiezy}..${swiezy}`, znane, false, budzet);
   const w = db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(doUstalenia) as { pobrano: string } | undefined;
-  if (w && ustalony(doUstalenia, w.pobrano)) {
-    log(`-> ${doUstalenia}: juz ustalony (pobrany ${w.pobrano.slice(0, 10)}) — nie pytam ponownie`);
-  } else {
-    await przyrost(db, `${doUstalenia}..${doUstalenia}`, znane, true, budzet);
+  switch (stanDnia(doUstalenia, w?.pobrano)) {
+    case 'ustalony':
+      log(`-> ${doUstalenia}: juz ustalony (pobrany ${w!.pobrano.slice(0, 10)}) — nie pytam ponownie`);
+      break;
+    case 'brak':
+      log(`-> ${doUstalenia}: tego dnia w ogole nie mamy — to dziura, wezmie ja noc razem z sasiadami (jawne plan)`);
+      break;
+    default:
+      await przyrost(db, `${doUstalenia}..${doUstalenia}`, znane, true, budzet);
   }
   log(`Zapytan do urzedu: ${budzet.uzyte}`);
 }

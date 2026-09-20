@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dodajDni, dzienWarszawa, planHistorii, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
+import { dodajDni, dzienWarszawa, planHistorii, stanDnia, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
 
 describe('dzienWarszawa', () => {
   it('o 00:30 w Warszawie jest juz nowy dzien, choc w UTC jeszcze stary (lato, UTC+2)', () => {
@@ -181,5 +181,17 @@ describe('planHistorii', () => {
       poczatekOkna: OKNO,
     });
     expect(plan[0]).toEqual({ od: '2026-09-18', do: '2026-09-18', odswiez: false, powod: 'przerwane' });
+  });
+});
+
+describe('stanDnia', () => {
+  it('dnia, ktorego nie mamy, nie odswiezamy pojedynczo — to dziura dla nocy', () => {
+    expect(stanDnia('2026-09-07', null)).toBe('brak');
+    expect(stanDnia('2026-09-07', undefined)).toBe('brak');
+  });
+
+  it('rozroznia dzien ustalony od pobranego za wczesnie', () => {
+    expect(stanDnia('2026-09-07', '2026-09-21T01:20:00.000Z')).toBe('ustalony');
+    expect(stanDnia('2026-09-07', '2026-09-08T01:20:00.000Z')).toBe('nieustalony');
   });
 });
