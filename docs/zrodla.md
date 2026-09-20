@@ -59,6 +59,24 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 | **TAM** (unijny rejestr pomocy państwa) | Polska z niego nie korzysta — pomoc publikuje w SUDOP i SRPP. |
 | **Słownik gmin z API UOKiK** jako podstawa okręgów | Zastąpiony plikiem PKW, który mówi, gdzie gmina naprawdę głosowała. Słownik SUDOP pobieramy tylko po to, żeby znać 7-cyfrowe kody SUDOP. |
 
+## Do sprawdzenia — wypisane 20.09.2026, NIEMIERZONE
+
+Kandydaci z pamięci o polskim krajobrazie danych, nie z odpytania. Zanim
+którykolwiek trafi do serwisu, trzeba go zmierzyć i przenieść wyżej z opisem
+tego, co naprawdę przyszło. Kolejność według tego, ile dają stronie gminy
+i stronie firmy.
+
+| Źródło | Co by dało | Czego nie wiem |
+|---|---|---|
+| **Rejestr umów jednostek sektora finansów publicznych** (Min. Finansów) | umowy urzędów powyżej progu: kontrahent, przedmiot, kwota — „na co poszły pieniądze w mojej gminie” wprost, bez pośrednictwa dotacji | czy jest API i eksport zbiorczy, jaki jest próg kwotowy i kompletność |
+| **Program Inwestycji Strategicznych „Polski Ład” i RFIL** (BGK) | miliardy przekazane gminom poza funduszami UE — dziś w serwisie ich nie widać | forma publikacji (lista, plik, API), czy z podziałem na gminy |
+| **KPO** (Krajowy Plan Odbudowy) | druga wielka pula pieniędzy, której nie ma w listach FE | gdzie publikowana lista projektów i w jakim formacie |
+| **NFZ — umowy ze świadczeniodawcami** (`api.nfz.gov.pl`) | publiczne pieniądze w ochronie zdrowia, w podziale na placówki i miejscowości | kształt API, czy da się złączyć po NIP |
+| **MF — wykaz indywidualnych danych podatników CIT** | ile podatku płacą największe firmy; mocne uzupełnienie strony firmy obok pomocy publicznej | format, zakres lat, czy jest po NIP |
+| **PKW — wybory samorządowe 2024** | jak gmina głosowała w swoich wyborach (dziś mamy tylko Sejm 2023) | format plików, czy taki sam jak 2023 |
+| **PKW — sprawozdania finansowe komitetów i partii** | pieniądze w polityce, naturalne domknięcie części sejmowej | czy dane są maszynowo czytelne, czy to skany |
+| **API Sejmu: procesy legislacyjne, druki, interpelacje, transkrypcje** | „co się stało z ustawą” i wypowiedzi posłów — brakujący filar briefu | to samo API, którego już używamy; do zmierzenia są tylko kształty odpowiedzi |
+
 ## Katalogi, w których szukać dalej
 
 - **dane.gov.pl** — `api.dane.gov.pl/1.4/search?q=…` (w `curl` dodaj `-g`, bo nawiasy `model[terms]` są wzorcem).
