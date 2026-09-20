@@ -37,6 +37,15 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
 ---
 
+## Usterki — zgłoszone, niepilne
+
+| | Co | Zgłoszone |
+|---|---|---|
+| U1 | **Na telefonie stronę da się przesunąć w bok** — coś jest szersze niż ekran, przez co treść wygląda na uciętą. Szukać przez ramkę `<iframe style="width:390px">` (pułapka 17 w `CLAUDE.md`), sprawdzić szerokie tabele, `min-width` i długie liczby | Paweł, 20.09.2026 — „raczej na koniec listy” |
+| U2 | **Do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
+
+---
+
 ## Kolejne kroki — uzgodnione 18.09.2026
 
 1. **Dokończyć pieniądze w gminie.**
