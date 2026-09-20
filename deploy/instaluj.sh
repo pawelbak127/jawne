@@ -40,6 +40,16 @@ main() {
 
   krok "System: strefa czasowa, pakiety, automatyczne aktualizacje"
   timedatectl set-timezone Europe/Warsaw 2>/dev/null || ln -sf /usr/share/zoneinfo/Europe/Warsaw /etc/localtime
+  # ZMIERZONE 20.09.2026 na EC2: swiezo uruchomiona maszyna ma wlasny
+  # unattended-upgrades w tle, ktory trzyma blokade dpkg — apt-get padal
+  # z "Could not get lock /var/lib/dpkg/lock-frontend". Plik dziala takze
+  # dla apt-a uruchamianego przez skrypt NodeSource.
+  cat > /etc/apt/apt.conf.d/99jawne-lock-timeout <<'EOF'
+DPkg::Lock::Timeout "600";
+EOF
+  if pgrep -x unattended-upgr >/dev/null; then
+    echo "   w tle dziala unattended-upgrades — apt poczeka na blokade (do 10 min)"
+  fi
   apt-get update -q
   apt-get install -y -q git curl ca-certificates gnupg sqlite3 sudo unattended-upgrades \
     debian-keyring debian-archive-keyring apt-transport-https
