@@ -166,6 +166,9 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
    Pięć żądań pod rząd dało 404, 200, 200, 200, 200. Dlatego `ingest/lib/http.ts`
    ponawia także 404 — trzy razy, zanim uzna je za odpowiedź. Bez tego import
    po cichu pomija zasoby, a to błąd, którego nic nie zgłasza.
+   **20.09.2026: cała gałąź `/sejm/*` oddawała 404 przez kilkanaście minut**
+   (także `/MP` i `/clubs`), a `/eli/acts` i korzeń API odpowiadały 200.
+   Ponawianie nie pomaga — import pada wtedy głośno i tak ma być.
 2. **Rejestr jest wewnętrznie niespójny.** `/clubs` oddaje 12 klubów, ale
    posłowie wskazują też `Polska2050-TD`, którego w tej liście nie ma.
 3. **Głos niesie klub z DNIA GŁOSOWANIA, `/clubs` — stan bieżący.**

@@ -59,23 +59,28 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 | **TAM** (unijny rejestr pomocy państwa) | Polska z niego nie korzysta — pomoc publikuje w SUDOP i SRPP. |
 | **Słownik gmin z API UOKiK** jako podstawa okręgów | Zastąpiony plikiem PKW, który mówi, gdzie gmina naprawdę głosowała. Słownik SUDOP pobieramy tylko po to, żeby znać 7-cyfrowe kody SUDOP. |
 
-## Do sprawdzenia — wypisane 20.09.2026, NIEMIERZONE
+## Sondy z 20.09.2026 — co naprawdę przyszło
 
-Kandydaci z pamięci o polskim krajobrazie danych, nie z odpytania. Zanim
-którykolwiek trafi do serwisu, trzeba go zmierzyć i przenieść wyżej z opisem
-tego, co naprawdę przyszło. Kolejność według tego, ile dają stronie gminy
-i stronie firmy.
+Osiem kandydatów wypisanych z pamięci, odpytanych tego samego dnia
+narzędziami z `scripts/sondy/` (`api-sonda.mjs`, `dane-gov-szukaj.mjs`,
+`sejm-sciezka.mjs`). Wyniki negatywne zostają — oszczędzają następnej sesji
+tej samej drogi.
 
-| Źródło | Co by dało | Czego nie wiem |
+| Kandydat | Wynik sondy | Co dalej |
 |---|---|---|
-| **Rejestr umów jednostek sektora finansów publicznych** (Min. Finansów) | umowy urzędów powyżej progu: kontrahent, przedmiot, kwota — „na co poszły pieniądze w mojej gminie” wprost, bez pośrednictwa dotacji | czy jest API i eksport zbiorczy, jaki jest próg kwotowy i kompletność |
-| **Program Inwestycji Strategicznych „Polski Ład” i RFIL** (BGK) | miliardy przekazane gminom poza funduszami UE — dziś w serwisie ich nie widać | forma publikacji (lista, plik, API), czy z podziałem na gminy |
-| **KPO** (Krajowy Plan Odbudowy) | druga wielka pula pieniędzy, której nie ma w listach FE | gdzie publikowana lista projektów i w jakim formacie |
-| **NFZ — umowy ze świadczeniodawcami** (`api.nfz.gov.pl`) | publiczne pieniądze w ochronie zdrowia, w podziale na placówki i miejscowości | kształt API, czy da się złączyć po NIP |
-| **MF — wykaz indywidualnych danych podatników CIT** | ile podatku płacą największe firmy; mocne uzupełnienie strony firmy obok pomocy publicznej | format, zakres lat, czy jest po NIP |
-| **PKW — wybory samorządowe 2024** | jak gmina głosowała w swoich wyborach (dziś mamy tylko Sejm 2023) | format plików, czy taki sam jak 2023 |
-| **PKW — sprawozdania finansowe komitetów i partii** | pieniądze w polityce, naturalne domknięcie części sejmowej | czy dane są maszynowo czytelne, czy to skany |
-| **API Sejmu: procesy legislacyjne, druki, interpelacje, transkrypcje** | „co się stało z ustawą” i wypowiedzi posłów — brakujący filar briefu | to samo API, którego już używamy; do zmierzenia są tylko kształty odpowiedzi |
+| **API Sejmu: `processes`, `prints`, `interpellations`, `writtenQuestions`, transkrypcje, `committees`, `bills`** | **ścieżki potwierdzone** w OpenAPI (`api.sejm.gov.pl/sejm/openapi/`, 133 kB YAML) i w dokumentacji: `…/term10/processes?offset=0`. **Ale o 19:40–19:55 CEST cała gałąź `/sejm/*` oddawała `404 text/html`** — łącznie z `/MP` i `/clubs`, z których korzysta import. Pięć prób z ponawianiem, bez skutku. Korzeń `api.sejm.gov.pl/` i `/eli/acts` odpowiadały `200` | powtórzyć sondę; kształt odpowiedzi nadal niezmierzony |
+| **Rejestr umów (centralny, MF)** | **host `rejestrumow.podatki.gov.pl` nie istnieje** (NXDOMAIN). W dane.gov.pl są tylko rejestry pojedynczych instytucji (Ministerstwo Klimatu, KPRM, Ministerstwo Sprawiedliwości, jednostki GZM) — każdy osobno | znaleźć właściwy adres centralnego rejestru albo uznać, że zbiorczego źródła nie ma |
+| **KPO** | zbiór **3190** (ARiMR), 38 zasobów XLSX po ~40 kB, comiesięcznych. Zmierzone w pliku z 31.03.2026: jeden arkusz, 1 498 wierszy, **agregaty po województwach** dla jednego działania (liczba wniosków, kwoty) — nie ma projektów ani beneficjentów | dla strony gminy bezużyteczne; listy projektów KPO szukać poza dane.gov.pl |
+| **Polski Ład / RFIL (BGK)** | w katalogu dane.gov.pl nie znaleziono; wyszukiwarka pełnotekstowa oddaje szum (19 663 trafienia, żadne na temat) | sprawdzić u BGK |
+| **MF — indywidualne dane podatników CIT** | zbiór 1295 ma **jeden zasób w formacie HTML z 2019 r.** — czyli odnośnik, nie dane | sprawdzić bezpośrednio na podatki.gov.pl |
+| **NFZ — umowy ze świadczeniodawcami** | `api.nfz.gov.pl/app-umw-api/agreements` **istnieje i odpowiada** strukturalnym JSON-em, ale zwracał `503 {"error-result":"Maintenance"}`; `/branches` — 404 | powtórzyć sondę po zakończeniu przerwy technicznej |
+| **PKW — wybory samorządowe 2024** | w dane.gov.pl nie ma | pobrać ze stron PKW, tak jak plik z 2023 (`ingest/zrodla/`) |
+| **PKW — sprawozdania komitetów** | nie sondowane | — |
+
+Przy okazji zmierzone w katalogu dane.gov.pl: `search` oddaje wpisy
+z `type: "common"`, a rodzaj trzyma w `attributes.model`; tytuły przychodzą
+z podświetleniem `<mark>` w środku; wyszukiwanie pełnotekstowe jest hałaśliwe,
+więc szuka się raczej po numerze zbioru niż po frazie.
 
 ## Katalogi, w których szukać dalej
 
