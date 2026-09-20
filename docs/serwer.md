@@ -358,7 +358,25 @@ czyli **bez żadnego zapytania do urzędu**:
   wyników; na kolejnym zakresie stanął na limicie przed zapytaniem,
 - `shellcheck` bez uwag, `systemd-analyze verify` bez uwag.
 
-**Nie sprawdzone** — pierwszy raz zadzieje się u Ciebie: maszyna ARM,
-metadane EC2 (adres `sslip.io` z publicznego IP), certyfikat Let's Encrypt,
-zakładanie swapu (kontener ma swap hosta), restart po aktualizacji, prawdziwa
-kolejka UOKiK w nocy.
+## Zmierzone na prawdziwym serwerze 20.09.2026
+
+Instalacja na `t4g.small` (ARM), Ubuntu 24.04, `eu-central-1`:
+
+- `instaluj.sh` od zera do „Brak bazy danych”: kilka minut. Node 24.21.0,
+  Caddy 2.11.4 — oba z repozytoriów, wersje jak w kontenerze,
+- `jawne wgraj` z paczką: baza 268 MB, budowa **512 stron w 51 s** (jeden
+  worker, 2 GB RAM — swap nie był potrzebny), pięć timerów włączonych
+  o polskich godzinach,
+- adres z metadanych EC2 zadziałał: `52-29-50-167.sslip.io`, **certyfikat
+  Let's Encrypt pobrany bez ingerencji**,
+- `jawne sprawdz`: 12 × OK (6 lokalnie, 6 przez HTTPS), `noindex` obecny,
+- dysk po instalacji: 5,8 GB z 58 GB, z czego `dane/` 389 MB.
+
+**Pułapka, która wyszła dopiero tutaj:** świeża maszyna EC2 uruchamia własne
+`unattended-upgrades`, które trzyma blokadę `dpkg`, i drugi przebieg skryptu
+padał na `apt-get install` („Could not get lock … lock-frontend”). Od commita
+`d57e484` skrypt ustawia `DPkg::Lock::Timeout "600"` i czeka zamiast przerywać.
+
+**Wciąż nie sprawdzone:** prawdziwa kolejka UOKiK w nocy (pierwsza noc
+z timerami: 21.09.2026), restart po automatycznej aktualizacji, zakładanie
+swapu (obraz AWS ma już swap).

@@ -129,7 +129,15 @@ adresem, który można komuś pokazać.
   stronami na dysku; drugi przebieg (limit 3) wziął s1–s4 z dysku, dopytał
   o s5–s7 i zapisał 62 500 przypadków — dokładnie liczbę wyników, bez
   duplikatów — a na następnym zakresie stanął na limicie przed zapytaniem.
-- **Czeka na Pawła:** kroki 0–9 z `serwer.md` (maszyna jeszcze nie istnieje).
+- **Serwer stoi od 20.09.2026:** `t4g.small` (ARM), Ubuntu 24.04,
+  `eu-central-1`, strona pod `https://52-29-50-167.sslip.io` z certyfikatem
+  Let's Encrypt. Budowa 512 stron w 51 s, `jawne sprawdz` 12 × OK, pięć
+  timerów włączonych. Pierwsza noc z pobieraniem: **21.09.2026**.
+  (Pierwsza maszyna powstała omyłkowo w `us-east-1` i została skasowana —
+  dane osobowe z SUDOP nie zostają poza EOG.)
+- **Zostało do zamknięcia fazy 1:** 48 godzin timerów bez błędu, wyłączenie
+  GitHub Actions (`gh workflow disable sudop-przyrost.yml`), klucz GUS
+  (`sudo jawne ustaw GUS_BDL_KLUCZ`), przełączenie kredytów CPU na Standard.
 - GitHub Actions wyłączone, gdy serwer przejmie przyrost SUDOP — krok 8
   (`gh workflow disable sudop-przyrost.yml`); plik workflow zostaje, żeby dało
   się wrócić jednym poleceniem.
