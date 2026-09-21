@@ -178,8 +178,19 @@ agregaty gmin i czołówkę beneficjentów, a nie 25 mln pojedynczych rekordów.
 
 **Decyzja Pawła z 19.09.2026: historia od pierwszej nocy serwera.** Tempo:
 najwyżej 25 zapytań na noc, nowe zapytanie tylko 01:00–06:00 czasu polskiego,
-jedno naraz — ok. 80 nocy na całe okno. Pilnuje tego kod (`sudop.ts
---historia`: limit powyżej 30 odrzucony, poza oknem zapytanie się nie zaczyna),
+jedno naraz — ok. 80 nocy na całe okno.
+
+**Zmierzona pierwsza noc (21.09.2026):** 25 zapytań w 59 minut z pięciu godzin
+okna, kolejka oddawała wynik najczęściej po minucie (najdłużej 14), zysk to
+41 dni historii i ok. 213 tys. przypadków. Kontrola spójności zadziałała przy
+pierwszym zetknięciu z urzędem: strona 1 zakresu 2–14.09 pochodziła z 18.09
+i miała 62 177 wyników, nowa strona 2 — już 62 690, więc stara strona została
+pobrana ponownie.
+
+**Decyzja Pawła z 21.09.2026: 50 zapytań na noc** (urząd nie odpowiedział na
+pismo z 12.09). To ok. dwie godziny okna i ok. 45 nocy do pełnych 10 lat.
+Pilnuje tego kod (`sudop.ts
+--historia`: limit powyżej 50 odrzucony, poza oknem zapytanie się nie zaczyna),
 nie tylko harmonogram. Kolejność nocy: przerwane zakresy, dni do odświeżenia,
 dziury, historia tygodniami wstecz (`ingest/lib/harmonogram.ts`). Serwer:
 [`serwer.md`](serwer.md).

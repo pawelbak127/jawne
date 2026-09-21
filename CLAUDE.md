@@ -336,9 +336,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   a każde zapytanie tworzy pozycję w kolejce. Nigdy na żądanie czytelnika,
   nigdy z crona bez tej decyzji. Jedno zapytanie naraz, odpytywanie co 60 s.
   **Decyzja Pawła z 19.09.2026:** historia całego kraju od pierwszej nocy
-  serwera — najwyżej 25 zapytań na noc (kod odrzuca więcej niż 30), nowe
-  zapytanie tylko 01:00–06:00 czasu polskiego. Tempa nie stroimy parametrem;
-  zmiana to decyzja Pawła.
+  serwera, nowe zapytanie tylko 01:00–06:00 czasu polskiego. **Tempo
+  podniesione 21.09.2026 z 25 na 50 zapytań na noc** (kod odrzuca więcej
+  niż 50) — podstawa: pierwsza noc zużyła 25 zapytań w 59 minut z pięciu
+  godzin okna i dała 41 dni historii. Tempa nie stroimy parametrem; zmiana
+  to decyzja Pawła, a pismo do UOKiK musi opisywać stan faktyczny.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 

@@ -144,9 +144,18 @@ adresem, który można komuś pokazać.
   timerów włączonych. Pierwsza noc z pobieraniem: **21.09.2026**.
   (Pierwsza maszyna powstała omyłkowo w `us-east-1` i została skasowana —
   dane osobowe z SUDOP nie zostają poza EOG.)
-- **Zostało do zamknięcia fazy 1:** 48 godzin timerów bez błędu, wyłączenie
-  GitHub Actions (`gh workflow disable sudop-przyrost.yml`), klucz GUS
-  (`sudo jawne ustaw GUS_BDL_KLUCZ`), przełączenie kredytów CPU na Standard.
+- **Pierwsza noc (21.09.2026) przepracowana:** 25 zapytań w 59 minut, 41 dni
+  historii, ok. 213 tys. przypadków, 381 031 w bazie. Kontrola spójności stron
+  zadziałała na żywym urzędzie. Zadanie `sejm` padło o 07:15 na awarii API
+  (`clubs -> HTTP 404`, cała gałąź `/sejm/*`); API wróciło tego samego dnia.
+- **Decyzja Pawła z 21.09.2026: 50 zapytań na noc** zamiast 25 (urząd nie
+  odpowiedział na pismo z 12.09). Zostaje ok. 45 nocy do pełnych 10 lat.
+  Zmiana wymusiła przepisanie akapitu o tempie w
+  [`uokik-sprostowanie.md`](uokik-sprostowanie.md) — pismo mówiło, że pobieramy
+  tylko ręcznie pojedyncze gminy, co od 21.09 jest nieprawdą.
+- **Zostało do zamknięcia fazy 1:** ~~wyłączenie GitHub Actions~~ (zrobione),
+  48 godzin timerów bez błędu, klucz GUS (`sudo jawne ustaw GUS_BDL_KLUCZ`),
+  przełączenie kredytów CPU na Standard, wysłanie sprostowania do UOKiK.
 - GitHub Actions wyłączone, gdy serwer przejmie przyrost SUDOP — krok 8
   (`gh workflow disable sudop-przyrost.yml`); plik workflow zostaje, żeby dało
   się wrócić jednym poleceniem.

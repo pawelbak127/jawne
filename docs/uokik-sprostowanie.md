@@ -69,8 +69,20 @@ dopuszczalne.
 Gdyby taki eksport nie był możliwy, proszę o wskazanie tempa odpytywania, które
 byłoby dla Państwa akceptowalne — dostosujemy się do niego.
 
-Do czasu Państwa odpowiedzi ograniczam się do pojedynczych gmin pobieranych
-ręcznie i nie odpytuję systemu przy wejściach czytelników na stronę.
+**Jak odpytuję system dzisiaj.** Od 21 września 2026 r. dane bieżące pobieram
+automatycznie, dwoma zapytaniami na dobę: jednym o dzień poprzedni i jednym
+o dzień sprzed dwóch tygodni, czyli po upływie terminu na sprawozdania. Dane
+historyczne uzupełniam wyłącznie w nocy, w godzinach 1:00–6:00, po jednym
+zapytaniu naraz i nie więcej niż 50 zapytań na dobę. Pierwsza taka noc,
+21 września, zajęła 59 minut przy 25 zapytaniach; wynik z kolejki przychodził
+najczęściej po minucie, najdłużej po czternastu. Przy tym tempie uzupełnienie
+dziesięciu lat zajmie około czterdziestu nocy. Nie odpytuję systemu przy
+wejściach czytelników na stronę i nie wykonuję zapytań równolegle.
+
+Jeżeli uznają Państwo to tempo za zbyt wysokie, proszę o wskazanie wartości
+akceptowalnej — dostosuję ją w ciągu jednego dnia. Jeżeli możliwy byłby eksport
+zbiorczy danych historycznych poza kolejką, zrezygnuję z odpytywania historii
+w całości.
 
 Z wyrazami szacunku,
 
@@ -87,3 +99,10 @@ Z wyrazami szacunku,
 3. **Czy prosić o zgodę na powolny import** (np. jedno zapytanie na 10 minut
    w nocy) zamiast eksportu. Można dopisać — ale wtedy pismo prosi o dwie
    rzeczy naraz i łatwiej o odpowiedź „nie” na obie.
+4. **Akapit o tempie musi być prawdziwy w dniu wysłania.** Do 20.09 pismo
+   mówiło „ograniczam się do pojedynczych gmin pobieranych ręcznie” — od
+   21.09 to już nieprawda, bo serwer uzupełnia historię co noc. Akapit został
+   przepisany (25 → 50 zapytań na noc, decyzja z 21.09.2026). **Każda kolejna
+   zmiana tempa wymaga poprawienia tego akapitu przed wysłaniem.** Im dłużej
+   pismo leży, tym bardziej rozjeżdża się z tym, co robi serwer — a to jest
+   dokładnie ten błąd, który pismo prostuje.

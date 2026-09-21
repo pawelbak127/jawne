@@ -1,5 +1,5 @@
 [Unit]
-Description=jawne — SUDOP: historia nocą, najwyżej 25 zapytań, jedno naraz
+Description=jawne — SUDOP: historia nocą, najwyżej 50 zapytań, jedno naraz
 After=network-online.target
 Wants=network-online.target
 

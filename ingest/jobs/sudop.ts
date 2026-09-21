@@ -4,7 +4,7 @@
  *   npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
  *   npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17
  *   npx tsx ingest/jobs/sudop.ts --dzienny                     (serwer, co noc)
- *   npx tsx ingest/jobs/sudop.ts --historia --maks-zapytan=25  (serwer, co noc)
+ *   npx tsx ingest/jobs/sudop.ts --historia --maks-zapytan=50  (serwer, co noc)
  *   npx tsx ingest/jobs/sudop.ts --historia --plan             (co by pobral — bez pytania urzedu)
  *
  * Dwa tryby, dwa rozne koszty dla urzedu:
@@ -431,15 +431,17 @@ async function main(): Promise<void> {
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
-    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=25] [--okno=01:00-06:00]');
+    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=50] [--okno=01:00-06:00]');
     log('        --historia --plan pokazuje, co pobralaby noc — bez pytania urzedu.');
     process.exit(2);
   }
-  // Obietnica wobec UOKiK: 20–30 zapytan na noc. Limit w kodzie, zeby nie
-  // dalo sie go "podkrecic" samym parametrem w harmonogramie.
-  const maks = Number(arg('maks-zapytan') ?? 25);
-  if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 30)) {
-    throw new Error(`--maks-zapytan musi byc liczba 1–30 (jest: ${arg('maks-zapytan')})`);
+  // Tempo wobec UOKiK: decyzja Pawla z 21.09.2026 — 50 zapytan na noc
+  // (wczesniej 25). Limit siedzi w kodzie, zeby nie dalo sie go "podkrecic"
+  // samym parametrem w harmonogramie ani przez autopilota; podniesienie
+  // wymaga zmiany tutaj i wpisu w docs/plan.md.
+  const maks = Number(arg('maks-zapytan') ?? 50);
+  if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 50)) {
+    throw new Error(`--maks-zapytan musi byc liczba 1–50 (jest: ${arg('maks-zapytan')})`);
   }
   const okno = arg('okno') ?? '01:00-06:00';
   wOknie(new Date(), okno); // sprawdza zapis okna, zanim cokolwiek sie zacznie

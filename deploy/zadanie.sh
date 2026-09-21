@@ -4,8 +4,8 @@
 #
 #   zadanie.sh sejm | gus | fundusze | sudop-dzien | sudop-historia
 #
-# Tempo SUDOP (25 zapytan na noc, okno 01:00-06:00) to obietnica wobec
-# UOKiK, nie parametr do strojenia. Kod i tak nie przyjmie wiecej niz 30.
+# Tempo SUDOP (50 zapytan na noc, okno 01:00-06:00) to decyzja Pawla
+# z 21.09.2026, nie parametr do strojenia. Kod nie przyjmie wiecej niz 50.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -38,7 +38,7 @@ case "${1:-}" in
     sudop --dzienny
     ;;
   sudop-historia)
-    sudop --historia --maks-zapytan=25 --okno=01:00-06:00
+    sudop --historia --maks-zapytan=50 --okno=01:00-06:00
     ;;
   *)
     echo "Uzycie: $0 sejm|gus|fundusze|sudop-dzien|sudop-historia" >&2

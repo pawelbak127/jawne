@@ -6,7 +6,7 @@ ma oznaczone **gdzie**: 🖥 komputer (PowerShell w `C:\Projects\jawne`),
 
 Całość: ok. 1,5 godziny, z czego większość to czekanie.
 
-**Co dostajemy:** maszynę, która co noc pobiera SUDOP (dzień dzienny i 25 zapytań
+**Co dostajemy:** maszynę, która co noc pobiera SUDOP (dzień dzienny i 50 zapytań
 historii), codziennie Sejm, co miesiąc GUS i listy UE — i stronę testową pod
 adresem `https://<ip-z-myślnikami>.sslip.io`. Strona ma `noindex`, a nazwy osób
 fizycznych są ukryte (nie ma jeszcze `JAWNE_KONTAKT`).
@@ -242,7 +242,7 @@ strona odpowiada.
 | Kiedy (czas polski) | Zadanie | Zapytań do urzędu |
 |---|---|---|
 | codziennie 01:17 | SUDOP: wczoraj (świeży) i dzień sprzed 14 dni (ustalony; pomijany, jeśli już ustalony) | 0–2 |
-| codziennie 02:00 | SUDOP noc: przerwane zakresy → dni do odświeżenia → dziury → historia tygodniami wstecz | **najwyżej 25**, tylko 01:00–06:00 |
+| codziennie 02:00 | SUDOP noc: przerwane zakresy → dni do odświeżenia → dziury → historia tygodniami wstecz | **najwyżej 50**, tylko 01:00–06:00 |
 | codziennie 07:15 | Sejm: kluby, posłowie, głosowania, głosy, wyliczenia; w poniedziałki zdjęcia | — |
 | 3. dnia miesiąca 10:00 | GUS BDL: ludność i budżety gmin | — |
 | 5. dnia miesiąca 10:00 | listy projektów FE z dane.gov.pl | — |
