@@ -346,7 +346,8 @@ czyli **bez żadnego zapytania do urzędu**:
 - `instaluj.sh`: pierwszy przebieg bez bazy (Node 24.21.0, Caddy 2.11.4),
   drugi — idempotentny, `jawne aktualizuj` z `git pull`,
 - `jawne wgraj` z paczką 80 MB: budowa, strona, pięć timerów o właściwych
-  godzinach; świeżo włączony timer z `Persistent=true` **nie** uruchomił się od razu,
+  godzinach (uwaga: co do `Persistent=true` pomyliłem się — patrz sekcja
+  z 21.09 niżej),
 - `jawne sprawdz`: 6 × OK z `noindex`; strona przez Caddy (`Via: 1.1 Caddy`),
 - `jawne uruchom sudop-dzien`: 0 zapytań (dzień z pliku, drugi już ustalony),
   `success`, blokada zdjęta,
@@ -378,6 +379,25 @@ Instalacja na `t4g.small` (ARM), Ubuntu 24.04, `eu-central-1`:
 padał na `apt-get install` („Could not get lock … lock-frontend”). Od commita
 `d57e484` skrypt ustawia `DPkg::Lock::Timeout "600"` i czeka zamiast przerywać.
 
-**Wciąż nie sprawdzone:** prawdziwa kolejka UOKiK w nocy (pierwsza noc
-z timerami: 21.09.2026), restart po automatycznej aktualizacji, zakładanie
+**Wciąż nie sprawdzone:** restart po automatycznej aktualizacji, zakładanie
 swapu (obraz AWS ma już swap).
+
+## Zmierzone po pierwszej nocy — 21.09.2026
+
+- **Historia SUDOP: 21 → 61 dni w jedną noc** (2026-07-22 … 2026-09-20),
+  wszystkie wcześniejsze dziury zasypane, 381 031 przypadków w bazie,
+  `dane/` urosło z 389 MB do 609 MB. Przy tym tempie pełne 10 lat to ok.
+  3 miesiące.
+- **`Persistent=true` URUCHAMIA zadanie od razu przy włączeniu timera** —
+  w kontenerze wyciągnąłem wniosek odwrotny, bo sprawdziłem tabelę sekundę
+  po włączeniu. Na serwerze `jawne-gus` i `jawne-fundusze` (miesięczne)
+  wystartowały w chwili instalacji, 20.09 o 14:39. Z tego wynika praktyczna
+  rzecz: **każde `sudo jawne aktualizuj` odpala miesięczne importy**.
+- **`LAST -` przy timerze z `Persistent=false` nie znaczy „nie uruchomił
+  się”.** Ten czas żyje tylko w pamięci i ginie przy restarcie jednostki
+  (czyli przy każdym `aktualizuj`). Prawdę o przebiegu mówi
+  `sudo jawne logi <zadanie>`, nie kolumna LAST.
+- **`ExecMainExitTimestamp` bywa pusty dla `Type=oneshot`** i `sudo jawne
+  stan` pokazywał przez to „jeszcze nie uruchomione” przy zadaniach, które
+  się wykonały — łącznie z tymi, które padły. Teraz widok bierze
+  `InactiveEnterTimestamp` i `Result`, a niepowodzenia wypisuje osobno.

@@ -37,14 +37,33 @@ stan() {
   systemctl list-timers 'jawne-*' --no-pager | head -n -3
   echo
   echo "== Ostatnie przebiegi"
-  local z wynik kiedy
+  # ZMIERZONE 21.09.2026: ExecMainExitTimestamp bywa pusty dla Type=oneshot
+  # i ten widok pokazywal "jeszcze nie uruchomione" przy zadaniach, ktore
+  # sie wykonaly (a nawet padly). Miara konca przebiegu to
+  # InactiveEnterTimestamp; Result mowi, jak sie skonczyl.
+  local z wynik kiedy stanUslugi nieudanych=0
   for z in $ZADANIA; do
     wynik=$(systemctl show -p Result --value "jawne-$z.service")
-    kiedy=$(systemctl show -p ExecMainExitTimestamp --value "jawne-$z.service")
-    printf '   %-16s %-10s %s\n' "$z" "${kiedy:+$wynik}" "${kiedy:-jeszcze nie uruchomione}"
+    kiedy=$(systemctl show -p InactiveEnterTimestamp --value "jawne-$z.service")
+    stanUslugi=$(systemctl is-active "jawne-$z.service")
+    if [ "$stanUslugi" != inactive ] && [ "$stanUslugi" != failed ]; then
+      printf '   %-16s %-10s %s\n' "$z" "TRWA" "$stanUslugi"
+    elif [ -z "$kiedy" ]; then
+      printf '   %-16s %-10s %s\n' "$z" '' 'jeszcze nie uruchomione'
+    else
+      printf '   %-16s %-10s %s\n' "$z" "$wynik" "$kiedy"
+      [ "$wynik" = success ] || nieudanych=$((nieudanych + 1))
+    fi
   done
   printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona)"
+  if [ "$nieudanych" -gt 0 ]; then
+    echo "   UWAGA: $nieudanych zadan skonczylo sie inaczej niz 'success' — sudo jawne logi <zadanie>"
+  fi
   echo
+  echo "== Ostatnia noc SUDOP"
+  journalctl -u jawne-sudop-dzien -u jawne-sudop-historia --since -30h --no-pager 2>/dev/null \
+    | grep -oE '(Zapytan do urzedu[^,]*|Koniec na te noc: [^.]*|== (przerwane|dziura|historia|nieustalone): \S+)' \
+    | tail -8 | sed 's/^/   /' || true
   echo "== Dysk"
   df -h "$KATALOG" | tail -1 | awk '{print "   zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
   echo "   dane: $(du -sh "$KATALOG/dane" 2>/dev/null | cut -f1)"
