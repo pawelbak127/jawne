@@ -18,6 +18,33 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 | **Imiona w rejestrze PESEL** (MC, dane.gov.pl, zbiór 1667) | 2 324 imiona noszone przez ≥ 200 osób — do rozpoznawania nazw jednoosobowych firm | XLSX raz w roku; wynik w `src/lib/imiona-pesel.ts` | zmierzone |
 | **dane.gov.pl** `api.dane.gov.pl/1.4` | katalog zbiorów, adresy aktualnych plików | bez klucza; stronicowanie potrafi zwrócić ten sam zasób dwa razy | zmierzone |
 
+## SMUP — zmierzone 21.09.2026, klucz jest
+
+**System Monitorowania Usług Publicznych** (GUS), `https://api.smup.gov.pl/api/1.0.0/`.
+Klucz w nagłówku **`X-ClientId`** — tak samo jak w BDL; u nas `SMUP_KLUCZ`
+w `.env.local`. Specyfikacja: `https://api.smup.gov.pl/apidocs/pl/smup.json`
+(47 kB, 13 ścieżek). Sonda: `scripts/sondy/api-sonda.mjs --klucz-z=SMUP_KLUCZ`.
+
+Hierarchia: **obszar → usługa → wskaźnik → dane**.
+
+| Co zmierzone | Wynik |
+|---|---|
+| Obszary (`areas-list`) | **10**: Edukacja, Lokalna polityka społeczna, Kultura i rekreacja, Drogownictwo i Transport, Ochrona Środowiska, Gospodarowanie nieruchomościami, Inwestycje i budownictwo, Geodezja i kartografia, **Podatki i opłaty lokalne**, **Finanse JST** |
+| Wskaźniki (`indicator-list`) | **1 285**, każdy z wymiarem i pozycją (np. „Kwota podatku od nieruchomości od osób prawnych rozłożonego na raty… w relacji do dochodów z tytułu tego podatku”) |
+| Dane (`indicator-date-data?id=…&id-daty=…`) | wiersz: `{id, id-daty, id-teryt, id-flaga, wartosc, precyzja}` — **wartość na jednostkę terytorialną**. Jeden wskaźnik i rok to ok. 2 975 wierszy, czyli **jedno zapytanie** przy `page-size=5000` (maksimum) |
+| Lata (`data-dictionary`) | roczne, `id-daty` = `RRRR1231`, od **2010** |
+| Słownik TERYT (`teryt-dictionary`) | 4 597 jednostek w jednym zapytaniu; pola `woj`+`pow`+`gmn` składają się na **nasz 6-cyfrowy TERYT** (sprawdzone: Bełchatów miasto 10+01+01 = 100101, gmina wiejska = 100102), `rodz` jak w BDL — 1, 2, 3 to gminy, 4 i 5 to części gminy miejsko-wiejskiej (pułapka 30), są też 18 dzielnic Warszawy |
+| Flagi (`flag-dictionary`) | 6 wartości, w tym rozróżnienie, na którym nam zależy: **„Zjawisko nie wystąpiło” (zero) ≠ „Brak informacji, konieczność zachowania tajemnicy statystycznej” (null)** — zasada 4 z `CLAUDE.md` ma w tym źródle odpowiednik wprost |
+| Czas odpowiedzi | 0,2–0,4 s, bez kolejki |
+
+**Czego nie wiem:** limitów zapytań (specyfikacja ich nie podaje — w BDL są
+i są ciasne, więc zakładam, że tu też jakieś są), ani od którego roku każdy
+wskaźnik ma dane.
+
+**Koszt importu:** wszystkie 1 285 wskaźników × 15 lat to ok. 19 tys. zapytań —
+za dużo na start. Wybór 30 wskaźników, które opowiadają historię gminy,
+× 10 lat to **ok. 300 zapytań**, czyli jeden wieczór.
+
 ## Warte dołączenia — zmierzone albo sprawdzone
 
 | Źródło | Co daje | Dostęp | Uwagi |

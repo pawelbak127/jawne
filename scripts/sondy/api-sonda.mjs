@@ -2,15 +2,21 @@
  * Sonda: jedno zapytanie GET i opis tego, co NAPRAWDE przyszlo.
  *
  *   node scripts/sondy/api-sonda.mjs --uruchom https://api.sejm.gov.pl/sejm/term10/processes
- *   node scripts/sondy/api-sonda.mjs --uruchom ADRES --naglowek Accept=text/csv
+ *   node scripts/sondy/api-sonda.mjs --uruchom ADRES --naglowek=Accept=text/csv
+ *   node scripts/sondy/api-sonda.mjs --uruchom ADRES --klucz-z=SMUP_KLUCZ --naglowek-klucza=X-ClientId
+ *   node scripts/sondy/api-sonda.mjs --uruchom ADRES --klucz-z=SMUP_KLUCZ --parametr-klucza=apikey
  *
  * Bez `--uruchom` tylko wypisuje adres. Cala odpowiedz idzie do dane/sondy/,
  * na ekran trafia podsumowanie: status, typ, rozmiar, ksztalt.
  *
+ * KLUCZE: `--klucz-z=NAZWA` bierze wartosc ze zmiennej z `.env.local`, a nie
+ * z wiersza polecen — inaczej klucz zostaje w historii powloki i w logach.
+ * Sonda nigdy go nie wypisuje ani nie zapisuje w dane/sondy/.
+ *
  * Sluzy do przenoszenia zrodel z „z dokumentacji” do „zmierzone”
  * (docs/zrodla.md). Opisujemy tylko to, co widac w odpowiedzi.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KATALOG = join('dane', 'sondy');
@@ -18,10 +24,31 @@ const nl = (s = '') => process.stdout.write(`${s}\n`);
 const UA = 'jawne.pl/0.1 (serwis obywatelski; sonda pojedyncza)';
 
 const argi = process.argv.slice(2);
-const adres = argi.find((a) => a.startsWith('http'));
+const wartosc = (nazwa) => argi.find((a) => a.startsWith(`--${nazwa}=`))?.slice(nazwa.length + 3);
+let adres = argi.find((a) => a.startsWith('http'));
 const naglowki = Object.fromEntries(
   argi.filter((a) => a.startsWith('--naglowek=')).map((a) => a.slice('--naglowek='.length).split('=')),
 );
+
+// Klucz ze zmiennej srodowiskowej (.env.local), nigdy z wiersza polecen.
+const nazwaKlucza = wartosc('klucz-z');
+if (nazwaKlucza) {
+  if (existsSync('.env.local')) process.loadEnvFile('.env.local');
+  const klucz = process.env[nazwaKlucza]?.trim();
+  if (!klucz) {
+    nl(`Nie ma ${nazwaKlucza} w .env.local (ani w srodowisku). Dopisz tam linie ${nazwaKlucza}=…`);
+    process.exit(2);
+  }
+  nl(`Klucz z ${nazwaKlucza}: ustawiony (${klucz.length} znakow) — nie wypisuje go i nie zapisuje.`);
+  const wParametrze = wartosc('parametr-klucza');
+  if (wParametrze && adres) {
+    const u = new URL(adres);
+    u.searchParams.set(wParametrze, klucz);
+    adres = u.toString();
+  } else {
+    naglowki[wartosc('naglowek-klucza') ?? 'X-ClientId'] = klucz;
+  }
+}
 if (!adres) {
   nl('Podaj adres: node scripts/sondy/api-sonda.mjs --uruchom https://…');
   process.exit(2);

@@ -58,6 +58,12 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
      limit GUS: 1 000 zapytań na 12 godzin** — import 12 działów to ok. 480
      zapytań, wejdzie po odnowieniu limitu,
    - udziały gmin w PIT i CIT (zbiory 3313, 1878).
+   - **SMUP — klucz API jest od 21.09.2026, źródło zmierzone**
+     ([`zrodla.md`](zrodla.md)): 1 285 wskaźników w 10 obszarach, rocznie
+     od 2010, w podziale na gminy, z flagą odróżniającą zero od braku danych.
+     Obszary „Podatki i opłaty lokalne” oraz „Finanse JST” mówią o tym, czego
+     nie widać w budżecie: ile gmina umarza, ile traci na ulgach, jak ściąga
+     podatki. Do wyboru 20–30 wskaźników i import ok. 300 zapytań.
 2. ~~**Krajowy przegląd pomocy publicznej.**~~ **Zrobione 19.09.2026** —
    `/pomoc-publiczna`: kto udziela, na co, w jakiej formie, jakim firmom,
    województwa na mieszkańca, największe przypadki. Liczone WYŁĄCZNIE z dni
