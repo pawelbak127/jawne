@@ -45,7 +45,9 @@ stan() {
   for z in $ZADANIA; do
     wynik=$(systemctl show -p Result --value "jawne-$z.service")
     kiedy=$(systemctl show -p InactiveEnterTimestamp --value "jawne-$z.service")
-    stanUslugi=$(systemctl is-active "jawne-$z.service")
+    # is-active konczy sie kodem 3 dla nieaktywnej uslugi, a skrypt ma set -e:
+    # bez "|| true" caly widok urywal sie na naglowku (zmierzone 21.09).
+    stanUslugi=$(systemctl is-active "jawne-$z.service" || true)
     if [ "$stanUslugi" != inactive ] && [ "$stanUslugi" != failed ]; then
       printf '   %-16s %-10s %s\n' "$z" "TRWA" "$stanUslugi"
     elif [ -z "$kiedy" ]; then
@@ -55,15 +57,19 @@ stan() {
       [ "$wynik" = success ] || nieudanych=$((nieudanych + 1))
     fi
   done
-  printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona)"
+  printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona || true)"
   if [ "$nieudanych" -gt 0 ]; then
     echo "   UWAGA: $nieudanych zadan skonczylo sie inaczej niz 'success' — sudo jawne logi <zadanie>"
   fi
-  echo
-  echo "== Ostatnia noc SUDOP"
-  journalctl -u jawne-sudop-dzien -u jawne-sudop-historia --since -30h --no-pager 2>/dev/null \
+  local noc
+  noc=$(journalctl -u jawne-sudop-dzien -u jawne-sudop-historia --since -30h --no-pager 2>/dev/null \
     | grep -oE '(Zapytan do urzedu[^,]*|Koniec na te noc: [^.]*|== (przerwane|dziura|historia|nieustalone): \S+)' \
-    | tail -8 | sed 's/^/   /' || true
+    | tail -8 || true)
+  if [ -n "$noc" ]; then
+    echo
+    echo "== Ostatnia noc SUDOP"
+    echo "$noc" | sed 's/^/   /'
+  fi
   echo "== Dysk"
   df -h "$KATALOG" | tail -1 | awk '{print "   zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
   echo "   dane: $(du -sh "$KATALOG/dane" 2>/dev/null | cut -f1)"

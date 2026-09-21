@@ -346,8 +346,8 @@ czyli **bez żadnego zapytania do urzędu**:
 - `instaluj.sh`: pierwszy przebieg bez bazy (Node 24.21.0, Caddy 2.11.4),
   drugi — idempotentny, `jawne aktualizuj` z `git pull`,
 - `jawne wgraj` z paczką 80 MB: budowa, strona, pięć timerów o właściwych
-  godzinach (uwaga: co do `Persistent=true` pomyliłem się — patrz sekcja
-  z 21.09 niżej),
+  godzinach; świeżo włączony timer z `Persistent=true` nie uruchomił zadania
+  od razu (potwierdzone na serwerze 21.09 dziennikiem, nie tabelą),
 - `jawne sprawdz`: 6 × OK z `noindex`; strona przez Caddy (`Via: 1.1 Caddy`),
 - `jawne uruchom sudop-dzien`: 0 zapytań (dzień z pliku, drugi już ustalony),
   `success`, blokada zdjęta,
@@ -388,11 +388,13 @@ swapu (obraz AWS ma już swap).
   wszystkie wcześniejsze dziury zasypane, 381 031 przypadków w bazie,
   `dane/` urosło z 389 MB do 609 MB. Przy tym tempie pełne 10 lat to ok.
   3 miesiące.
-- **`Persistent=true` URUCHAMIA zadanie od razu przy włączeniu timera** —
-  w kontenerze wyciągnąłem wniosek odwrotny, bo sprawdziłem tabelę sekundę
-  po włączeniu. Na serwerze `jawne-gus` i `jawne-fundusze` (miesięczne)
-  wystartowały w chwili instalacji, 20.09 o 14:39. Z tego wynika praktyczna
-  rzecz: **każde `sudo jawne aktualizuj` odpala miesięczne importy**.
+- **Kolumna LAST przy świeżo włączonym timerze `Persistent=true` to NIE jest
+  przebieg.** `jawne-gus` i `jawne-fundusze` pokazywały LAST 20.09 14:39:30
+  (czas instalacji), a w dzienniku **nie ma po nich ani jednej linijki** —
+  bo systemd zapisuje wtedy znacznik odniesienia, żeby nie nadrabiać
+  przebiegu, którego nigdy nie było. Najpierw wyciągnąłem z tego wniosek
+  odwrotny („timer wystartował od razu”) na podstawie samej tabeli; dziennik
+  go obalił. **LAST mówi o timerze, `sudo jawne logi` — o zadaniu.**
 - **`LAST -` przy timerze z `Persistent=false` nie znaczy „nie uruchomił
   się”.** Ten czas żyje tylko w pamięci i ginie przy restarcie jednostki
   (czyli przy każdym `aktualizuj`). Prawdę o przebiegu mówi
