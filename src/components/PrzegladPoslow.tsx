@@ -126,8 +126,9 @@ export function PrzegladPoslow({
         <ul className="grid gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-3">
           {widoczni.map((p) => {
             const k = barwa(p.klub);
+            // min-w-0: element siatki bez tego nie zejdzie ponizej szerokosci tresci
             return (
-              <li key={p.slug}>
+              <li key={p.slug} className="min-w-0">
                 <Link
                   href={`/posel/${p.slug}`}
                   className="group flex items-center gap-3 rounded-xl border border-kreska bg-papier-2 p-3 transition-all hover:border-kreska-2 hover:shadow-karta"
@@ -135,7 +136,8 @@ export function PrzegladPoslow({
                   <Portret slug={p.slug} imieNazwisko={p.nazwa} maZdjecie={p.maZdjecie} rozmiar="maly" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium group-hover:text-akcent">{p.nazwa}</span>
-                    <span className="mt-0.5 flex items-center gap-1.5 text-xs text-atrament-2">
+                    {/* min-w-0: bez tego truncate w srodku nie dziala i kafelek rozpycha strone */}
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-atrament-2">
                       {k ? (
                         <span
                           className="miejsce-probka h-2 w-2 shrink-0 rounded-full"

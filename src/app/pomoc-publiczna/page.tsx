@@ -94,7 +94,7 @@ export default function StronaPomocy() {
             w Warszawie podnosi wynik województwa mazowieckiego, nawet gdy zakład ma gdzie indziej.
           </p>
         </div>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
             <p className="text-sm font-medium">Jakie firmy dostają pomoc</p>
             <ul className="mt-3 divide-y divide-kreska">

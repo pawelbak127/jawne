@@ -105,7 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link
                   key={p.adres}
                   href={p.adres}
-                  className="rounded-lg px-1.5 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
+                  className="rounded-lg px-1 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
                 >
                   {p.krotka ? (
                     <>

@@ -23,13 +23,16 @@ export function SlupkiLat({ tytul, wiersze, szerokaEtykieta = false }: {
           <li
             key={w.rok}
             title={`${w.rok}: ${zlote(w.wartosc)}`}
-            className={`grid ${szerokaEtykieta ? 'grid-cols-[10.5rem_1fr_4rem]' : 'grid-cols-[3rem_1fr_6rem]'} items-center gap-3 text-sm`}
+            // minmax(0, …) zamiast golej szerokosci: bez tego dluga nazwa (np.
+            // "zachodniopomorskie") rozpycha siatke i cala strona daje sie
+            // przesunac w bok na telefonie (ZMIERZONE 22.09.2026: 479 px z 390).
+            className={`grid ${szerokaEtykieta ? 'grid-cols-[minmax(0,10.5rem)_1fr_minmax(0,4rem)]' : 'grid-cols-[minmax(0,3rem)_1fr_minmax(0,6rem)]'} items-center gap-3 text-sm`}
           >
-            <span className="liczby text-atrament-2">{w.rok}</span>
+            <span className="liczby min-w-0 truncate text-atrament-2">{w.rok}</span>
             <span className="h-2.5 overflow-hidden rounded-full bg-papier-3">
               <span className="block h-full rounded-full bg-akcent" style={{ width: `${((w.wartosc ?? 0) / max) * 100}%` }} />
             </span>
-            <span className="liczby text-right text-xs">{zlote(w.wartosc)}</span>
+            <span className="liczby min-w-0 text-right text-xs">{zlote(w.wartosc)}</span>
           </li>
         ))}
       </ul>

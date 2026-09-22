@@ -45,7 +45,10 @@ export default function StronaStanu() {
         zweryfikowania niż taki, który mówi wprost, gdzie ma dziury.
       </p>
 
-      <table className="mt-8 w-full text-sm">
+      {/* Trzy kolumny z długą treścią: na telefonie przewija się w swoim
+          kontenerze, zamiast rozpychać całą stronę (zmierzone: 763 px z 390). */}
+      <div className="mt-8 overflow-x-auto">
+      <table className="w-full min-w-[30rem] text-sm">
         <thead>
           <tr className="border-b border-kreska text-left text-atrament-2">
             <th className="py-2 font-medium">Zbiór</th>
@@ -66,6 +69,7 @@ export default function StronaStanu() {
           ))}
         </tbody>
       </table>
+      </div>
 
       <div className="mt-8 rounded-2xl border border-kreska bg-papier-2 p-5">
         <h2 className="font-medium">Głosy imienne</h2>

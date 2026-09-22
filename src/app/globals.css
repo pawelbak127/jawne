@@ -110,6 +110,10 @@
     background: var(--papier);
     color: var(--atrament);
     font-family: var(--font-tekst);
+    /* ZMIERZONE 22.09.2026 w ramce 390 px: „mikroprzedsiębiorstwa” nie mieściło
+       się w kolumnie 107 px i rozpychało stronę do 479 px. Długie słowo ma się
+       złamać, a nie przesuwać całej strony w bok. */
+    overflow-wrap: break-word;
     font-feature-settings: "cv05" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
   }
