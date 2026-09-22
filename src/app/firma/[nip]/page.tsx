@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, przypadkiFirmy, zrodloImportu } from '@/lib/dane';
+import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zrodloImportu } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna } from '@/lib/prywatnosc';
@@ -63,6 +63,11 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
           <Link href={`/gmina/${f.teryt}`} className="hover:text-akcent">
             {f.gmina_rodzaj === 'gmina' ? `gmina ${f.gmina}` : f.gmina}
           </Link>
+        ) : f.teryt === TERYT_WARSZAWY ? (
+          // Warszawa jest w SUDOP jednym miastem (146501), a w danych PKW —
+          // osiemnastoma dzielnicami, więc nie ma dla niej naszej strony gminy.
+          // Nazwę znamy i ją podajemy; odnośnika nie zmyślamy.
+          'Warszawa'
         ) : (
           'beneficjent pomocy publicznej'
         )}
@@ -144,7 +149,13 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
       </section>
 
       <p className="mt-10 text-sm text-atrament-2">
-        {f.teryt ? (
+        {/*
+          ZMIERZONE 22.09.2026: sam `f.teryt` nie wystarczy. Firmy z Warszawy
+          mają teryt 146501, którego NIE MA w naszej tabeli gmin (PKW dzieli
+          Warszawę na 18 dzielnic) — wychodziło z tego „w gminie null” i odnośnik
+          do nieistniejącej strony. Dotyczy 5 484 przypadków pomocy.
+        */}
+        {f.teryt && f.gmina ? (
           <Link href={`/gmina/${f.teryt}`} className="text-akcent underline underline-offset-4 hover:no-underline">
             {`Zobacz wszystkie publiczne pieniądze w gminie ${f.gmina} →`}
           </Link>

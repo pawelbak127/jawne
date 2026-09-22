@@ -97,12 +97,19 @@ export default function StronaPomocy() {
         <div className="min-w-0 space-y-4">
           <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
             <p className="text-sm font-medium">Jakie firmy dostają pomoc</p>
+            {/*
+              ZMIERZONE 22.09.2026 na telefonie: trzy kolumny o stałej szerokości
+              (96 + 48 px plus odstępy) nie mieszczą się w karcie na 390 px —
+              nazwa wielkości dostawała kilkanaście pikseli i łamała się po jednej
+              literze, czyli wyglądała jak pionowy napis. Na wąskim ekranie nazwa
+              bierze całą linię, a liczby schodzą do drugiej.
+            */}
             <ul className="mt-3 divide-y divide-kreska">
               {p.wielkosc.filter((w) => w.kod && WIELKOSC[w.kod]).map((w) => (
-                <li key={w.kod} className="flex items-baseline gap-4 py-2 text-sm">
-                  <span className="min-w-0 flex-1">{WIELKOSC[w.kod!]}</span>
+                <li key={w.kod} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-2 text-sm">
+                  <span className="min-w-0 basis-full sm:flex-1 sm:basis-auto">{WIELKOSC[w.kod!]}</span>
                   <span className="liczby shrink-0 text-xs text-atrament-3">{`${zOdmiana(w.przypadkow, 'przypadek', 'przypadki', 'przypadków')}`}</span>
-                  <span className="liczby w-24 shrink-0 text-right font-medium">{zlote(w.brutto)}</span>
+                  <span className="liczby ml-auto shrink-0 text-right font-medium sm:ml-0 sm:w-24">{zlote(w.brutto)}</span>
                   <span className="liczby w-12 shrink-0 text-right text-xs text-atrament-2">
                     {wszystkichWielkosc ? `${Math.round((100 * (w.brutto ?? 0)) / wszystkichWielkosc)}%` : '—'}
                   </span>
