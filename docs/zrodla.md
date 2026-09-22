@@ -41,9 +41,36 @@ Hierarchia: **obszar → usługa → wskaźnik → dane**.
 i są ciasne, więc zakładam, że tu też jakieś są), ani od którego roku każdy
 wskaźnik ma dane.
 
-**Koszt importu:** wszystkie 1 285 wskaźników × 15 lat to ok. 19 tys. zapytań —
-za dużo na start. Wybór 30 wskaźników, które opowiadają historię gminy,
-× 10 lat to **ok. 300 zapytań**, czyli jeden wieczór.
+**Zaimportowane 22.09.2026** (`npm run import smup`, lista miar w
+`ingest/lib/smup.ts`): 15 miar × 10 lat (2016–2025) = **364 119 wartości dla
+2 477 gmin**, 86 sekund. Miary: wynik budżetu, nadwyżka operacyjna, dług
+i dług do dochodów, udział wydatków majątkowych i wynagrodzeń, pokrycie
+inwestycji dochodami majątkowymi oraz osiem miar podatku od nieruchomości
+(dochód na mieszkańca, udział w dochodach własnych, dochody utracone przez
+obniżone stawki, zwolnienia uchwalone przez radę, umorzenia i zaległości —
+osobno dla osób prawnych i fizycznych).
+
+**Zmierzone przy imporcie:**
+
+- **Wskaźnik bez danych za dany rok oddaje `HTTP 404`, nie pustą tablicę.**
+  Wskaźnik 16 ma 2024, nie ma 2025; budżetowe mają oba. Import traktuje to
+  jak odpowiedź (raportuje 3 pary miara-rok), nie jak awarię.
+- **Osobne wskaźniki dla gmin i dla miast na prawach powiatu.** Wariant
+  „…budżetów gmin” oddaje 2 477 wierszy — bez 66 miast. Miary budżetowe
+  składamy z dwóch wskaźników; podatkowe mają jeden wspólny (2 971 wierszy,
+  wszystkie szczeble).
+- **Kontrola drugą drogą:** udział wydatków majątkowych z SMUP wobec tego
+  samego udziału policzonego z budżetów GUS BDL — 2 477 gmin, średnia różnica
+  **0,25 pkt proc.**, maksymalna 0,50. Dokładnie tyle, ile daje zaokrąglenie
+  SMUP do pełnych procent: mapowanie TERYT i skala są poprawne.
+- **5 gmin ze słownika SMUP nie ma w naszej liście PKW 2023** (120713, 080910,
+  320304, 022109, 200216) — raportowane i pomijane, nie po cichu.
+- Flagi w danych: 332 093 „zjawisko wystąpiło”, 29 403 „nie wystąpiło”
+  (zmierzone zero), 2 181 „brak informacji” (zapisane jako `null`), 442
+  „wartość mniejsza niż format”.
+
+**Koszt pełnego importu** wszystkich 1 285 wskaźników × 15 lat to ok. 19 tys.
+zapytań — dlatego bierzemy wybór, nie całość.
 
 ## Warte dołączenia — zmierzone albo sprawdzone
 

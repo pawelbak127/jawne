@@ -11,7 +11,7 @@
 import { otworz, zalozSchemat, odnotujImport, SCHEMAT_FE } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
-import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl } from '../lib/http.js';
+import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl, kluczSmup } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
@@ -26,6 +26,10 @@ import {
   type GminaDoDopasowania, type Okres,
 } from '../lib/fe.js';
 import { join } from 'node:path';
+import {
+  adresDanych, adresLat, adresSlownikaTeryt, adresWskaznikow, FLAGI_ZNANE, MIARY,
+  sprawdzPorcjeSmup, terytGminy, wartoscDoZapisu, type JednostkaSmup, type WierszSmup,
+} from '../lib/smup.js';
 import type { DatabaseSync } from 'node:sqlite';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
@@ -815,6 +819,117 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   );
 }
 
+/**
+ * SMUP (GUS): wskazniki finansowe i podatkowe gmin, rocznie.
+ *
+ * Budzet z BDL mowi, ILE gmina wydala; SMUP mowi, jak jej idzie — ile umarza,
+ * ile traci na wlasnych ulgach, ile ma dlugu, czy dochody biezace pokrywaja
+ * wydatki biezace. Lista miar i ich uzasadnienie: `ingest/lib/smup.ts`.
+ *
+ * Jeden wskaznik i rok to JEDNO zapytanie (ok. 3 tys. wierszy przy
+ * `page-size=5000`), wiec pelny import to ok. 240 zapytan. Limitow SMUP nie
+ * znamy — stad przerwa 400 ms i pomijanie tego, co juz kompletne w bazie
+ * (`--od-nowa` pobiera znowu, `--lata=N` zaweza zakres).
+ */
+async function importSmup(db: DatabaseSync): Promise<void> {
+  if (!kluczSmup()) throw new Error('Brak SMUP_KLUCZ — bez klucza SMUP nie odda danych (.env.local albo /etc/jawne/jawne.env)');
+  const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? 10);
+  const odNowa = process.argv.includes('--od-nowa');
+  log(`-> SMUP: ${MIARY.length} miar gmin, ostatnie ${ileLat} lat`);
+
+  // Slownik terytorialny: id SMUP -> nasz szesciocyfrowy TERYT.
+  const slownik = await pobierzJson<{ data: JednostkaSmup[] }>(adresSlownikaTeryt());
+  const teryty = new Map<number, string>();
+  for (const u of slownik.data ?? []) {
+    const t = terytGminy(u);
+    if (t) teryty.set(u['id-teryt'], t);
+  }
+  const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
+  znane.add(TERYT_WARSZAWY);
+  const obce = [...new Set([...teryty.values()].filter((t) => !znane.has(t)))];
+  log(`   slownik SMUP: ${teryty.size} gmin, z tego ${teryty.size - obce.length} znamy`);
+  if (obce.length) log(`   UWAGA - ${obce.length} gmin SMUP spoza naszej listy (np. ${obce.slice(0, 5).join(', ')}) — pomijam`);
+
+  // Nazwy urzedowe bierzemy z rejestru, zeby nie przepisywac ich recznie.
+  const rejestr = await pobierzJson<{ data: { id: number; 'nazwa-wskaznika': string }[] }>(adresWskaznikow());
+  const nazwy = new Map((rejestr.data ?? []).map((w) => [w.id, w['nazwa-wskaznika']]));
+  const daty = await pobierzJson<{ data: { rok: number }[] }>(adresLat());
+  const lata = [...new Set((daty.data ?? []).map((d) => d.rok))].sort((a, b) => b - a).slice(0, ileLat);
+  log(`   lata: ${lata[lata.length - 1]}–${lata[0]}`);
+
+  const wstawMiare = db.prepare(
+    `insert into smup_miary(klucz, etykieta, jednostka, wskazniki, nazwy) values (?,?,?,?,?)
+     on conflict(klucz) do update set etykieta=excluded.etykieta, jednostka=excluded.jednostka,
+       wskazniki=excluded.wskazniki, nazwy=excluded.nazwy`,
+  );
+  db.exec('begin');
+  for (const m of MIARY) {
+    wstawMiare.run(m.klucz, m.etykieta, m.jednostka, m.zrodla.join(','), m.zrodla.map((id) => nazwy.get(id) ?? '?').join(' | '));
+  }
+  db.exec('commit');
+
+  const wstaw = db.prepare(
+    `insert into smup_dane(teryt, klucz, rok, wartosc, flaga, precyzja) values (?,?,?,?,?,?)
+     on conflict(teryt, klucz, rok) do update set wartosc=excluded.wartosc, flaga=excluded.flaga, precyzja=excluded.precyzja`,
+  );
+  const nieznaneFlagi = new Map<number, number>();
+  const bezDanych: string[] = [];
+  let zapytan = 0;
+  let pominietych = 0;
+
+  for (const miara of MIARY) {
+    let wMiary = 0;
+    for (const rok of lata) {
+      const juz = (db.prepare('select count(*) as c from smup_dane where klucz = ? and rok = ?').get(miara.klucz, rok) as { c: number }).c;
+      if (!odNowa && juz >= 2400) {
+        pominietych++;
+        continue;
+      }
+      let wRoku = 0;
+      for (const id of miara.zrodla) {
+        for (let strona = 1; strona <= 5; strona++) {
+          // ZMIERZONE 21.09.2026: wskaznik bez danych za dany rok oddaje
+          // HTTP 404 (nie pusta tablice). Wskaznik 16 ma 2024, nie ma 2025,
+          // a wskazniki budzetowe maja oba. To odpowiedz, nie awaria —
+          // raportujemy i idziemy dalej (wzorzec 2 z CLAUDE.md).
+          let porcja: { data: WierszSmup[]; 'page-count': number };
+          try {
+            porcja = await pobierzJson<{ data: WierszSmup[]; 'page-count': number }>(adresDanych(id, rok, strona));
+          } catch (e) {
+            if (e instanceof Error && e.message.includes('HTTP 404')) break;
+            throw e;
+          }
+          zapytan++;
+          const wiersze = porcja.data ?? [];
+          const problemy = sprawdzPorcjeSmup(wiersze, id, rok);
+          if (problemy.length) throw new Error(`SMUP ${miara.klucz} (wskaznik ${id}, ${rok}): ${problemy.slice(0, 5).join('; ')}`);
+          db.exec('begin');
+          for (const w of wiersze) {
+            const teryt = teryty.get(w['id-teryt']);
+            if (!teryt || !znane.has(teryt)) continue;
+            if (!FLAGI_ZNANE.has(w['id-flaga'])) nieznaneFlagi.set(w['id-flaga'], (nieznaneFlagi.get(w['id-flaga']) ?? 0) + 1);
+            wstaw.run(teryt, miara.klucz, rok, wartoscDoZapisu(w), w['id-flaga'], w.precyzja ?? null);
+            wRoku++;
+            wMiary++;
+          }
+          db.exec('commit');
+          await new Promise((ok) => setTimeout(ok, 400));
+          if (strona >= (porcja['page-count'] ?? 1)) break;
+        }
+      }
+      if (!wRoku) bezDanych.push(`${miara.klucz} ${rok}`);
+    }
+    log(`   ${miara.klucz.padEnd(24)} ${wMiary ? `${wMiary} wierszy` : 'bez nowych danych'}`);
+  }
+
+  const gmin = (db.prepare('select count(distinct teryt) as c from smup_dane').get() as { c: number }).c;
+  const razem = (db.prepare('select count(*) as c from smup_dane').get() as { c: number }).c;
+  log(`   razem w bazie: ${razem} wartosci dla ${gmin} gmin (${zapytan} zapytan, pominietych par: ${pominietych})`);
+  if (bezDanych.length) log(`   bez danych w zrodle: ${bezDanych.length} par miara-rok (np. ${bezDanych.slice(0, 3).join(', ')})`);
+  if (nieznaneFlagi.size) log(`   UWAGA - flagi spoza slownika: ${[...nieznaneFlagi].map(([f, n]) => `${f}x${n}`).join(', ')}`);
+  odnotujImport(db, 'smup', razem, `${MIARY.length} miar, lata ${lata[lata.length - 1]}–${lata[0]}, gmin ${gmin}`);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -824,6 +939,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   okregi: importOkregow,
   ludnosc: importLudnosci,
   budzety: importBudzetow,
+  smup: importSmup,
   fundusze: importFunduszy,
   wyliczenia,
 };

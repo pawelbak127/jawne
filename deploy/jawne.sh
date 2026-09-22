@@ -8,7 +8,7 @@
 #   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
-#   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST (pyta o wartosc)
+#   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST (pyta o wartosc)
 #   sudo jawne kopia         baza + odpowiedzi SUDOP do /tmp, do sciagniecia przez scp
 set -euo pipefail
 
@@ -143,8 +143,8 @@ kopia() {
 ustaw() {
   local nazwa=${1:-} wartosc tmp
   case "$nazwa" in
-    GUS_BDL_KLUCZ|JAWNE_KONTAKT|JAWNE_HOST) ;;
-    *) echo "Co ustawic? GUS_BDL_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST"; exit 2 ;;
+    GUS_BDL_KLUCZ|SMUP_KLUCZ|JAWNE_KONTAKT|JAWNE_HOST) ;;
+    *) echo "Co ustawic? GUS_BDL_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST"; exit 2 ;;
   esac
   read -rp "Wartosc $nazwa (Enter = pusta): " wartosc
   # Plik czyta i systemd, i bash (set -a; . plik) — spacje i cudzyslowy by go zepsuly.
@@ -161,7 +161,7 @@ ustaw() {
   if [ "$nazwa" = JAWNE_HOST ]; then wpisz JAWNE_ADRES_SERWISU "${wartosc:+https://$wartosc}"; fi
   echo "Zapisane w $USTAWIENIA."
   case "$nazwa" in
-    GUS_BDL_KLUCZ) echo "Import GUS wezmie go przy nastepnym uruchomieniu (sudo jawne uruchom gus)." ;;
+    GUS_BDL_KLUCZ|SMUP_KLUCZ) echo "Import GUS wezmie go przy nastepnym uruchomieniu (sudo jawne uruchom gus)." ;;
     *) echo "Strona zobaczy zmiane po przebudowie: sudo jawne aktualizuj" ;;
   esac
 }

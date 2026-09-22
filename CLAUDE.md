@@ -80,6 +80,7 @@ npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubó
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 npm run import ludnosc                     # GUS BDL, ~10 s
 npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
+npm run import smup                        # wskazniki SMUP gmin (SMUP_KLUCZ), ~4 min
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 

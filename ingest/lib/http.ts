@@ -36,6 +36,13 @@ const spij = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const kluczBdl = (): string | null => process.env.GUS_BDL_KLUCZ?.trim() || null;
 
 /**
+ * Klucz SMUP (`SMUP_KLUCZ` w `.env.local`). SMUP to ta sama rodzina co BDL
+ * — klucz idzie w naglowku `X-ClientId` — ale to osobna rejestracja i osobny
+ * klucz. Bez niego API odpowiada, ale nie danymi.
+ */
+export const kluczSmup = (): string | null => process.env.SMUP_KLUCZ?.trim() || null;
+
+/**
  * Przerwa miedzy zapytaniami do BDL, dobrana do limitu 15-minutowego
  * (api.stat.gov.pl/Home/BdlApi): anonimowo 100 zapytan / 15 min, z kluczem 500.
  * Najciasniejszy jest wlasnie limit 15-minutowy — przerwa 1 s (60 na minute)
@@ -75,6 +82,8 @@ export async function pobierz(url: string, opcje: { json?: boolean } = {}): Prom
             // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
             // Wysylamy go tylko do BDL — innym serwerom nic po nim.
             ...(kluczBdl() && url.startsWith('https://bdl.stat.gov.pl/') ? { 'X-ClientId': kluczBdl()! } : {}),
+            // SMUP bierze klucz w tym samym naglowku, ale to inny klucz.
+            ...(kluczSmup() && url.startsWith('https://api.smup.gov.pl/') ? { 'X-ClientId': kluczSmup()! } : {}),
           },
           signal: AbortSignal.timeout(45_000),
         });

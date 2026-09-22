@@ -1,5 +1,5 @@
 [Unit]
-Description=jawne — GUS BDL: ludność i budżety gmin
+Description=jawne — GUS: ludność, budżety gmin (BDL) i wskaźniki SMUP
 After=network-online.target
 Wants=network-online.target
 

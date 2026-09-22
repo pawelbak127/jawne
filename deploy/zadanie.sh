@@ -29,7 +29,7 @@ case "${1:-}" in
     exec "$TSX" ingest/jobs/import.ts $etapy wyliczenia
     ;;
   gus)
-    exec "$TSX" ingest/jobs/import.ts ludnosc budzety wyliczenia
+    exec "$TSX" ingest/jobs/import.ts ludnosc budzety smup wyliczenia
     ;;
   fundusze)
     exec "$TSX" ingest/jobs/import.ts fundusze wyliczenia

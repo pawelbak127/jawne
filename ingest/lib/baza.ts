@@ -319,6 +319,34 @@ create table if not exists budzety_gmin (
   primary key (teryt, rok)
 );
 
+/*
+ * SMUP (System Monitorowania Uslug Publicznych, GUS): wskazniki finansowe
+ * i podatkowe gmin, rocznie. Wartosc zostaje TAKA, JAK W REJESTRZE — procent
+ * jako procent, zlote jako zlote; jednostke trzyma smup_miary, a liczbe
+ * miejsc po przecinku samo zrodlo (kolumna precyzja).
+ * Pusta wartosc znaczy "brak informacji albo tajemnica statystyczna"
+ * (flaga 5), a nie zero — zasada 4 z CLAUDE.md.
+ */
+create table if not exists smup_miary (
+  klucz      text primary key,
+  etykieta   text not null,
+  jednostka  text not null,            -- 'procent' | 'zl_na_mieszkanca'
+  wskazniki  text not null,            -- id-ki SMUP, po przecinku
+  nazwy      text                      -- nazwy urzedowe wskaznikow, prosto z rejestru
+);
+
+create table if not exists smup_dane (
+  teryt      text not null,            -- 6 cyfr
+  klucz      text not null,
+  rok        integer not null,
+  wartosc    real,                     -- null = brak informacji (flaga 5)
+  flaga      integer not null,
+  precyzja   integer,
+  primary key (teryt, klucz, rok)
+);
+
+create index if not exists smup_dane_klucz_rok on smup_dane(klucz, rok);
+
 /* Tabele funduszy UE tworzy wylacznie etap "fundusze" (SCHEMAT_FE) — przebudowuje je w calosci. */
 create table if not exists import (
   co        text primary key,
