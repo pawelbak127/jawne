@@ -4,8 +4,8 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
-  poslowieOkregu, TERYT_WARSZAWY, zrodloImportu,
-  type BudzetGminy, type FunduszeWOkresie, type MedianaUe,
+  poslowieOkregu, smupGminy, TERYT_WARSZAWY, zrodloImportu,
+  type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { opisGminy } from '@/lib/wyszukiwanie';
@@ -22,6 +22,7 @@ const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
 const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
+const ZRODLO_SMUP = 'https://smup.gov.pl';
 const ZRODLO_GUS_INFLACJA = 'https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
@@ -71,6 +72,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const pomoc = pomocGminy(terytFunduszy);
   // Warszawa ma w BDL jeden budzet, nie 18 dzielnicowych — jak przy funduszach.
   const budzet = budzetGminy(terytFunduszy);
+  // Warszawa ma w SMUP jedna jednostke (146501) — dzielnica dostaje miasto.
+  const smup = smupGminy(terytFunduszy, g.wojewodztwo);
   const ludnoscDoPrzeliczen = dzielnica ? ludnoscWarszawy() : g.ludnosc;
   const poslowie = poslowieOkregu(g.okreg_nr).filter((p) => p.aktywny === 1);
   const listaKlubow = kluby();
@@ -126,6 +129,9 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       {budzet ? (
         <Budzet teryt={terytFunduszy} budzet={budzet} ludnosc={ludnoscDoPrzeliczen} wojewodztwo={g.wojewodztwo} dzielnica={dzielnica} />
       ) : null}
+
+      {/* ------------------------------------------------------------------ */}
+      {smup.length ? <Smup wartosci={smup} dzielnica={dzielnica} /> : null}
 
       {/* ------------------------------------------------------------------ */}
       <section className="mt-14">
@@ -232,6 +238,101 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
  */
 function rozniSie(a: number | null, b: number | null): boolean {
   return a !== null && b !== null && a > 0 && (a - b) / a > 0.01;
+}
+
+/**
+ * Liczba dokladnie tak, jak podaje ja rejestr — z jego wlasna precyzja
+ * i z jego wlasnym rozroznieniem zera od "mniej, niz umiemy zapisac".
+ *
+ * ZMIERZONE 22.09.2026: umorzenia sa podawane z czterema miejscami po
+ * przecinku, wiec zaokraglenie do dwoch zamienialoby 0,0006 % w zero.
+ * Z drugiej strony "0,0000 %" wyglada jak zero, a flaga 3 znaczy
+ * "wartosc mniejsza niz przyjety format" — to nie to samo.
+ */
+function liczbaSmup(wartosc: number | null, jednostka: string, precyzja: number | null, flaga = 1): string {
+  if (wartosc === null) return '—';
+  const miejsc = precyzja ?? 0;
+  const zapisz = (n: number) => (jednostka === 'zl_na_mieszkanca'
+    ? zlote(n)
+    : `${n.toLocaleString('pl-PL', { minimumFractionDigits: miejsc, maximumFractionDigits: miejsc })}%`);
+  if (flaga === 3) return `poniżej ${zapisz(10 ** -miejsc)}`;
+  // Flaga 2 to zmierzone zero ("zjawisko nie wystapilo") — piszemy je krotko.
+  if (wartosc === 0) return jednostka === 'zl_na_mieszkanca' ? '0 zł' : '0%';
+  return zapisz(wartosc);
+}
+
+const GRUPY_SMUP: { tytul: string; opis: string; klucze: string[] }[] = [
+  {
+    tytul: 'Budżet i dług',
+    opis: 'Czy dochody bieżące pokrywają wydatki bieżące, ile gmina jest winna i na co idą jej pieniądze.',
+    klucze: ['nadwyzka_operacyjna', 'wynik_budzetu', 'dlug', 'dlug_do_dochodow', 'udzial_majatkowych', 'pokrycie_majatkowych', 'udzial_wynagrodzen'],
+  },
+  {
+    tytul: 'Podatek od nieruchomości',
+    opis: 'Największy podatek, o którym decyduje sama gmina: ile przynosi, ile gmina z niego odpuszcza i ile nie wpływa.',
+    klucze: ['pn_na_mieszkanca', 'pn_udzial', 'pn_obnizone_stawki', 'pn_zwolnienia_rady', 'pn_umorzenia_prawne', 'pn_umorzenia_fizyczne', 'pn_zaleglosci_prawne', 'pn_zaleglosci_fizyczne'],
+  },
+];
+
+/**
+ * Wskazniki z SMUP (GUS). Budzet z BDL mowi, ILE gmina wydala; te liczby
+ * mowia, jak jej idzie. Kazda z mediana w wojewodztwie (zasada 9) i z rokiem,
+ * bo zrodlo publikuje poszczegolne wskazniki w roznym tempie.
+ */
+function Smup({ wartosci, dzielnica }: { wartosci: WartoscSmup[]; dzielnica: boolean }) {
+  const poKluczu = new Map(wartosci.map((w) => [w.klucz, w]));
+  const brakujace = wartosci.some((w) => w.wartosc === null);
+  return (
+    <section className="mt-14">
+      <h2 className="szryft text-3xl font-semibold">Finanse i podatki — jak gminie idzie</h2>
+      <p className="mt-2 max-w-3xl text-atrament-2">
+        {dzielnica
+          ? 'Dzielnice nie mają osobnych finansów — pokazujemy całą Warszawę.'
+          : 'Te liczby mówią co innego niż budżet: nie ile gmina wydała, tylko czy ją na to stać i ile własnego podatku odpuszcza.'}
+      </p>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {GRUPY_SMUP.map((grupa) => {
+          const wiersze = grupa.klucze.map((k) => poKluczu.get(k)).filter((w): w is WartoscSmup => Boolean(w));
+          if (!wiersze.length) return null;
+          return (
+            <div key={grupa.tytul} className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+              <p className="font-medium">{grupa.tytul}</p>
+              <p className="mt-1 text-xs text-atrament-2">{grupa.opis}</p>
+              <ul className="mt-4 divide-y divide-kreska">
+                {wiersze.map((w) => (
+                  <li key={w.klucz} className="py-3">
+                    <div className="flex items-baseline gap-3">
+                      <span className="min-w-0 flex-1 text-sm leading-snug" title={w.nazwy ?? undefined}>
+                        {w.etykieta}
+                      </span>
+                      <span className="liczby shrink-0 text-right font-medium">
+                        {liczbaSmup(w.wartosc, w.jednostka, w.precyzja, w.flaga)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-atrament-3">
+                      {`${w.rok} r.`}
+                      {w.mediana !== null
+                        ? ` · mediana w województwie (${zOdmiana(w.gmin, 'gmina', 'gminy', 'gmin')}): ${liczbaSmup(w.mediana, w.jednostka, w.precyzja)}`
+                        : ''}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-relaxed text-atrament-3">
+        <span>
+          Wartości podane tak, jak publikuje je rejestr — z jego własną dokładnością.
+          {brakujace ? ' Półpauza znaczy, że źródło nie podaje wartości (brak informacji albo tajemnica statystyczna), a nie że wynosi zero.' : ''}
+        </span>
+        <Zrodlo adres={ZRODLO_SMUP} etykieta="System Monitorowania Usług Publicznych (GUS)" />
+      </p>
+    </section>
+  );
 }
 
 function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {

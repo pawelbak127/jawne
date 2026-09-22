@@ -811,6 +811,92 @@ export function porownanieBudzetu(wojewodztwo: string, rok: number): PorownanieB
   };
 }
 
+export type WartoscSmup = {
+  klucz: string;
+  etykieta: string;
+  /** 'procent' albo 'zl_na_mieszkanca' — decyduje o zapisie liczby */
+  jednostka: string;
+  /** nazwy urzedowe wskaznikow SMUP, prosto z rejestru */
+  nazwy: string | null;
+  /** rok, za ktory jest ta wartosc — kazda miara ma swoj, zrodlo publikuje je w roznym tempie */
+  rok: number;
+  /** null znaczy "brak informacji albo tajemnica statystyczna" (flaga 5), nie zero */
+  wartosc: number | null;
+  precyzja: number | null;
+  flaga: number;
+  /** mediana w wojewodztwie w tym samym roku */
+  mediana: number | null;
+  /** ile gmin zlozylo sie na mediane — mianownik porownania */
+  gmin: number;
+};
+
+/**
+ * Wskazniki SMUP dla gminy, kazdy za NAJNOWSZY ROK, ktory ma w zrodle,
+ * wraz z mediana w wojewodztwie za ten sam rok (zasada 9: liczba z punktem
+ * odniesienia).
+ *
+ * Kazdy wiersz niesie wlasny rok, bo zrodlo publikuje wskazniki w roznym
+ * tempie: ZMIERZONE 22.09.2026 — budzetowe maja 2025, trzy podatkowe koncza
+ * sie na 2024. Jeden wspolny rok albo gubilby swieze dane, albo pokazywalby
+ * dziury tam, gdzie zrodlo jeszcze nie opublikowalo.
+ *
+ * Mediane liczymy TYLKO z gmin, ktore maja wartosc — gmina bez pomiaru to
+ * brak, nie zero (zrodlo odroznia jedno od drugiego flaga).
+ */
+export function smupGminy(teryt: string, wojewodztwo: string): WartoscSmup[] {
+  return bezTabeli(() => {
+    const wiersze = wszystkie<{
+      klucz: string; etykieta: string; jednostka: string; nazwy: string | null;
+      rok: number; wartosc: number | null; precyzja: number | null; flaga: number;
+    }>(
+      `select d.klucz, m.etykieta, m.jednostka, m.nazwy, d.rok, d.wartosc, d.precyzja, d.flaga
+         from smup_dane d
+         join smup_miary m on m.klucz = d.klucz
+         join (select klucz, max(rok) as rok from smup_dane where teryt = ? group by klucz) o
+           on o.klucz = d.klucz and o.rok = d.rok
+        where d.teryt = ?`,
+      teryt, teryt,
+    );
+    if (!wiersze.length) return [];
+
+    const odRoku = Math.min(...wiersze.map((w) => w.rok));
+    const wWojewodztwie = wszystkie<{ klucz: string; rok: number; wartosc: number }>(
+      `select d.klucz, d.rok, d.wartosc from smup_dane d
+         join gminy g on g.teryt = d.teryt
+        where g.wojewodztwo = ? and d.rok >= ? and d.wartosc is not null`,
+      wojewodztwo, odRoku,
+    );
+    const poKluczu = new Map<string, number[]>();
+    for (const w of wWojewodztwie) {
+      const klucz = `${w.klucz}|${w.rok}`;
+      const lista = poKluczu.get(klucz) ?? [];
+      lista.push(w.wartosc);
+      poKluczu.set(klucz, lista);
+    }
+    const mediana = (liczby: number[]): number => {
+      const l = [...liczby].sort((a, b) => a - b);
+      const s = Math.floor(l.length / 2);
+      return l.length % 2 ? l[s]! : (l[s - 1]! + l[s]!) / 2;
+    };
+
+    return wiersze.map((w) => {
+      const wojewodzkie = poKluczu.get(`${w.klucz}|${w.rok}`) ?? [];
+      return { ...w, mediana: wojewodzkie.length ? mediana(wojewodzkie) : null, gmin: wojewodzkie.length };
+    });
+  }, []);
+}
+
+/** Jedna miara SMUP rok po roku — do wykresu na stronie gminy. */
+export function historiaSmup(teryt: string, klucz: string): { rok: number; wartosc: number | null }[] {
+  return bezTabeli(
+    () => wszystkie<{ rok: number; wartosc: number | null }>(
+      'select rok, wartosc from smup_dane where teryt = ? and klucz = ? order by rok',
+      teryt, klucz,
+    ),
+    [],
+  );
+}
+
 export type Firma = {
   nip: string;
   nazwa: string;

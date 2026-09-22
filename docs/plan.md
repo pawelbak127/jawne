@@ -60,8 +60,9 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    - udziały gmin w PIT i CIT (zbiory 3313, 1878).
    - ~~**SMUP — import danych**~~ **zrobione 22.09.2026**: `npm run import smup`,
      364 119 wartości dla 2 477 gmin (15 miar × 10 lat), sprawdzone drugą drogą
-     wobec budżetów BDL — średnia różnica 0,25 pkt proc. **Zostaje sekcja na
-     stronie gminy: dane są, interfejsu jeszcze nie ma.**
+     wobec budżetów BDL — średnia różnica 0,25 pkt proc. **Sekcja „Finanse
+     i podatki — jak gminie idzie” na stronie gminy: zrobiona 22.09.2026**
+     (15 miar w dwóch grupach, każda z własnym rokiem i medianą w województwie).
    - **SMUP — klucz API jest od 21.09.2026, źródło zmierzone**
      ([`zrodla.md`](zrodla.md)): 1 285 wskaźników w 10 obszarach, rocznie
      od 2010, w podziale na gminy, z flagą odróżniającą zero od braku danych.
