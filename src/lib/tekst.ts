@@ -51,3 +51,14 @@ export function rdzen(slowo: string): string {
   if (slowo.length >= 5) return slowo.slice(0, -1);
   return slowo;
 }
+
+/**
+ * Nazwa wojewodztwa w adresie: "kujawsko-pomorskie", "warminsko-mazurskie".
+ *
+ * Rejestr zapisuje nazwy wielkimi literami i z ogonkami ("ŚLĄSKIE"), a w
+ * adresie musi zostac to samo dla kazdej strony, ktora tam prowadzi — stad
+ * jedna funkcja zamiast trzech kopii wyrazenia.
+ */
+export function adresWojewodztwa(nazwa: string): string {
+  return uprosc(nazwa).trim().replace(/\s+/g, '-');
+}

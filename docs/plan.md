@@ -42,7 +42,7 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | | Co | Zgłoszone |
 |---|---|---|
 | U1 | ~~**Na telefonie stronę da się przesunąć w bok**~~ **naprawione 22.09.2026** (pomiar w ramce 390 px: wszystkie 14 tras mieszczą się teraz w 390/390). Pierwotny opis: **na telefonie stronę da się przesunąć w bok** — coś jest szersze niż ekran, przez co treść wygląda na uciętą. Szukać przez ramkę `<iframe style="width:390px">` (pułapka 17 w `CLAUDE.md`), sprawdzić szerokie tabele, `min-width` i długie liczby | Paweł, 20.09.2026 — „raczej na koniec listy” |
-| U2 | **Częściowo naprawione 22.09.2026**: w menu jest „Gminy” zamiast „Okręgi”, ta strona zaczyna się od „Znajdź swoją gminę” z wyszukiwarką, a w nagłówku jest lupa (od `sm` w górę). **Zostaje:** menu na telefonie (nagłówek ma 279 z 286 px, ikona się nie mieści) i **droga do firmy — wyszukiwarka nie zna firm ani po nazwie, ani po NIP**. Pierwotny opis: **do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
+| U2 | **Częściowo naprawione 22.09.2026**: w menu jest „Gminy” zamiast „Okręgi”, ta strona zaczyna się od „Znajdź swoją gminę” z wyszukiwarką, a w nagłówku jest lupa (od `sm` w górę). **22.09.2026 doszedł spis gmin** (`/gminy`, `/gminy/[wojewodztwo]`), więc do gminy da się dojść klikaniem. **Zostaje:** menu na telefonie (nagłówek ma 279 z 286 px, ikona się nie mieści) i **droga do firmy — wyszukiwarka nie zna firm ani po nazwie, ani po NIP**. Pierwotny opis: **do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
 
 ### Z przeglądu nawigacji (22.09.2026) — zostało
 
@@ -59,8 +59,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 5. **Kontakt i polityka prywatności w stopce** — dziś adres do sprzeciwu
    pojawia się tylko drobnym drukiem tam, gdzie reguła kogoś odsłoniła.
    To jednocześnie blokery 1–2.
-6. **Spis gmin** (`/gminy`) jako cel dla pozycji „Gminy” — dziś prowadzi ona
-   do listy okręgów z wyszukiwarką na górze.
+6. ~~**Spis gmin** (`/gminy`) jako cel dla pozycji „Gminy”~~ — **zrobione
+   22.09.2026**: `/gminy` (16 województw z liczbą gmin i mieszkańców)
+   i `/gminy/[wojewodztwo]` (gminy po powiatach, liczba mieszkańców z GUS
+   2025, kolumny CSS zamiast siatki — powiaty mają od 3 do 18 gmin).
+   Pozycja „Gminy” w menu, karta na stronie głównej i okruszek „woj. …”
+   na stronie gminy prowadzą tam zamiast do listy okręgów; `/okregi`
+   wróciło do nagłówka „Okręgi wyborcze” i ma odnośnik do spisu.
 
 ---
 

@@ -76,7 +76,7 @@ export default function StronaGlowna() {
 
       <section className="obszar pb-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/okregi" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+          <Link href="/gminy" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
             <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje i co trafia do mojej gminy?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
               {`${liczba(gminLiczba)} gmin: posłowie z okręgu, projekty unijne i pomoc publiczna dla firm — zawsze w przeliczeniu na mieszkańca.`}

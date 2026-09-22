@@ -8,6 +8,7 @@ import {
   type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { KONTAKT } from '@/lib/adres';
@@ -82,7 +83,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   return (
     <div className="obszar py-10">
       <p className="text-sm text-atrament-2">
-        <Link href="/okregi" className="hover:text-akcent">{`woj. ${g.wojewodztwo}`}</Link>
+        <Link href={`/gminy/${adresWojewodztwa(g.wojewodztwo)}`} className="hover:text-akcent">{`woj. ${g.wojewodztwo}`}</Link>
         {' · '}
         <span>{miastoPowiat || dzielnica ? g.powiat : `powiat ${g.powiat}`}</span>
       </p>

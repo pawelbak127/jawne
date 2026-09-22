@@ -42,9 +42,10 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const NAWIGACJA: { adres: string; etykieta: string; krotka?: string }[] = [
-  // „Gminy”, nie „Okręgi”: po to tu ludzie przychodzą. Strona /okregi prowadzi
-  // wyszukiwarką do gminy, a listę okręgów ma niżej.
-  { adres: '/okregi', etykieta: 'Gminy' },
+  // „Gminy”, nie „Okręgi”: po to tu ludzie przychodzą. Spis gmin ma własną
+  // trasę — lista okręgów wyborczych to zupełnie co innego i została pod
+  // /okregi, z odnośnikiem ze spisu.
+  { adres: '/gminy', etykieta: 'Gminy' },
   { adres: '/poslowie', etykieta: 'Posłowie' },
   { adres: '/glosowania', etykieta: 'Głosowania' },
   // Na telefonie "Pomoc" — pelna nazwa nie miesci sie obok trzech pozostalych.

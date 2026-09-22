@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rdzen, uprosc, zapytanieFts } from './tekst';
+import { adresWojewodztwa, rdzen, uprosc, zapytanieFts } from './tekst';
 
 describe('uprosc', () => {
   it('zamienia "ł", ktorego nie rozklada ani NFD, ani FTS5', () => {
@@ -57,5 +57,17 @@ describe('rdzen', () => {
   it('krotkie slowo zostaje bez zmian', () => {
     expect(rdzen('vat')).toBe('vat');
     expect(rdzen('wiek')).toBe('wiek');
+  });
+});
+
+describe('adresWojewodztwa', () => {
+  it('nazwa z rejestru (wielkie litery, ogonki) daje adres', () => {
+    expect(adresWojewodztwa('ŚLĄSKIE')).toBe('slaskie');
+    expect(adresWojewodztwa('MAŁOPOLSKIE')).toBe('malopolskie');
+  });
+
+  it('nazwa dwuczlonowa zostaje z lacznikiem, spacja nie', () => {
+    expect(adresWojewodztwa('KUJAWSKO-POMORSKIE')).toBe('kujawsko-pomorskie');
+    expect(adresWojewodztwa('warmińsko mazurskie')).toBe('warminsko-mazurskie');
   });
 });

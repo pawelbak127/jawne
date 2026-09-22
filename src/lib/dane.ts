@@ -608,6 +608,36 @@ export function gminaPelna(teryt: string): GminaPelna | null {
   );
 }
 
+export type WojewodztwoZeSpisem = { wojewodztwo: string; gmin: number; osob: number | null; rok: number | null };
+
+/** Województwa z liczbą gmin — spis dla strony `/gminy`. */
+export function wojewodztwaGmin(): WojewodztwoZeSpisem[] {
+  return bezTabeli(
+    () => wszystkie<WojewodztwoZeSpisem>(
+      `select g.wojewodztwo as wojewodztwo, count(*) as gmin, sum(l.osob) as osob, max(l.rok) as rok
+         from gminy g left join ludnosc l on l.teryt = g.teryt
+        group by g.wojewodztwo order by g.wojewodztwo collate nocase`,
+    ),
+    [],
+  );
+}
+
+export type GminaSpisu = { teryt: string; nazwa: string; rodzaj: string; powiat: string; osob: number | null; rok: number | null };
+
+/** Gminy jednego województwa, po powiatach — spis dla `/gminy/[wojewodztwo]`. */
+export function gminyWojewodztwa(wojewodztwo: string): GminaSpisu[] {
+  return bezTabeli(
+    () => wszystkie<GminaSpisu>(
+      `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat, l.osob as osob, l.rok as rok
+         from gminy g left join ludnosc l on l.teryt = g.teryt
+        where g.wojewodztwo = ?
+        order by g.powiat collate nocase, g.nazwa collate nocase`,
+      wojewodztwo,
+    ),
+    [],
+  );
+}
+
 export function terytyGmin(): string[] {
   return bezTabeli(() => wszystkie<{ teryt: string }>('select teryt from gminy order by teryt').map((r) => r.teryt), []);
 }
