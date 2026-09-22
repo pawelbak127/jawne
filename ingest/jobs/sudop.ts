@@ -187,8 +187,9 @@ function zapiszPrzyrost(
   db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
   wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!);
   const wstawDzien = db.prepare(
-    `insert into pomoc_publiczna_dni(dzien, pobrano, wierszy) values (?,?,?)
-     on conflict(dzien) do update set pobrano=excluded.pobrano, wierszy=excluded.wierszy`,
+    `insert into pomoc_publiczna_dni(dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)
+     on conflict(dzien) do update set pobrano=excluded.pobrano, pobrano_dzien=excluded.pobrano_dzien,
+       wierszy=excluded.wierszy`,
   );
   const naDzien = new Map<string, number>();
   for (const w of nasze) {
@@ -203,7 +204,11 @@ function zapiszPrzyrost(
     // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
     const istniejaca = pobrano ? null
       : (db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(dzien) as { pobrano: string } | undefined)?.pobrano;
-    wstawDzien.run(dzien, pobrano ?? istniejaca ?? new Date().toISOString(), naDzien.get(dzien) ?? 0);
+    const kiedy = pobrano ?? istniejaca ?? new Date().toISOString();
+    // Polska data tej samej chwili. Liczymy ja RAZ, przy zapisie: nocne
+    // zadanie o 01:17 ma w UTC jeszcze poprzedni dzien, a regula 14 dni
+    // jest kalendarzowa (ZMIERZONE 22.09.2026 — patrz ingest/lib/baza.ts).
+    wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
   }
   db.exec('commit');
   return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
@@ -316,10 +321,11 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
   // Zwykly dzien to 1–2 strony; wiecej niz 8 znaczy, ze dzieje sie cos dziwnego.
   const budzet: Budzet = { maks: 8, uzyte: 0, okno: null };
   await przyrost(db, `${swiezy}..${swiezy}`, znane, false, budzet);
-  const w = db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(doUstalenia) as { pobrano: string } | undefined;
+  const w = db.prepare('select coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni where dzien = ?')
+    .get(doUstalenia) as { pobrano: string } | undefined;
   switch (stanDnia(doUstalenia, w?.pobrano)) {
     case 'ustalony':
-      log(`-> ${doUstalenia}: juz ustalony (pobrany ${w!.pobrano.slice(0, 10)}) — nie pytam ponownie`);
+      log(`-> ${doUstalenia}: juz ustalony (pobrany ${w!.pobrano}) — nie pytam ponownie`);
       break;
     case 'brak':
       log(`-> ${doUstalenia}: tego dnia w ogole nie mamy — to dziura, wezmie ja noc razem z sasiadami (jawne plan)`);
@@ -339,7 +345,8 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
 async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: number; okno: string; tylkoPlan: boolean }): Promise<void> {
   const dzis = dzienWarszawa(new Date());
   const plan = () => planHistorii({
-    dni: db.prepare('select dzien, pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
+    // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
+    dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
     dzis,
     poczatekOkna: poczatekOknaDanych(new Date()),
@@ -355,17 +362,24 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     return;
   }
   const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno };
+  // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
+  // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
+  // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
+  const odlozone = new Set<string>();
   let poprzedni = '';
   try {
     for (;;) {
-      const z = plan()[0];
+      const z = plan().find((x) => !odlozone.has(`${x.od}..${x.do}`));
       if (!z) {
-        log('Nic wiecej do pobrania — historia kompletna.');
+        log(odlozone.size ? 'Nic wiecej do pobrania poza odlozonymi zakresami.' : 'Nic wiecej do pobrania — historia kompletna.');
         break;
       }
       const zakres = `${z.od}..${z.do}`;
       if (zakres === poprzedni) {
-        throw new Error(`Zakres ${zakres} po pobraniu wciaz jest w planie — przerywam, zeby nie pytac urzedu w kolko`);
+        log(`   UWAGA: ${zakres} po pobraniu wciaz jest w planie — odkladam go i biore nastepny`);
+        odlozone.add(zakres);
+        poprzedni = '';
+        continue;
       }
       poprzedni = zakres;
       log(`== ${z.powod}: ${zakres}`);
@@ -376,6 +390,11 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     log(`Koniec na te noc: ${e.message}. Pobrane strony zostaja na dysku — nastepna noc je wznowi.`);
   }
   log(`Zapytan do urzedu tej nocy: ${budzet.uzyte} z ${budzet.maks}`);
+  if (odlozone.size) {
+    log(`ODLOZONE zakresy (po pobraniu wciaz w planie): ${[...odlozone].join(', ')}`);
+    log('To znaczy, ze pobranie nie zmienilo stanu bazy — do sprawdzenia w kodzie, nie w urzedzie.');
+    process.exitCode = 1;
+  }
 }
 
 /**
@@ -460,7 +479,7 @@ async function main(): Promise<void> {
   }
 
   const db = otworz(true);
-  zalozSchemat(db);
+  for (const zmiana of zalozSchemat(db)) log(`Migracja: ${zmiana}`);
   // Warszawa jest w PKW 18 dzielnicami, a w SUDOP jednym miastem — jej pomoc
   // trzymamy pod 146501, tak samo jak fundusze UE i budzet.
   const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));

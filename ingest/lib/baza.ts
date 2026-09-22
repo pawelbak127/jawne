@@ -11,6 +11,7 @@
  */
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
+import { dzienWarszawa } from './harmonogram.js';
 import { dirname, resolve } from 'node:path';
 
 export const SCIEZKA_BAZY = process.env.JAWNE_BAZA ?? resolve(process.cwd(), 'dane', 'sejm.db');
@@ -289,10 +290,19 @@ create table if not exists pomoc_publiczna_pobrania (
  * to wszystkie gminy z jednej daty. Strona gminy musi umiec powiedziec,
  * ktora z tych dwoch rzeczy pokazuje.
  */
+/*
+ * ZMIERZONE 22.09.2026: zadanie nocne o 01:17 w Warszawie zapisuje znacznik
+ * UTC z poprzedniej doby (23:17Z). Regula "dzien ustala sie po 14 dniach"
+ * liczona po dacie UTC gubila przez to cala dobe — dzien 08.09 odswiezony
+ * 22.09 wygladal na pobrany 21.09 i nie ustalal sie nigdy, a plan nocy wracal
+ * do niego w kolko. Strefe przeliczamy RAZ, przy zapisie (pobrano_dzien);
+ * SQL i raporty porownuja juz zwykle daty.
+ */
 create table if not exists pomoc_publiczna_dni (
-  dzien    text primary key,               -- RRRR-MM-DD
-  pobrano  text not null,
-  wierszy  integer not null
+  dzien          text primary key,         -- RRRR-MM-DD
+  pobrano        text not null,            -- znacznik ISO, czyli UTC
+  pobrano_dzien  text,                     -- ta sama chwila w POLSKIM kalendarzu
+  wierszy        integer not null
 );
 
 /* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */
@@ -356,8 +366,34 @@ create table if not exists import (
 );
 `;
 
-export function zalozSchemat(db: DatabaseSync): void {
+/**
+ * Schemat i migracje. Migracje sa tutaj, a nie w osobnym etapie, bo strona
+ * czyta `pobrano_dzien` wprost: brakujaca KOLUMNA nie jest lapana przez
+ * `bezTabeli()` w `src/lib/dane.ts` i wywrocilaby strone gminy. Kazdy import
+ * (i `npx tsx ingest/jobs/migracje.ts`) doprowadza baze do porzadku.
+ *
+ * Zwraca opis tego, co zmienil — pusty, gdy nie bylo nic do zrobienia.
+ */
+export function zalozSchemat(db: DatabaseSync): string[] {
   db.exec(SCHEMAT);
+  const zrobione: string[] = [];
+  const kolumny = db.prepare('pragma table_info(pomoc_publiczna_dni)').all() as unknown as { name: string }[];
+  if (kolumny.length && !kolumny.some((k) => k.name === 'pobrano_dzien')) {
+    db.exec('alter table pomoc_publiczna_dni add column pobrano_dzien text');
+    zrobione.push('dodano kolumne pomoc_publiczna_dni.pobrano_dzien');
+  }
+  // Wiersze sprzed 22.09.2026 maja tylko znacznik UTC. Przeliczamy je raz na
+  // polski kalendarz — inaczej dzien pobrany w nocy nigdy by sie nie ustalil.
+  const bezDaty = db.prepare('select dzien, pobrano from pomoc_publiczna_dni where pobrano_dzien is null')
+    .all() as unknown as { dzien: string; pobrano: string }[];
+  if (bezDaty.length) {
+    const uzupelnij = db.prepare('update pomoc_publiczna_dni set pobrano_dzien = ? where dzien = ?');
+    db.exec('begin');
+    for (const w of bezDaty) uzupelnij.run(dzienWarszawa(new Date(w.pobrano)), w.dzien);
+    db.exec('commit');
+    zrobione.push(`uzupelniono polska date pobrania dla ${bezDaty.length} dni`);
+  }
+  return zrobione;
 }
 
 export function odnotujImport(db: DatabaseSync, co: string, ile: number, uwagi = ''): void {

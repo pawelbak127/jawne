@@ -291,6 +291,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budowania. `revalidate = 3600` w `layout.tsx` (i osobno w `sitemap.ts`).
 40. **`??` przepuszcza pusty napis.** `JAWNE_ADRES_SERWISU=` w pliku ustawień
     dawało `new URL('')` i wywracało build. Zmienne z pliku: `?.trim() ||`.
+42. **Znacznik UTC i polski kalendarz to dwie różne doby.** Zadanie nocne
+    o 01:17 w Warszawie zapisuje `pobrano` jako `…T23:17Z` z DNIA POPRZEDNIEGO.
+    Reguła „dzień ustala się po 14 dniach" liczona po dacie UTC gubiła całą
+    dobę: dzień 08.09 odświeżony 22.09 wyglądał na pobrany 21.09, więc nie
+    ustalał się nigdy, a plan nocy wracał do niego w kółko (noc padła po
+    3 zapytaniach z 50). Strefę przeliczamy RAZ, przy zapisie —
+    `pomoc_publiczna_dni.pobrano_dzien`; SQL i raporty porównują zwykłe daty.
+    **Brakująca KOLUMNA nie jest łapana przez `bezTabeli()`** w `dane.ts`,
+    więc migracje idą przed `next build` (`ingest/jobs/migracje.ts`).
 41. **Strony SUDOP z różnych chwil się przesuwają.** Wznowiony zakres składa
     strony pobrane różnego dnia; strona 1 zakresu 2–14.09 z 18.09 miała
     62 177 wyników, a urząd dopisuje dalej. Strony z jednego ciągu mają liczbę

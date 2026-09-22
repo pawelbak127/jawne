@@ -27,8 +27,18 @@ describe('dodajDni', () => {
 
 describe('ustalony', () => {
   it('14 dni po dacie — tak, 13 — nie', () => {
-    expect(ustalony('2026-09-01', '2026-09-15T01:20:00.000Z')).toBe(true);
-    expect(ustalony('2026-09-01', '2026-09-14T23:59:00.000Z')).toBe(false);
+    expect(ustalony('2026-09-01', '2026-09-15')).toBe(true);
+    expect(ustalony('2026-09-01', '2026-09-14')).toBe(false);
+  });
+
+  it('liczy po POLSKIEJ dacie pobrania — zadanie nocne o 01:17 (zmierzone 22.09.2026)', () => {
+    // Dzien 08.09 odswiezony 22.09 o 01:17 w Warszawie ma znacznik UTC
+    // 2026-09-21T23:17Z. Po dacie UTC wychodzilo 13 dni i dzien nie ustalal
+    // sie nigdy — plan nocy wracal do niego w kolko.
+    const polskaData = dzienWarszawa(new Date('2026-09-21T23:17:00Z'));
+    expect(polskaData).toBe('2026-09-22');
+    expect(ustalony('2026-09-08', polskaData)).toBe(true);
+    expect(ustalony('2026-09-08', '2026-09-21')).toBe(false);
   });
 });
 

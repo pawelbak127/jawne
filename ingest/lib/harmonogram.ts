@@ -43,9 +43,16 @@ export function dodajDni(dzien: string, n: number): string {
 const dniMiedzy = (pozniej: string, wczesniej: string) =>
   Math.round((Date.parse(`${pozniej}T00:00:00Z`) - Date.parse(`${wczesniej}T00:00:00Z`)) / 86_400_000);
 
-/** Czy dzien pobrany w chwili `pobrano` (ISO) byl juz wtedy ustalony. */
-export function ustalony(dzien: string, pobrano: string): boolean {
-  return dniMiedzy(pobrano.slice(0, 10), dzien) >= DNI_DO_USTALENIA;
+/**
+ * Czy dzien jest juz ustalony: minelo 14 dni miedzy nim a dniem pobrania.
+ *
+ * `pobranoDzien` to POLSKA data pobrania (kolumna `pobrano_dzien`), nie
+ * znacznik UTC. ZMIERZONE 22.09.2026: porownywanie daty UTC gubilo cala dobe
+ * przy zadaniach nocnych — dzien 08.09 odswiezony 22.09 o 01:17 mial w UTC
+ * date 21.09, wiec nie ustalal sie nigdy, a plan nocy wracal do niego w kolko.
+ */
+export function ustalony(dzien: string, pobranoDzien: string): boolean {
+  return dniMiedzy(pobranoDzien.slice(0, 10), dzien) >= DNI_DO_USTALENIA;
 }
 
 /**

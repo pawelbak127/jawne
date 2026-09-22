@@ -71,7 +71,8 @@ nl();
 nl('== Pomoc publiczna (SUDOP)');
 const wierszy = jeden('select count(*) as c from pomoc_publiczna')?.c ?? 0;
 const gminy = wszystkie('select teryt, wierszy from pomoc_publiczna_pobrania order by teryt');
-const dni = wszystkie('select dzien, wierszy, pobrano from pomoc_publiczna_dni order by dzien');
+// pobrano_dzien to polska data pobrania; regula 14 dni jest kalendarzowa.
+const dni = wszystkie('select dzien, wierszy, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni order by dzien');
 const poDniach = (a, b) => Math.round((new Date(`${a}T00:00:00Z`) - new Date(`${b}T00:00:00Z`)) / 86_400_000);
 // Dzien niepelny: pobrany mniej niz DNI_DO_USTALENIA dni po swojej dacie.
 const niepelne = dni.filter((d) => poDniach(d.pobrano.slice(0, 10), d.dzien) < DNI_DO_USTALENIA);

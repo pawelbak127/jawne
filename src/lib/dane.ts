@@ -1100,7 +1100,7 @@ export const DNI_DO_USTALENIA = 14;
 
 /** Dni pobrane dla calego kraju, ktore juz sie ustalily (SQL). */
 const DNI_USTALONE = `(select dzien from pomoc_publiczna_dni
-  where julianday(substr(pobrano, 1, 10)) - julianday(dzien) >= ${DNI_DO_USTALENIA})`;
+  where julianday(coalesce(pobrano_dzien, substr(pobrano, 1, 10))) - julianday(dzien) >= ${DNI_DO_USTALENIA})`;
 
 /**
  * Skad mamy dane o pomocy dla tej gminy:

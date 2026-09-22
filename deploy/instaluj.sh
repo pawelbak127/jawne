@@ -149,6 +149,11 @@ EOF
     exit 0
   fi
 
+  krok "Migracje bazy"
+  # Przed budowa, nie po: strona czyta kolumny wprost, a brakujaca kolumna
+  # nie jest lapana jak brakujaca tabela — wywrocilaby strone gminy.
+  jako node_modules/.bin/tsx ingest/jobs/migracje.ts
+
   krok "Budowa strony (kilka minut; strona w tym czasie nie odpowiada)"
   systemctl stop jawne-strona 2>/dev/null || true
   jako bash -c "set -a; . '$USTAWIENIA'; set +a; exec npm run build"
