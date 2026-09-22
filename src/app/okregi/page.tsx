@@ -7,8 +7,8 @@ import { Szukajka } from '@/components/Szukajka';
 import { Zrodlo } from '@/components/Zrodlo';
 
 export const metadata: Metadata = {
-  title: 'Okręgi wyborcze',
-  description: '41 okręgów wyborczych do Sejmu — sprawdź, kto reprezentuje Twoją gminę.',
+  title: 'Gminy i okręgi wyborcze',
+  description: 'Wpisz nazwę swojej gminy: publiczne pieniądze, które do niej trafiły, i posłowie z jej okręgu.',
 };
 
 export default function StronaOkregow() {
@@ -37,18 +37,30 @@ export default function StronaOkregow() {
 
   return (
     <div className="obszar py-10">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">Okręgi wyborcze</h1>
-        <Zrodlo adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach" etykieta="PKW — wybory 2023" />
-      </div>
+      {/*
+        Ta strona jest w menu jako „Gminy”, bo po to tu ludzie przychodzą:
+        wpisać swoją gminę. Lista okręgów zostaje niżej, z własnym nagłówkiem —
+        wcześniej tytuł „Okręgi wyborcze” mówił o mechanizmie wyborczym, a nie
+        o tym, co czytelnik chce znaleźć.
+      */}
+      <h1 className="szryft text-3xl font-semibold sm:text-4xl">Znajdź swoją gminę</h1>
       <p className="mt-2 max-w-2xl text-atrament-2">
-        {`Posłów wybiera się w ${zOdmiana(lista.length, 'okręgu', 'okręgach', 'okręgach')}. Nie wiesz, w którym mieszkasz? Wpisz swoją gminę.`}
+        Wpisz nazwę gminy albo miasta: zobaczysz jej budżet, pieniądze z Unii,
+        pomoc publiczną dla firm z tej gminy i posłów z jej okręgu.
       </p>
       <div className="mt-5 max-w-xl">
         <Szukajka etykieta="Nazwa Twojej gminy lub miasta" />
       </div>
 
-      <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-12 flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="szryft text-2xl font-semibold">Okręgi wyborcze</h2>
+        <Zrodlo adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach" etykieta="PKW — wybory 2023" />
+      </div>
+      <p className="mt-2 max-w-2xl text-atrament-2">
+        {`Posłów wybiera się w ${zOdmiana(lista.length, 'okręgu', 'okręgach', 'okręgach')}. Każdy okręg ma listę swoich gmin.`}
+      </p>
+
+      <div className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {posortowane.map(([woj, okr]) => (
           <section key={woj}>
             <h2 className="text-xs font-medium tracking-wider text-atrament-3 uppercase">{`woj. ${woj}`}</h2>

@@ -42,7 +42,25 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | | Co | Zgłoszone |
 |---|---|---|
 | U1 | ~~**Na telefonie stronę da się przesunąć w bok**~~ **naprawione 22.09.2026** (pomiar w ramce 390 px: wszystkie 14 tras mieszczą się teraz w 390/390). Pierwotny opis: **na telefonie stronę da się przesunąć w bok** — coś jest szersze niż ekran, przez co treść wygląda na uciętą. Szukać przez ramkę `<iframe style="width:390px">` (pułapka 17 w `CLAUDE.md`), sprawdzić szerokie tabele, `min-width` i długie liczby | Paweł, 20.09.2026 — „raczej na koniec listy” |
-| U2 | **Do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
+| U2 | **Częściowo naprawione 22.09.2026**: w menu jest „Gminy” zamiast „Okręgi”, ta strona zaczyna się od „Znajdź swoją gminę” z wyszukiwarką, a w nagłówku jest lupa (od `sm` w górę). **Zostaje:** menu na telefonie (nagłówek ma 279 z 286 px, ikona się nie mieści) i **droga do firmy — wyszukiwarka nie zna firm ani po nazwie, ani po NIP**. Pierwotny opis: **do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
+
+### Z przeglądu nawigacji (22.09.2026) — zostało
+
+1. **Menu na telefonie.** Cztery pozycje zajmują 279 z 286 px, więc lupa wchodzi
+   dopiero od `sm`. Przy „Ustawach” i „Zamówieniach” będzie sześć pozycji —
+   potrzebny panel, nie pasek przewijany w bok (to wywoła U1 od nowa).
+2. **Firmy w wyszukiwarce — po NIP.** `szukaj()` w `dane.ts` nie zna
+   beneficjentów. Wyniki muszą przejść przez `nazwaDoPokazania`, tak jak
+   robi to `/firma/[nip]`; szukanie po nazwie to osobna decyzja Pawła.
+3. **Opis serwisu obiecuje „co się stało z ustawą”**, czego nie ma
+   (`layout.tsx`, `/o-serwisie`), i nie wspomina o pieniądzach w gminach.
+4. **`/o-serwisie` mówi, że pomoc publiczna jest „na razie dla kilku gmin”** —
+   nieaktualne od 19.09, mamy dni dla całego kraju.
+5. **Kontakt i polityka prywatności w stopce** — dziś adres do sprzeciwu
+   pojawia się tylko drobnym drukiem tam, gdzie reguła kogoś odsłoniła.
+   To jednocześnie blokery 1–2.
+6. **Spis gmin** (`/gminy`) jako cel dla pozycji „Gminy” — dziś prowadzi ona
+   do listy okręgów z wyszukiwarką na górze.
 
 ---
 

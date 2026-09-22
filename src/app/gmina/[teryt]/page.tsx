@@ -92,6 +92,19 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         <p className="mt-2 text-atrament-2">{opisGminy(g)}</p>
       </header>
 
+      {/*
+        Strona ma pięć ciężkich sekcji. Bez kotwic zejście do pomocy publicznej
+        na telefonie to kilkanaście ekranów, a linku do konkretnej liczby nie
+        dało się wysłać. Zwykłe odnośniki — działają bez JavaScriptu.
+      */}
+      <nav aria-label="Sekcje tej strony" className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-atrament-2">
+        {budzet ? <a href="#budzet" className="hover:text-akcent hover:underline">Budżet</a> : null}
+        {smup.length ? <a href="#finanse" className="hover:text-akcent hover:underline">Finanse i podatki</a> : null}
+        <a href="#fundusze" className="hover:text-akcent hover:underline">Fundusze UE</a>
+        <a href="#pomoc" className="hover:text-akcent hover:underline">Pomoc publiczna</a>
+        <a href="#dane" className="hover:text-akcent hover:underline">Dane do pobrania</a>
+      </nav>
+
       <section className="mt-8 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
           <p className="liczby szryft text-3xl font-semibold">{g.ludnosc ? liczba(g.ludnosc) : '—'}</p>
@@ -134,7 +147,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       {smup.length ? <Smup wartosci={smup} dzielnica={dzielnica} /> : null}
 
       {/* ------------------------------------------------------------------ */}
-      <section className="mt-14">
+      <section id="fundusze" className="mt-14 scroll-mt-20">
         <h2 className="szryft text-3xl font-semibold">Fundusze Europejskie</h2>
         <p className="mt-2 max-w-3xl text-atrament-2">
           {dzielnica
@@ -188,7 +201,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      <section className="mt-14">
+      <section id="pomoc" className="mt-14 scroll-mt-20">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="szryft text-3xl font-semibold">Pomoc publiczna dla firm z tej gminy</h2>
           <Link href="/pomoc-publiczna" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
@@ -206,7 +219,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
         zakresy i ta sama regula nazw (src/app/gmina/[teryt]/csv/[zestaw]).
       */}
-      <section className="mt-14 rounded-2xl border border-kreska bg-papier-2 p-6">
+      <section id="dane" className="mt-14 scroll-mt-20 rounded-2xl border border-kreska bg-papier-2 p-6">
         <h2 className="text-lg font-medium">Pobierz dane tej gminy</h2>
         <p className="mt-1 text-sm text-atrament-2">
           Pliki CSV przygotowane pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.
@@ -283,7 +296,7 @@ function Smup({ wartosci, dzielnica }: { wartosci: WartoscSmup[]; dzielnica: boo
   const poKluczu = new Map(wartosci.map((w) => [w.klucz, w]));
   const brakujace = wartosci.some((w) => w.wartosc === null);
   return (
-    <section className="mt-14">
+    <section id="finanse" className="mt-14 scroll-mt-20">
       <h2 className="szryft text-3xl font-semibold">Finanse i podatki — jak gminie idzie</h2>
       <p className="mt-2 max-w-3xl text-atrament-2">
         {dzielnica
@@ -353,7 +366,7 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
     ? (100 * budzet.wydatki_majatkowe) / budzet.wydatki
     : null;
   return (
-    <section className="mt-14">
+    <section id="budzet" className="mt-14 scroll-mt-20">
       <h2 className="szryft text-3xl font-semibold">{`Budżet gminy — ${budzet.rok}`}</h2>
       <p className="mt-2 max-w-3xl text-atrament-2">
         {dzielnica

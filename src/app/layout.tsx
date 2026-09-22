@@ -42,7 +42,9 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const NAWIGACJA: { adres: string; etykieta: string; krotka?: string }[] = [
-  { adres: '/okregi', etykieta: 'Okręgi' },
+  // „Gminy”, nie „Okręgi”: po to tu ludzie przychodzą. Strona /okregi prowadzi
+  // wyszukiwarką do gminy, a listę okręgów ma niżej.
+  { adres: '/okregi', etykieta: 'Gminy' },
   { adres: '/poslowie', etykieta: 'Posłowie' },
   { adres: '/glosowania', etykieta: 'Głosowania' },
   // Na telefonie "Pomoc" — pelna nazwa nie miesci sie obok trzech pozostalych.
@@ -115,6 +117,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   ) : p.etykieta}
                 </Link>
               ))}
+              {/*
+                Wejście do szukania na KAŻDEJ stronie — połowa serwisu (gminy,
+                firmy) jest osiągalna praktycznie tylko wyszukiwarką, a ta żyła
+                na trzech stronach z trzynastu. Na telefonie nagłówek jest
+                wyregulowany na styk (zmierzone 22.09.2026: 279 z 286 px), więc
+                ikona wchodzi dopiero od „sm” — na telefon potrzebne jest menu,
+                a to osobna zmiana (U2 w docs/plan.md).
+              */}
+              <Link
+                href="/szukaj"
+                aria-label="Szukaj"
+                className="ml-0.5 hidden h-9 w-9 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:grid"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+                </svg>
+              </Link>
               <PrzelacznikMotywu />
             </nav>
           </div>
