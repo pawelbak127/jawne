@@ -6,7 +6,7 @@ ma oznaczone **gdzie**: 🖥 komputer (PowerShell w `C:\Projects\jawne`),
 
 Całość: ok. 1,5 godziny, z czego większość to czekanie.
 
-**Co dostajemy:** maszynę, która co noc pobiera SUDOP (dzień dzienny i 50 zapytań
+**Co dostajemy:** maszynę, która co noc pobiera SUDOP (dzień dzienny i 150 zapytań
 historii), codziennie Sejm, co miesiąc GUS i listy UE — i stronę testową pod
 adresem `https://<ip-z-myślnikami>.sslip.io`. Strona ma `noindex`, a nazwy osób
 fizycznych są ukryte (nie ma jeszcze `JAWNE_KONTAKT`).
@@ -213,7 +213,7 @@ sudo jawne sprawdz
 sudo jawne plan
 ```
 
-- `stan` — `npm run stan`, timery (najbliższy SUDOP dziś o 01:17), wynik
+- `stan` — `npm run stan`, timery (najbliższy SUDOP dziś o 22:00), wynik
   ostatnich przebiegów, dysk.
 - `sprawdz` — sześć stron lokalnie i pod adresem publicznym: `OK`, tytuł,
   obecny `noindex`. Na końcu „Wszystko odpowiada.”
@@ -241,8 +241,8 @@ strona odpowiada.
 
 | Kiedy (czas polski) | Zadanie | Zapytań do urzędu |
 |---|---|---|
-| codziennie 01:17 | SUDOP: wczoraj (świeży) i dzień sprzed 14 dni (ustalony; pomijany, jeśli już ustalony) | 0–2 |
-| codziennie 02:00 | SUDOP noc: przerwane zakresy → dni do odświeżenia → dziury → historia tygodniami wstecz | **najwyżej 50**, tylko 01:00–06:00 |
+| codziennie 22:00 | SUDOP: wczoraj (świeży) i dzień sprzed 14 dni (ustalony; pomijany, jeśli już ustalony) | 0–2 |
+| codziennie 22:20 | SUDOP noc: przerwane zakresy → dni do odświeżenia → dziury → historia tygodniami wstecz | **najwyżej 150**, tylko 22:00–07:00 |
 | codziennie 07:15 | Sejm: kluby, posłowie, głosowania, głosy, wyliczenia; w poniedziałki zdjęcia | — |
 | 3. dnia miesiąca 10:00 | GUS BDL: ludność i budżety gmin | — |
 | 5. dnia miesiąca 10:00 | listy projektów FE z dane.gov.pl | — |
@@ -251,15 +251,16 @@ Zasady wbudowane w kod, nie tylko w harmonogram:
 
 - **Jedno zapytanie do SUDOP naraz.** Zadania czekają na siebie (`flock`),
   a `sudop.ts` ma własną blokadę z PID-em.
-- **Historia tylko nocą.** Poza oknem 01:00–06:00 `sudop.ts` nie zacznie
-  zapytania, nawet uruchomiony ręcznie. Limit powyżej 30 odrzuca.
+- **Historia tylko poza godzinami pracy urzędu.** Poza oknem 22:00–07:00 `sudop.ts` nie zacznie
+  zapytania, nawet uruchomiony ręcznie. Limit powyżej 150 odrzuca.
 - **Strony z różnych nocy się nie sklejają.** Wznowiony zakres sprawdza, czy
   każda strona ma tę samą liczbę wyników co pierwsza; jeśli nie — starsze
   strony pobiera ponownie.
 - Strony odświeżają się same co godzinę (ISR) — nocny import nie wymaga
   przebudowy.
 
-Pełna historia 10 lat to ok. 2 tys. zapytań, czyli **ok. 80 nocy**.
+Pełna historia 10 lat to ok. 2 900 zapytań — szacunek ze zmierzonego rozkładu
+lat, bo 2020 ma pięciokrotność zwykłego roku — czyli **20–30 nocy**.
 
 ---
 

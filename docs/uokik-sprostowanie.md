@@ -72,12 +72,14 @@ byłoby dla Państwa akceptowalne — dostosujemy się do niego.
 **Jak odpytuję system dzisiaj.** Od 21 września 2026 r. dane bieżące pobieram
 automatycznie, dwoma zapytaniami na dobę: jednym o dzień poprzedni i jednym
 o dzień sprzed dwóch tygodni, czyli po upływie terminu na sprawozdania. Dane
-historyczne uzupełniam wyłącznie w nocy, w godzinach 1:00–6:00, po jednym
-zapytaniu naraz i nie więcej niż 50 zapytań na dobę. Pierwsza taka noc,
-21 września, zajęła 59 minut przy 25 zapytaniach; wynik z kolejki przychodził
-najczęściej po minucie, najdłużej po czternastu. Przy tym tempie uzupełnienie
-dziesięciu lat zajmie około czterdziestu nocy. Nie odpytuję systemu przy
-wejściach czytelników na stronę i nie wykonuję zapytań równolegle.
+historyczne uzupełniam wyłącznie poza godzinami pracy urzędu — między 22:00
+a 7:00 — po jednym zapytaniu naraz i nie więcej niż 150 zapytań na dobę.
+Godziny wybrałem na podstawie pomiaru: nocą wynik z kolejki przychodzi
+najczęściej po minucie (najdłużej zmierzone czekanie to czternaście minut),
+a w godzinach pracy urzędu czekałem na jeden wynik 54 minuty. Przy tym tempie
+uzupełnienie dziesięciu lat zajmie około dwudziestu–trzydziestu nocy i wtedy
+zapytania historyczne ustaną. Nie odpytuję systemu przy wejściach czytelników
+na stronę i nie wykonuję zapytań równolegle.
 
 Jeżeli uznają Państwo to tempo za zbyt wysokie, proszę o wskazanie wartości
 akceptowalnej — dostosuję ją w ciągu jednego dnia. Jeżeli możliwy byłby eksport

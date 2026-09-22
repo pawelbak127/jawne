@@ -2,9 +2,10 @@
 Description=jawne — SUDOP dziennie o 01:17
 
 [Timer]
-# Noca kolejka urzedu czeka 2-9 min, w godzinach pracy do 54 (zmierzone 18.09).
+# Noca kolejka urzedu czeka 1-9 min, w godzinach pracy do 54 (zmierzone 18.09).
+# Przed historia (22:20), zeby nie czekac na jej blokade przez pol nocy.
 # Persistent=true: po wylaczeniu serwera dzien nadrabia sie po starcie.
-OnCalendar=*-*-* 01:17:00 Europe/Warsaw
+OnCalendar=*-*-* 22:00:00 Europe/Warsaw
 Persistent=true
 
 [Install]

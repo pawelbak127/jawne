@@ -4,7 +4,7 @@
  *   npx tsx ingest/jobs/sudop.ts --gminy=100101,100102
  *   npx tsx ingest/jobs/sudop.ts --przyrost=2026-09-15..2026-09-17
  *   npx tsx ingest/jobs/sudop.ts --dzienny                     (serwer, co noc)
- *   npx tsx ingest/jobs/sudop.ts --historia --maks-zapytan=50  (serwer, co noc)
+ *   npx tsx ingest/jobs/sudop.ts --historia --maks-zapytan=150 (serwer, co noc)
  *   npx tsx ingest/jobs/sudop.ts --historia --plan             (co by pobral — bez pytania urzedu)
  *
  * Dwa tryby, dwa rozne koszty dla urzedu:
@@ -450,19 +450,22 @@ async function main(): Promise<void> {
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
-    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=50] [--okno=01:00-06:00]');
+    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=150] [--okno=22:00-07:00]');
     log('        --historia --plan pokazuje, co pobralaby noc — bez pytania urzedu.');
     process.exit(2);
   }
-  // Tempo wobec UOKiK: decyzja Pawla z 21.09.2026 — 50 zapytan na noc
-  // (wczesniej 25). Limit siedzi w kodzie, zeby nie dalo sie go "podkrecic"
-  // samym parametrem w harmonogramie ani przez autopilota; podniesienie
-  // wymaga zmiany tutaj i wpisu w docs/plan.md.
-  const maks = Number(arg('maks-zapytan') ?? 50);
-  if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 50)) {
-    throw new Error(`--maks-zapytan musi byc liczba 1–50 (jest: ${arg('maks-zapytan')})`);
+  // Tempo wobec UOKiK: decyzja Pawla z 22.09.2026 — 150 zapytan na noc
+  // w oknie 22:00-07:00 (wczesniej 50 w oknie 01:00-06:00). Godziny pracy
+  // urzedu zostaja wolne: zmierzone czekanie w kolejce to 1-3 min w nocy
+  // i 54 min w dzien. Limit siedzi w kodzie, zeby nie dalo sie go
+  // "podkrecic" samym parametrem w harmonogramie ani przez autopilota;
+  // podniesienie wymaga zmiany tutaj, wpisu w docs/plan.md i poprawienia
+  // akapitu o tempie w docs/uokik-sprostowanie.md.
+  const maks = Number(arg('maks-zapytan') ?? 150);
+  if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 150)) {
+    throw new Error(`--maks-zapytan musi byc liczba 1–150 (jest: ${arg('maks-zapytan')})`);
   }
-  const okno = arg('okno') ?? '01:00-06:00';
+  const okno = arg('okno') ?? '22:00-07:00';
   wOknie(new Date(), okno); // sprawdza zapis okna, zanim cokolwiek sie zacznie
   mkdirSync(KATALOG, { recursive: true });
   // Z plikow i sam plan nie pytaja urzedu — blokada potrzebna tylko, gdy moze pojsc zapytanie.

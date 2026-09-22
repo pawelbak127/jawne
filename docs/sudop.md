@@ -187,10 +187,14 @@ pierwszym zetknięciu z urzędem: strona 1 zakresu 2–14.09 pochodziła z 18.09
 i miała 62 177 wyników, nowa strona 2 — już 62 690, więc stara strona została
 pobrana ponownie.
 
-**Decyzja Pawła z 21.09.2026: 50 zapytań na noc** (urząd nie odpowiedział na
-pismo z 12.09). To ok. dwie godziny okna i ok. 45 nocy do pełnych 10 lat.
+**Decyzja Pawła z 21.09.2026: 50 zapytań na noc**, a **z 22.09.2026: 150
+zapytań w oknie 22:00–07:00** (urząd nie odpowiedział na dwa pisma). Okno
+rośnie w stronę wieczora, nie w dzień: kolejka oddaje wynik po 1–3 minutach
+nocą i po 54 minutach w godzinach pracy urzędu. Szacunek ze zmierzonego
+rozkładu lat (gminy pokazowe: 2020 ×5,1, 2021 ×4,5 wobec zwykłego roku —
+pomoc covidowa): **ok. 2 900 zapytań do pełnych 10 lat, czyli 20–30 nocy**.
 Pilnuje tego kod (`sudop.ts
---historia`: limit powyżej 50 odrzucony, poza oknem zapytanie się nie zaczyna),
+--historia`: limit powyżej 150 odrzucony, poza oknem zapytanie się nie zaczyna),
 nie tylko harmonogram. Kolejność nocy: przerwane zakresy, dni do odświeżenia,
 dziury, historia tygodniami wstecz (`ingest/lib/harmonogram.ts`). Serwer:
 [`serwer.md`](serwer.md).

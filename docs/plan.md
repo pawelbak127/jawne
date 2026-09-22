@@ -114,7 +114,9 @@ adresem, który można komuś pokazać.
     na noc** — ok. 2 tys. zapytań w 2–3 miesiące. Serwer nie zmniejsza
     obciążenia urzędu; zmniejsza je tylko tempo. Sprostowanie do UOKiK
     prosi właśnie o wskazanie dopuszczalnego tempa. **Decyzja Pawła
-    z 19.09.2026: od pierwszej nocy serwera**, 25 zapytań, okno 01:00–06:00,
+    z 19.09.2026: od pierwszej nocy serwera**, 25 zapytań, okno 01:00–06:00;
+    **21.09: 50 zapytań; 22.09: 150 zapytań w oknie 22:00–07:00** — szacunek ze
+    zmierzonego rozkładu lat to ok. 2 900 zapytań do pełnych 10 lat (20–30 nocy),
   - **strona testowa otwarta dla każdego, kto zna adres** (decyzja Pawła
     z 19.09.2026); `noindex` zostaje, nazwy osób fizycznych ukryte do czasu
     `JAWNE_KONTAKT`,
