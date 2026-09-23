@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Source_Serif_4 } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
-import { PrzelacznikMotywu } from '@/components/PrzelacznikMotywu';
+import { Nawigacja } from '@/components/Nawigacja';
 import { ADRES_SERWISU } from '@/lib/adres';
 import { trybBezFiltra } from '@/lib/prywatnosc';
 
@@ -40,17 +40,6 @@ export const metadata: Metadata = {
 // a strona pokazywalaby stan z dnia budowania. Godzina wystarcza: dane
 // zmieniaja sie raz na dobe, a strona wciaz nie pyta bazy przy kazdym wejsciu.
 export const revalidate = 3600;
-
-const NAWIGACJA: { adres: string; etykieta: string; krotka?: string }[] = [
-  // „Gminy”, nie „Okręgi”: po to tu ludzie przychodzą. Spis gmin ma własną
-  // trasę — lista okręgów wyborczych to zupełnie co innego i została pod
-  // /okregi, z odnośnikiem ze spisu.
-  { adres: '/gminy', etykieta: 'Gminy' },
-  { adres: '/poslowie', etykieta: 'Posłowie' },
-  { adres: '/glosowania', etykieta: 'Głosowania' },
-  // Na telefonie "Pomoc" — pelna nazwa nie miesci sie obok trzech pozostalych.
-  { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', krotka: 'Pomoc' },
-];
 
 const ZRODLA_STOPKI: [string, string][] = [
   ['https://api.sejm.gov.pl/sejm/openapi/', 'API Sejmu RP'],
@@ -101,43 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
 
-            {/* Na 390 px cztery pozycje i przelacznik mieszcza sie tylko z krotkimi
-                etykietami i mniejszymi odstepami. */}
-            <nav className="ml-auto flex min-w-0 items-center text-[13px] sm:gap-1 sm:text-sm">
-              {NAWIGACJA.map((p) => (
-                <Link
-                  key={p.adres}
-                  href={p.adres}
-                  className="rounded-lg px-1 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
-                >
-                  {p.krotka ? (
-                    <>
-                      <span className="sm:hidden">{p.krotka}</span>
-                      <span className="hidden sm:inline">{p.etykieta}</span>
-                    </>
-                  ) : p.etykieta}
-                </Link>
-              ))}
-              {/*
-                Wejście do szukania na KAŻDEJ stronie — połowa serwisu (gminy,
-                firmy) jest osiągalna praktycznie tylko wyszukiwarką, a ta żyła
-                na trzech stronach z trzynastu. Na telefonie nagłówek jest
-                wyregulowany na styk (zmierzone 22.09.2026: 279 z 286 px), więc
-                ikona wchodzi dopiero od „sm” — na telefon potrzebne jest menu,
-                a to osobna zmiana (U2 w docs/plan.md).
-              */}
-              <Link
-                href="/szukaj"
-                aria-label="Szukaj"
-                className="ml-0.5 hidden h-9 w-9 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:grid"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-                </svg>
-              </Link>
-              <PrzelacznikMotywu />
-            </nav>
+            <Nawigacja />
           </div>
         </header>
 

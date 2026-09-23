@@ -42,13 +42,17 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | | Co | Zgłoszone |
 |---|---|---|
 | U1 | ~~**Na telefonie stronę da się przesunąć w bok**~~ **naprawione 22.09.2026** (pomiar w ramce 390 px: wszystkie 14 tras mieszczą się teraz w 390/390). Pierwotny opis: **na telefonie stronę da się przesunąć w bok** — coś jest szersze niż ekran, przez co treść wygląda na uciętą. Szukać przez ramkę `<iframe style="width:390px">` (pułapka 17 w `CLAUDE.md`), sprawdzić szerokie tabele, `min-width` i długie liczby | Paweł, 20.09.2026 — „raczej na koniec listy” |
-| U2 | **Częściowo naprawione 22.09.2026**: w menu jest „Gminy” zamiast „Okręgi”, ta strona zaczyna się od „Znajdź swoją gminę” z wyszukiwarką, a w nagłówku jest lupa (od `sm` w górę). **22.09.2026 doszedł spis gmin** (`/gminy`, `/gminy/[wojewodztwo]`), więc do gminy da się dojść klikaniem. **Zostaje:** menu na telefonie (nagłówek ma 279 z 286 px, ikona się nie mieści) i **droga do firmy — wyszukiwarka nie zna firm ani po nazwie, ani po NIP**. Pierwotny opis: **do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
+| U2 | **Częściowo naprawione 22.09.2026**: w menu jest „Gminy” zamiast „Okręgi”, ta strona zaczyna się od „Znajdź swoją gminę” z wyszukiwarką, a w nagłówku jest lupa (od `sm` w górę). **22.09.2026 doszedł spis gmin** (`/gminy`, `/gminy/[wojewodztwo]`) i menu z grupami (panel na telefonie), więc do gminy da się dojść klikaniem. **Zostaje:** **droga do firmy — wyszukiwarka nie zna firm ani po nazwie, ani po NIP**. Pierwotny opis: **do gminy i firmy dochodzi się tylko wyszukiwarką albo z innej strony.** W nawigacji są cztery pozycje (Okręgi, Posłowie, Głosowania, Pomoc publiczna); spisu gmin nie ma nigdzie. Wyszukiwarka na stronie głównej działa, ale czytelnik musi wiedzieć, że ma czegoś szukać | Paweł, 20.09.2026 |
 
 ### Z przeglądu nawigacji (22.09.2026) — zostało
 
-1. **Menu na telefonie.** Cztery pozycje zajmują 279 z 286 px, więc lupa wchodzi
-   dopiero od `sm`. Przy „Ustawach” i „Zamówieniach” będzie sześć pozycji —
-   potrzebny panel, nie pasek przewijany w bok (to wywoła U1 od nowa).
+1. ~~**Menu na telefonie.**~~ **zrobione 22.09.2026**: `src/components/Nawigacja.tsx`.
+   Na telefonie panel pod przyciskiem (lupa i motyw zostają w pasku),
+   na szerokim ekranie „Gminy”, „Sejm ▾”, „Pieniądze ▾” z krótkim opisem
+   przy każdej pozycji. Rozwijane na `<details>`, więc **działa bez
+   JavaScriptu**; JS dokłada tylko zamykanie — zmierzone w przeglądarce:
+   klik obok = zamyka, Escape = zamyka, przejście na inną stronę = zamyka.
+   Pomiar 390 px z otwartym panelem: 375/375, zero przepełnień.
 2. **Firmy w wyszukiwarce — po NIP.** `szukaj()` w `dane.ts` nie zna
    beneficjentów. Wyniki muszą przejść przez `nazwaDoPokazania`, tak jak
    robi to `/firma/[nip]`; szukanie po nazwie to osobna decyzja Pawła.
