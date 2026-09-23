@@ -259,6 +259,10 @@ na serwerze, obok danych.
 
 ## Pomysły — do oceny
 
+- ~~**Mapa gmin**~~ **zrobione 23.09.2026**: `/mapa` — kartogram 2 477 gmin
+  (dochody, fundusze UE, pomoc publiczna, zawsze na mieszkańca), kubełki po
+  kwantylach, gmina bez danych szara. Granice z PRG (GUGiK), opis źródła
+  w `ingest/zrodla/prg/ZRODLO.md`.
 - **Porównywarka gmin w województwie.** Dochody, unijne pieniądze i pomoc
   publiczna na mieszkańca, sortowanie, link do konkretnego zestawienia.
   Ryzyko: łatwo zrobić z tego ranking „dobrych i złych gmin” — a to już ocena.

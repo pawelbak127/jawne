@@ -58,7 +58,10 @@ export default function StronaGmin() {
         ))}
       </ul>
 
-      <p className="mt-10 text-sm text-atrament-2">
+      <p className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-atrament-2">
+        <Link href="/mapa" className="text-akcent underline underline-offset-4 hover:no-underline">
+          Zobacz to na mapie →
+        </Link>
         <Link href="/okregi" className="text-akcent underline underline-offset-4 hover:no-underline">
           Okręgi wyborcze do Sejmu →
         </Link>

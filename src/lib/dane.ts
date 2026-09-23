@@ -652,6 +652,58 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
+// Mapa gmin
+// ---------------------------------------------------------------------------
+
+export type MiaraMapy = 'dochody' | 'unia' | 'pomoc';
+
+export type WartoscNaMapie = { teryt: string; wartosc: number };
+
+/**
+ * Wartosci do mapy: jedna liczba na gmine, ZAWSZE na mieszkanca.
+ *
+ * Gmina, dla ktorej nie mamy danych, NIE dostaje zera — nie ma jej w wyniku
+ * i na mapie zostaje szara (regula 4). Warszawa jest w granicach PRG jedna
+ * jednostka 146501, a ludnosc mamy po dzielnicach — stad `ludnoscWarszawy`.
+ */
+export function wartosciMapy(miara: MiaraMapy): WartoscNaMapie[] {
+  return bezTabeli(() => {
+    const warszawa = ludnoscWarszawy();
+    const ludnoscCTE = `ludzie as (
+      select teryt, osob from ludnosc
+      union all select '${TERYT_WARSZAWY}', ${warszawa ?? 0}
+    )`;
+    if (miara === 'dochody') {
+      return wszystkie<WartoscNaMapie>(
+        `with ${ludnoscCTE}
+         select b.teryt as teryt, b.dochody * 1.0 / l.osob as wartosc
+           from budzety_gmin b join ludzie l on l.teryt = b.teryt
+          where b.rok = (select max(rok) from budzety_gmin) and b.dochody is not null and l.osob > 0`,
+      );
+    }
+    if (miara === 'unia') {
+      return wszystkie<WartoscNaMapie>(
+        `with ${ludnoscCTE}
+         select f.teryt as teryt, f.tylko_tu_ue * 1.0 / l.osob as wartosc
+           from fe_gminy f join ludzie l on l.teryt = f.teryt
+          where f.okres = '2021-2027' and f.tylko_tu_ue is not null and l.osob > 0`,
+      );
+    }
+    // Pomoc publiczna TYLKO z dni pobranych dla calego kraju — historia gmin
+    // pokazowych zawyzylaby je kilkudziesieciokrotnie (pulapka 35).
+    return wszystkie<WartoscNaMapie>(
+      `with ${ludnoscCTE}
+       select p.teryt as teryt, sum(p.wartosc_brutto) * 1.0 / l.osob as wartosc
+         from pomoc_publiczna p
+         join ludzie l on l.teryt = p.teryt
+         join pomoc_publiczna_dni d on d.dzien = p.dzien
+        where l.osob > 0
+        group by p.teryt, l.osob`,
+    );
+  }, []);
+}
+
+// ---------------------------------------------------------------------------
 // Zamowienia publiczne z TED
 // ---------------------------------------------------------------------------
 

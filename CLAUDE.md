@@ -36,10 +36,10 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
-| `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
+| `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023) i opisy źródeł zbyt dużych na repozytorium (PRG), z sumą SHA-256 |
 | `src/components/` | komponenty; `'use client'` tylko tam, gdzie potrzebna interakcja |
 | `ingest/` | import do SQLite: Sejm, PKW, GUS, listy FE; SUDOP osobnym, ręcznym skryptem |
 | `docs/zrodla.md` | katalog źródeł danych publicznych (też o firmach) ze statusem: zmierzone / z dokumentacji / odrzucone |
@@ -85,6 +85,7 @@ npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
 npm run import smup                        # wskazniki SMUP gmin (SMUP_KLUCZ), ~4 min
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
+node --experimental-strip-types scripts/granice-gmin.mjs   # public/mapa/gminy.json z PRG (patrz ingest/zrodla/prg)
 
 # SUDOP — tylko ręcznie (patrz Bezpieczeństwo). Dwa tryby:
 npx tsx ingest/jobs/sudop.ts --gminy=100101,100102          # 10 lat jednej gminy
@@ -298,6 +299,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+46. **Kontury gmin trzeba uprościć PRZED repozytorium, nie w przeglądarce.**
+    PRG ma 5 154 114 punktów na 2 479 gmin; po Douglas-Peuckerze z tolerancją
+    0,004° zostaje 93 492 i plik ma 940 kB (426 kB po spakowaniu). Uproszczenie
+    „co n-ty punkt” robi białe szpary między gminami — DP upraszcza wspólną
+    granicę tak samo z obu stron. Mapa dostaje dane jako **krotki, nie
+    obiekty**: 2 477 obiektów z nazwami pól dało stronę 440 kB, krotki 113 kB.
 45. **TED: okno wyników to `page × limit ≤ 15 000`** (powyżej HTTP 400
     `SEARCH_WINDOW_TOO_WIDE`), a `limit` sięga 250. Polskich ogłoszeń
     o udzieleniu zamówienia od początku kadencji jest 129 077 — dlatego

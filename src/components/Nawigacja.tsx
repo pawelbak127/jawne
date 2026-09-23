@@ -38,6 +38,7 @@ const MENU: Grupa[] = [
     pozycje: [
       { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', opis: 'dotacje i ulgi dla firm (UOKiK)' },
       { adres: '/gminy', etykieta: 'Pieniądze w gminie', opis: 'budżet gminy i projekty unijne' },
+      { adres: '/mapa', etykieta: 'Mapa gmin', opis: 'cała Polska, zawsze na mieszkańca' },
     ],
   },
 ];
