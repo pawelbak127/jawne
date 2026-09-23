@@ -125,10 +125,39 @@ Zamiana zgadywania na fakt z rejestru byłaby najpoważniejszym ulepszeniem
 reguły prywatności od jej powstania — i zdjęłaby z niej wpadki w rodzaju
 „Zakład Fryzjerski Anna …”.
 
-**Do sprawdzenia przed użyciem** (nic z tego nie jest zmierzone):
-limity dobowe, czas odpowiedzi, czy zapytania zbiorcze po liście NIP-ów są
-możliwe, oraz **czy wolno nam przechowywać wynik** — zakres „ogólnodostępny”
-to nie to samo co „wolno republikować”.
+### Z dokumentacji, pobranej 23.09.2026 (nie z pomiaru)
+
+Instrukcję i struktury danych da się pobrać bez logowania:
+`api.stat.gov.pl/Content/files/regon/` (dwa archiwa ZIP). Stamtąd:
+
+- **`DaneSzukaj` zwraca pole `Typ`: `F` albo `P`** — osoba fizyczna albo
+  prawna. To jest dokładnie ta informacja, którą dziś zgadujemy z nazwy.
+  Obok: `Nazwa`, `Wojewodztwo`, `Powiat`, `Gmina`, `Miejscowosc`,
+  `KodPocztowy`, `SilosID`.
+- **Zapytania zbiorcze są możliwe**: parametr `Nipy` (obok `Nip`), a jedna
+  odpowiedź ma najwyżej **100 rekordów** — czyli 100 NIP-ów na wywołanie.
+- **Limity podane przez GUS** (godziny polskie):
+
+  | Godziny | Na godzinę | Na minutę | Na sekundę |
+  |---|---|---|---|
+  | 08:00–16:59 | 6 000 | 120 | 3 |
+  | 06:00–07:59 i 17:00–21:59 | 8 000 | 150 | 3 |
+  | 22:00–05:59 | 10 000 | 200 | 4 |
+
+  Przekroczenie nie blokuje od razu — urząd pisze, że informuje.
+  Przy 100 NIP-ach na wywołanie **93 tys. beneficjentów z dzisiejszej bazy
+  to ok. 930 wywołań, czyli kilkanaście minut**. To zupełnie inna skala
+  niż SUDOP.
+- Sesja: `Zaloguj(klucz)` oddaje identyfikator sesji, który idzie w nagłówku
+  kolejnych wywołań; `GetValue('StatusUslugi')` mówi, czy sesja żyje.
+- Adresy IP trzeba podać przy rejestracji **tylko wtedy**, gdy klienci łączą
+  się przez serwer dostawcy oprogramowania — do sprawdzenia, czy dotyczy nas
+  przy przeniesieniu na serwer.
+
+**Nadal do sprawdzenia przed użyciem:** czas odpowiedzi, zachowanie przy
+przekroczeniu limitu i — najważniejsze — **czy wolno nam wynik przechowywać
+i republikować**; zakres „ogólnodostępny” to nie to samo co „wolno
+republikować”.
 
 ## Odrzucone — z powodem
 
