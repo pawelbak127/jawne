@@ -154,10 +154,30 @@ Instrukcję i struktury danych da się pobrać bez logowania:
   się przez serwer dostawcy oprogramowania — do sprawdzenia, czy dotyczy nas
   przy przeniesieniu na serwer.
 
-**Nadal do sprawdzenia przed użyciem:** czas odpowiedzi, zachowanie przy
-przekroczeniu limitu i — najważniejsze — **czy wolno nam wynik przechowywać
-i republikować**; zakres „ogólnodostępny” to nie to samo co „wolno
-republikować”.
+### Czy wolno przechowywać i republikować — sprawdzone 23.09.2026
+
+Instrukcja techniczna i portal API **nie mówią o tym ani słowa** (są tylko
+limity i sposób logowania). Odpowiedź jest w dwóch innych miejscach:
+
+1. **Ustawa o statystyce publicznej, art. 45 ust. 1**: „W zakresie informacji,
+   o których mowa w art. 42 ust. 1 pkt 1–6, rejestr podmiotów jest **jawny
+   i dostępny dla osób trzecich**”. Punkty 1–6 to m.in. nazwa i adres siedziby,
+   **forma prawna**, wykonywana działalność (PKD), daty powstania i zakończenia
+   oraz numer w rejestrze macierzystym. Punkt 7 (liczba pracujących) jawny NIE
+   jest. Dla osób fizycznych punkt 1 obejmuje też nazwisko, miejsce zamieszkania
+   i PESEL — to są właśnie „dane niejawne”, których nasz klucz nie obejmuje.
+2. **dane.gov.pl, zbiór 544** „Dostęp do danych rejestrowych REGON poprzez
+   usługę sieciową – interfejsy API”, wystawiony przez GUS:
+   **licencja CC BY 4.0**, aktualizacja codzienna. CC BY pozwala kopiować
+   i rozpowszechniać, także w zmienionej formie, **pod warunkiem wskazania
+   źródła**.
+
+Czyli: wolno przechowywać i pokazywać, z podaniem źródła. **Do potwierdzenia
+u urzędu** zostają cztery drobiazgi, bo żadnego z nich nie da się wyczytać
+z dokumentacji — pytanie przygotowane w [`gus-regon-pytanie.md`](gus-regon-pytanie.md):
+brzmienie atrybucji, czy limit liczy się na klucz czy na adres IP, czy
+wywołanie ze 100 NIP-ami to jedno żądanie i czy trzeba zgłaszać zmianę adresu
+IP przy przeniesieniu na serwer.
 
 ## Odrzucone — z powodem
 
