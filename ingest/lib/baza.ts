@@ -330,6 +330,23 @@ create table if not exists budzety_gmin (
 );
 
 /*
+ * Wydatki gmin wedlug dzialow klasyfikacji budzetowej (GUS BDL, temat P2920).
+ * Jeden wiersz to jeden dzial jednej gminy w jednym roku; 'ogolem' to suma
+ * wszystkich dzialow z TEGO SAMEGO zrodla — mianownik dla procentow.
+ *
+ * Brak wiersza znaczy "rejestr nie podal wartosci", a nie "gmina wydala zero"
+ * (regula 4). Dlatego "pozostale dzialy" liczymy jako 'ogolem' minus to,
+ * co mamy — nie jako zero.
+ */
+create table if not exists budzety_dzialy (
+  teryt text not null,                         -- 6 cyfr
+  rok   integer not null,
+  dzial text not null,                         -- kod dzialu ('801') albo 'ogolem'
+  kwota real not null,                         -- zlote
+  primary key (teryt, rok, dzial)
+) without rowid;
+
+/*
  * SMUP (System Monitorowania Uslug Publicznych, GUS): wskazniki finansowe
  * i podatkowe gmin, rocznie. Wartosc zostaje TAKA, JAK W REJESTRZE — procent
  * jako procent, zlote jako zlote; jednostke trzyma smup_miary, a liczbe

@@ -28,8 +28,8 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | | Co | Dlaczego blokuje | Stan |
 |---|---|---|---|
 | 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie. To jedyna rzecz, która dziś wstrzymuje działanie progu | **czekamy na adres Pawła** |
-| 2 | **Polityka prywatności** | Wymagana, gdy przetwarzamy dane osobowe (art. 13–14 RODO): kto jest administratorem, po co, na jakiej podstawie, jak długo, jakie prawa | do napisania |
-| 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | do napisania, szkic w [nazwiska.md](nazwiska.md) |
+| 2 | **Polityka prywatności** | Wymagana, gdy przetwarzamy dane osobowe (art. 13–14 RODO): kto jest administratorem, po co, na jakiej podstawie, jak długo, jakie prawa | **napisana 23.09.2026**: `/prywatnosc`, odnośnik w stopce. Zostają dwa miejsca do uzupełnienia przez Pawła (administrator + adres, `JAWNE_KONTAKT`) — widoczne na stronie na żółto |
+| 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | **napisany 23.09.2026**: [test-rownowagi.md](test-rownowagi.md) — cel, niezbędność, ważenie, dziesięć zabezpieczeń z nazwami plików, co uruchamia ponowny test. Do uzupełnienia: administrator i adres |
 | 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | do kupienia |
 | 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła |
 | 5a | **Klucz API GUS BDL** (darmowy, portal api.stat.gov.pl) | Bez klucza 100 zapytań na 15 minut — import jest 5 razy wolniejszy. Rejestrację robi Paweł; klucz do `.env.local` jako `GUS_BDL_KLUCZ`, na serwerze `sudo jawne ustaw GUS_BDL_KLUCZ` | do zrobienia (19.09: w `.env.local` go nie ma) |
@@ -64,9 +64,10 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    (`layout.tsx`, `/o-serwisie`), i nie wspomina o pieniądzach w gminach.
 4. **`/o-serwisie` mówi, że pomoc publiczna jest „na razie dla kilku gmin”** —
    nieaktualne od 19.09, mamy dni dla całego kraju.
-5. **Kontakt i polityka prywatności w stopce** — dziś adres do sprzeciwu
-   pojawia się tylko drobnym drukiem tam, gdzie reguła kogoś odsłoniła.
-   To jednocześnie blokery 1–2.
+5. ~~**Kontakt i polityka prywatności w stopce**~~ **zrobione 23.09.2026** —
+   stopka ma „Polityka prywatności” i „Kontakt”; dopóki nie ma
+   `JAWNE_KONTAKT`, „Kontakt” prowadzi do sekcji polityki, która mówi wprost,
+   że adresu jeszcze nie ma.
 6. ~~**Spis gmin** (`/gminy`) jako cel dla pozycji „Gminy”~~ — **zrobione
    22.09.2026**: `/gminy` (16 województw z liczbą gmin i mieszkańców)
    i `/gminy/[wojewodztwo]` (gminy po powiatach, liczba mieszkańców z GUS

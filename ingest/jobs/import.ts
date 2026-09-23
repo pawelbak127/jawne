@@ -869,6 +869,114 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Wydatki gmin wedlug dzialow klasyfikacji budzetowej (GUS BDL, temat P2920).
+ *
+ * Budzet mowi, ile gmina wydala; dzialy mowia, NA CO. Bierzemy czternascie
+ * dzialow, ktore w gminach wazą najwiecej, plus "ogolem" Z TEGO SAMEGO
+ * tematu — zeby procenty mialy mianownik z jednego zrodla, a nie sklejony
+ * z dwoch. Reszta dzialow (rybolowstwo, gornictwo, turystyka...) idzie
+ * na stronie jako "pozostale dzialy", policzona jako roznica.
+ *
+ * Wariant zmiennej: "gminy lacznie z miastami na prawach powiatu" — przy
+ * `unit-level=6` kazda jednostka podaje swoja wartosc, a ten wariant jako
+ * jedyny obejmuje takze miasta na prawach powiatu.
+ */
+const DZIALY_BUDZETU: [kod: string, nazwa: string, zmienna: number][] = [
+  ['ogolem', 'wydatki ogółem', 1548644],
+  ['801', 'Oświata i wychowanie', 202277],
+  ['855', 'Rodzina', 633070],
+  ['852', 'Pomoc społeczna', 202286],
+  ['600', 'Transport i łączność', 202232],
+  ['900', 'Gospodarka komunalna i ochrona środowiska', 202295],
+  ['750', 'Administracja publiczna', 202236],
+  ['921', 'Kultura i ochrona dziedzictwa narodowego', 202298],
+  ['926', 'Kultura fizyczna i sport', 202304],
+  ['700', 'Gospodarka mieszkaniowa', 202242],
+  ['754', 'Bezpieczeństwo publiczne i ochrona przeciwpożarowa', 202262],
+  ['851', 'Ochrona zdrowia', 202283],
+  ['854', 'Edukacyjna opieka wychowawcza', 202292],
+  ['010', 'Rolnictwo i łowiectwo', 202211],
+  ['757', 'Obsługa długu publicznego', 202271],
+];
+
+/**
+ * Na co gminy wydaja pieniadze — jeden rok to 15 zmiennych po 40 stron
+ * (BDL oddaje najwyzej 100 wierszy na strone, ZMIERZONE: page-size=500
+ * konczy sie kodem 412), czyli ok. 600 zapytan. Bez klucza GUS to ok. 1,5 h,
+ * z kluczem ok. 20 minut. Rok juz kompletny w bazie jest pomijany
+ * (`--od-nowa` pobiera ponownie, `--lata=N` bierze wiecej lat).
+ */
+async function importDzialow(db: DatabaseSync): Promise<void> {
+  const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? 1);
+  const odNowa = process.argv.includes('--od-nowa');
+  log(`-> wydatki gmin wg dzialow (GUS BDL, ${DZIALY_BUDZETU.length} zmiennych x ${ileLat} lat; ${kluczBdl() ? 'z kluczem' : 'bez klucza — ok. 1,5 h na rok'})`);
+
+  const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${DZIALY_BUDZETU[1]![2]}?format=json`);
+  const lata = [...zmienna.years].sort((a, b) => b - a);
+  const oczekiwane = new Set(
+    (db.prepare("select teryt from gminy where rodzaj <> 'dzielnica Warszawy'").all() as unknown as { teryt: string }[]).map((r) => r.teryt),
+  );
+  oczekiwane.add(TERYT_WARSZAWY);
+
+  const wstaw = db.prepare(
+    `insert into budzety_dzialy(teryt, rok, dzial, kwota) values (?,?,?,?)
+     on conflict(teryt, rok, dzial) do update set kwota = excluded.kwota`,
+  );
+
+  const zapisane: number[] = [];
+  for (const rok of lata.slice(0, ileLat + 2)) {
+    if (zapisane.length >= ileLat) break;
+    const juzJest = (db.prepare("select count(*) as c from budzety_dzialy where rok = ? and dzial = 'ogolem'").get(rok) as { c: number }).c;
+    if (!odNowa && juzJest >= oczekiwane.size * 0.95) {
+      log(`   rok ${rok}: juz w bazie (${juzJest} gmin) — pomijam; --od-nowa pobiera ponownie`);
+      zapisane.push(rok);
+      continue;
+    }
+
+    const kwoty = new Map<string, Map<string, number>>();
+    for (const [kod, nazwa, id] of DZIALY_BUDZETU) {
+      const m = await bdlZmiennaGmin(id, rok);
+      kwoty.set(kod, m);
+      log(`   ${rok} ${kod.padEnd(6)} ${nazwa.slice(0, 40).padEnd(40)} ${m.size} gmin`);
+      if (kod === 'ogolem' && m.size < oczekiwane.size * 0.95) break;
+    }
+    const ogolem = kwoty.get('ogolem')!;
+    if (ogolem.size < oczekiwane.size * 0.95) {
+      log(`   rok ${rok}: tylko ${ogolem.size} z ${oczekiwane.size} gmin — pomijam (rok niepelny)`);
+      continue;
+    }
+
+    db.exec('begin');
+    db.exec(`delete from budzety_dzialy where rok = ${rok}`);
+    let wierszy = 0;
+    for (const [kod] of DZIALY_BUDZETU) {
+      for (const [teryt, kwota] of kwoty.get(kod)!) {
+        if (!oczekiwane.has(teryt)) continue;
+        // Brak wartosci to brak wiersza (regula 4) — zera nie dopisujemy.
+        wstaw.run(teryt, rok, kod, kwota);
+        wierszy++;
+      }
+    }
+    db.exec('commit');
+
+    // Kontrola druga droga: "ogolem" z tematu dzialow wobec "wydatkow ogolem"
+    // z tematu budzetow (osobna zmienna BDL, pobrana osobnym etapem).
+    const kontrola = db.prepare(
+      `select count(*) as gmin, avg(abs(d.kwota - b.wydatki) / nullif(b.wydatki, 0)) as srednia_roznica
+         from budzety_dzialy d join budzety_gmin b on b.teryt = d.teryt and b.rok = d.rok
+        where d.rok = ? and d.dzial = 'ogolem' and b.wydatki is not null`,
+    ).get(rok) as { gmin: number; srednia_roznica: number | null };
+    const proc = kontrola.srednia_roznica === null ? '—' : `${(kontrola.srednia_roznica * 100).toFixed(2)}%`;
+    log(`   rok ${rok}: ${wierszy} wierszy; kontrola wobec budzety_gmin na ${kontrola.gmin} gminach: srednia roznica ${proc}`);
+    zapisane.push(rok);
+  }
+
+  if (!zapisane.length) throw new Error('GUS BDL: zaden rok nie ma kompletu wydatkow wg dzialow');
+  const gmin = (db.prepare('select count(distinct teryt) as c from budzety_dzialy').get() as { c: number }).c;
+  odnotujImport(db, 'budzety-dzialy', gmin, `GUS BDL temat P2920, lata ${zapisane[zapisane.length - 1]}–${zapisane[0]}`);
+}
+
+/**
  * SMUP (GUS): wskazniki finansowe i podatkowe gmin, rocznie.
  *
  * Budzet z BDL mowi, ILE gmina wydala; SMUP mowi, jak jej idzie — ile umarza,
@@ -988,6 +1096,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   okregi: importOkregow,
   ludnosc: importLudnosci,
   budzety: importBudzetow,
+  dzialy: importDzialow,
   smup: importSmup,
   fundusze: importFunduszy,
   wyliczenia,

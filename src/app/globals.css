@@ -129,10 +129,21 @@
   }
 }
 
-@layer utilities {
+/*
+ * `.obszar` MUSI byc w warstwie `components`, nie `utilities`.
+ * ZMIERZONE 23.09.2026 na wyrenderowanej stronie: w warstwie `utilities`
+ * wygrywala z Tailwindowym `max-w-*` (ta sama specyficznosc, pozniejsza
+ * kolejnosc), wiec `obszar max-w-2xl` dawalo kolumne 1185 px zamiast 672.
+ * Szesc stron tekstowych mialo w kodzie zawezenie, ktore nie dzialalo —
+ * dokladnie ten rodzaj bledu, ktorego nie widac w kodzie, tylko w przegladarce.
+ */
+@layer components {
   /* Siatka tresci: jedna kolumna czytelna, marginesy 16px na telefonie. */
   .obszar { width: 100%; margin-inline: auto; padding-inline: 1rem; max-width: 76rem; }
   @media (min-width: 640px) { .obszar { padding-inline: 1.5rem; } }
+}
+
+@layer utilities {
 
   .szryft { font-family: var(--font-szryft); font-weight: 400; letter-spacing: -0.015em; }
 

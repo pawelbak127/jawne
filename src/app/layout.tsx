@@ -3,7 +3,7 @@ import { Inter, Source_Serif_4 } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
 import { Nawigacja } from '@/components/Nawigacja';
-import { ADRES_SERWISU } from '@/lib/adres';
+import { ADRES_SERWISU, KONTAKT } from '@/lib/adres';
 import { trybBezFiltra } from '@/lib/prywatnosc';
 
 // latin-ext jest OBOWIAZKOWE: szablon create-next-app ma tu samo "latin",
@@ -125,6 +125,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ul className="mt-2 space-y-1.5 text-atrament-2">
                 <li><Link className="hover:text-akcent hover:underline" href="/o-serwisie">O serwisie</Link></li>
                 <li><Link className="hover:text-akcent hover:underline" href="/stan">Stan danych</Link></li>
+                <li><Link className="hover:text-akcent hover:underline" href="/prywatnosc">Polityka prywatności</Link></li>
+                {/* Adres do sprzeciwu ma byc widoczny z KAZDEJ strony, nie tylko
+                    tam, gdzie regula kogos odslonila. Dopoki go nie ma, odsylamy
+                    do sekcji polityki, ktora mowi wprost, ze go brakuje. */}
+                <li>
+                  {KONTAKT ? (
+                    <a className="hover:text-akcent hover:underline" href={`mailto:${KONTAKT}`}>Kontakt</a>
+                  ) : (
+                    <Link className="hover:text-akcent hover:underline" href="/prywatnosc#kontakt">Kontakt</Link>
+                  )}
+                </li>
               </ul>
             </div>
           </div>
