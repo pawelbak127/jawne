@@ -26,13 +26,29 @@ export type PodpowiedzGlosowania = {
   tytul: string;
 };
 
+/** Firma w podpowiedziach. `nazwa` jest JUZ przepuszczona przez regule
+ *  prywatnosci po stronie serwera — do przegladarki nie jedzie nazwa,
+ *  ktorej nie wolno pokazac. */
+export type PodpowiedzFirmy = {
+  nip: string;
+  nazwa: string;
+  opis: string;
+};
+
 export type OdpowiedzWyszukiwania = {
   fraza: string;
   gminy: PodpowiedzGminy[];
   poslowie: PodpowiedzPosla[];
   glosowania: PodpowiedzGlosowania[];
   glosowanWszystkich: number;
+  firmy: PodpowiedzFirmy[];
 };
+
+/** Jedna linia pod nazwa firmy: gdzie ma siedzibe i ile razy dostala pomoc. */
+export function opisFirmy(f: { gmina?: string | null; przypadkow: number }): string {
+  const ile = `${f.przypadkow} ${f.przypadkow === 1 ? 'przypadek pomocy' : f.przypadkow < 5 ? 'przypadki pomocy' : 'przypadków pomocy'}`;
+  return f.gmina ? `${f.gmina} · ${ile}` : ile;
+}
 
 /**
  * Opis gminy do listy wynikow. Nazwy gmin sie powtarzaja (228 nazw wiecej

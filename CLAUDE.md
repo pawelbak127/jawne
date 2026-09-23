@@ -131,6 +131,11 @@ npm run paczka-na-serwer                                    # baza + odpowiedzi 
    ma własny NIP, a jej nazwa to adres budynku, nie nazwisko.
    Po każdej zmianie reguły: porównanie na wszystkich nazwach z bazy i przegląd
    próbek (pierwsza wersja przepuszczała „Zakład Fryzjerski Anna …”).
+   **Wyszukiwarka oddaje tylko firmy, których nazwę wolno pokazać — także przy
+   szukaniu po dokładnym NIP-ie** (`szukajFirm` w `dane.ts`): `/firma/[nip]`
+   dla możliwej osoby fizycznej oddaje 404, więc wynik wyszukiwania prowadziłby
+   w martwy link i mówiłby więcej niż strona. Kwoty tych podmiotów zostają
+   w sumach gminy.
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
    po słowach rejestru. Nie wybieramy „ważnych" według siebie.
 9. **Kwota w gminie zawsze na mieszkańca i z punktem odniesienia.** Mediana

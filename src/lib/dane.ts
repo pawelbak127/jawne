@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { KLUBY, type Klub } from './kluby';
 import { uprosc, zapytanieFts } from './tekst';
 import { porownajZKlubem, type GlosZKlubem, type PorownanieZKlubem } from './niezaleznosc';
+import { nazwaDoPokazania } from './prywatnosc';
+import { KONTAKT } from './adres';
 
 /**
  * JEDYNY dostep do danych dla stron publicznych.
@@ -514,6 +516,7 @@ export type WynikiWyszukiwania = {
   gminy: GminaWWyszukiwaniu[];
   glosowania: GlosowanieSkrot[];
   glosowanWszystkich: number;
+  firmy: FirmaSkrot[];
 };
 
 /**
@@ -524,7 +527,7 @@ export type WynikiWyszukiwania = {
  * ida przez FTS5 — patrz uwagi w tekst.ts o odmianie i o literze "ł".
  */
 export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
-  const pusty: WynikiWyszukiwania = { fraza, poslowie: [], gminy: [], glosowania: [], glosowanWszystkich: 0 };
+  const pusty: WynikiWyszukiwania = { fraza, poslowie: [], gminy: [], glosowania: [], glosowanWszystkich: 0, firmy: [] };
   const q = uprosc(fraza.trim());
   if (q.length < 2 || !bazaDostepna()) return pusty;
 
@@ -579,7 +582,68 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
     );
   }
 
-  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich };
+  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich, firmy: szukajFirm(fraza) };
+}
+
+export type FirmaSkrot = {
+  nip: string;
+  /** Nazwa GOTOWA do pokazania — przepuszczona przez regule prywatnosci. */
+  nazwa: string;
+  przypadkow: number;
+  brutto: number | null;
+  max_eur: number | null;
+  teryt: string | null;
+  gmina: string | null;
+};
+
+/**
+ * Firmy w wyszukiwarce: po NIP dokladnie, po nazwie po kawalku.
+ *
+ * Oddajemy WYLACZNIE te, ktore wolno pokazac (`nazwaDoPokazania`), i to
+ * w obu drogach — takze po NIP. Dwa powody, oba sprawdzone na zywej stronie:
+ * 1. wynik wyszukiwania nie moze mowic wiecej niz strona, do ktorej prowadzi,
+ *    a `/firma/[nip]` dla mozliwej osoby fizycznej ODDAJE 404 (nie robimy
+ *    strony o osobie prywatnej),
+ * 2. samo trafienie po nazwisku mowiloby, ze osoba o tym nazwisku dostala
+ *    pomoc — to ta sama zasada, ktora trzyma nazwiska osob prywatnych poza
+ *    indeksem glosowan (regula 7 w CLAUDE.md).
+ * Kwoty tych podmiotow zostaja w sumach gminy i w liczbie beneficjentow —
+ * pomijamy nazwe, nie pieniadze.
+ */
+export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
+  const q = uprosc(fraza.trim());
+  if (q.length < 3 || !bazaDostepna()) return [];
+  const cyfry = fraza.replace(/\D/g, '');
+  const progAktywny = Boolean(KONTAKT);
+
+  const kolumny = `f.nip as nip, f.nazwa as nazwa, f.przypadkow as przypadkow, f.brutto as brutto,
+                   f.max_eur as max_eur, f.teryt as teryt, g.nazwa as gmina`;
+  // Ta sama regula, co na stronie firmy. Wynik wyszukiwania nie moze mowic
+  // wiecej niz strona, do ktorej prowadzi.
+  const wolnoPokazac = (w: FirmaSkrot) => !nazwaDoPokazania(w.nazwa, { pomocEur: w.max_eur, progAktywny }).pominieta;
+
+  if (cyfry.length === 10) {
+    return bezTabeli(
+      () => wszystkie<FirmaSkrot>(
+        `select ${kolumny} from firmy_szukaj f left join gminy g on g.teryt = f.teryt where f.nip = ?`,
+        cyfry,
+      ).filter(wolnoPokazac),
+      [],
+    );
+  }
+
+  // Bierzemy z zapasem, bo czesc nazw odpadnie na regule prywatnosci.
+  const kandydaci = bezTabeli(
+    () => wszystkie<FirmaSkrot>(
+      `select ${kolumny} from firmy_szukaj f left join gminy g on g.teryt = f.teryt
+        where instr(f.szukaj, ?) > 0
+        order by (f.szukaj = ?) desc, f.brutto desc nulls last
+        limit ?`,
+      q, q, ile * 8,
+    ),
+    [],
+  );
+  return kandydaci.filter(wolnoPokazac).slice(0, ile);
 }
 
 // ---------------------------------------------------------------------------

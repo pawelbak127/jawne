@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { bazaDostepna, szukaj } from '@/lib/dane';
-import { liczba, zOdmiana } from '@/lib/format';
-import { opisGminy } from '@/lib/wyszukiwanie';
+import { liczba, zlote, zOdmiana } from '@/lib/format';
+import { opisFirmy, opisGminy } from '@/lib/wyszukiwanie';
 import { BrakDanych } from '@/components/BrakDanych';
 import { KartaGlosowania } from '@/components/KartaGlosowania';
 import { Szukajka } from '@/components/Szukajka';
@@ -21,7 +21,7 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
   const { q = '' } = await searchParams;
   const fraza = q.slice(0, 120);
   const w = szukaj(fraza, GLOSOWAN_NA_STRONIE);
-  const cokolwiek = w.gminy.length + w.poslowie.length + w.glosowania.length > 0;
+  const cokolwiek = w.gminy.length + w.poslowie.length + w.glosowania.length + w.firmy.length > 0;
 
   return (
     <div className="obszar max-w-4xl py-10">
@@ -32,7 +32,8 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
 
       {fraza.trim().length < 2 ? (
         <p className="mt-8 text-atrament-2">
-          Wpisz co najmniej dwa znaki — nazwę swojej gminy, nazwisko posła albo słowo z tytułu głosowania.
+          Wpisz co najmniej dwa znaki — nazwę swojej gminy, nazwisko posła, słowo z tytułu
+          głosowania albo nazwę bądź NIP firmy.
         </p>
       ) : !cokolwiek ? (
         <p className="mt-8 text-atrament-2">{`Nic nie znaleźliśmy dla „${fraza}”.`}</p>
@@ -85,6 +86,32 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
         </section>
       ) : null}
 
+      {w.firmy.length ? (
+        <section className="mt-10">
+          <h2 className="szryft text-2xl font-semibold">Firmy</h2>
+          <p className="mt-1 text-sm text-atrament-2">
+            Beneficjenci pomocy publicznej z rejestru SUDOP. Szukamy po nazwie i po numerze NIP.
+          </p>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {w.firmy.map((f) => (
+              <li key={f.nip}>
+                <Link
+                  href={`/firma/${f.nip}`}
+                  className="group flex h-full flex-col rounded-xl border border-kreska bg-papier-2 p-4 transition-all hover:border-kreska-2 hover:shadow-karta"
+                >
+                  <span className="font-medium group-hover:text-akcent">{f.nazwa}</span>
+                  <span className="text-xs text-atrament-3">{opisFirmy(f)}</span>
+                  {/* Brak kwoty to nie zero: zrodlo czasem nie podaje wartosci brutto. */}
+                  <span className="liczby mt-2 text-sm text-akcent">
+                    {f.brutto === null ? 'kwota nieznana →' : `${zlote(f.brutto)} →`}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {w.glosowania.length ? (
         <section className="mt-10">
           <h2 className="szryft text-2xl font-semibold">Głosowania</h2>
@@ -113,12 +140,20 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
         <div className="mt-3 space-y-2 leading-relaxed">
           <p>
             Szukamy w nazwach gmin (według danych PKW z wyborów w 2023 r.), w nazwiskach
-            posłów i w tytułach głosowań. Ogonki można pomijać: „lodz” znajdzie „Łódź”.
+            posłów, w tytułach głosowań i wśród firm z rejestru pomocy publicznej.
+            Ogonki można pomijać: „lodz” znajdzie „Łódź”.
           </p>
           <p>
             Nie mamy słownika polskiej odmiany. Ucinamy końcówki słów, więc „podatek”
             znajdzie „podatku”, ale słowa, które zmieniają się w środku („matka” → „matek”),
             mogą umknąć. Jeśli nic nie ma, spróbuj krótszej formy.
+          </p>
+          <p>
+            Firmy znajdziemy po nazwie albo po numerze NIP (dziesięć cyfr, ze spacjami
+            lub bez). Gdy beneficjentem może być osoba fizyczna, nie pokazujemy ani jej
+            nazwy, ani strony — także wtedy, gdy ktoś wpisze dokładny NIP. Pieniądze
+            zostają w sumach: pomoc takich podmiotów jest wliczona w zestawienia gminy
+            i w liczbę beneficjentów, pomijamy nazwę, nie kwotę.
           </p>
           <p>
             Wieś nie jest gminą. Jeśli Twojej miejscowości nie ma na liście, wpisz nazwę

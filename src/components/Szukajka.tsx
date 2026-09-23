@@ -60,6 +60,7 @@ export function Szukajka({
     return [
       ...widoczne.gminy.map((g) => ({ klucz: `g${g.teryt}`, adres: `/gmina/${g.teryt}` })),
       ...widoczne.poslowie.map((p) => ({ klucz: `p${p.slug}`, adres: `/posel/${p.slug}` })),
+      ...widoczne.firmy.map((f) => ({ klucz: `f${f.nip}`, adres: `/firma/${f.nip}` })),
       ...widoczne.glosowania.map((g) => ({ klucz: `v${g.id}`, adres: `/glosowanie/${g.id}` })),
       { klucz: 'wszystko', adres: `/szukaj?q=${encodeURIComponent(q)}` },
     ];
@@ -85,7 +86,8 @@ export function Szukajka({
     }
   }
 
-  const pusto = widoczne && !widoczne.gminy.length && !widoczne.poslowie.length && !widoczne.glosowania.length;
+  const pusto = widoczne && !widoczne.gminy.length && !widoczne.poslowie.length
+    && !widoczne.glosowania.length && !widoczne.firmy.length;
 
   return (
     <div className="relative w-full">
@@ -146,7 +148,8 @@ export function Szukajka({
         >
           {pusto ? (
             <p className="px-4 py-3 text-sm text-atrament-2">
-              Nic nie znaleźliśmy. Szukamy w nazwach gmin, nazwiskach posłów i tytułach głosowań.
+              Nic nie znaleźliśmy. Szukamy w nazwach gmin, nazwiskach posłów, tytułach głosowań
+              i wśród firm — po nazwie albo po numerze NIP.
             </p>
           ) : null}
 
@@ -175,6 +178,20 @@ export function Szukajka({
                   <span className="ml-auto truncate text-xs text-atrament-3">
                     {p.aktywny ? (p.okreg ?? '') : 'mandat wygasł'}
                   </span>
+                </Link>
+              ))}
+            </Grupa>
+          ) : null}
+
+          {widoczne.firmy.length ? (
+            <Grupa tytul="Firmy — pomoc publiczna">
+              {widoczne.firmy.map((f) => (
+                <Link key={f.nip} href={`/firma/${f.nip}`} role="option" aria-selected={indeks(`f${f.nip}`) === aktywny} className={klasaPozycji(`f${f.nip}`)}>
+                  <span className="min-w-0 flex-1">
+                    <span className="font-medium">{f.nazwa}</span>
+                    <span className="block truncate text-xs text-atrament-3">{f.opis}</span>
+                  </span>
+                  <span className="liczby shrink-0 text-xs text-atrament-3">{f.nip}</span>
                 </Link>
               ))}
             </Grupa>

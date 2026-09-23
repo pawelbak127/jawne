@@ -53,9 +53,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    JavaScriptu**; JS dokłada tylko zamykanie — zmierzone w przeglądarce:
    klik obok = zamyka, Escape = zamyka, przejście na inną stronę = zamyka.
    Pomiar 390 px z otwartym panelem: 375/375, zero przepełnień.
-2. **Firmy w wyszukiwarce — po NIP.** `szukaj()` w `dane.ts` nie zna
-   beneficjentów. Wyniki muszą przejść przez `nazwaDoPokazania`, tak jak
-   robi to `/firma/[nip]`; szukanie po nazwie to osobna decyzja Pawła.
+2. ~~**Firmy w wyszukiwarce — po NIP.**~~ **zrobione 23.09.2026**: tabela
+   `firmy_szukaj` (etap `wyliczenia`), `szukajFirm()` w `dane.ts`, sekcja
+   „Firmy” na `/szukaj` i w podpowiedziach. Szukanie po nazwie też działa,
+   ale **wyłącznie wśród nazw, które wolno pokazać** — i to samo przy szukaniu
+   po dokładnym NIP-ie, bo `/firma/[nip]` dla możliwej osoby fizycznej oddaje
+   404 (sprawdzone na żywej stronie: bez tego wyszukiwarka prowadziła w martwy
+   link i podawała nazwisko, którego strona nie pokazuje).
 3. **Opis serwisu obiecuje „co się stało z ustawą”**, czego nie ma
    (`layout.tsx`, `/o-serwisie`), i nie wspomina o pieniądzach w gminach.
 4. **`/o-serwisie` mówi, że pomoc publiczna jest „na razie dla kilku gmin”** —

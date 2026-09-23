@@ -1,5 +1,5 @@
 import { szukaj } from '@/lib/dane';
-import type { OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
+import { opisFirmy, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
 
 /**
@@ -34,6 +34,9 @@ export async function GET(zadanie: Request) {
       tytul: opisJednaLinia(g),
     })),
     glosowanWszystkich: w.glosowanWszystkich,
+    // Nazwa przechodzi przez regule prywatnosci juz w `szukajFirm` — tu jest
+    // tylko to, co wolno pokazac.
+    firmy: w.firmy.slice(0, 4).map((f) => ({ nip: f.nip, nazwa: f.nazwa, opis: opisFirmy(f) })),
   };
 
   return Response.json(odpowiedz, {

@@ -434,6 +434,55 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log(`   ${glosowania.length} glosowan w indeksie`);
   odnotujImport(db, 'szukaj-glosowania', glosowania.length);
 
+  log('-> wyliczenia: indeks firm — beneficjentow pomocy publicznej');
+  const maPomoc = db.prepare("select count(*) as c from sqlite_master where name = 'pomoc_publiczna'").get() as { c: number };
+  if (maPomoc.c) {
+    db.exec('begin');
+    db.exec(`
+      drop table if exists firmy_szukaj;
+      create table firmy_szukaj (
+        nip        text primary key,
+        nazwa      text not null,       -- z NAJNOWSZEGO przypadku, jak na stronie firmy
+        szukaj     text not null,       -- uprosc(nazwa); '' dopoki nie wypelnione
+        przypadkow integer not null,
+        brutto     real,
+        max_eur    real,                -- najwieksza POJEDYNCZA pomoc: decyduje o progu jawnosci
+        teryt      text
+      ) without rowid;
+      insert into firmy_szukaj(nip, nazwa, szukaj, przypadkow, brutto, max_eur, teryt)
+      select s.nip, coalesce(n.nazwa, ''), '', s.przypadkow, s.brutto, s.max_eur, n.teryt
+        from (select nip_beneficjenta as nip, count(*) as przypadkow,
+                     sum(wartosc_brutto) as brutto, max(wartosc_brutto_eur) as max_eur
+                from pomoc_publiczna where nip_beneficjenta is not null
+               group by nip_beneficjenta) s
+        join (select nip, nazwa, teryt from
+                (select nip_beneficjenta as nip, nazwa_beneficjenta as nazwa, teryt,
+                        row_number() over (partition by nip_beneficjenta
+                                           order by (nazwa_beneficjenta is null), dzien desc, id desc) as rn
+                   from pomoc_publiczna where nip_beneficjenta is not null)
+               where rn = 1) n on n.nip = s.nip;
+    `);
+    db.exec('commit');
+    // uprosc() to funkcja TS (SQL-owy lower() nie zdejmuje ogonkow), wiec klucz
+    // wyszukiwania wypelniamy partiami — przy calej historii to miliony firm
+    // i jeden select all() nie zmiescilby sie w pamieci.
+    const doKlucza = db.prepare("select nip, nazwa from firmy_szukaj where szukaj = '' limit 50000");
+    const ustawKlucz = db.prepare('update firmy_szukaj set szukaj = ? where nip = ?');
+    let firm = 0;
+    for (;;) {
+      const partia = doKlucza.all() as unknown as { nip: string; nazwa: string }[];
+      if (!partia.length) break;
+      db.exec('begin');
+      for (const f of partia) ustawKlucz.run(uprosc(f.nazwa) || ' ', f.nip);
+      db.exec('commit');
+      firm += partia.length;
+    }
+    log(`   ${firm} firm w indeksie`);
+    odnotujImport(db, 'szukaj-firmy', firm);
+  } else {
+    log('   pomijam — nie ma jeszcze tabeli pomoc_publiczna');
+  }
+
   log('-> wyliczenia: fundusze UE w gminach i powiatach');
   const maFundusze = db.prepare("select count(*) as c from sqlite_master where name = 'fe_miejsca'").get() as { c: number };
   if (maFundusze.c) {
