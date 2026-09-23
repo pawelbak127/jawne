@@ -13,6 +13,7 @@ import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
 import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl, kluczSmup } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
+import type { ApiEtap } from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
@@ -870,6 +871,87 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Proces legislacyjny — co sie stalo z projektem.
+ *
+ * Lista procesow to jedno zapytanie, ale sciezka kazdego z nich to osobne
+ * (kadencja 10: 1692 procesy). Etapy w rejestrze sa ZAGNIEZDZONE: skierowanie
+ * i sprawozdanie komisji sa dziecmi czytania. Splaszczamy je, zachowujac
+ * kolejnosc i poziom, bo czytelnik czyta sciezke z gory na dol, a nie drzewo.
+ *
+ * Wartosci slownikowe (stageType) zapisujemy TAKIE, JAKIE SA — nieznany typ
+ * ma sie pojawic na stronie pod wlasna nazwa z rejestru, a nie wywrocic import
+ * (wzorzec 2).
+ */
+async function importProcesow(db: DatabaseSync): Promise<void> {
+  log('-> procesy legislacyjne (Sejm: lista + sciezka kazdego procesu)');
+  const lista = await api.procesy();
+  log(`   ${lista.length} procesow w kadencji`);
+
+  const wstawProces = db.prepare(
+    `insert into procesy(numer, tytul, rodzaj, rodzaj_kod, uchwalony, data_wplyniecia, data_zakonczenia,
+                         eli, adres_publikacji, pilny, skrocony, ue, opis, zmieniony)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+     on conflict(numer) do update set tytul=excluded.tytul, rodzaj=excluded.rodzaj,
+       rodzaj_kod=excluded.rodzaj_kod, uchwalony=excluded.uchwalony,
+       data_wplyniecia=excluded.data_wplyniecia, data_zakonczenia=excluded.data_zakonczenia,
+       eli=excluded.eli, adres_publikacji=excluded.adres_publikacji, pilny=excluded.pilny,
+       skrocony=excluded.skrocony, ue=excluded.ue, opis=excluded.opis, zmieniony=excluded.zmieniony`,
+  );
+  const wstawEtap = db.prepare(
+    `insert into etapy_procesow(proces, kolejnosc, poziom, typ, nazwa, data, druk, komisja,
+                                decyzja, komentarz, posiedzenie, glos_posiedzenie, glos_numer)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+
+  // Splaszczenie drzewa etapow: (etap, poziom) w kolejnosci czytania.
+  const splaszcz = (etapy: readonly ApiEtap[], poziom = 0): { e: ApiEtap; poziom: number }[] =>
+    etapy.flatMap((e) => [{ e, poziom }, ...splaszcz(e.children ?? [], poziom + 1)]);
+
+  const PORCJA = 40;
+  let etapow = 0;
+  let zGlosowaniem = 0;
+  const typy = new Map<string, number>();
+  for (let i = 0; i < lista.length; i += PORCJA) {
+    const kawalek = lista.slice(i, i + PORCJA);
+    const pelne = await dlaKazdego(kawalek, (p) => api.proces(p.number));
+    db.exec('begin');
+    for (const p of pelne) {
+      wstawProces.run(
+        p.number, p.title, p.documentType ?? null, p.documentTypeEnum ?? null,
+        p.passed === undefined ? null : Number(p.passed),
+        p.processStartDate ?? null, p.closureDate ?? null, p.ELI ?? null, p.displayAddress ?? null,
+        p.urgencyStatus ?? null, p.shortenProcedure === undefined ? null : Number(p.shortenProcedure),
+        p.UE ?? null, p.description ?? null, p.changeDate ?? null,
+      );
+      db.prepare('delete from etapy_procesow where proces = ?').run(p.number);
+      splaszcz(p.stages ?? []).forEach(({ e, poziom }, k) => {
+        typy.set(e.stageType ?? '(bez typu)', (typy.get(e.stageType ?? '(bez typu)') ?? 0) + 1);
+        const gp = e.voting?.sitting ?? null;
+        const gn = e.voting?.votingNumber ?? null;
+        if (gp !== null && gn !== null) zGlosowaniem++;
+        wstawEtap.run(
+          p.number, k, poziom, e.stageType ?? null, e.stageName, e.date ?? null, e.printNumber ?? null,
+          e.committeeCode ?? null, e.decision ?? null, e.comment ?? null, e.sittingNum ?? null, gp, gn,
+        );
+        etapow++;
+      });
+    }
+    db.exec('commit');
+    if ((i + PORCJA) % 400 === 0 || i + PORCJA >= lista.length) log(`   ${Math.min(i + PORCJA, lista.length)}/${lista.length}`);
+  }
+
+  // Kontrola dziedziny: do czego naprawde prowadza etapy z glosowaniem.
+  const dopasowane = (db.prepare(
+    `select count(*) as c from etapy_procesow e
+       join glosowania g on g.posiedzenie = e.glos_posiedzenie and g.numer = e.glos_numer
+      where e.glos_posiedzenie is not null`,
+  ).get() as { c: number }).c;
+  log(`   ${etapow} etapow, ${zGlosowaniem} z odnosnikiem do glosowania, z tego ${dopasowane} trafia w nasza tabele glosowan`);
+  log(`   rodzaje etapow: ${[...typy.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t}=${n}`).join(', ')}`);
+  odnotujImport(db, 'procesy', lista.length, `${etapow} etapow, ${dopasowane} etapow z glosowaniem w bazie`);
+}
+
+/**
  * Wydatki gmin wedlug dzialow klasyfikacji budzetowej (GUS BDL, temat P2920).
  *
  * Budzet mowi, ile gmina wydala; dzialy mowia, NA CO. Bierzemy czternascie
@@ -1102,6 +1184,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   poslowie: importPoslow,
   glosowania: importGlosowan,
   glosy: importGlosow,
+  procesy: importProcesow,
   zdjecia: importZdjec,
   okregi: importOkregow,
   ludnosc: importLudnosci,

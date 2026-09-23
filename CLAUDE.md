@@ -36,7 +36,7 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023), z sumą SHA-256 |
@@ -75,6 +75,7 @@ npx eslint src ingest
 
 npm run import wszystko                    # pełny import (~25 min), bez SUDOP
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
+npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692 procesy)
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
@@ -296,6 +297,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+43. **Rejestr procesów nie zawsze podaje `stageType`.** W próbce 60 procesów
+    42 etapy przyszły z samym `stageName` („Rozpatrywanie na forum Sejmu”).
+    Kolumna `typ` jest więc `null`-owalna, a na stronie i tak pokazujemy nazwę.
+    Podobnie 485 z 1692 procesów nie ma `documentTypeEnum`. **Kod `committeeCode`
+    bywa równy `Sejm`** — to nie komisja, tylko skierowanie na posiedzenie izby;
+    napis „komisja Sejm” byłby nieprawdą.
 39. **Strony bez parametrów Next renderuje raz, przy `next build`.** `/`,
     `/stan`, `/pomoc-publiczna` i 499 stron posłów miały w manifeście
     `initialRevalidateSeconds: false` — na serwerze pokazywałyby stan z dnia

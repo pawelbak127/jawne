@@ -21,8 +21,8 @@ export default function StronaOSerwisie() {
         <p>
           Na stronie każdej gminy łączymy to z publicznymi pieniędzmi: projektami
           z Funduszy Europejskich (listy Ministerstwa Funduszy i Polityki Regionalnej)
-          i — na razie dla kilku gmin — pomocą publiczną dla firm z bazy SUDOP
-          prowadzonej przez UOKiK. Kwoty przeliczamy na mieszkańca według GUS,
+          i pomocą publiczną dla firm z bazy SUDOP prowadzonej przez UOKiK —
+          dzień po dniu dla całego kraju, bo historię dociągamy nocami. Kwoty przeliczamy na mieszkańca według GUS,
           a przypisanie gminy do okręgu wyborczego bierzemy z wyników PKW z 2023 roku.
         </p>
         <p>

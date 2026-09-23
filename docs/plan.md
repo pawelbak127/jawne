@@ -60,10 +60,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    po dokładnym NIP-ie, bo `/firma/[nip]` dla możliwej osoby fizycznej oddaje
    404 (sprawdzone na żywej stronie: bez tego wyszukiwarka prowadziła w martwy
    link i podawała nazwisko, którego strona nie pokazuje).
-3. **Opis serwisu obiecuje „co się stało z ustawą”**, czego nie ma
-   (`layout.tsx`, `/o-serwisie`), i nie wspomina o pieniądzach w gminach.
-4. **`/o-serwisie` mówi, że pomoc publiczna jest „na razie dla kilku gmin”** —
-   nieaktualne od 19.09, mamy dni dla całego kraju.
+3. ~~**Opis serwisu obiecuje „co się stało z ustawą”**, czego nie ma~~
+   **zrobione 23.09.2026**: `/ustawy` i `/ustawa/[numer]` — 1 692 procesy
+   kadencji, 16 136 etapów, droga od wpłynięcia do podpisu Prezydenta,
+   z odnośnikiem do imiennego głosowania (903 etapy trafiają w naszą tabelę
+   głosowań) i do druków PDF. Obietnica z opisu serwisu jest już prawdziwa.
+4. ~~**`/o-serwisie` mówi, że pomoc publiczna jest „na razie dla kilku gmin”**~~
+   **poprawione 23.09.2026**.
 5. ~~**Kontakt i polityka prywatności w stopce**~~ **zrobione 23.09.2026** —
    stopka ma „Polityka prywatności” i „Kontakt”; dopóki nie ma
    `JAWNE_KONTAKT`, „Kontakt” prowadzi do sekcji polityki, która mówi wprost,
@@ -116,7 +119,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    `/gmina/{teryt}/csv/{budzet|fundusze|pomoc}`. Format pod polskiego Excela
    (średnik, przecinek dziesiętny, UTF-8 z BOM). Te same zakresy i ta sama
    reguła nazw co strona; NIP tylko razem z jawną nazwą.
-4. **Pełniejsza strona firmy.** Dziś pomoc publiczna z SUDOP. Dołożyć:
+4. ~~**Proces legislacyjny**~~ **zrobione 23.09.2026** (było w „pomysłach”):
+   etap importu `procesy`, tabele `procesy` i `etapy_procesow`, strony
+   `/ustawy` (filtr: uchwalone / w toku / odrzucone i wycofane, stronicowanie
+   jawne) i `/ustawa/[numer]` (oś czasu etapów słowami rejestru). Zadanie
+   `sejm` na serwerze odświeża to codziennie.
+
+5. **Pełniejsza strona firmy.** Dziś pomoc publiczna z SUDOP. Dołożyć:
    - zamówienia publiczne z TED — **zmierzone 19.09.2026: wyszukiwanie po NIP
      wykonawcy działa** (`winner-identifier`). Zamiast pytać TED przy każdym
      wejściu na stronę: import wszystkich polskich ogłoszeń o udzieleniu

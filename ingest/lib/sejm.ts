@@ -56,3 +56,41 @@ export function adresPdf(g: ApiGlosowanie): string {
   return g.links?.find((l) => l.rel === 'pdf')?.href
     ?? `${BAZA}/votings/${g.sitting}/${g.votingNumber}/pdf`;
 }
+
+/** Jeden etap procesu legislacyjnego; rejestr zagniezdza je przez `children`. */
+export type ApiEtap = {
+  stageName: string;
+  /** Rejestr podaje go NIE ZAWSZE — zmierzone 23.09.2026 (patrz baza.ts). */
+  stageType?: string;
+  date?: string;
+  printNumber?: string;
+  committeeCode?: string;
+  decision?: string;
+  comment?: string;
+  sittingNum?: number;
+  voting?: { sitting?: number; votingNumber?: number };
+  children?: ApiEtap[];
+};
+
+export type ApiProces = {
+  number: string;
+  title: string;
+  documentType?: string;
+  documentTypeEnum?: string;
+  passed?: boolean;
+  processStartDate?: string;
+  closureDate?: string;
+  ELI?: string;
+  displayAddress?: string;
+  urgencyStatus?: string;
+  shortenProcedure?: boolean;
+  UE?: string;
+  description?: string;
+  changeDate?: string;
+  stages?: ApiEtap[];
+};
+
+// Lista procesow jest STRONICOWANA (domyslnie 50, naglowek X-Total-Count).
+// ZMIERZONE 23.09.2026: kadencja 10 ma 1692 procesy, limit=1700 oddaje wszystkie.
+export const procesy = () => pobierzJson<ApiProces[]>(`${BAZA}/processes?limit=2000`);
+export const proces = (numer: string) => pobierzJson<ApiProces>(`${BAZA}/processes/${numer}`);

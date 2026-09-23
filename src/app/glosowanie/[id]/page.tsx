@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby, wynikiKlubow } from '@/lib/dane';
+import { bazaDostepna, glosowanie, glosyWGlosowaniu, kluby, procesGlosowania, wynikiKlubow } from '@/lib/dane';
 import { BARWY_GLOSU, stylGlosu } from '@/lib/barwy-glosu';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
@@ -62,6 +62,8 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
     a kolorujemy wedlug GLOSU. Dzieki temu z jednego obrazka widac to, czego
     nie widac z zadnej tabeli: czy klub glosowal jednolicie, czy sie rozsypal.
   */
+  const droga = procesGlosowania(g.posiedzenie, g.numer);
+
   const wgKlubow = new Map<string, typeof glosy>();
   for (const glos of glosy) {
     const klucz = glos.klub_id ?? 'bez klubu';
@@ -125,6 +127,23 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
             W sprawach z oskarżenia prywatnego nie powtarzamy nazwisk oskarżycieli ani ich
             pełnomocników — to osoby prywatne. Nazwisko posła zostaje. Pełny tytuł jest
             w rejestrze Sejmu pod odnośnikiem poniżej.
+          </p>
+        ) : null}
+
+        {/*
+          Odnosnik do calej drogi projektu. To jest odpowiedz na pytanie,
+          ktore samo glosowanie zostawia otwarte: "i co z tego wyszlo?".
+        */}
+        {droga ? (
+          <p className="mt-4 rounded-xl border border-kreska bg-papier-2 px-4 py-3 text-sm">
+            <Link href={`/ustawa/${droga.numer}`} className="font-medium text-akcent underline underline-offset-4 hover:no-underline">
+              {`Co się stało z tym projektem (druk nr ${droga.numer}) →`}
+            </Link>
+            <span className="mt-0.5 block text-xs text-atrament-3">
+              {droga.koniec
+                ? `Stan według rejestru: ${droga.koniec}${droga.adres_publikacji ? ` · ${droga.adres_publikacji}` : ''}`
+                : 'Proces trwa'}
+            </span>
           </p>
         ) : null}
 

@@ -330,6 +330,56 @@ create table if not exists budzety_gmin (
 );
 
 /*
+ * Proces legislacyjny: co sie stalo z projektem od wplyniecia do Sejmu
+ * do podpisu Prezydenta. Jeden wiersz w procesy to jeden druk sejmowy,
+ * a etapy_procesow trzyma jego sciezke — SPLASZCZONA, bo rejestr zagniezdza
+ * etapy (skierowanie i sprawozdanie komisji sa dziecmi czytania), a kolejnosc
+ * czytania jest tym, co czytelnik chce zobaczyc.
+ *
+ * glos_posiedzenie i glos_numer to nasz klucz glosowania — dzieki nim
+ * strona ustawy prowadzi do imiennego glosowania i odwrotnie.
+ */
+create table if not exists procesy (
+  numer            text primary key,      -- numer druku, jak w rejestrze (tekst!)
+  tytul            text not null,
+  rodzaj           text,                  -- 'projekt ustawy', 'projekt uchwaly', ...
+  rodzaj_kod       text,                  -- documentTypeEnum
+  uchwalony        integer,               -- 1/0; null = rejestr nie podaje
+  data_wplyniecia  text,
+  data_zakonczenia text,
+  eli              text,                  -- identyfikator aktu, gdy juz opublikowany
+  adres_publikacji text,                  -- 'Dz.U. 2024 poz. 1234'
+  pilny            text,                  -- urgencyStatus, surowa wartosc rejestru
+  skrocony         integer,
+  ue               text,                  -- 'YES' | 'NO' — projekt wykonujacy prawo UE
+  opis             text,
+  zmieniony        text
+);
+create index if not exists procesy_rodzaj on procesy(rodzaj_kod);
+
+create table if not exists etapy_procesow (
+  proces           text not null,
+  kolejnosc        integer not null,      -- pozycja po splaszczeniu
+  poziom           integer not null,      -- 0 etap glowny, 1 podetap
+  -- ZMIERZONE 23.09.2026: rejestr NIE ZAWSZE podaje stageType. W probce
+  -- 60 procesow 42 etapy przyszly z samym stageName (np. "Rozpatrywanie
+  -- na forum Sejmu"). Nazwa jest zawsze — i to ona idzie na strone.
+  typ              text,                  -- stageType, gdy rejestr go poda
+  nazwa            text not null,         -- stageName
+  data             text,
+  druk             text,
+  komisja          text,
+  decyzja          text,
+  komentarz        text,
+  posiedzenie      integer,
+  glos_posiedzenie integer,
+  glos_numer       integer,
+  primary key (proces, kolejnosc),
+  foreign key (proces) references procesy(numer)
+) without rowid;
+create index if not exists etapy_glosowanie on etapy_procesow(glos_posiedzenie, glos_numer);
+
+/*
  * Wydatki gmin wedlug dzialow klasyfikacji budzetowej (GUS BDL, temat P2920).
  * Jeden wiersz to jeden dzial jednej gminy w jednym roku; 'ogolem' to suma
  * wszystkich dzialow z TEGO SAMEGO zrodla — mianownik dla procentow.

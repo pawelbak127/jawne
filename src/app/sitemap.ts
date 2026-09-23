@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { ADRES_SERWISU } from '@/lib/adres';
-import { bazaDostepna, beneficjenciDoMapy, glosowaniaDoMapy, okregi, slugiPoslow, terytyGmin, wojewodztwaGmin } from '@/lib/dane';
+import { bazaDostepna, beneficjenciDoMapy, glosowaniaDoMapy, okregi, procesyDoMapy, slugiPoslow, terytyGmin, wojewodztwaGmin } from '@/lib/dane';
 import { nazwaPodmiotuJawna, pominietoNazwiska } from '@/lib/prywatnosc';
 import { adresWojewodztwa } from '@/lib/tekst';
 
@@ -17,7 +17,7 @@ export const revalidate = 3600;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
-  const stale = ['/', '/gminy', '/okregi', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
+  const stale = ['/', '/gminy', '/okregi', '/ustawy', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
   if (!bazaDostepna()) return stale;
   return [
     ...stale,
@@ -25,6 +25,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...okregi().map((o) => ({ url: adres(`/okreg/${o.nr}`) })),
     ...wojewodztwaGmin().map((w) => ({ url: adres(`/gminy/${adresWojewodztwa(w.wojewodztwo)}`) })),
     ...terytyGmin().map((t) => ({ url: adres(`/gmina/${t}`) })),
+    // Druki z nazwiskiem osoby prywatnej w tytule maja noindex — jak glosowania.
+    ...procesyDoMapy().filter((p) => !pominietoNazwiska(p.tytul)).map((p) => ({ url: adres(`/ustawa/${p.numer}`) })),
     // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
     // bylaby sprzecznoscia.
     ...beneficjenciDoMapy().filter((b) => nazwaPodmiotuJawna(b.nazwa)).map((b) => ({ url: adres(`/firma/${b.nip}`) })),

@@ -29,6 +29,7 @@ const MENU: Grupa[] = [
     pozycje: [
       { adres: '/poslowie', etykieta: 'Posłowie', opis: 'kto jak głosuje i czy zgodnie z klubem' },
       { adres: '/glosowania', etykieta: 'Głosowania', opis: 'każdy głos imienny, z rejestru Sejmu' },
+      { adres: '/ustawy', etykieta: 'Ustawy', opis: 'co się stało z projektem, etap po etapie' },
       { adres: '/okregi', etykieta: 'Okręgi wyborcze', opis: 'gminy okręgu i posłowie z niego' },
     ],
   },

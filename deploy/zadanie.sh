@@ -23,7 +23,7 @@ sudop() {
 
 case "${1:-}" in
   sejm)
-    etapy="kluby poslowie glosowania glosy"
+    etapy="kluby poslowie glosowania glosy procesy"
     # Zdjecia to 499 zapytan do API Sejmu — raz w tygodniu wystarczy.
     if [ "$(date +%u)" = 1 ]; then etapy="$etapy zdjecia"; fi
     # shellcheck disable=SC2086

@@ -651,6 +651,122 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
 // Gmina: ludnosc, fundusze UE, pomoc publiczna
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Proces legislacyjny: co sie stalo z projektem
+// ---------------------------------------------------------------------------
+
+export type ProcesSkrot = {
+  numer: string;
+  tytul: string;
+  rodzaj: string | null;
+  uchwalony: number | null;
+  data_wplyniecia: string | null;
+  data_zakonczenia: string | null;
+  eli: string | null;
+  adres_publikacji: string | null;
+  /** Nazwa etapu koncowego z rejestru: "Uchwalono", "Odrzucono", "Wycofano". */
+  koniec: string | null;
+  ostatni_etap: string | null;
+  ostatnia_data: string | null;
+};
+
+const KOLUMNY_PROCESU = `p.numer as numer, p.tytul as tytul, p.rodzaj as rodzaj, p.uchwalony as uchwalony,
+  p.data_wplyniecia as data_wplyniecia, p.data_zakonczenia as data_zakonczenia, p.eli as eli,
+  p.adres_publikacji as adres_publikacji,
+  (select e.nazwa from etapy_procesow e where e.proces = p.numer and e.typ = 'End' limit 1) as koniec,
+  (select e.nazwa from etapy_procesow e where e.proces = p.numer
+    order by e.kolejnosc desc limit 1) as ostatni_etap,
+  (select max(e.data) from etapy_procesow e where e.proces = p.numer) as ostatnia_data`;
+
+/** Warunek SQL dla stanu procesu — jedno miejsce dla listy i dla licznikow. */
+function warunekStanu(stan: string): string {
+  if (stan === 'uchwalone') return "and exists (select 1 from etapy_procesow e where e.proces = p.numer and e.typ = 'End' and e.nazwa = 'Uchwalono')";
+  if (stan === 'zakonczone-inaczej') return "and exists (select 1 from etapy_procesow e where e.proces = p.numer and e.typ = 'End' and e.nazwa <> 'Uchwalono')";
+  if (stan === 'w-toku') return "and not exists (select 1 from etapy_procesow e where e.proces = p.numer and e.typ = 'End')";
+  return '';
+}
+
+export function liczbaProcesow(rodzaj = 'projekt ustawy', stan = ''): number {
+  return bezTabeli(
+    () => jeden<{ c: number }>(
+      `select count(*) as c from procesy p where p.rodzaj = ? ${warunekStanu(stan)}`, rodzaj,
+    )?.c ?? 0,
+    0,
+  );
+}
+
+/** Strona listy procesow — najnowsze u gory, bo o nich sie rozmawia. */
+export function stronaProcesow(od: number, ile: number, rodzaj = 'projekt ustawy', stan = ''): ProcesSkrot[] {
+  return bezTabeli(
+    () => wszystkie<ProcesSkrot>(
+      `select ${KOLUMNY_PROCESU} from procesy p
+        where p.rodzaj = ? ${warunekStanu(stan)}
+        order by coalesce(p.data_wplyniecia, '') desc, cast(p.numer as integer) desc
+        limit ? offset ?`,
+      rodzaj, ile, od,
+    ),
+    [],
+  );
+}
+
+export function proces(numer: string): ProcesSkrot | null {
+  return bezTabeli(
+    () => jeden<ProcesSkrot>(`select ${KOLUMNY_PROCESU} from procesy p where p.numer = ?`, numer),
+    null,
+  );
+}
+
+export function procesyDoMapy(): { numer: string; tytul: string }[] {
+  return bezTabeli(
+    () => wszystkie<{ numer: string; tytul: string }>('select numer, tytul from procesy'),
+    [],
+  );
+}
+
+export type EtapProcesu = {
+  kolejnosc: number;
+  poziom: number;
+  typ: string | null;
+  nazwa: string;
+  data: string | null;
+  druk: string | null;
+  komisja: string | null;
+  decyzja: string | null;
+  komentarz: string | null;
+  posiedzenie: number | null;
+  glos_posiedzenie: number | null;
+  glos_numer: number | null;
+  /** 1, gdy to glosowanie mamy u siebie — inaczej nie robimy z niego odnosnika. */
+  glosowanie_mamy: number;
+};
+
+export function etapyProcesu(numer: string): EtapProcesu[] {
+  return bezTabeli(
+    () => wszystkie<EtapProcesu>(
+      `select e.kolejnosc, e.poziom, e.typ, e.nazwa, e.data, e.druk, e.komisja, e.decyzja,
+              e.komentarz, e.posiedzenie, e.glos_posiedzenie, e.glos_numer,
+              (select count(*) from glosowania g
+                where g.posiedzenie = e.glos_posiedzenie and g.numer = e.glos_numer) as glosowanie_mamy
+         from etapy_procesow e where e.proces = ? order by e.kolejnosc`,
+      numer,
+    ),
+    [],
+  );
+}
+
+/** Proces, w ktorym padlo to glosowanie — odnosnik ze strony glosowania. */
+export function procesGlosowania(posiedzenie: number, numer: number): ProcesSkrot | null {
+  return bezTabeli(
+    () => jeden<ProcesSkrot>(
+      `select ${KOLUMNY_PROCESU} from procesy p
+        join etapy_procesow e on e.proces = p.numer
+        where e.glos_posiedzenie = ? and e.glos_numer = ? limit 1`,
+      posiedzenie, numer,
+    ),
+    null,
+  );
+}
+
 export type WydatekDzialu = { dzial: string; nazwa: string; kwota: number; udzial: number };
 export type WydatkiDzialami = {
   rok: number;
