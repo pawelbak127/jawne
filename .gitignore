@@ -52,3 +52,19 @@ scratchpad/
 .claude/
 .idea/
 .vscode/
+
+# Materialy od urzedow: pisma, zalaczniki i instrukcje z przykladowymi
+# kluczami (np. BIR1_Przyklady.docx od GUS). Zadne z nich nie jest potrzebne
+# do zbudowania serwisu, a bywaja w nich poswiadczenia i dane osobowe.
+# Trzymaj je w prywatne/ — ten katalog nie idzie do repozytorium.
+prywatne/
+*.eml
+*.msg
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.pptx
+
+# Zrodla danych, ktore trzymamy bajt w bajt, sa WYJATKIEM od reguly wyzej —
+# dodaje sie je swiadomie: git add -f ingest/zrodla/<plik>

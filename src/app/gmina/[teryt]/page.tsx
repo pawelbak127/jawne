@@ -4,8 +4,8 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
-  poslowieOkregu, smupGminy, TERYT_WARSZAWY, zrodloImportu,
-  type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup,
+  poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zrodloImportu,
+  type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
@@ -359,6 +359,7 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
   const naOsobe = naMieszkanca(budzet.dochody, ludnosc);
   const mediana = ludnosc ? porownanieBudzetu(wojewodztwo, budzet.rok) : null;
   const historia = historiaBudzetu(teryt);
+  const dzialy = wydatkiDzialami(teryt);
   const majatkoweNaOsobe = naMieszkanca(budzet.wydatki_majatkowe, ludnosc);
   const udzialWlasnych = budzet.dochody && budzet.dochody_wlasne !== null
     ? (100 * budzet.dochody_wlasne) / budzet.dochody
@@ -445,11 +446,63 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
         </div>
       ) : null}
 
+      {dzialy ? <NaCoWydaje dzialy={dzialy} ludnosc={ludnosc} /> : null}
+
       <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
         <span>{`Źródło: GUS, Bank Danych Lokalnych, sprawozdania budżetowe gmin za ${historia.length >= 2 ? `lata ${historia[0]!.rok}–${historia[historia.length - 1]!.rok}` : `${budzet.rok} r.`}`}</span>
         <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych" />
       </p>
     </section>
+  );
+}
+
+/**
+ * Na co gmina wydaje — dzialy klasyfikacji budzetowej.
+ *
+ * Pasek jest proporcja, nie ocena: nie ma "za duzo na administracje".
+ * Suma ma sie zgadzac do stu, dlatego ostatnia pozycja to zawsze
+ * "pozostale dzialy" policzone jako roznica wobec wydatkow ogolem.
+ */
+function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: number | null }) {
+  const naOsobe = (kwota: number) => (ludnosc ? zlote(Math.round(kwota / ludnosc)) : null);
+  const wiersze = [
+    ...dzialy.pozycje,
+    ...(dzialy.pozostale > 0
+      ? [{ dzial: 'pozostale', nazwa: 'Pozostałe działy', kwota: dzialy.pozostale, udzial: dzialy.pozostale / dzialy.ogolem }]
+      : []),
+  ];
+  return (
+    <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="font-medium">{`Na co gmina wydaje — ${dzialy.rok}`}</p>
+        <p className="liczby text-sm text-atrament-3">{`${zlote(dzialy.ogolem)} wydatków ogółem`}</p>
+      </div>
+      <ul className="mt-4 space-y-2.5">
+        {wiersze.map((w) => (
+          <li key={w.dzial} className="min-w-0">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm">
+              <span className={w.dzial === 'pozostale' ? 'text-atrament-2' : ''}>{w.nazwa}</span>
+              <span className="liczby shrink-0 text-atrament-2">
+                {`${(100 * w.udzial).toFixed(1).replace('.', ',')}%`}
+                <span className="text-atrament-3">{` · ${zlote(w.kwota)}`}</span>
+                {naOsobe(w.kwota) ? <span className="text-atrament-3">{` · ${naOsobe(w.kwota)} na mieszkańca`}</span> : null}
+              </span>
+            </div>
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-papier-3">
+              <div
+                className={`h-full rounded-full ${w.dzial === 'pozostale' ? 'bg-kreska-2' : 'bg-akcent'}`}
+                style={{ width: `${Math.max(0.4, 100 * w.udzial).toFixed(2)}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-xs leading-relaxed text-atrament-3">
+        Podział według działów klasyfikacji budżetowej — tej samej, którą gmina ma
+        w uchwale budżetowej. „Pozostałe działy” to różnica wobec wydatków ogółem,
+        a nie brak danych.
+      </p>
+    </div>
   );
 }
 

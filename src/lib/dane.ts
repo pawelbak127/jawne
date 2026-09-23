@@ -6,6 +6,7 @@ import { KLUBY, type Klub } from './kluby';
 import { uprosc, zapytanieFts } from './tekst';
 import { porownajZKlubem, type GlosZKlubem, type PorownanieZKlubem } from './niezaleznosc';
 import { nazwaDoPokazania } from './prywatnosc';
+import { nazwaDzialu } from './dzialy';
 import { KONTAKT } from './adres';
 
 /**
@@ -649,6 +650,42 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
 // ---------------------------------------------------------------------------
 // Gmina: ludnosc, fundusze UE, pomoc publiczna
 // ---------------------------------------------------------------------------
+
+export type WydatekDzialu = { dzial: string; nazwa: string; kwota: number; udzial: number };
+export type WydatkiDzialami = {
+  rok: number;
+  ogolem: number;
+  pozycje: WydatekDzialu[];
+  /** Dzialy spoza naszej listy, policzone jako roznica — nie zero. */
+  pozostale: number;
+};
+
+/**
+ * Na co gmina wydaje — wydatki wedlug dzialow klasyfikacji budzetowej.
+ *
+ * Mianownik ("ogolem") pochodzi z TEGO SAMEGO tematu BDL co dzialy, a nie
+ * z tabeli budzetow: inaczej procenty liczylyby sie wzgledem liczby z innego
+ * zestawienia i nie sumowalyby sie do stu.
+ */
+export function wydatkiDzialami(teryt: string): WydatkiDzialami | null {
+  return bezTabeli(() => {
+    const rok = jeden<{ rok: number }>(
+      "select max(rok) as rok from budzety_dzialy where teryt = ? and dzial = 'ogolem'", teryt,
+    )?.rok;
+    if (!rok) return null;
+    const wiersze = wszystkie<{ dzial: string; kwota: number }>(
+      'select dzial, kwota from budzety_dzialy where teryt = ? and rok = ?', teryt, rok,
+    );
+    const ogolem = wiersze.find((w) => w.dzial === 'ogolem')?.kwota ?? 0;
+    if (ogolem <= 0) return null;
+    const pozycje = wiersze
+      .filter((w) => w.dzial !== 'ogolem' && w.kwota > 0)
+      .map((w) => ({ dzial: w.dzial, nazwa: nazwaDzialu(w.dzial), kwota: w.kwota, udzial: w.kwota / ogolem }))
+      .sort((a, b) => b.kwota - a.kwota);
+    const suma = pozycje.reduce((a, p) => a + p.kwota, 0);
+    return { rok, ogolem, pozycje, pozostale: Math.max(0, ogolem - suma) };
+  }, null);
+}
 
 export type GminaPelna = Gmina & {
   okreg_nazwa: string | null;

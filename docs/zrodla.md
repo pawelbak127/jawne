@@ -100,9 +100,35 @@ zapytań — dlatego bierzemy wybór, nie całość.
 
 | Źródło | Co daje | Klucz |
 |---|---|---|
-| **GUS REGON (BIR 1.1)** | dane firm i JDG po NIP/REGON/KRS, PKD, adresy | darmowy, na wniosek e-mail |
 | **CEIDG API** | jednoosobowe działalności gospodarcze | darmowy token JWT po rejestracji |
 | **API KRS pełne** | dane niezanonimizowane | zgoda ministra, logowanie |
+
+## GUS REGON (BIR 1.2) — klucz jest od 23.09.2026, NIEZMIERZONE
+
+Klucz do środowiska produkcyjnego (zakres danych ogólnodostępnych) przyszedł
+e-mailem 23.09.2026. Leży w `.env.local` jako `GUS_BIR_KLUCZ`; na serwerze
+`sudo jawne ustaw GUS_BIR_KLUCZ`. **Ani jedno zapytanie nie zostało jeszcze
+wykonane — poniżej jest to, co pisze urząd, a nie to, co zmierzyliśmy.**
+
+| | |
+|---|---|
+| Usługa | `https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc` |
+| Protokół | **SOAP** (WSDL), nie REST — sesja przez `Zaloguj`, potem `DaneSzukajPodmioty` |
+| Dokumentacja | <https://api.stat.gov.pl/Home/RegonApi> (zakładka „Instrukcja”) |
+| Koszt | bezpłatny, bez ograniczenia czasowego |
+
+**Dlaczego to może być ważniejsze, niż wygląda.** Dziś `nazwaPodmiotuJawna`
+w `src/lib/prywatnosc.ts` **zgaduje z samej nazwy**, czy beneficjent pomocy
+publicznej jest firmą, czy osobą fizyczną (forma prawna w nazwie, lista imion
+z PESEL, kod pocztowy). REGON podaje formę prawną **wprost**, po NIP-ie.
+Zamiana zgadywania na fakt z rejestru byłaby najpoważniejszym ulepszeniem
+reguły prywatności od jej powstania — i zdjęłaby z niej wpadki w rodzaju
+„Zakład Fryzjerski Anna …”.
+
+**Do sprawdzenia przed użyciem** (nic z tego nie jest zmierzone):
+limity dobowe, czas odpowiedzi, czy zapytania zbiorcze po liście NIP-ów są
+możliwe, oraz **czy wolno nam przechowywać wynik** — zakres „ogólnodostępny”
+to nie to samo co „wolno republikować”.
 
 ## Odrzucone — z powodem
 

@@ -367,6 +367,16 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   faktyczny w dniu wysłania.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
+- **Klucze mają dwa miejsca i tylko dwa**: `.env.local` na komputerze
+  (`GUS_BDL_KLUCZ`, `SMUP_KLUCZ`, `GUS_BIR_KLUCZ`, `JAWNE_KONTAKT`)
+  i `/etc/jawne/jawne.env` na serwerze przez `sudo jawne ustaw NAZWA`.
+  Nigdy w repozytorium, nigdy w treści commita, nigdy w dokumentacji —
+  także jako „przykład”.
+- **Załączniki od urzędów** (pisma, instrukcje z przykładowymi kluczami,
+  np. `BIR1_Przyklady.docx` od GUS) idą do katalogu `prywatne/`, którego
+  nie ma w repozytorium. `.gitignore` odrzuca też `*.docx`, `*.xlsx`,
+  `*.eml` i `*.msg` w całym drzewie. Plik źródłowy, który ma być trzymany
+  bajt w bajt (jak CSV z PKW), dodaje się świadomie: `git add -f`.
 
 ---
 

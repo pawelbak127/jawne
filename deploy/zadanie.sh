@@ -30,7 +30,10 @@ case "${1:-}" in
     exec "$TSX" ingest/jobs/import.ts $etapy wyliczenia
     ;;
   gus)
-    exec "$TSX" ingest/jobs/import.ts ludnosc budzety smup wyliczenia
+    # `dzialy` (wydatki wg dzialow) to ok. 600 zapytan = 1,5 h bez klucza GUS,
+    # ale rok juz kompletny w bazie jest pomijany, wiec kolejne miesiace sa
+    # krotkie. Z kluczem (sudo jawne ustaw GUS_BDL_KLUCZ) to ok. 20 minut.
+    exec "$TSX" ingest/jobs/import.ts ludnosc budzety dzialy smup wyliczenia
     ;;
   fundusze)
     exec "$TSX" ingest/jobs/import.ts fundusze wyliczenia

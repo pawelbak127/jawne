@@ -17,6 +17,7 @@ import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
 import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
+import { nazwaDzialu, NAZWY_DZIALOW } from '../../src/lib/dzialy.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -881,23 +882,31 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
  * `unit-level=6` kazda jednostka podaje swoja wartosc, a ten wariant jako
  * jedyny obejmuje takze miasta na prawach powiatu.
  */
-const DZIALY_BUDZETU: [kod: string, nazwa: string, zmienna: number][] = [
-  ['ogolem', 'wydatki ogółem', 1548644],
-  ['801', 'Oświata i wychowanie', 202277],
-  ['855', 'Rodzina', 633070],
-  ['852', 'Pomoc społeczna', 202286],
-  ['600', 'Transport i łączność', 202232],
-  ['900', 'Gospodarka komunalna i ochrona środowiska', 202295],
-  ['750', 'Administracja publiczna', 202236],
-  ['921', 'Kultura i ochrona dziedzictwa narodowego', 202298],
-  ['926', 'Kultura fizyczna i sport', 202304],
-  ['700', 'Gospodarka mieszkaniowa', 202242],
-  ['754', 'Bezpieczeństwo publiczne i ochrona przeciwpożarowa', 202262],
-  ['851', 'Ochrona zdrowia', 202283],
-  ['854', 'Edukacyjna opieka wychowawcza', 202292],
-  ['010', 'Rolnictwo i łowiectwo', 202211],
-  ['757', 'Obsługa długu publicznego', 202271],
+const DZIALY_BUDZETU: [kod: string, zmienna: number][] = [
+  ['ogolem', 1548644],
+  ['801', 202277],
+  ['855', 633070],
+  ['852', 202286],
+  ['600', 202232],
+  ['900', 202295],
+  ['750', 202236],
+  ['921', 202298],
+  ['926', 202304],
+  ['700', 202242],
+  ['754', 202262],
+  ['851', 202283],
+  ['854', 202292],
+  ['010', 202211],
+  ['757', 202271],
 ];
+
+// Nazwy dzialow sa w src/lib/dzialy.ts — jedno miejsce dla importu i strony.
+// Kod bez nazwy zatrzymuje import TUTAJ, a nie dopiero na stronie.
+for (const [kod] of DZIALY_BUDZETU) {
+  if (kod !== 'ogolem' && !(kod in NAZWY_DZIALOW)) {
+    throw new Error(`Dzial ${kod} nie ma nazwy w src/lib/dzialy.ts`);
+  }
+}
 
 /**
  * Na co gminy wydaja pieniadze — jeden rok to 15 zmiennych po 40 stron
@@ -911,7 +920,7 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
   const odNowa = process.argv.includes('--od-nowa');
   log(`-> wydatki gmin wg dzialow (GUS BDL, ${DZIALY_BUDZETU.length} zmiennych x ${ileLat} lat; ${kluczBdl() ? 'z kluczem' : 'bez klucza — ok. 1,5 h na rok'})`);
 
-  const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${DZIALY_BUDZETU[1]![2]}?format=json`);
+  const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${DZIALY_BUDZETU[1]![1]}?format=json`);
   const lata = [...zmienna.years].sort((a, b) => b - a);
   const oczekiwane = new Set(
     (db.prepare("select teryt from gminy where rodzaj <> 'dzielnica Warszawy'").all() as unknown as { teryt: string }[]).map((r) => r.teryt),
@@ -934,9 +943,10 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
     }
 
     const kwoty = new Map<string, Map<string, number>>();
-    for (const [kod, nazwa, id] of DZIALY_BUDZETU) {
+    for (const [kod, id] of DZIALY_BUDZETU) {
       const m = await bdlZmiennaGmin(id, rok);
       kwoty.set(kod, m);
+      const nazwa = kod === 'ogolem' ? 'wydatki ogółem' : nazwaDzialu(kod);
       log(`   ${rok} ${kod.padEnd(6)} ${nazwa.slice(0, 40).padEnd(40)} ${m.size} gmin`);
       if (kod === 'ogolem' && m.size < oczekiwane.size * 0.95) break;
     }
