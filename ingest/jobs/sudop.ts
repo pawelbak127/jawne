@@ -366,12 +366,24 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
   // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
   const odlozone = new Set<string>();
+  // Zakres, ktory skonczyl sie bledem, tez odkladamy. ZMIERZONE w nocy
+  // 22/23.09.2026: pierwszy zakres nocy padl po godzinie, wyjatek wyszedl
+  // z petli i cala noc skonczyla sie na nim — ze 150 zapytan nie zostalo
+  // wykorzystane nic. Blad jednego zakresu to za malo, zeby stracic noc
+  // (wzorzec 2 w CLAUDE.md), ale trzy pod rzad znacza awarie po tamtej
+  // stronie albo u nas i wtedy konczymy.
+  const zBledem = new Map<string, string>();
+  const MAKS_BLEDOW_POD_RZAD = 3;
+  let bledowPodRzad = 0;
   let poprzedni = '';
   try {
     for (;;) {
-      const z = plan().find((x) => !odlozone.has(`${x.od}..${x.do}`));
+      const pominiete = (k: string) => odlozone.has(k) || zBledem.has(k);
+      const z = plan().find((x) => !pominiete(`${x.od}..${x.do}`));
       if (!z) {
-        log(odlozone.size ? 'Nic wiecej do pobrania poza odlozonymi zakresami.' : 'Nic wiecej do pobrania — historia kompletna.');
+        log(odlozone.size || zBledem.size
+          ? 'Nic wiecej do pobrania poza zakresami odlozonymi i tymi z bledem.'
+          : 'Nic wiecej do pobrania — historia kompletna.');
         break;
       }
       const zakres = `${z.od}..${z.do}`;
@@ -383,7 +395,22 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
       }
       poprzedni = zakres;
       log(`== ${z.powod}: ${zakres}`);
-      await przyrost(db, zakres, znane, z.odswiez, budzet);
+      try {
+        await przyrost(db, zakres, znane, z.odswiez, budzet);
+        bledowPodRzad = 0;
+      } catch (e) {
+        if (e instanceof KoniecPrzydzialu) throw e;
+        const tresc = e instanceof Error ? e.message : String(e);
+        log(`   BLAD na ${zakres}: ${tresc}`);
+        log('   Pobrane strony tego zakresu zostaja na dysku — nastepna noc je wznowi. Biore nastepny zakres.');
+        zBledem.set(zakres, tresc);
+        bledowPodRzad++;
+        poprzedni = '';
+        if (bledowPodRzad >= MAKS_BLEDOW_POD_RZAD) {
+          log(`   ${bledowPodRzad} zakresy pod rzad skonczyly sie bledem — koncze noc, zeby nie dobijac urzedu.`);
+          break;
+        }
+      }
     }
   } catch (e) {
     if (!(e instanceof KoniecPrzydzialu)) throw e;
@@ -393,6 +420,11 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   if (odlozone.size) {
     log(`ODLOZONE zakresy (po pobraniu wciaz w planie): ${[...odlozone].join(', ')}`);
     log('To znaczy, ze pobranie nie zmienilo stanu bazy — do sprawdzenia w kodzie, nie w urzedzie.');
+    process.exitCode = 1;
+  }
+  if (zBledem.size) {
+    log(`ZAKRESY Z BLEDEM (${zBledem.size}):`);
+    for (const [zakres, tresc] of zBledem) log(`   ${zakres}: ${tresc}`);
     process.exitCode = 1;
   }
 }

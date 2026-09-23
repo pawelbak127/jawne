@@ -61,14 +61,25 @@ stan() {
   if [ "$nieudanych" -gt 0 ]; then
     echo "   UWAGA: $nieudanych zadan skonczylo sie inaczej niz 'success' — sudo jawne logi <zadanie>"
   fi
-  local noc
-  noc=$(journalctl -u jawne-sudop-dzien -u jawne-sudop-historia --since -30h --no-pager 2>/dev/null \
-    | grep -oE '(Zapytan do urzedu[^,]*|Koniec na te noc: [^.]*|== (przerwane|dziura|historia|nieustalone): \S+)' \
-    | tail -8 || true)
-  if [ -n "$noc" ]; then
+  # Dwa osobne zadania, wiec i dwa osobne odczyty. ZMIERZONE 23.09.2026:
+  # zlozone w jeden widok pokazywaly "Zapytan do urzedu: 0" z zadania
+  # DZIENNEGO pod naglowkiem "Ostatnia noc" — a noc padla, nie doszedlszy
+  # do swojego podsumowania. To wygladalo, jakby noc nic nie zrobila.
+  local noc dzienny
+  noc=$(journalctl -u jawne-sudop-historia --since -30h --no-pager 2>/dev/null \
+    | grep -oE '(Zapytan do urzedu tej nocy[^,]*|Koniec na te noc: [^.]*|BLAD na [^ ]+: .*|== (przerwane|dziura|historia|nieustalone): \S+)' \
+    | tail -10 || true)
+  dzienny=$(journalctl -u jawne-sudop-dzien --since -30h --no-pager 2>/dev/null \
+    | grep -oE 'Zapytan do urzedu: [0-9]+' | tail -1 || true)
+  if [ -n "$noc" ] || [ -n "$dzienny" ]; then
     echo
     echo "== Ostatnia noc SUDOP"
-    echo "$noc" | sed 's/^/   /'
+    [ -n "$dzienny" ] && echo "   zadanie dzienne: $dzienny"
+    if [ -n "$noc" ]; then
+      echo "$noc" | sed 's/^/   historia: /'
+    else
+      echo "   historia: brak wpisow — zadanie nie doszlo do swojego podsumowania"
+    fi
   fi
   echo "== Dysk"
   df -h "$KATALOG" | tail -1 | awk '{print "   zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
