@@ -43,7 +43,12 @@ const spij = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const UA = 'jawne.pl/0.1 (serwis obywatelski; import reczny, jedno zapytanie w toku)';
 const KATALOG = join(process.cwd(), 'dane', 'zrodla', 'sudop');
 const CO_ILE_MS = 60_000;
-const HORYZONT_MS = 62 * 60_000;
+// ZMIERZONE w nocy 22/23.09.2026: rekord kolejki zyje ROWNO godzine. Zadanie
+// czekalo 59 minut ("czeka (1 min)" ... "czeka (59 min)"), a w 60. minucie
+// urzad oddal 404 "Nie znaleziono rekordu o podanym identyfikatorze".
+// Czekanie dluzej niz godzine nie moze sie udac — konczymy piec minut
+// wczesniej i mowimy wprost, ze wynik nie przyszedl w czasie zycia rekordu.
+const HORYZONT_MS = 55 * 60_000;
 const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
 
 async function get(url: string) {
@@ -116,7 +121,9 @@ async function wyszukaj(url: string, opis: string): Promise<OdpowiedzSudop> {
     }
     throw new Error(`${opis}: kolejka zwrocila ${r.status} ${r.tekst.slice(0, 200)}`);
   }
-  throw new Error(`${opis}: brak wyniku po ${HORYZONT_MS / 60_000} min (wynik wygasa po godzinie)`);
+  throw new Error(
+    `${opis}: kolejka nie oddala wyniku po ${HORYZONT_MS / 60_000} min, a rekord zyje godzine — odpuszczam ten zakres`,
+  );
 }
 
 /**

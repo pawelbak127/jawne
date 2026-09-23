@@ -240,6 +240,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     powtarzany. Daty `RRRR-MM-DD`, okno 10 lat, 10 000 wierszy na stronę.
     **`?csv=true` jest wadliwy** (przecinki bez cudzysłowu) — tylko JSON.
     Źródłem tych ustaleń jest instrukcja UOKiK (dane.gov.pl, zbiór 6068).
+    **Rekord kolejki żyje równo godzinę** (zmierzone 22/23.09.2026: 59 × `200`
+    „czeka”, w 60. minucie `404` „Nie znaleziono rekordu”). Czekanie dłużej
+    niż godzinę to gwarantowany `404` — horyzont ma 55 minut. Zakres, którego
+    kolejka nie oddała, jest odkładany i wraca następnej nocy; **błąd jednego
+    zakresu nie kończy nocy** (dopiero trzy pod rząd), bo inaczej jedna
+    nieudana rejestracja kosztuje cały przydział zapytań.
 27. **`exceljs` ciągnie `uuid` < 11.1.1** (podatność) — `overrides` w
     `package.json`; `exceljs` tylko w devDependencies, bo używa go import.
 28. **Import SUDOP pisze do tej samej bazy przez kilkadziesiąt minut.**

@@ -143,7 +143,13 @@ adresem, który można komuś pokazać.
     prosi właśnie o wskazanie dopuszczalnego tempa. **Decyzja Pawła
     z 19.09.2026: od pierwszej nocy serwera**, 25 zapytań, okno 01:00–06:00;
     **21.09: 50 zapytań; 22.09: 150 zapytań w oknie 22:00–07:00** — szacunek ze
-    zmierzonego rozkładu lat to ok. 2 900 zapytań do pełnych 10 lat (20–30 nocy),
+    zmierzonego rozkładu lat to ok. 2 900 zapytań do pełnych 10 lat (20–30 nocy).
+    **Noc 22/23.09 nie dała nic**: zapytanie zarejestrowane o 22:20 czekało
+    w kolejce 59 minut, a w 60. urząd oddał `404` — rekord kolejki żyje równo
+    godzinę. Poprawione: horyzont 55 minut (kończymy przed wygaśnięciem)
+    i błąd jednego zakresu nie kończy nocy. **Do decyzji Pawła: czy przesunąć
+    start historii z 22:20 na później** — oba pomiary szybkiej kolejki
+    (1–3 min) pochodzą z godzin 01:00–04:00,
   - **strona testowa otwarta dla każdego, kto zna adres** (decyzja Pawła
     z 19.09.2026); `noindex` zostaje, nazwy osób fizycznych ukryte do czasu
     `JAWNE_KONTAKT`,

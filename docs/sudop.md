@@ -146,6 +146,25 @@ o 09:00 UTC (opóźnienie harmonogramu po stronie GitHuba), a kolejka urzędu
 w godzinach pracy czekała **54 minuty** — w nocy 2–9. Przy 62-minutowym
 horyzoncie to blisko porażki. Cron przesunięty na 01:17 UTC.
 
+**Rekord kolejki żyje równo godzinę — zmierzone 22/23.09.2026.** Zapytanie
+zarejestrowane o 22:20 dostawało `200` („czeka”) przez 59 kolejnych minut,
+a w 60. minucie urząd oddał `404`:
+
+```
+{"error-result":"Brak zasobu",
+ "error-reason":"Nie znaleziono rekordu o podanym identyfikatorze"}
+```
+
+Czekanie dłużej niż godzinę **nie może się udać** — to nie awaria, tylko
+wygaśnięcie rekordu. Horyzont zszedł z 62 na **55 minut**: kończymy przed
+wygaśnięciem i mówimy wprost, że wynik nie przyszedł, zamiast raportować
+cudzy `404`. Ten sam zakres wraca w planie następnej nocy.
+
+**Wieczór to jeszcze nie noc.** Ta sama ścieżka: 22:20 — brak wyniku po
+59 minutach; 02:00 tej samej doby — strony po 1–2 minuty. Dwa pomiary to za
+mało na regułę, ale dość, żeby nie liczyć na to, że okno od 22:00 zachowuje
+się jak druga połowa nocy.
+
 **Data pobrania jest w pliku, nie w chwili importu.** Dane z Actions
 importujemy lokalnie nawet kilka dni później; gdyby liczyła się data importu,
 świeży dzień wyglądałby na ustalony. Każda zapisana odpowiedź ma pole
@@ -153,9 +172,12 @@ importujemy lokalnie nawet kilka dni później; gdyby liczyła się data importu
 
 ## Co z tego wynika — do decyzji Pawła
 
-**Przesłanka D13 „kolejka nie oddaje wyniku przed jego wygaśnięciem” dziś nie
-zachodzi.** Zostaje przesłanka mocniejsza: urząd napisał, że ruch przekracza
-jego możliwości. Skala importu całego kraju:
+**Przesłanka D13 „kolejka nie oddaje wyniku przed jego wygaśnięciem”
+wystąpiła pierwszy raz 22/23.09.2026** — po 23 nocach i kilkuset zapytaniach,
+przy zapytaniu zarejestrowanym o 22:20 (szczegóły wyżej). Do tej pory nie
+zachodziła ani razu, więc nie jest regułą, ale nie wolno już pisać, że
+„dziś nie zachodzi”. Zostaje przesłanka mocniejsza: urząd napisał, że ruch
+przekracza jego możliwości. Skala importu całego kraju:
 
 - szacunek **około 20 mln przypadków** na cały kraj (z pomiaru krajowego wyżej,
   nie z ekstrapolacji po liczbie mieszkańców),
