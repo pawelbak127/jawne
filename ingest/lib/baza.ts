@@ -330,6 +330,42 @@ create table if not exists budzety_gmin (
 );
 
 /*
+ * Zamowienia publiczne z TED (Tenders Electronic Daily) — ogloszenia
+ * o UDZIELENIU zamowienia (can-standard) z Polski. Jedno ogloszenie to
+ * jeden wiersz, a wykonawcy leza osobno, bo jedno ogloszenie miewa ich
+ * kilkunastu (zmierzone: 90 na 250 ogloszen ma wiecej niz jednego).
+ *
+ * UWAGA NA KWOTE: total-value dotyczy CALEGO ogloszenia, ze wszystkimi
+ * czesciami i wszystkimi wykonawcami. Nie wolno jej przypisac jednemu
+ * wykonawcy — strona firmy musi to mowic wprost.
+ *
+ * Kolumna wykonawcow to liczba wykonawcow podana przez TED, a wierszy
+ * w ted_wykonawcy bywa mniej: pole z NIP-em jest wolnym tekstem i czesc
+ * wpisow to REGON, numer zagraniczny albo smiec (patrz src/lib/nip.ts).
+ */
+create table if not exists ted_ogloszenia (
+  numer      text primary key,    -- numer publikacji, np. '370762-2026'
+  data       text not null,       -- data publikacji, RRRR-MM-DD
+  tytul      text,
+  nabywca    text,
+  nabywca_id text,
+  wartosc    real,                -- calego ogloszenia
+  waluta     text,
+  cpv        text,                -- glowny kod klasyfikacji
+  wykonawcow integer not null
+);
+create index if not exists ted_data on ted_ogloszenia(data desc);
+
+create table if not exists ted_wykonawcy (
+  numer text not null,
+  nip   text not null,            -- znormalizowany do dziesieciu cyfr
+  nazwa text,
+  primary key (numer, nip),
+  foreign key (numer) references ted_ogloszenia(numer)
+) without rowid;
+create index if not exists ted_wykonawcy_nip on ted_wykonawcy(nip);
+
+/*
  * Proces legislacyjny: co sie stalo z projektem od wplyniecia do Sejmu
  * do podpisu Prezydenta. Jeden wiersz w procesy to jeden druk sejmowy,
  * a etapy_procesow trzyma jego sciezke — SPLASZCZONA, bo rejestr zagniezdza

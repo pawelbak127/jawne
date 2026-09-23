@@ -69,15 +69,22 @@ const DO_PONOWIENIA = new Set([408, 425, 429, 500, 502, 503, 504]);
  */
 const PROB_404 = 3;
 
-export async function pobierz(url: string, opcje: { json?: boolean } = {}): Promise<Response> {
+export type OpcjeZapytania = { json?: boolean; metoda?: string; cialo?: string };
+
+// POST jest potrzebny TED-owi: jego wyszukiwarka przyjmuje zapytanie w ciele.
+// Ponawianie, limit rownoleglosci i Retry-After dzialaja tak samo jak przy GET.
+export async function pobierz(url: string, opcje: OpcjeZapytania = {}): Promise<Response> {
   await zajmij();
   try {
     let ostatniBlad = '';
     for (let proba = 1; proba <= PROB; proba++) {
       try {
         const odp = await fetch(url, {
+          method: opcje.metoda ?? 'GET',
+          body: opcje.cialo,
           headers: {
             'Accept': opcje.json === false ? '*/*' : 'application/json',
+            ...(opcje.cialo ? { 'Content-Type': 'application/json' } : {}),
             'User-Agent': 'jawne.pl/0.1 (agregator danych publicznych)',
             // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
             // Wysylamy go tylko do BDL — innym serwerom nic po nim.
@@ -118,8 +125,8 @@ export async function pobierz(url: string, opcje: { json?: boolean } = {}): Prom
   }
 }
 
-export async function pobierzJson<T>(url: string): Promise<T> {
-  const odp = await pobierz(url);
+export async function pobierzJson<T>(url: string, opcje: OpcjeZapytania = {}): Promise<T> {
+  const odp = await pobierz(url, opcje);
   return (await odp.json()) as T;
 }
 

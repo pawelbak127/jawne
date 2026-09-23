@@ -76,6 +76,7 @@ npx eslint src ingest
 npm run import wszystko                    # pełny import (~25 min), bez SUDOP
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
 npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692 procesy)
+npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
@@ -297,6 +298,16 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+45. **TED: okno wyników to `page × limit ≤ 15 000`** (powyżej HTTP 400
+    `SEARCH_WINDOW_TOO_WIDE`), a `limit` sięga 250. Polskich ogłoszeń
+    o udzieleniu zamówienia od początku kadencji jest 129 077 — dlatego
+    import idzie miesiąc po miesiącu. **`winner-identifier` to WOLNY TEKST**:
+    w jednym ogłoszeniu obok siebie stały „NIP 634-012-54-42”, „7281341936”,
+    „683-20-98-254” i „NIP 527 105 59 84”. Bez `nipZTekstu()` (z sumą
+    kontrolną — w tym polu bywają też REGON-y i numery zagraniczne) nic się
+    nie połączy z SUDOP. **Kwota `total-value` dotyczy CAŁEGO ogłoszenia**,
+    ze wszystkimi częściami i wykonawcami; 90 na 250 ogłoszeń ma więcej niż
+    jednego wykonawcę, więc sumujemy tylko te z jednym.
 44. **`systemctl show` dla NIEISTNIEJĄCEJ usługi zwraca wartości domyślne.**
     `sudo jawne uruchom sej` (literówka) wypisało „Unit jawne-sej.service not
     found”, a zaraz pod spodem **„Wynik: success”** — bo `systemctl show -p

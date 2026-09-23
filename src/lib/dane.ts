@@ -652,6 +652,67 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
+// Zamowienia publiczne z TED
+// ---------------------------------------------------------------------------
+
+export type ZamowienieTed = {
+  numer: string;
+  data: string;
+  tytul: string | null;
+  nabywca: string | null;
+  wartosc: number | null;
+  waluta: string | null;
+  cpv: string | null;
+  /** Ilu wykonawcow ma cale ogloszenie — kwota dotyczy ich wszystkich razem. */
+  wykonawcow: number;
+};
+
+export type ZamowieniaFirmy = {
+  ogloszen: number;
+  /** Suma wartosci ogloszen w PLN, w ktorych firma byla JEDYNYM wykonawca. */
+  sumaSama: number | null;
+  ogloszenSama: number;
+  /** Ogloszen, w ktorych wykonawcow bylo wiecej — kwoty nie da sie przypisac. */
+  ogloszenZInnymi: number;
+  lista: ZamowienieTed[];
+};
+
+/**
+ * Zamowienia publiczne firmy (TED).
+ *
+ * Kwota z TED dotyczy CALEGO ogloszenia: wszystkich czesci i wszystkich
+ * wykonawcow. Dlatego sumujemy TYLKO ogloszenia z jednym wykonawca, a reszte
+ * pokazujemy osobno i bez sumy. Inaczej firma, ktora dostala jedna z dziesieciu
+ * czesci, mialaby przy nazwisku wartosc calego przetargu.
+ */
+export function zamowieniaFirmy(nip: string, ile = 12): ZamowieniaFirmy {
+  return bezTabeli(() => {
+    const lista = wszystkie<ZamowienieTed>(
+      `select o.numer, o.data, o.tytul, o.nabywca, o.wartosc, o.waluta, o.cpv, o.wykonawcow
+         from ted_wykonawcy w join ted_ogloszenia o on o.numer = w.numer
+        where w.nip = ? order by o.data desc limit ?`,
+      nip, ile,
+    );
+    const sumy = jeden<{ ogloszen: number; sama: number; suma: number | null; zinnymi: number }>(
+      `select count(*) as ogloszen,
+              sum(case when o.wykonawcow = 1 then 1 else 0 end) as sama,
+              sum(case when o.wykonawcow = 1 and o.waluta = 'PLN' then o.wartosc end) as suma,
+              sum(case when o.wykonawcow > 1 then 1 else 0 end) as zinnymi
+         from ted_wykonawcy w join ted_ogloszenia o on o.numer = w.numer
+        where w.nip = ?`,
+      nip,
+    );
+    return {
+      ogloszen: sumy?.ogloszen ?? 0,
+      sumaSama: sumy?.suma ?? null,
+      ogloszenSama: sumy?.sama ?? 0,
+      ogloszenZInnymi: sumy?.zinnymi ?? 0,
+      lista,
+    };
+  }, { ogloszen: 0, sumaSama: null, ogloszenSama: 0, ogloszenZInnymi: 0, lista: [] });
+}
+
+// ---------------------------------------------------------------------------
 // Proces legislacyjny: co sie stalo z projektem
 // ---------------------------------------------------------------------------
 

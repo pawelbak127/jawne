@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zrodloImportu } from '@/lib/dane';
+import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna } from '@/lib/prywatnosc';
@@ -54,6 +54,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
   if (!w) notFound();
   const { f } = w;
   const przypadki = przypadkiFirmy(nip, 50);
+  const zamowienia = zamowieniaFirmy(nip);
   const imp = zrodloImportu('sudop');
 
   return (
@@ -148,6 +149,8 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
         ) : null}
       </section>
 
+      {zamowienia.ogloszen > 0 ? <Zamowienia z={zamowienia} /> : null}
+
       <p className="mt-10 text-sm text-atrament-2">
         {/*
           ZMIERZONE 22.09.2026: sam `f.teryt` nie wystarczy. Firmy z Warszawy
@@ -162,5 +165,80 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
         ) : null}
       </p>
     </div>
+  );
+}
+
+/**
+ * Zamowienia publiczne z TED.
+ *
+ * KWOTA Z TED DOTYCZY CALEGO OGLOSZENIA — wszystkich czesci i wszystkich
+ * wykonawcow. Dlatego sumujemy wylacznie ogloszenia z jednym wykonawca,
+ * a przy pozostalych piszemy, ilu ich bylo, i kwoty nie przypisujemy.
+ * Zmierzone: 90 na 250 polskich ogloszen ma wiecej niz jednego wykonawce.
+ */
+function Zamowienia({ z }: { z: ZamowieniaFirmy }) {
+  return (
+    <section className="mt-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="szryft text-2xl font-semibold">Zamówienia publiczne</h2>
+        <Zrodlo adres="https://ted.europa.eu" etykieta="TED — dziennik zamówień UE" />
+      </div>
+      <p className="mt-1 text-sm text-atrament-2">
+        {`${zOdmiana(z.ogloszen, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} o udzieleniu zamówienia, w których ta firma jest wskazana jako wykonawca.`}
+      </p>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
+          <p className="liczby szryft text-3xl font-semibold">{z.sumaSama === null ? '—' : zlote(z.sumaSama)}</p>
+          <p className="mt-1 text-sm font-medium">
+            {`z ${zOdmiana(z.ogloszenSama, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z jednym wykonawcą`}
+          </p>
+          <p className="mt-0.5 text-xs text-atrament-2">tylko kwoty w złotych</p>
+        </div>
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
+          <p className="liczby szryft text-3xl font-semibold">{liczba(z.ogloszenZInnymi)}</p>
+          <p className="mt-1 text-sm font-medium">ogłoszeń z kilkoma wykonawcami</p>
+          <p className="mt-0.5 text-xs text-atrament-2">
+            kwoty nie sumujemy — dotyczy całego ogłoszenia, nie tej firmy
+          </p>
+        </div>
+      </div>
+
+      <ul className="mt-4 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
+        {z.lista.map((o) => (
+          <li key={o.numer} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
+            <div className="min-w-0 flex-1">
+              <p className="leading-snug font-medium">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 130)}</p>
+              <p className="mt-1 text-sm text-atrament-2">{skroc(o.nabywca ?? '—', 80)}</p>
+              <p className="mt-1 text-xs text-atrament-3">
+                {`${dataKrotko(o.data)} · ogłoszenie ${o.numer}`}
+                {o.wykonawcow > 1 ? ` · ${zOdmiana(o.wykonawcow, 'wykonawca', 'wykonawców', 'wykonawców')}` : ''}
+              </p>
+            </div>
+            <div className="shrink-0 text-left sm:text-right">
+              <p className="liczby font-semibold">
+                {o.wartosc === null ? '—' : o.waluta === 'PLN' ? zlote(o.wartosc) : `${liczba(Math.round(o.wartosc))} ${o.waluta ?? ''}`}
+              </p>
+              <p className="text-xs text-atrament-3">{o.wykonawcow > 1 ? 'całe ogłoszenie' : ''}</p>
+              <a
+                className="text-xs text-akcent underline underline-offset-4 hover:no-underline"
+                href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                ogłoszenie (PDF)
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-3 text-xs leading-relaxed text-atrament-3">
+        Źródłem jest TED, unijny dziennik zamówień publicznych — trafiają tam zamówienia
+        powyżej progów unijnych, a nie wszystkie. Kwota dotyczy całego ogłoszenia, ze
+        wszystkimi częściami i wykonawcami; przy ogłoszeniach z kilkoma wykonawcami nie
+        da się z niej wyczytać, ile przypadło tej firmie.
+      </p>
+    </section>
   );
 }

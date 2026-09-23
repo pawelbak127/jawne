@@ -126,13 +126,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
    `sejm` na serwerze odświeża to codziennie.
 
 5. **Pełniejsza strona firmy.** Dziś pomoc publiczna z SUDOP. Dołożyć:
-   - zamówienia publiczne z TED — **zmierzone 19.09.2026: wyszukiwanie po NIP
-     wykonawcy działa** (`winner-identifier`). Zamiast pytać TED przy każdym
-     wejściu na stronę: import wszystkich polskich ogłoszeń o udzieleniu
-     zamówienia do lokalnej tabeli i złączenie po NIP. To samo da potem
-     „zamówienia w gminie” (po zamawiającym). Kwota ogłoszenia obejmuje
-     wszystkie części i wykonawców — trzeba zejść do poziomu części albo
-     pokazywać ją z tym zastrzeżeniem,
+   - ~~zamówienia publiczne z TED~~ **zrobione 23.09.2026**: etap importu
+     `zamowienia` (miesiąc po miesiącu, bo okno wyników TED to 15 tys.),
+     tabele `ted_ogloszenia` i `ted_wykonawcy`, sekcja „Zamówienia publiczne”
+     na stronie firmy. Kwota pokazywana z zastrzeżeniem: sumujemy wyłącznie
+     ogłoszenia z jednym wykonawcą, bo `total-value` dotyczy całego
+     ogłoszenia. **Zostaje**: zamówienia w gminie (po zamawiającym — trzeba
+     powiązać NIP nabywcy z gminą) i zejście do poziomu części,
    - identyfikatory z GLEIF (43 030 polskich podmiotów, pole `registeredAs` to KRS),
    - projekty unijne dopasowane po nazwie (listy FE nie mają NIP-u — dopasowanie
      po nazwie musi mieć próg pewności i być oznaczone jako niepewne).

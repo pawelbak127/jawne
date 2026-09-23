@@ -19,6 +19,8 @@ import { uprosc } from '../../src/lib/tekst.js';
 import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
 import { nazwaDzialu, NAZWY_DZIALOW } from '../../src/lib/dzialy.js';
+import { nipZTekstu } from '../../src/lib/nip.js';
+import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -870,6 +872,97 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   );
 }
 
+/** Kolejne miesiace od `od` do dzis, jako pary pierwszy-ostatni dzien. */
+function miesiace(od: string): { od: string; do: string }[] {
+  const wynik: { od: string; do: string }[] = [];
+  const start = new Date(`${od}T00:00:00Z`);
+  const dzis = new Date();
+  for (let d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d <= dzis; d.setUTCMonth(d.getUTCMonth() + 1)) {
+    const pierwszy = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+    const ostatni = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+    wynik.push({ od: pierwszy.toISOString().slice(0, 10), do: ostatni.toISOString().slice(0, 10) });
+  }
+  return wynik;
+}
+
+/**
+ * Zamowienia publiczne z TED: polskie ogloszenia o udzieleniu zamowienia.
+ *
+ * Miesiac po miesiacu, bo okno wynikow TED to page x limit <= 15 000
+ * (zmierzone — patrz ingest/lib/ted.ts). Miesiac juz kompletny w bazie jest
+ * pomijany: porownujemy liczbe ogloszen u nas z liczba, ktora podaje TED.
+ * `--od=RRRR-MM` zaweza zakres, `--od-nowa` pobiera wszystko od poczatku.
+ */
+async function importZamowien(db: DatabaseSync): Promise<void> {
+  const odKiedy = process.argv.find((a) => a.startsWith('--od='))?.split('=')[1] ?? '2023-11-01';
+  const odNowa = process.argv.includes('--od-nowa');
+  const okresy = miesiace(`${odKiedy}-01`.slice(0, 10));
+  log(`-> zamowienia publiczne z TED, ${okresy.length} miesiecy od ${okresy[0]!.od}`);
+
+  const wstawOgl = db.prepare(
+    `insert into ted_ogloszenia(numer, data, tytul, nabywca, nabywca_id, wartosc, waluta, cpv, wykonawcow)
+     values (?,?,?,?,?,?,?,?,?)
+     on conflict(numer) do update set data=excluded.data, tytul=excluded.tytul, nabywca=excluded.nabywca,
+       nabywca_id=excluded.nabywca_id, wartosc=excluded.wartosc, waluta=excluded.waluta,
+       cpv=excluded.cpv, wykonawcow=excluded.wykonawcow`,
+  );
+  const wstawWyk = db.prepare('insert or replace into ted_wykonawcy(numer, nip, nazwa) values (?,?,?)');
+  const ileWBazie = db.prepare('select count(*) as c from ted_ogloszenia where data between ? and ?');
+
+  let wykonawcow = 0;
+  let bezNipu = 0;
+  let rozjazdNazw = 0;
+  for (const okres of okresy) {
+    const zapytanie = zapytanieMiesiaca(okres.od, okres.do);
+    const pierwsza = await szukajTed(zapytanie, 1);
+    const wTed = pierwsza.totalNoticeCount ?? 0;
+    const mamy = (ileWBazie.get(okres.od, okres.do) as { c: number }).c;
+    if (!odNowa && wTed > 0 && mamy >= wTed) {
+      log(`   ${okres.od.slice(0, 7)}: ${mamy} z ${wTed} — komplet, pomijam`);
+      continue;
+    }
+
+    const stron = Math.min(Math.ceil(wTed / 250), 60);   // okno TED: 60 x 250
+    for (let strona = 1; strona <= stron; strona++) {
+      const odp = strona === 1 ? pierwsza : await szukajTed(zapytanie, strona);
+      db.exec('begin');
+      for (const o of odp.notices ?? []) {
+        const nipy = (o['winner-identifier'] ?? []).map((t) => nipZTekstu(t));
+        const nazwy = o['organisation-name-tenderer']?.pol ?? [];
+        // Nazwy wiazemy z NIP-ami po pozycji TYLKO, gdy list jest tyle samo.
+        // Zmierzone: w 9 na 250 ogloszen dlugosci sie roznia — wtedy nazwy
+        // nie zapisujemy, zamiast przypisac firmie cudzy NIP.
+        const mozna = nipy.length === nazwy.length;
+        if (!mozna && nipy.length) rozjazdNazw++;
+        wstawOgl.run(
+          o['publication-number'], (o['publication-date'] ?? '').slice(0, 10),
+          poPolsku(o['notice-title']), poPolsku(o['organisation-name-buyer']),
+          o['organisation-identifier-buyer']?.[0] ?? null,
+          o['total-value'] ?? null, o['total-value-cur']?.[0] ?? null,
+          o['classification-cpv']?.[0] ?? null, nipy.length,
+        );
+        nipy.forEach((nip, i) => {
+          if (!nip) { bezNipu++; return; }
+          wstawWyk.run(o['publication-number'], nip, mozna ? (nazwy[i] ?? null) : null);
+          wykonawcow++;
+        });
+      }
+      db.exec('commit');
+    }
+    log(`   ${okres.od.slice(0, 7)}: ${wTed} ogloszen w TED, pobrane`);
+  }
+
+  const wBazie = (db.prepare('select count(*) as c from ted_ogloszenia').get() as { c: number }).c;
+  const zNipem = (db.prepare('select count(distinct nip) as c from ted_wykonawcy').get() as { c: number }).c;
+  const wSudop = (db.prepare(
+    'select count(distinct w.nip) as c from ted_wykonawcy w join firmy_szukaj f on f.nip = w.nip',
+  ).get() as { c: number }).c;
+  log(`   razem ${wBazie} ogloszen, ${wykonawcow} wpisow wykonawcow, ${zNipem} roznych NIP-ow`);
+  log(`   ${bezNipu} wpisow bez czytelnego NIP-u, ${rozjazdNazw} ogloszen z rozjazdem liczby nazw i NIP-ow`);
+  log(`   ${wSudop} NIP-ow wystepuje tez w pomocy publicznej (SUDOP) — tam sie te dwa zbiory spotykaja`);
+  odnotujImport(db, 'zamowienia', wBazie, `TED can-standard, ${zNipem} NIP-ow wykonawcow`);
+}
+
 /**
  * Proces legislacyjny — co sie stalo z projektem.
  *
@@ -1185,6 +1278,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosowania: importGlosowan,
   glosy: importGlosow,
   procesy: importProcesow,
+  zamowienia: importZamowien,
   zdjecia: importZdjec,
   okregi: importOkregow,
   ludnosc: importLudnosci,
