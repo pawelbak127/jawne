@@ -297,6 +297,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+44. **`systemctl show` dla NIEISTNIEJĄCEJ usługi zwraca wartości domyślne.**
+    `sudo jawne uruchom sej` (literówka) wypisało „Unit jawne-sej.service not
+    found”, a zaraz pod spodem **„Wynik: success”** — bo `systemctl show -p
+    Result` oddał domyślne `success`. Nazwa zadania jest teraz sprawdzana
+    z listy, a wynik bierze się z kodu wyjścia `systemctl start`.
 43. **Rejestr procesów nie zawsze podaje `stageType`.** W próbce 60 procesów
     42 etapy przyszły z samym `stageName` („Rozpatrywanie na forum Sejmu”).
     Kolumna `typ` jest więc `null`-owalna, a na stronie i tak pokazujemy nazwę.

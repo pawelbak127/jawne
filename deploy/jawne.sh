@@ -188,10 +188,23 @@ case "${1:-stan}" in
     fi
     ;;
   uruchom)
-    [ -n "${2:-}" ] || { echo "Ktore? $ZADANIA"; exit 2; }
+    [ -n "${2:-}" ] || { echo "Ktore zadanie? $ZADANIA"; exit 2; }
+    # ZMIERZONE 23.09.2026: "sudo jawne uruchom sej" (literowka) oddalo
+    # "Unit jawne-sej.service not found", a zaraz pod spodem "Wynik: success".
+    # Powod: `systemctl show -p Result` dla NIEISTNIEJACEJ uslugi zwraca
+    # wartosc domyslna, czyli "success". Dlatego najpierw sprawdzamy nazwe,
+    # a potem patrzymy na kod wyjscia `systemctl start`, nie na Result.
+    case " $ZADANIA " in
+      *" $2 "*) ;;
+      *) echo "Nie ma zadania \"$2\". Sa: $ZADANIA"; exit 2 ;;
+    esac
     echo "Uruchamiam jawne-$2 i czekam na koniec (log: sudo jawne logi $2)..."
-    systemctl start "jawne-$2.service" || true
-    echo "Wynik: $(systemctl show -p Result --value "jawne-$2.service")  (success = dobrze)"
+    if systemctl start "jawne-$2.service"; then
+      echo "Wynik: $(systemctl show -p Result --value "jawne-$2.service")  (success = dobrze)"
+    else
+      echo "NIE UDALO SIE uruchomic jawne-$2.service (kod $?). Dziennik: sudo jawne logi $2"
+      exit 1
+    fi
     ;;
   sprawdz) sprawdz ;;
   aktualizuj)
