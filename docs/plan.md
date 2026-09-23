@@ -85,9 +85,14 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
      dwa osobne wykresy, kwoty nominalne z adnotacją o inflacji),
    - na co gmina wydaje (oświata, drogi, pomoc społeczna) — GUS BDL ma to
      w podziale na działy (temat P2920 i osobne tematy P2635–P2644), więc
-     nie trzeba plików Ministerstwa Finansów. **Wstrzymane 19.09.2026 przez
-     limit GUS: 1 000 zapytań na 12 godzin** — import 12 działów to ok. 480
-     zapytań, wejdzie po odnowieniu limitu,
+     nie trzeba plików Ministerstwa Finansów. **Stan na 23.09.2026: etapu
+     nie ma w kodzie** — `ETAPY` w `import.ts` to `kluby, poslowie,
+     glosowania, glosy, zdjecia, okregi, ludnosc, budzety, smup, fundusze,
+     wyliczenia`, a zadanie `gus` na serwerze uruchamia `ludnosc budzety
+     smup wyliczenia`. Wcześniejszy zapis „wstrzymane przez limit GUS"
+     mylił: nic nie czeka samo z siebie, trzeba to napisać. Koszt: ok. 480
+     zapytań, czyli bez klucza (100 na 15 min) ok. 1,5–2 h, z kluczem
+     (500 na 15 min) ok. 15 minut,
    - udziały gmin w PIT i CIT (zbiory 3313, 1878).
    - ~~**SMUP — import danych**~~ **zrobione 22.09.2026**: `npm run import smup`,
      364 119 wartości dla 2 477 gmin (15 miar × 10 lat), sprawdzone drugą drogą
