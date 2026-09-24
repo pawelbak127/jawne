@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { bazaDostepna, kluby, liczbaGlosowan, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
+import { bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
 import { dataSlownie, liczba, zOdmiana } from '@/lib/format';
 import { Polkole, type Blok } from '@/components/Polkole';
 import { Szukajka } from '@/components/Szukajka';
@@ -18,6 +18,7 @@ export default function StronaGlowna() {
   const glosowanNadCaloscia = liczbaGlosowan({ nadCaloscia: true });
   const listaOkregow = okregi();
   const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
+  const ustawUchwalonych = liczbaProcesow('projekt ustawy', 'uchwalone');
 
   const bloki: Blok[] = listaKlubow
     .filter((k) => k.mandaty !== null && k.mandaty > 0)
@@ -47,9 +48,9 @@ export default function StronaGlowna() {
             Kto Cię reprezentuje w&nbsp;Sejmie — i&nbsp;jak naprawdę głosuje.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
-            Wpisz swoją gminę: zobaczysz posłów ze swojego okręgu, ich głosy, to, czy
-            głosują jak klub, i publiczne pieniądze, które do niej trafiły. Przy każdej
-            liczbie jest odnośnik do rejestru.
+            Wpisz swoją gminę: zobaczysz jej budżet, pieniądze z Unii, pomoc publiczną
+            dla firm i zamówienia publiczne, a obok — posłów ze swojego okręgu i to, jak
+            głosują. Przy każdej liczbie jest odnośnik do rejestru.
           </p>
 
           <div className="mt-8 max-w-2xl">
@@ -74,18 +75,36 @@ export default function StronaGlowna() {
         </div>
       </section>
 
+      {/*
+        Sześć kart, bo serwis ma dziś sześć rzeczy do pokazania. Wcześniej
+        były cztery i nie było wśród nich ani ustaw, ani mapy, ani zamówień —
+        czytelnik nie mial skad wiedziec, ze one w ogole istnieja.
+        Kazda karta to PYTANIE czytelnika, nie nazwa naszej zakladki.
+      */}
       <section className="obszar pb-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Link href="/gminy" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Kto mnie reprezentuje i co trafia do mojej gminy?</p>
+            <p className="font-medium group-hover:text-akcent">Co trafia do mojej gminy?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              {`${liczba(gminLiczba)} gmin: posłowie z okręgu, projekty unijne i pomoc publiczna dla firm — zawsze w przeliczeniu na mieszkańca.`}
+              {`${liczba(gminLiczba)} gmin: budżet, projekty unijne, pomoc publiczna dla firm i zamówienia publiczne — zawsze w przeliczeniu na mieszkańca.`}
+            </p>
+          </Link>
+          <Link href="/mapa" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Gdzie w Polsce jest tych pieniędzy więcej?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              Mapa wszystkich gmin: dochody, fundusze europejskie i pomoc publiczna. Ciemniej znaczy więcej złotych na mieszkańca, nie „lepiej”.
             </p>
           </Link>
           <Link href="/poslowie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
             <p className="font-medium group-hover:text-akcent">Czy mój poseł głosuje jak klub?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
               {`Każdy głos porównany z resztą klubu — w ${liczba(stan.glosowan)} głosowaniach, zawsze z mianownikiem.`}
+            </p>
+          </Link>
+          <Link href="/ustawy" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
+            <p className="font-medium group-hover:text-akcent">Co się stało z tą ustawą?</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
+              {`Droga projektu przez Sejm etap po etapie — od wpłynięcia do podpisu Prezydenta. ${liczba(ustawUchwalonych)} uchwalonych w tej kadencji.`}
             </p>
           </Link>
           <Link href="/pomoc-publiczna" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
@@ -97,7 +116,7 @@ export default function StronaGlowna() {
           <Link href="/o-serwisie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
             <p className="font-medium group-hover:text-akcent">Skąd to wiadomo?</p>
             <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              Z rejestrów Sejmu, PKW, GUS, ministerstwa funduszy i UOKiK. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
+              Z rejestrów Sejmu, PKW, GUS, ministerstwa funduszy, UOKiK i TED. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
             </p>
           </Link>
         </div>

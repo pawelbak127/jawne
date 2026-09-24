@@ -214,6 +214,11 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
  * Prog NIE znosi listy `NIGDY`: spolka cywilna i wspolnota mieszkaniowa
  * zostaja ukryte niezaleznie od kwoty (w pomiarze wpadla tam "U&B s.c.").
  */
+// DO SPRAWDZENIA (24.09.2026): opisujemy te kwote jako „prog GBER", ale
+// tekstu rozporzadzenia 651/2014 nie udalo sie tego dnia otworzyc (EUR-Lex
+// oddaje pusta odpowiedz). Jesli prog transparentnosci w art. 9 jest WYZSZY,
+// to miedzy progami pokazujemy nazwiska, ktorych prawo publikowac nie kaze —
+// a na tym stoi uzasadnienie w tescie rownowagi. Bloker 3a w docs/plan.md.
 export const PROG_JAWNOSCI_EUR = 100_000;
 
 export type OpcjeNazwy = {

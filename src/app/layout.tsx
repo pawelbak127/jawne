@@ -28,8 +28,11 @@ export const metadata: Metadata = {
     default: 'jawne — Sejm bez komentarza',
     template: '%s · jawne',
   },
+  // Opis obiecuje dokladnie to, co serwis ma. Do 23.09.2026 mowil
+  // o „co sie stalo z ustawa", czego wtedy nie bylo, i milczal o pieniadzach
+  // w gminach, ktore byly polowa serwisu.
   description:
-    'Kto jak głosował, co się stało z ustawą i skąd to wiadomo. Każda liczba z odnośnikiem do oficjalnego rejestru Sejmu.',
+    'Kto jak głosował, co się stało z ustawą i ile publicznych pieniędzy trafiło do Twojej gminy. Każda liczba z odnośnikiem do rejestru, z którego pochodzi.',
   // Serwis przed premiera. Zdjac dopiero na wyrazne polecenie.
   robots: { index: false, follow: false },
 };
@@ -47,6 +50,9 @@ const ZRODLA_STOPKI: [string, string][] = [
   ['https://bdl.stat.gov.pl', 'GUS — Bank Danych Lokalnych'],
   ['https://dane.gov.pl/pl/dataset/13939', 'Listy projektów Funduszy Europejskich'],
   ['https://sudop.uokik.gov.pl', 'SUDOP — pomoc publiczna (UOKiK)'],
+  ['https://ted.europa.eu', 'TED — zamówienia publiczne UE'],
+  ['https://api.stat.gov.pl/Home/RegonApi', 'REGON — rejestr podmiotów (GUS)'],
+  ['https://www.geoportal.gov.pl/pl/dane/panstwowy-rejestr-granic-prg/', 'PRG — granice gmin (GUGiK)'],
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
