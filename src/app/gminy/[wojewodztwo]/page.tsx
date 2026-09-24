@@ -77,6 +77,19 @@ export default async function StronaGminWojewodztwa({ params }: { params: Promis
         {[...powiaty.entries()].map(([powiat, lista]) => (
           <section key={powiat} className="mb-7 break-inside-avoid">
             <h2 className="text-xs font-medium tracking-wider text-atrament-3 uppercase">{powiat}</h2>
+            {/* Warszawy nie ma w tabeli gmin — sa dzielnice. Odnosnik do calego
+                miasta stoi na czele ich listy, bo wiekszosc ludzi szuka
+                „Warszawy", a nie „Bemowa". */}
+            {powiat === 'Warszawa' ? (
+              <p className="mt-2">
+                <Link
+                  href="/gmina/146501"
+                  className="block rounded-lg border border-akcent bg-akcent-slaby px-3 py-2 text-sm font-medium text-akcent"
+                >
+                  Warszawa — całe miasto →
+                </Link>
+              </p>
+            ) : null}
             <ul className="mt-2 space-y-1.5">
               {lista.map((g) => (
                 <li key={g.teryt} className="min-w-0">

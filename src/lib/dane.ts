@@ -547,7 +547,7 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
       || a.nazwisko.localeCompare(b.nazwisko, 'pl'))
     .slice(0, 8);
 
-  const gminy = bezTabeli(
+  const gminy: GminaWWyszukiwaniu[] = bezTabeli(
     () => wszystkie<GminaWWyszukiwaniu>(
       `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat,
               g.wojewodztwo as wojewodztwo, g.okreg_nr as okreg_nr, g.uprawnionych as uprawnionych,
@@ -561,6 +561,20 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
     ),
     [],
   );
+
+  // Warszawy nie ma w tabeli gmin (sa 18 dzielnic), a to jej ludzie szukaja
+  // najczesciej. Dokladamy ja z przodu, gdy fraza pasuje do nazwy miasta.
+  if ('warszawa'.startsWith(q) || q.startsWith('warszaw')) {
+    const w = warszawaJakoGmina();
+    if (w && !gminy.some((g) => g.teryt === TERYT_WARSZAWY)) {
+      gminy.unshift({
+        teryt: w.teryt, nazwa: w.nazwa, rodzaj: w.rodzaj, powiat: w.powiat,
+        wojewodztwo: w.wojewodztwo, okreg_nr: w.okreg_nr, uprawnionych: w.uprawnionych,
+        okreg_nazwa: w.okreg_nazwa,
+      });
+      gminy.length = Math.min(gminy.length, 8);
+    }
+  }
 
   let glosowania: GlosowanieSkrot[] = [];
   let glosowanWszystkich = 0;
@@ -988,7 +1002,45 @@ export type GminaPelna = Gmina & {
   ludnosc_rok: number | null;
 };
 
+/**
+ * Warszawa jako CALE MIASTO.
+ *
+ * Nasza tabela gmin pochodzi z danych PKW, ktore dziela Warszawe na 18
+ * dzielnic (pulapka 24) — wiersza „Warszawa" tam nie ma. Ale budzet, fundusze
+ * UE, pomoc publiczna i zamowienia sa w bazie pod TERYT 146501, a od 23.09.2026
+ * mapa pokazuje jedna Warszawe i prowadzila do strony, ktora ODDAWALA 404.
+ *
+ * Skladamy wiec ten jeden wiersz z dzielnic, zamiast dopisywac go do tabeli
+ * gmin: tam psulby liczniki i mediany (Warszawa liczona raz jako miasto
+ * i osiemnascie razy jako dzielnice).
+ */
+function warszawaJakoGmina(): GminaPelna | null {
+  return bezTabeli(() => {
+    const d = jeden<{ uprawnionych: number | null; okreg_nr: number; okreg_nazwa: string | null; rok: number | null }>(
+      `select sum(g.uprawnionych) as uprawnionych, min(g.okreg_nr) as okreg_nr,
+              min(o.nazwa) as okreg_nazwa, max(l.rok) as rok
+         from gminy g join okregi o on o.nr = g.okreg_nr
+         left join ludnosc l on l.teryt = g.teryt
+        where g.rodzaj = 'dzielnica Warszawy'`,
+    );
+    if (!d) return null;
+    return {
+      teryt: TERYT_WARSZAWY,
+      nazwa: 'Warszawa',
+      rodzaj: 'miasto na prawach powiatu',
+      powiat: 'Warszawa',
+      wojewodztwo: 'mazowieckie',
+      okreg_nr: d.okreg_nr,
+      okreg_nazwa: d.okreg_nazwa,
+      uprawnionych: d.uprawnionych,
+      ludnosc: ludnoscWarszawy(),
+      ludnosc_rok: d.rok,
+    };
+  }, null);
+}
+
 export function gminaPelna(teryt: string): GminaPelna | null {
+  if (teryt === TERYT_WARSZAWY) return warszawaJakoGmina();
   return bezTabeli(
     () => jeden<GminaPelna>(
       `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat,
