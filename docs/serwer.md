@@ -288,6 +288,7 @@ lat, bo 2020 ma pięciokrotność zwykłego roku — czyli **20–30 nocy**.
 | ⚠ nie rób | `git pull`, `npm`, `sudo chown` ręcznie w `/srv/jawne` — katalog należy do użytkownika `jawne`, a ręczne polecenia zabierają mu go i strona traci prawo zapisu |
 | `sudo jawne ustaw GUS_BDL_KLUCZ` | wpis klucza — pyta o wartość, nie zostaje w historii |
 | `sudo jawne kopia` | kopia bazy i odpowiedzi SUDOP do ściągnięcia na komputer |
+| `sudo jawne klucze` | które klucze są ustawione — **bez pokazywania wartości** |
 
 **Klucz GUS**, gdy go dostaniesz: `sudo jawne ustaw GUS_BDL_KLUCZ`, potem
 `sudo jawne uruchom gus`. **Adres kontaktowy** (bloker 1):

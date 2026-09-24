@@ -9,6 +9,7 @@
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
 #   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST
+#   sudo jawne klucze        ktore z nich sa ustawione (wartosci NIE pokazujemy)
 #   sudo jawne kopia         baza + odpowiedzi SUDOP do /tmp, do sciagniecia przez scp
 set -euo pipefail
 
@@ -217,6 +218,24 @@ case "${1:-stan}" in
       exit 1
     fi
     ;;
+  klucze)
+    # Pokazujemy TYLKO, czy klucz jest — nigdy wartosci. Klucz wypisany
+    # w terminalu zostaje w historii powloki i w logach sesji.
+    echo "Ustawienia w $USTAWIENIA:"
+    for n in GUS_BDL_KLUCZ GUS_BIR_KLUCZ SMUP_KLUCZ JAWNE_KONTAKT JAWNE_HOST JAWNE_ADRES_SERWISU; do
+      wartosc=$(sed -n "s/^$n=//p" "$USTAWIENIA" 2>/dev/null | tail -1)
+      if [ -z "$wartosc" ]; then
+        printf '   %-22s %s
+' "$n" 'BRAK'
+      elif [ "$n" = JAWNE_KONTAKT ] || [ "$n" = JAWNE_HOST ] || [ "$n" = JAWNE_ADRES_SERWISU ]; then
+        printf '   %-22s %s
+' "$n" "$wartosc"
+      else
+        printf '   %-22s %s
+' "$n" "ustawiony (${#wartosc} znakow)"
+      fi
+    done
+    ;;
   sprawdz) sprawdz ;;
   aktualizuj)
     # ZMIERZONE 20.09.2026 na serwerze: "git pull" wykonany jako ubuntu konczy
@@ -232,7 +251,7 @@ case "${1:-stan}" in
   ustaw) ustaw "${2:-}" ;;
   kopia) kopia ;;
   *)
-    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac

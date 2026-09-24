@@ -100,9 +100,20 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
         </ol>
       )}
 
+      {/*
+        ZGLOSZENIE PAWLA 24.09.2026: „druk 3101 — nie mozna otworzyc pliku".
+        Zmierzone tego samego dnia: ten sam adres oddal 404, a zaraz potem
+        piec razy 200. To pulapka 1 (API Sejmu za F5 oddaje 404 na poprawna
+        sciezke). Link jest dobry — zawodzi usluga, i tak to mowimy.
+      */}
       <p className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
         <span>{`Źródło: rejestr procesów legislacyjnych Kancelarii Sejmu, druk nr ${p.numer}`}</span>
         <Zrodlo adres={REJESTR(p.numer)} etykieta="przebieg procesu w Sejmie" />
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+        Druki otwierają się prosto z API Sejmu. Zdarza mu się oddać błąd na poprawny
+        adres — jeśli plik się nie otworzy, spróbuj ponownie za chwilę. Nie kopiujemy
+        druków do siebie: to dokumenty Kancelarii Sejmu i mają pochodzić od niej.
       </p>
     </div>
   );
