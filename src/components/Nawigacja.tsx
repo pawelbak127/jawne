@@ -31,6 +31,7 @@ const MENU: Grupa[] = [
       { adres: '/glosowania', etykieta: 'Głosowania', opis: 'każdy głos imienny, z rejestru Sejmu' },
       { adres: '/ustawy', etykieta: 'Ustawy', opis: 'co się stało z projektem, etap po etapie' },
       { adres: '/okregi', etykieta: 'Okręgi wyborcze', opis: 'gminy okręgu i posłowie z niego' },
+      { adres: '/sala', etykieta: 'Sala posiedzeń', opis: 'kto gdzie siedzi, z planu Kancelarii' },
     ],
   },
   {

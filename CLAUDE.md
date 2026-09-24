@@ -36,10 +36,10 @@ są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/sala`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
-| `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023) i opisy źródeł zbyt dużych na repozytorium (PRG), z sumą SHA-256 |
+| `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023, plan sali Sejmu) i opisy źródeł zbyt dużych na repozytorium (PRG), z sumą SHA-256 |
 | `src/components/` | komponenty; `'use client'` tylko tam, gdzie potrzebna interakcja |
 | `ingest/` | import do SQLite: Sejm, PKW, GUS, listy FE; SUDOP osobnym, ręcznym skryptem |
 | `docs/zrodla.md` | katalog źródeł danych publicznych (też o firmach) ze statusem: zmierzone / z dokumentacji / odrzucone |
@@ -87,6 +87,7 @@ npm run import smup                        # wskazniki SMUP gmin (SMUP_KLUCZ), ~
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 node --experimental-strip-types scripts/granice-gmin.mjs   # public/mapa/gminy.json z PRG (patrz ingest/zrodla/prg)
+node scripts/plan-sali.mjs                 # src/lib/plan-sali.ts z rysunku sali (ingest/zrodla/sejm-sala)
 
 # SUDOP — tylko ręcznie (patrz Bezpieczeństwo). Dwa tryby:
 npx tsx ingest/jobs/sudop.ts --gminy=100101,100102          # 10 lat jednej gminy
@@ -396,6 +397,25 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     62 177 wyników, a urząd dopisuje dalej. Strony z jednego ciągu mają liczbę
     identyczną (33 409 × 4, 45 377 × 5) — `pobierzPrzyrost` to sprawdza
     i przy rozjeździe pobiera starsze strony ponownie.
+
+50. **Kto gdzie siedzi, jest TYLKO w rysunku sali.** `/sejm/term10/MP/{id}` ma
+    klub, okręg, zawód i wykształcenie — numeru miejsca nie ma. Rysunek
+    Kancelarii Sejmu (PDF) jest wektorowy, więc 460 nazwisk i 518 numerów
+    miejsc to prawdziwy tekst ze współrzędnymi. Trzy pułapki przy czytaniu:
+    nazwisko idzie **glif po glifie i przeskakuje między dwoma fontami
+    w środku wyrazu** („Hołownia” to `<B.>` + `(H)` + `<oło>` + `(wnia)`);
+    po pokazaniu kilku glifów naraz kolejny `Td` nadrabia ich szerokości, więc
+    dopuszczalny odstęp musi rosnąć z liczbą glifów (inaczej „Wawer” rozpada
+    się na „Waw” i „er”); podpisy są skracane i rozstrzyga je dopiero
+    wykluczenie („K. Bosak” to Krzysztof, bo „K. A. Bosak” to Karina Anna).
+    **Kontrola drugą drogą: rozkład klubów z rysunku zgadza się z rejestrem
+    co do jednego mandatu** we wszystkich 12 klubach — przy pomylonych
+    nazwiskach barwy byłyby szachownicą, a nie blokami.
+51. **`orka.sejm.gov.pl` stoi za Imperva.** Pierwsze żądanie dostaje `302` pod
+    **ten sam adres** razem z `Set-Cookie`; bez słoika na ciasteczka `curl`
+    kręci się w kółko („too many redirects”). `www.sejm.gov.pl` oddaje `403`
+    nawet z ciasteczkami — strony HTML Sejmu nie da się tak pobrać, `api.sejm.gov.pl`
+    i `orka` działają.
 
 ---
 

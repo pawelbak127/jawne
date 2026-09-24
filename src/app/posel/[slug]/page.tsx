@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, ostatnieGlosyPosla, porownanieZKlubem, posel, slugiPoslow, statystykiPosla,
+  bazaDostepna, kluby, listaPoslow, ostatnieGlosyPosla, porownanieZKlubem, posel, slugiPoslow,
+  statystykiPosla,
 } from '@/lib/dane';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
 import { stylGlosu } from '@/lib/barwy-glosu';
@@ -12,7 +13,10 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { KartaGlosowania } from '@/components/KartaGlosowania';
+import { PlanSali } from '@/components/PlanSali';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
+import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU, ZRODLO_PLANU } from '@/lib/plan-sali';
+import { miejscePosla, polaczPlan } from '@/lib/sala';
 
 export function generateStaticParams() {
   if (!bazaDostepna()) return [];
@@ -42,6 +46,9 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const adresRejestru = `https://www.sejm.gov.pl/sejm10.nsf/posel.xsp?id=${String(p.id).padStart(3, '0')}`;
 
   const porownanie = porownanieZKlubem(p.id);
+  // Plan sali jest starszy niz sklad izby, wiec posel moze go nie miec.
+  const miejsce = miejscePosla(MIEJSCA, p.id);
+  const planSali = miejsce ? polaczPlan(MIEJSCA, listaPoslow()).miejsca : [];
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 
@@ -116,6 +123,32 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
           <Zrodlo adres={adresRejestru} etykieta="strona posła w Sejmie" className="mt-4" />
         </div>
       </header>
+
+      {miejsce ? (
+        <section className="mt-10">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="szryft text-2xl font-semibold">Gdzie siedzi w sali</h2>
+            <Zrodlo adres={ZRODLO_PLANU} etykieta="plan sali, Kancelaria Sejmu" />
+          </div>
+          <p className="mt-2 text-sm text-atrament-2">
+            {miejsce[1] === null
+              ? `Zaznaczone miejsce pochodzi z rysunku sali ze stanem na ${dataSlownie(STAN_PLANU)}. Numeru tego miejsca nie dało się odczytać jednoznacznie, więc go nie podajemy.`
+              : `Miejsce nr ${miejsce[1]}, według rysunku sali ze stanem na ${dataSlownie(STAN_PLANU)}.`}{' '}
+            <Link href="/sala" className="text-akcent underline underline-offset-4">
+              Cała sala
+            </Link>
+          </p>
+          <div className="mt-4 max-w-3xl">
+            <PlanSali
+              miejsca={planSali}
+              szerokosc={PLAN_SZEROKOSC}
+              wysokosc={PLAN_WYSOKOSC}
+              wyroznionyId={p.id}
+              stan={dataSlownie(STAN_PLANU)}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {/* Mandat wygasl — pokazujemy SUROWY powod z rejestru, bez interpretacji. */}
       {p.aktywny === 0 && p.przyczyna_wygasniecia ? (

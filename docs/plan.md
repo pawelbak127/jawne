@@ -50,6 +50,32 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | Poziomy suwak na `/stan` — „do uwalenia” | tabela zamieniona na karty; strona szersza (`max-w-5xl`), nic nie przewija się w bok |
 | „Tylko środkowa część ekranu jest wykorzystana” | `/stan` poszerzone; strony tekstowe (`/o-serwisie`, `/prywatnosc`) zostają wąskie, bo tam wąska kolumna jest zaletą |
 
+### Plan sali posiedzeń — zrobione 24.09.2026
+
+Paweł znalazł rysunek sali wydawany przez Kancelarię Sejmu i poprosił, żeby
+miejsca były na stronie: najechanie pokazuje, kto siedzi, kliknięcie prowadzi
+na profil. Zrobione:
+
+- `ingest/zrodla/sejm-sala/plan-sali.pdf` — rysunek bajt w bajt, z sumą SHA-256
+  i opisem, jak go pobrać (`orka.sejm.gov.pl` stoi za Imperva, patrz pułapka 51),
+- `scripts/plan-sali.mjs` — czyta tekst z PDF-a razem ze współrzędnymi
+  i generuje `src/lib/plan-sali.ts`; **460 z 460 posłów rozpoznanych**,
+  457 z numerem miejsca (przy 3 numer dałby się przypisać do dwóch nazwisk,
+  więc jest `null`),
+- `/sala` — plan całej izby: szukanie po nazwisku i numerze miejsca,
+  podświetlanie klubu z legendy, chmurka pod kursorem, na dotyku karta
+  z przyciskiem (ta sama reguła, co na mapie gmin),
+- sekcja „Gdzie siedzi w sali" na stronie posła, z numerem miejsca,
+- `/stan` mówi, że to jedyne źródło odświeżane **ręcznie**: każde wydanie
+  rysunku ma inny adres.
+
+**Sprawdzone drugą drogą:** rozkład klubów policzony z rysunku zgadza się
+z rejestrem co do jednego mandatu we wszystkich 12 klubach (suma 460).
+
+**Do zrobienia przy następnym rysunku:** podmienić PDF, poprawić `SHA_ZRODLA`
+i `ADRES_ZRODLA` w skrypcie, uruchomić go i sprawdzić, czy nadal wychodzi
+460 z 460.
+
 ## Usterki — zgłoszone, niepilne
 
 | | Co | Zgłoszone |

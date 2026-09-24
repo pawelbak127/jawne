@@ -16,7 +16,8 @@
  * KOLEJNOSC jest nasza, nie zmierzona. To uklad od lewej do prawej wedlug
  * przyjetej konwencji sceny politycznej, dobrany tak, zeby SASIADUJACE bloki
  * mialy rozne odcienie — dystans CIE76 kazdej pary sasiadow sprawdza test.
- * Rejestr Sejmu nie publikuje planu sali, wiec nie udajemy, ze go mamy.
+ * API Sejmu nie podaje przydzialu miejsc, wiec polkole go nie udaje. Prawdziwy
+ * plan sali — z rysunku Kancelarii Sejmu — jest osobno: `/sala`.
  */
 
 export type Klub = {

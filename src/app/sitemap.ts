@@ -17,7 +17,7 @@ export const revalidate = 3600;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
-  const stale = ['/', '/gminy', '/mapa', '/okregi', '/ustawy', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
+  const stale = ['/', '/gminy', '/mapa', '/okregi', '/sala', '/ustawy', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
   if (!bazaDostepna()) return stale;
   return [
     ...stale,

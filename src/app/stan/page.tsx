@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { bazaDostepna, podsumowanie, stanImportu } from '@/lib/dane';
 import { dataSlownie, liczba } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
+import { STAN_PLANU, ZRODLO_PLANU } from '@/lib/plan-sali';
 import { Zrodlo } from '@/components/Zrodlo';
 
 export const metadata: Metadata = {
@@ -116,6 +117,12 @@ export default function StronaStanu() {
           <li className="flex flex-wrap items-center gap-2">
             Pomoc publiczna dla przedsiębiorców:
             <Zrodlo adres="https://sudop.uokik.gov.pl" etykieta="SUDOP — UOKiK" />
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            {/* Jedyne zrodlo, ktorego NIE odswieza zadne zadanie: kazde wydanie
+                rysunku ma inny adres, wiec nowy plan dodaje sie recznie. */}
+            Plan sali posiedzeń (stan na {dataSlownie(STAN_PLANU)}, odświeżany ręcznie):
+            <Zrodlo adres={ZRODLO_PLANU} etykieta="Kancelaria Sejmu — rysunek sali" />
           </li>
           <li className="flex flex-wrap items-center gap-2">
             Przypisanie gmin do okręgów wyborczych:
