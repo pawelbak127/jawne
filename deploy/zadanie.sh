@@ -42,7 +42,15 @@ case "${1:-}" in
     ;;
   ted)
     # TED nie ma limitow poza rozsadkiem; miesiac juz kompletny jest pomijany.
-    exec "$TSX" ingest/jobs/import.ts zamowienia
+    "$TSX" ingest/jobs/import.ts zamowienia
+    # REGON mowi, kim jest NIP zamawiajacego — bez tego nie ma "zamowien
+    # w gminie". Bez klucza po prostu tego nie robimy: brak klucza to stan,
+    # nie awaria, a zadanie ma nie padac z tego powodu.
+    if [ -n "${GUS_BIR_KLUCZ:-}" ]; then
+      exec "$TSX" ingest/jobs/import.ts regon
+    else
+      echo "Pomijam etap REGON — brak GUS_BIR_KLUCZ (sudo jawne ustaw GUS_BIR_KLUCZ)."
+    fi
     ;;
   sudop-dzien)
     sudop --dzienny

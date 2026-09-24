@@ -266,6 +266,17 @@ lat, bo 2020 ma pięciokrotność zwykłego roku — czyli **20–30 nocy**.
 
 ## Codzienna obsługa 🐧
 
+### Zadania danych
+
+| Zadanie | Kiedy | Co robi |
+|---|---|---|
+| `sudop-dzien` | 22:00 | świeży dzień pomocy publicznej i dzień sprzed 14 dni |
+| `sudop-historia` | 00:30 | historia wstecz, najwyżej 150 zapytań, okno 00:30–07:00 |
+| `sejm` | 07:15 | posłowie, głosowania, głosy, procesy legislacyjne (w poniedziałki też zdjęcia) |
+| `ted` | 06:30 | zamówienia publiczne z TED, a po nich REGON (gdy jest `GUS_BIR_KLUCZ`) |
+| `gus` | 3. dnia miesiąca | ludność, budżety, działy budżetowe, SMUP |
+| `fundusze` | 5. dnia miesiąca | listy projektów Funduszy Europejskich |
+
 | Polecenie | Co robi |
 |---|---|
 | `sudo jawne stan` | dane, timery, wynik ostatnich przebiegów, dysk |
