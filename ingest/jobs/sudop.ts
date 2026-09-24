@@ -64,7 +64,19 @@ async function get(url: string) {
 const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
 
 /** Przydzial jednego przebiegu: ile zapytan i w jakich godzinach wolno zaczac nowe. */
-type Budzet = { maks: number; uzyte: number; okno: string | null };
+type Budzet = {
+  maks: number;
+  uzyte: number;
+  okno: string | null;
+  /**
+   * Ile czekamy na PIERWSZY wynik danego zakresu. ZMIERZONE: kolejka
+   * odpowiada noca po 1-3 minutach (najdluzej 14), wiec gdy milczy 20 minut,
+   * to nie jest wolna kolejka, tylko kolejka, ktora nie odpowie. Czekanie
+   * pelnych 55 minut na kazdy z trzech zakresow kosztowalo nas prawie trzy
+   * godziny nocy — i tak zakonczone zerem (noce 22/23 i 23/24.09.2026).
+   */
+  horyzontPierwszejMs?: number;
+};
 
 /** Koniec przydzialu — nie blad. Pobrane strony zostaja na dysku do wznowienia. */
 class KoniecPrzydzialu extends Error {}
@@ -98,14 +110,14 @@ async function slownik(nazwa: string): Promise<KodGminySudop[]> {
 }
 
 /** Jedno wyszukanie od rejestracji do wyniku. */
-async function wyszukaj(url: string, opis: string): Promise<OdpowiedzSudop> {
+async function wyszukaj(url: string, opis: string, horyzontMs = HORYZONT_MS): Promise<OdpowiedzSudop> {
   const rej = await get(url);
   if (rej.status !== 303 || !rej.location) {
     throw new Error(`${opis}: rejestracja zwrocila ${rej.status} ${rej.tekst.slice(0, 200)}`);
   }
   const kolejka = pelny(rej.location);
   const start = Date.now();
-  while (Date.now() - start < HORYZONT_MS) {
+  while (Date.now() - start < horyzontMs) {
     await spij(CO_ILE_MS);
     const min = ((Date.now() - start) / 60_000).toFixed(0);
     const r = await get(kolejka);
@@ -122,7 +134,7 @@ async function wyszukaj(url: string, opis: string): Promise<OdpowiedzSudop> {
     throw new Error(`${opis}: kolejka zwrocila ${r.status} ${r.tekst.slice(0, 200)}`);
   }
   throw new Error(
-    `${opis}: kolejka nie oddala wyniku po ${HORYZONT_MS / 60_000} min, a rekord zyje godzine — odpuszczam ten zakres`,
+    `${opis}: kolejka nie oddala wyniku po ${Math.round(horyzontMs / 60_000)} min — odpuszczam ten zakres`,
   );
 }
 
@@ -253,7 +265,12 @@ async function pobierzPrzyrost(
       log(`   strona ${strona}: z pliku`);
     } else {
       sprawdzBudzet(budzet);
-      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
+      // Pierwsza strona zakresu ma krotszy horyzont, jesli zadanie go poda:
+      // po niej wiadomo, czy kolejka w ogole odpowiada.
+      const horyzont = strona === 1 && zapytan === 0 && budzet?.horyzontPierwszejMs
+        ? budzet.horyzontPierwszejMs
+        : HORYZONT_MS;
+      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`, horyzont);
       odp.pobrano = new Date().toISOString();
       zapytan++;
       if (budzet) budzet.uzyte++;
@@ -368,7 +385,7 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     log(`Poza oknem ${o.okno} (czas polski) — nie pytam urzedu.`);
     return;
   }
-  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno };
+  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno, horyzontPierwszejMs: 20 * 60_000 };
   // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
   // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
   // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
@@ -380,7 +397,7 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   // (wzorzec 2 w CLAUDE.md), ale trzy pod rzad znacza awarie po tamtej
   // stronie albo u nas i wtedy konczymy.
   const zBledem = new Map<string, string>();
-  const MAKS_BLEDOW_POD_RZAD = 3;
+  const MAKS_BLEDOW_POD_RZAD = 4;
   let bledowPodRzad = 0;
   let poprzedni = '';
   try {
@@ -417,6 +434,10 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
           log(`   ${bledowPodRzad} zakresy pod rzad skonczyly sie bledem — koncze noc, zeby nie dobijac urzedu.`);
           break;
         }
+        // Kolejka, ktora nie odpowiedziala, za chwile tez nie odpowie.
+        // Kwadrans przerwy jest tanszy niz kolejne zapytanie w prozne.
+        log('   czekam kwadrans, zanim sprobuje nastepnego zakresu');
+        await spij(15 * 60_000);
       }
     }
   } catch (e) {
