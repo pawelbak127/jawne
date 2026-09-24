@@ -330,7 +330,15 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
   spakujStrony(od, doDnia);
   log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
-  odnotujImport(db, 'sudop-przyrost', zapisanych, `dni ${od}..${doDnia}, zapytan ${zapytan}`);
+  // ZGLOSZENIE Z PRZEGLADU 24.09.2026: /stan pokazywal „dni pobrane dla calego
+  // kraju: 0", bo zapisywalismy tu wynik OSTATNIEJ porcji. Strona, ktorej
+  // jedynym zadaniem jest sprawdzalnosc, musi podawac stan calosci.
+  const calosc = db.prepare('select count(*) as dni, min(dzien) as od, max(dzien) as do from pomoc_publiczna_dni')
+    .get() as { dni: number; od: string | null; do: string | null };
+  odnotujImport(
+    db, 'sudop-przyrost', calosc.dni,
+    `dni ${calosc.od ?? '—'}..${calosc.do ?? '—'}; ostatnio pobrano ${od}..${doDnia} (${zapytan} zapytan, ${zapisanych} przypadkow)`,
+  );
 }
 
 /**

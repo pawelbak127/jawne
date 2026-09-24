@@ -336,6 +336,15 @@ create table if not exists budzety_gmin (
   wydatki              integer,
   wydatki_majatkowe    integer,               -- inwestycje i dotacje inwestycyjne
   wydatki_inwestycyjne integer,               -- sama czesc inwestycyjna wydatkow majatkowych
+  -- Z czego SKLADAJA sie dochody. Dopisane 24.09.2026, bo strona pokazywala
+  -- „14,0 tys. zl na mieszkanca" i nie bylo jak sprawdzic, co w to wchodzi.
+  -- Uklad z ustawy o dochodach JST i z GUS: dochody = wlasne + subwencja
+  -- ogolna + dotacje. Udzialy w PIT i CIT sa czescia dochodow WLASNYCH.
+  subwencja            integer,
+  dotacje              integer,
+  udzial_pit           integer,
+  udzial_cit           integer,
+  podatek_nieruchomosc integer,
   primary key (teryt, rok)
 );
 
@@ -528,6 +537,14 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   }
   // Wiersze sprzed 22.09.2026 maja tylko znacznik UTC. Przeliczamy je raz na
   // polski kalendarz — inaczej dzien pobrany w nocy nigdy by sie nie ustalil.
+  const kolumnyBudzetu = db.prepare('pragma table_info(budzety_gmin)').all() as unknown as { name: string }[];
+  for (const k of ['subwencja', 'dotacje', 'udzial_pit', 'udzial_cit', 'podatek_nieruchomosc']) {
+    if (kolumnyBudzetu.length && !kolumnyBudzetu.some((x) => x.name === k)) {
+      db.exec(`alter table budzety_gmin add column ${k} integer`);
+      zrobione.push(`dodano kolumne budzety_gmin.${k}`);
+    }
+  }
+
   const kolumnyRegon = db.prepare('pragma table_info(regon)').all() as unknown as { name: string }[];
   if (kolumnyRegon.length && !kolumnyRegon.some((k) => k.name === 'rekordow')) {
     db.exec('alter table regon add column rekordow integer not null default 1');

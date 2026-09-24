@@ -1233,6 +1233,13 @@ export type BudzetGminy = {
   wydatki_majatkowe: number | null;
   /** sama czesc inwestycyjna wydatkow majatkowych */
   wydatki_inwestycyjne: number | null;
+  /** Z czego skladaja sie dochody — null znaczy „GUS nie podal", nie zero. */
+  subwencja: number | null;
+  dotacje: number | null;
+  /** Udzialy w PIT i CIT sa czescia dochodow WLASNYCH, nie obok nich. */
+  udzial_pit: number | null;
+  udzial_cit: number | null;
+  podatek_nieruchomosc: number | null;
 };
 
 /**
@@ -1243,7 +1250,8 @@ export type BudzetGminy = {
 export function budzetGminy(teryt: string): BudzetGminy | null {
   return bezTabeli(
     () => jeden<BudzetGminy>(
-      `select rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne
+      `select rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne,
+              subwencja, dotacje, udzial_pit, udzial_cit, podatek_nieruchomosc
          from budzety_gmin where teryt = ? order by rok desc limit 1`,
       teryt,
     ),

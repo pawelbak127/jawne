@@ -63,7 +63,12 @@ export function MapaGmin({
   const [powiekszenie, ustawPowiekszenie] = useState(1);
   const [srodek, ustawSrodek] = useState({ x: 0.5, y: 0.5 });
   const ramka = useRef<SVGSVGElement>(null);
-  const przeciaganie = useRef<{ x: number; y: number; srodek: { x: number; y: number } } | null>(null);
+  const przeciaganie = useRef<{ x: number; y: number; srodek: { x: number; y: number }; ruszyl: boolean } | null>(null);
+  // ZGLOSZENIE PAWLA 24.09.2026: przeciagniecie mapy myszka konczylo sie
+  // przejsciem na strone gminy, bo po przeciagnieciu przegladarka i tak
+  // wysyla `click`. Zapamietujemy, czy kursor sie RUSZYL — jesli tak,
+  // to bylo przesuwanie mapy, a nie wybor gminy.
+  const bylRuch = useRef(false);
   // Stan, nie ref: React nie pozwala czytac ref-a przy renderowaniu,
   // a od tego zalezy, czy pokazac chmurke (mysz) czy karte (dotyk).
   const [dotykiem, ustawDotykiem] = useState(false);
@@ -169,11 +174,18 @@ export function MapaGmin({
             onMouseLeave={() => ustawPod(null)}
             onPointerDown={(e) => {
               if ((e.pointerType !== 'mouse') !== dotykiem) ustawDotykiem(e.pointerType !== 'mouse');
-              przeciaganie.current = { x: e.clientX, y: e.clientY, srodek };
+              przeciaganie.current = { x: e.clientX, y: e.clientY, srodek, ruszyl: false };
+              bylRuch.current = false;
             }}
             onPointerMove={(e) => {
               const p = przeciaganie.current;
-              if (!p || !(e.buttons & 1) || powiekszenie === 1) return;
+              if (!p || !(e.buttons & 1)) return;
+              // Prog 4 px: drzenie reki przy kliknieciu to nie przeciaganie.
+              if (Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y) > 4) {
+                p.ruszyl = true;
+                bylRuch.current = true;
+              }
+              if (powiekszenie === 1) return;
               const r = ramka.current?.getBoundingClientRect();
               if (!r) return;
               ustawSrodek({
@@ -196,6 +208,9 @@ export function MapaGmin({
                   if (r) ustawPod({ teryt: k.teryt, x: e.clientX - r.left, y: e.clientY - r.top });
                 }}
                 onClick={() => {
+                  // Przeciagniecie to nie klikniecie — inaczej kazde przesuniecie
+                  // mapy konczy sie wyjsciem z niej.
+                  if (bylRuch.current) { bylRuch.current = false; return; }
                   // Na dotyku klikniecie tylko ZAZNACZA — przejscie jest
                   // osobnym przyciskiem, bo palec trafia w sasiednia gmine.
                   if (dotykiem) { ustawWybranego(k.teryt); return; }

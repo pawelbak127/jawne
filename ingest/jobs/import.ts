@@ -772,6 +772,14 @@ async function importLudnosci(db: DatabaseSync): Promise<void> {
 const ZMIENNE_BUDZETU: [kolumna: string, zmienna: number, opis: string][] = [
   ['dochody', 76037, 'dochody ogolem'],
   ['dochody_wlasne', 76070, 'dochody wlasne razem'],
+  // Z czego skladaja sie dochody — zeby „dochod na mieszkanca" dalo sie
+  // rozlozyc na czesci. Udzialy w PIT i CIT sa czescia dochodow wlasnych,
+  // a nie osobnym skladnikiem obok nich (ustawa o dochodach JST).
+  ['subwencja', 77005, 'subwencja ogolna razem'],
+  ['dotacje', 149576, 'dotacje ogolem'],
+  ['udzial_pit', 76046, 'udzial w PIT'],
+  ['udzial_cit', 76043, 'udzial w CIT'],
+  ['podatek_nieruchomosc', 76077, 'podatek od nieruchomosci'],
   ['wydatki', 76477, 'wydatki ogolem'],
   // Majatkowe = inwestycje plus dotacje inwestycyjne (np. dla spolki miejskiej
   // budujacej metro). To ta liczba jest w Polsce nazywana "wydatkami na
@@ -827,11 +835,15 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   oczekiwane.add(TERYT_WARSZAWY);
 
   const wstaw = db.prepare(
-    `insert into budzety_gmin(teryt, rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe, wydatki_inwestycyjne)
-     values (?,?,?,?,?,?,?)
+    `insert into budzety_gmin(teryt, rok, dochody, dochody_wlasne, wydatki, wydatki_majatkowe,
+                              wydatki_inwestycyjne, subwencja, dotacje, udzial_pit, udzial_cit,
+                              podatek_nieruchomosc)
+     values (?,?,?,?,?,?,?,?,?,?,?,?)
      on conflict(teryt, rok) do update set dochody=excluded.dochody, dochody_wlasne=excluded.dochody_wlasne,
        wydatki=excluded.wydatki, wydatki_majatkowe=excluded.wydatki_majatkowe,
-       wydatki_inwestycyjne=excluded.wydatki_inwestycyjne`,
+       wydatki_inwestycyjne=excluded.wydatki_inwestycyjne, subwencja=excluded.subwencja,
+       dotacje=excluded.dotacje, udzial_pit=excluded.udzial_pit, udzial_cit=excluded.udzial_cit,
+       podatek_nieruchomosc=excluded.podatek_nieruchomosc`,
   );
   const zaokr = (w: Map<string, number>, t: string): number | null => {
     const v = w.get(t);
@@ -875,6 +887,11 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
         zaokr(kolumny.get('wydatki')!, teryt),
         zaokr(kolumny.get('wydatki_majatkowe')!, teryt),
         zaokr(kolumny.get('wydatki_inwestycyjne')!, teryt),
+        zaokr(kolumny.get('subwencja')!, teryt),
+        zaokr(kolumny.get('dotacje')!, teryt),
+        zaokr(kolumny.get('udzial_pit')!, teryt),
+        zaokr(kolumny.get('udzial_cit')!, teryt),
+        zaokr(kolumny.get('podatek_nieruchomosc')!, teryt),
       );
     }
     db.exec('commit');
@@ -886,9 +903,13 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
 
   if (!zapisaneLata.length) throw new Error('GUS BDL: zaden rok nie ma kompletu budzetow gmin');
   const gmin = (db.prepare('select count(distinct teryt) as c from budzety_gmin').get() as { c: number }).c;
+  // Sume dopisujemy tylko, gdy ja w tym przebiegu policzylismy. Wczesniej
+  // rok pominiety jako juz kompletny dawal na /stan „dochody 2025: 0 zl" —
+  // brak pomiaru wygladal jak pomiar zera.
+  const opisSumy = ostatniaSuma > 0 ? `; dochody ${zapisaneLata[0]}: ${Math.round(ostatniaSuma)} zl` : '';
   odnotujImport(
     db, 'budzety', gmin,
-    `GUS BDL, lata ${zapisaneLata[zapisaneLata.length - 1]}–${zapisaneLata[0]}; dochody ${zapisaneLata[0]}: ${Math.round(ostatniaSuma)} zl`,
+    `GUS BDL, lata ${zapisaneLata[zapisaneLata.length - 1]}–${zapisaneLata[0]}${opisSumy}`,
   );
 }
 
