@@ -69,7 +69,14 @@ const DO_PONOWIENIA = new Set([408, 425, 429, 500, 502, 503, 504]);
  */
 const PROB_404 = 3;
 
-export type OpcjeZapytania = { json?: boolean; metoda?: string; cialo?: string };
+export type OpcjeZapytania = {
+  json?: boolean;
+  metoda?: string;
+  cialo?: string;
+  /** Domyslnie application/json; BIR (SOAP 1.2) wymaga wlasnego typu. */
+  typTresci?: string;
+  naglowki?: Record<string, string>;
+};
 
 // POST jest potrzebny TED-owi: jego wyszukiwarka przyjmuje zapytanie w ciele.
 // Ponawianie, limit rownoleglosci i Retry-After dzialaja tak samo jak przy GET.
@@ -84,7 +91,8 @@ export async function pobierz(url: string, opcje: OpcjeZapytania = {}): Promise<
           body: opcje.cialo,
           headers: {
             'Accept': opcje.json === false ? '*/*' : 'application/json',
-            ...(opcje.cialo ? { 'Content-Type': 'application/json' } : {}),
+            ...(opcje.cialo ? { 'Content-Type': opcje.typTresci ?? 'application/json' } : {}),
+            ...(opcje.naglowki ?? {}),
             'User-Agent': 'jawne.pl/0.1 (agregator danych publicznych)',
             // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
             // Wysylamy go tylko do BDL — innym serwerom nic po nim.

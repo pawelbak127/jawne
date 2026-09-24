@@ -103,12 +103,17 @@ zapytań — dlatego bierzemy wybór, nie całość.
 | **CEIDG API** | jednoosobowe działalności gospodarcze | darmowy token JWT po rejestracji |
 | **API KRS pełne** | dane niezanonimizowane | zgoda ministra, logowanie |
 
-## GUS REGON (BIR 1.2) — klucz jest od 23.09.2026, NIEZMIERZONE
+## GUS REGON (BIR 1.1) — DZIAŁA, zmierzone 24.09.2026
 
 Klucz do środowiska produkcyjnego (zakres danych ogólnodostępnych) przyszedł
 e-mailem 23.09.2026. Leży w `.env.local` jako `GUS_BIR_KLUCZ`; na serwerze
-`sudo jawne ustaw GUS_BIR_KLUCZ`. **Ani jedno zapytanie nie zostało jeszcze
-wykonane — poniżej jest to, co pisze urząd, a nie to, co zmierzyliśmy.**
+`sudo jawne ustaw GUS_BIR_KLUCZ`.
+
+**Zmierzone 24.09.2026 na produkcji** (`ingest/lib/bir.ts`, etap `regon`):
+logowanie 0,4 s, wyszukanie 0,1 s, **20 NIP-ów na wywołanie** (przy 21 pusta
+odpowiedź bez błędu), 28 603 NIP-y z TED sprawdzone w 11 minut. Wynik:
+**16 717 osób prawnych, 12 677 osób fizycznych prowadzących działalność**
+i 4 wpisy typu `LP`; dla 88% udało się dopasować gminę siedziby po nazwach.
 
 | | |
 |---|---|

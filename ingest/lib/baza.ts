@@ -330,6 +330,37 @@ create table if not exists budzety_gmin (
 );
 
 /*
+ * REGON (GUS, usluga BIR): kim jest podmiot o danym NIP-ie.
+ *
+ * Po to, zeby nie zgadywac dwoch rzeczy, ktore rejestr podaje wprost:
+ *  - typ = 'F' (osoba fizyczna) albo 'P' (prawna) — dzis wnioskujemy o tym
+ *    z samej nazwy w prywatnosc.ts,
+ *  - gmina siedziby — bez niej nie da sie powiedziec, ktore zamowienie
+ *    publiczne dotyczy ktorej gminy.
+ *
+ * Kolumna teryt jest DOPASOWANA po nazwach (gmina + powiat + wojewodztwo), bo BIR
+ * oddaje nazwy, nie kody. Gdy dopasowanie sie nie uda, zostaje null — nie
+ * zgadujemy. Dla Warszawy BIR podaje dzielnice jako gmine, wiec caly powiat
+ * "Warszawa" przypisujemy do 146501, tak jak reszta serwisu.
+ */
+create table if not exists regon (
+  nip          text primary key,
+  regon        text,
+  nazwa        text,
+  typ          text,                  -- 'F' albo 'P', surowo z rejestru
+  silos        text,
+  wojewodztwo  text,
+  powiat       text,
+  gmina        text,
+  miejscowosc  text,
+  kod_pocztowy text,
+  teryt        text,                  -- nasz kod gminy, gdy dalo sie dopasowac
+  rekordow     integer not null default 1,  -- ile wpisow rejestr ma dla tego NIP-u
+  pobrano      text not null
+);
+create index if not exists regon_teryt on regon(teryt);
+
+/*
  * Zamowienia publiczne z TED (Tenders Electronic Daily) — ogloszenia
  * o UDZIELENIU zamowienia (can-standard) z Polski. Jedno ogloszenie to
  * jeden wiersz, a wykonawcy leza osobno, bo jedno ogloszenie miewa ich
@@ -487,6 +518,12 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   }
   // Wiersze sprzed 22.09.2026 maja tylko znacznik UTC. Przeliczamy je raz na
   // polski kalendarz — inaczej dzien pobrany w nocy nigdy by sie nie ustalil.
+  const kolumnyRegon = db.prepare('pragma table_info(regon)').all() as unknown as { name: string }[];
+  if (kolumnyRegon.length && !kolumnyRegon.some((k) => k.name === 'rekordow')) {
+    db.exec('alter table regon add column rekordow integer not null default 1');
+    zrobione.push('dodano kolumne regon.rekordow');
+  }
+
   const bezDaty = db.prepare('select dzien, pobrano from pomoc_publiczna_dni where pobrano_dzien is null')
     .all() as unknown as { dzien: string; pobrano: string }[];
   if (bezDaty.length) {

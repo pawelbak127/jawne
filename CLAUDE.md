@@ -77,6 +77,7 @@ npm run import wszystko                    # pełny import (~25 min), bez SUDOP
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
 npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692 procesy)
 npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
+npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), ~11 min
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
@@ -300,6 +301,22 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+48. **REGON (BIR): `Nipy` przyjmuje NAJWYŻEJ 20 numerów.** Przy 21 usługa
+    oddaje **pustą odpowiedź — HTTP 200, bez błędu**. Pierwsza wersja importu
+    wysyłała po 100 i „znalazła” 3 podmioty z 28 603. Zmierzone: 20→20, 21→0,
+    50→0, 100→0. Usługa zawsze odpowiada **MTOM/XOP** (koperta `--uuid:…`),
+    więc trzeba wyciąć z niej `<s:Envelope`. **`\s` w zwykłym szablonie JS to
+    litera „s”** — `new RegExp(\`<${t}>([\s\S]*?)</${t}>\`)` cicho zamienia
+    się w „(same s i S)”; stąd `String.raw`. Jeden NIP potrafi mieć kilka
+    wpisów (5 na 200), ale **typ F/P był w próbce zawsze ten sam**.
+47. **TED zawiera kwoty błędne o trzy rzędy wielkości** — i są to błędy
+    zamawiającego, nie odczytu: ogłoszenie 235172-2026 ma 257 562 861 720 000 zł
+    za utrzymanie torów (85× PKB Polski), a wartości pojedynczych ofert sumują
+    się do tego samego. W całej Polsce: 2 ogłoszenia powyżej biliona, 24 powyżej
+    10 mld. Jedno takie wpisywało Warszawie 257 752 mld zł. Kwoty powyżej
+    `PROG_PODEJRZANEJ_KWOTY` (10 mld zł, **nasz próg, nie rejestru**) nie wchodzą
+    do sum, ale są pokazane osobno z odnośnikiem — nie poprawiamy ich i nie
+    ukrywamy.
 46. **Kontury gmin trzeba uprościć PRZED repozytorium, nie w przeglądarce.**
     PRG ma 5 154 114 punktów na 2 479 gmin; po Douglas-Peuckerze z tolerancją
     0,004° zostaje 93 492 i plik ma 940 kB (426 kB po spakowaniu). Uproszczenie

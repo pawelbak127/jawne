@@ -7,6 +7,7 @@ import { uprosc, zapytanieFts } from './tekst';
 import { porownajZKlubem, type GlosZKlubem, type PorownanieZKlubem } from './niezaleznosc';
 import { nazwaDoPokazania } from './prywatnosc';
 import { nazwaDzialu } from './dzialy';
+import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
 
 /**
@@ -719,6 +720,62 @@ export type ZamowienieTed = {
   wykonawcow: number;
 };
 
+export type ZamowieniaGminy = {
+  ogloszen: number;
+  suma: number | null;
+  /** Ile ogloszen nie ma kwoty w zlotych — mianownik dla sumy. */
+  bezKwoty: number;
+  /** Ogloszenia z kwota ponad progiem — pokazywane osobno, nie w sumie. */
+  podejrzane: ZamowienieTed[];
+  najwieksze: ZamowienieTed[];
+};
+
+/**
+ * Zamowienia publiczne udzielone przez podmioty z siedziba w gminie.
+ *
+ * Nabywce wiazemy z gmina przez REGON (tabela `regon`), bo TED podaje przy
+ * ogloszeniu tylko NIP zamawiajacego. Tu kwota jest uczciwa inaczej niz na
+ * stronie firmy: ogloszenie ma JEDNEGO zamawiajacego, wiec jego wartosc to
+ * wydatek tego zamawiajacego — niezaleznie od tego, ilu bylo wykonawcow.
+ *
+ * To NIE sa wydatki samej gminy jako urzedu: zamawiajacym bywa szpital,
+ * spolka komunalna czy uczelnia z tej gminy. Strona musi to mowic wprost.
+ */
+export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
+  return bezTabeli(() => {
+    // Kwoty ponad progiem nie wchodza do sumy — patrz src/lib/zamowienia.ts.
+    const sumy = jeden<{ ogloszen: number; suma: number | null; bezKwoty: number }>(
+      `select count(*) as ogloszen,
+              sum(case when o.waluta = 'PLN' and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then o.wartosc end) as suma,
+              sum(case when o.wartosc is null or o.waluta <> 'PLN' then 1 else 0 end) as bezKwoty
+         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
+        where r.teryt = ?`,
+      teryt,
+    );
+    const podejrzane = wszystkie<ZamowienieTed>(
+      `select o.numer, o.data, o.tytul, o.nabywca, o.wartosc, o.waluta, o.cpv, o.wykonawcow
+         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
+        where r.teryt = ? and o.waluta = 'PLN' and o.wartosc > ${PROG_PODEJRZANEJ_KWOTY}
+        order by o.wartosc desc`,
+      teryt,
+    );
+    const najwieksze = wszystkie<ZamowienieTed>(
+      `select o.numer, o.data, o.tytul, o.nabywca, o.wartosc, o.waluta, o.cpv, o.wykonawcow
+         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
+        where r.teryt = ? and o.waluta = 'PLN' and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY}
+        order by o.wartosc desc nulls last limit ?`,
+      teryt, ile,
+    );
+    return {
+      ogloszen: sumy?.ogloszen ?? 0,
+      suma: sumy?.suma ?? null,
+      bezKwoty: sumy?.bezKwoty ?? 0,
+      podejrzane,
+      najwieksze,
+    };
+  }, { ogloszen: 0, suma: null, bezKwoty: 0, podejrzane: [], najwieksze: [] });
+}
+
 export type ZamowieniaFirmy = {
   ogloszen: number;
   /** Suma wartosci ogloszen w PLN, w ktorych firma byla JEDYNYM wykonawca. */
@@ -748,7 +805,8 @@ export function zamowieniaFirmy(nip: string, ile = 12): ZamowieniaFirmy {
     const sumy = jeden<{ ogloszen: number; sama: number; suma: number | null; zinnymi: number }>(
       `select count(*) as ogloszen,
               sum(case when o.wykonawcow = 1 then 1 else 0 end) as sama,
-              sum(case when o.wykonawcow = 1 and o.waluta = 'PLN' then o.wartosc end) as suma,
+              sum(case when o.wykonawcow = 1 and o.waluta = 'PLN'
+                        and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then o.wartosc end) as suma,
               sum(case when o.wykonawcow > 1 then 1 else 0 end) as zinnymi
          from ted_wykonawcy w join ted_ogloszenia o on o.numer = w.numer
         where w.nip = ?`,

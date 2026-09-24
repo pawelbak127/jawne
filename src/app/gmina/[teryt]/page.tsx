@@ -4,14 +4,16 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
-  poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zrodloImportu,
+  poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
+  type ZamowieniaGminy,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { KONTAKT } from '@/lib/adres';
+import { PROG_PODEJRZANEJ_KWOTY } from '@/lib/zamowienia';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
@@ -79,6 +81,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const poslowie = poslowieOkregu(g.okreg_nr).filter((p) => p.aktywny === 1);
   const listaKlubow = kluby();
   const importFe = zrodloImportu('fundusze-2021-2027');
+  const zamowienia = zamowieniaGminy(terytFunduszy);
 
   return (
     <div className="obszar py-10">
@@ -103,6 +106,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         {smup.length ? <a href="#finanse" className="hover:text-akcent hover:underline">Finanse i podatki</a> : null}
         <a href="#fundusze" className="hover:text-akcent hover:underline">Fundusze UE</a>
         <a href="#pomoc" className="hover:text-akcent hover:underline">Pomoc publiczna</a>
+        {zamowienia.ogloszen ? <a href="#zamowienia" className="hover:text-akcent hover:underline">Zamówienia</a> : null}
         <a href="#dane" className="hover:text-akcent hover:underline">Dane do pobrania</a>
       </nav>
 
@@ -215,6 +219,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         </p>
         {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
       </section>
+
+      {zamowienia.ogloszen ? <ZamowieniaWGminie z={zamowienia} /> : null}
 
       {/*
         Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
@@ -665,5 +671,114 @@ function BrakPomocy() {
       </p>
       <Zrodlo adres={`${ZRODLO_SUDOP}/search/aidEvent`} etykieta="wyszukiwarka SUDOP" className="mt-3" />
     </div>
+  );
+}
+
+/**
+ * Zamowienia publiczne udzielone przez podmioty z tej gminy.
+ *
+ * Inaczej niz na stronie firmy, TU kwota jest jednoznaczna: ogloszenie ma
+ * jednego zamawiajacego, wiec cala jego wartosc to wydatek tego podmiotu.
+ * Ale zamawiajacym bywa szpital, spolka komunalna albo uczelnia — a nie
+ * urzad gminy, i strona musi to powiedziec, zeby nikt nie odczytal tego
+ * jako „tyle wydala gmina".
+ */
+function ZamowieniaWGminie({ z }: { z: ZamowieniaGminy }) {
+  return (
+    <section id="zamowienia" className="mt-14 scroll-mt-20">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="szryft text-3xl font-semibold">Zamówienia publiczne z tej gminy</h2>
+        <Zrodlo adres="https://ted.europa.eu" etykieta="TED — dziennik zamówień UE" />
+      </div>
+      <p className="mt-2 max-w-3xl text-atrament-2">
+        Ogłoszenia o udzieleniu zamówienia, w których zamawiający ma siedzibę w tej gminie.
+        To nie są wydatki samego urzędu gminy: zamawiającym bywa szpital, spółka komunalna
+        albo uczelnia. Do TED trafiają zamówienia powyżej progów unijnych, a nie wszystkie.
+      </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="liczby szryft text-4xl font-semibold">{z.suma === null ? '—' : zlote(z.suma)}</p>
+          <p className="mt-1 text-sm font-medium">wartość ogłoszeń w złotych</p>
+          <p className="mt-0.5 text-xs text-atrament-2">
+            {`z ${zOdmiana(z.ogloszen - z.bezKwoty, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')}`}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+          <p className="liczby szryft text-4xl font-semibold">{liczba(z.ogloszen)}</p>
+          <p className="mt-1 text-sm font-medium">ogłoszeń razem</p>
+          {/* Mianownik: ogloszenia bez kwoty w zlotych nie wchodza do sumy. */}
+          <p className="mt-0.5 text-xs text-atrament-2">
+            {z.bezKwoty
+              ? `${zOdmiana(z.bezKwoty, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} bez kwoty w złotych — poza sumą`
+              : 'wszystkie z kwotą w złotych'}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-6 font-medium">Największe zamówienia</p>
+      <ul className="mt-2 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
+        {z.najwieksze.map((o) => (
+          <li key={o.numer} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
+            <div className="min-w-0 flex-1">
+              <p className="leading-snug font-medium">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 120)}</p>
+              <p className="mt-1 text-sm text-atrament-2">{skroc(o.nabywca ?? '—', 80)}</p>
+              <p className="mt-1 text-xs text-atrament-3">
+                {`${dataKrotko(o.data)} · ogłoszenie ${o.numer} · ${zOdmiana(o.wykonawcow, 'wykonawca', 'wykonawców', 'wykonawców')}`}
+              </p>
+            </div>
+            <div className="shrink-0 text-left sm:text-right">
+              <p className="liczby font-semibold">{o.wartosc === null ? '—' : zlote(o.wartosc)}</p>
+              <a
+                className="text-xs text-akcent underline underline-offset-4 hover:no-underline"
+                href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                ogłoszenie (PDF)
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/*
+        Bledne kwoty w rejestrze pokazujemy, zamiast je po cichu wyrzucac
+        albo po cichu wliczac. Jedno takie ogloszenie (257 bln zl za utrzymanie
+        torow) zamienialo sume Warszawy w bezsens.
+      */}
+      {z.podejrzane.length ? (
+        <div className="mt-4 rounded-2xl border border-kreska bg-papier-3 p-5 text-sm">
+          <p className="font-medium">
+            {`Poza sumą: ${zOdmiana(z.podejrzane.length, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z kwotą powyżej ${zlote(PROG_PODEJRZANEJ_KWOTY)}`}
+          </p>
+          <p className="mt-1 text-atrament-2">
+            W rejestrze zdarzają się pomyłki o trzy rzędy wielkości — kwota bywa wpisana
+            w złych jednostkach. Nie poprawiamy jej i nie ukrywamy; nie wliczamy jej tylko
+            do sumy, bo jedna taka pozycja czyni ją bezużyteczną. Próg jest nasz, nie rejestru.
+          </p>
+          <ul className="mt-3 space-y-1">
+            {z.podejrzane.map((o) => (
+              <li key={o.numer} className="flex flex-wrap items-baseline gap-x-3">
+                <a
+                  className="text-akcent underline underline-offset-4 hover:no-underline"
+                  href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {o.numer}
+                </a>
+                <span className="liczby text-xs text-atrament-2">{zlote(o.wartosc)}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-atrament-3">{skroc(o.tytul ?? '', 70)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <p className="mt-3 text-xs leading-relaxed text-atrament-3">
+        Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON (GUS, licencja CC BY 4.0).
+      </p>
+    </section>
   );
 }

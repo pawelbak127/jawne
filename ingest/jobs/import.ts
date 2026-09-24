@@ -21,6 +21,7 @@ import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
 import { nazwaDzialu, NAZWY_DZIALOW } from '../../src/lib/dzialy.js';
 import { nipZTekstu } from '../../src/lib/nip.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
+import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -872,6 +873,118 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
   );
 }
 
+/**
+ * REGON: kim jest podmiot o danym NIP-ie.
+ *
+ * Pytamy o NIP-y, ktore juz mamy: zamawiajacych i wykonawcow z TED.
+ * DWADZIESCIA numerow na wywolanie (powyzej usluga milczy — patrz bir.ts),
+ * wiec 28 tys. podmiotow to ok. 1 400 wywolan. Przerwa 350 ms trzyma nas
+ * pod limitem GUS (3 wywolania na sekunde w godzinach pracy urzedu).
+ *
+ * `--wszyscy` dokłada beneficjentow pomocy publicznej (tabela firmy_szukaj);
+ * to juz dziesiatki tysiecy wywolan, wiec domyslnie tego nie robimy.
+ */
+async function importRegon(db: DatabaseSync): Promise<void> {
+  if (!kluczBir()) throw new Error('Brak GUS_BIR_KLUCZ — bez klucza BIR nie odda danych (.env.local albo /etc/jawne/jawne.env)');
+  const wszyscy = process.argv.includes('--wszyscy');
+  const odNowa = process.argv.includes('--od-nowa');
+
+  const zrodla = [
+    "select distinct nabywca_id as nip from ted_ogloszenia where nabywca_id is not null",
+    'select distinct nip from ted_wykonawcy',
+    ...(wszyscy ? ['select distinct nip from firmy_szukaj'] : []),
+  ];
+  const doPytania = new Set<string>();
+  for (const sql of zrodla) {
+    for (const r of db.prepare(sql).all() as unknown as { nip: string }[]) {
+      if (/^\d{10}$/.test(r.nip)) doPytania.add(r.nip);
+    }
+  }
+  if (!odNowa) {
+    for (const r of db.prepare('select nip from regon').all() as unknown as { nip: string }[]) doPytania.delete(r.nip);
+  }
+  const lista = [...doPytania];
+  log(`-> REGON (BIR): ${lista.length} NIP-ow do sprawdzenia${wszyscy ? ' (z beneficjentami pomocy)' : ''}`);
+  if (!lista.length) return;
+
+  // Slownik nazw -> TERYT. BIR oddaje nazwy, my mamy kody; porownujemy
+  // po uprosc(), bo BIR pisze wojewodztwa wielkimi literami.
+  const gminy = db.prepare('select teryt, nazwa, rodzaj, powiat, wojewodztwo from gminy').all() as unknown as
+    { teryt: string; nazwa: string; rodzaj: string; powiat: string; wojewodztwo: string }[];
+  const wgNazw = new Map<string, string>();
+  for (const g of gminy) {
+    wgNazw.set(`${uprosc(g.nazwa)}|${uprosc(g.powiat)}|${uprosc(g.wojewodztwo)}`, g.teryt);
+  }
+  const terytZNazw = (gmina: string | null, powiat: string | null, woj: string | null): string | null => {
+    if (!gmina || !powiat || !woj) return null;
+    // Warszawa: BIR podaje dzielnice jako gmine, a caly serwis liczy Warszawe
+    // jako jedna jednostke 146501 (pulapka 24).
+    if (uprosc(powiat) === 'warszawa') return TERYT_WARSZAWY;
+    return wgNazw.get(`${uprosc(gmina)}|${uprosc(powiat)}|${uprosc(woj)}`) ?? null;
+  };
+
+  const wstaw = db.prepare(
+    `insert into regon(nip, regon, nazwa, typ, silos, wojewodztwo, powiat, gmina, miejscowosc,
+                       kod_pocztowy, teryt, rekordow, pobrano)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?)
+     on conflict(nip) do update set regon=excluded.regon, nazwa=excluded.nazwa, typ=excluded.typ,
+       silos=excluded.silos, wojewodztwo=excluded.wojewodztwo, powiat=excluded.powiat,
+       gmina=excluded.gmina, miejscowosc=excluded.miejscowosc, kod_pocztowy=excluded.kod_pocztowy,
+       teryt=excluded.teryt, rekordow=excluded.rekordow, pobrano=excluded.pobrano`,
+  );
+
+  const sid = await zaloguj();
+  const teraz = new Date().toISOString();
+  let znalezionych = 0;
+  let zTerytem = 0;
+  let pusteOdpowiedzi = 0;
+  let wielokrotnych = 0;
+  const typy = new Map<string, number>();
+  try {
+    for (let i = 0; i < lista.length; i += NIPOW_NA_RAZ) {
+      const partia = lista.slice(i, i + NIPOW_NA_RAZ);
+      const podmioty = await szukajPoNipach(sid, partia);
+      // Pusta odpowiedz na pelna paczke to sygnal, ze cos jest nie tak
+      // z zapytaniem, a nie ze rejestr nie zna dwudziestu firm pod rzad.
+      if (!podmioty.length && partia.length === NIPOW_NA_RAZ) pusteOdpowiedzi++;
+      // JEDEN NIP POTRAFI ODDAC KILKA REKORDOW (zmierzone: 5 na 200, czyli
+      // 2,5%) — najczesciej ta sama firma w dwoch lokalizacjach. Typ F/P byl
+      // w probce ZAWSZE ten sam, gmina rozna raz na 200. Trzymamy jeden wiersz
+      // na NIP, ale zapisujemy, ile wpisow mial rejestr, zeby nie udawac
+      // pewnosci tam, gdzie jej nie ma.
+      const wgNipu = new Map<string, typeof podmioty>();
+      for (const p of podmioty) wgNipu.set(p.nip, [...(wgNipu.get(p.nip) ?? []), p]);
+      db.exec('begin');
+      for (const [nip, wpisy] of wgNipu) {
+        const p = wpisy[0]!;
+        const teryt = terytZNazw(p.gmina, p.powiat, p.wojewodztwo);
+        if (teryt) zTerytem++;
+        typy.set(p.typ ?? '(brak)', (typy.get(p.typ ?? '(brak)') ?? 0) + 1);
+        if (wpisy.length > 1) wielokrotnych++;
+        wstaw.run(nip, p.regon, p.nazwa, p.typ, p.silos, p.wojewodztwo, p.powiat, p.gmina,
+          p.miejscowosc, p.kodPocztowy, teryt, wpisy.length, teraz);
+        znalezionych++;
+      }
+      db.exec('commit');
+      await new Promise((ok) => setTimeout(ok, 350));   // limit GUS: 3 na sekunde
+      if (i % 4000 < NIPOW_NA_RAZ || i + NIPOW_NA_RAZ >= lista.length) {
+        log(`   ${Math.min(i + NIPOW_NA_RAZ, lista.length)}/${lista.length}`);
+      }
+    }
+  } finally {
+    await wyloguj(sid).catch(() => undefined);
+  }
+
+  // Liczymy NIP-y, nie rekordy — inaczej wychodzila liczba ujemna
+  // ("-798 NIP-ow rejestr nie zna"), bo rekordow bywa wiecej niz pytan.
+  const nieznalezionych = lista.length - znalezionych;
+  log(`   ${znalezionych} NIP-ow z rejestru (z tego ${wielokrotnych} ma wiecej niz jeden wpis), ${nieznalezionych} rejestr nie zna`);
+  log(`   rodzaje: ${[...typy.entries()].map(([t, n]) => `${t}=${n}`).join(', ')}`);
+  log(`   z dopasowana gmina: ${zTerytem} (${Math.round((100 * zTerytem) / Math.max(1, znalezionych))}%)`);
+  if (pusteOdpowiedzi) log(`   UWAGA: ${pusteOdpowiedzi} pelnych paczek wrocilo pustych — sprawdz limit NIPOW_NA_RAZ`);
+  odnotujImport(db, 'regon', znalezionych, `BIR 1.1, ${zTerytem} z TERYT-em`);
+}
+
 /** Kolejne miesiace od `od` do dzis, jako pary pierwszy-ostatni dzien. */
 function miesiace(od: string): { od: string; do: string }[] {
   const wynik: { od: string; do: string }[] = [];
@@ -1279,6 +1392,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosy: importGlosow,
   procesy: importProcesow,
   zamowienia: importZamowien,
+  regon: importRegon,
   zdjecia: importZdjec,
   okregi: importOkregow,
   ludnosc: importLudnosci,
