@@ -161,7 +161,7 @@ EOF
   systemctl restart jawne-strona
 
   krok "Harmonogram danych"
-  for t in sudop-dzien sudop-historia sejm gus fundusze; do
+  for t in sudop-dzien sudop-historia sejm gus fundusze ted; do
     systemctl enable --now "jawne-$t.timer" >/dev/null
   done
   systemctl list-timers 'jawne-*' --no-pager

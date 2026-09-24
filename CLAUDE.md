@@ -97,6 +97,7 @@ npx tsx ingest/jobs/sudop.ts --historia --plan              # co pobierze noc se
 npm run paczka-na-serwer                                    # baza + odpowiedzi SUDOP dla serwera
 
 # Serwer (docs/serwer.md): sudo jawne stan | plan | logi ZAD | sprawdz | aktualizuj
+# Zadania serwera: sudop-dzien, sudop-historia, sejm, gus, fundusze, ted
 ```
 
 ---
@@ -388,8 +389,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   nigdy z crona bez tej decyzji. Jedno zapytanie naraz, odpytywanie co 60 s.
   **Decyzja Pawła z 19.09.2026:** historia całego kraju od pierwszej nocy
   serwera. Tempo podnoszone dwa razy na podstawie pomiarów: 25 → 50
-  (21.09) → **150 zapytań na noc w oknie 22:00–07:00 (22.09, kod odrzuca
-  więcej niż 150)**. Podstawa: 25 zapytań zajęło 59 minut, kolejka oddaje
+  (21.09) → **150 zapytań na noc (22.09, kod odrzuca więcej niż 150)**.
+  **Okno zwężone 24.09.2026 z 22:00–07:00 na 00:30–07:00**: dwie noce z rzędu
+  startujące o 22:20 dały ZERO zapytań — kolejka nie oddała wyniku przez
+  pełne 55 minut, i to zarówno dla zakresu siedmiodniowego, jak i dla
+  pojedynczego dnia. Wszystkie udane pomiary (1–3 min) są z godzin 01:00–04:00. Podstawa: 25 zapytań zajęło 59 minut, kolejka oddaje
   wynik po 1–3 minutach w nocy i po **54 minutach w godzinach pracy urzędu**
   — dlatego okno rośnie w stronę wieczora i nocy, a nie w dzień. Szacunek
   do pełnych 10 lat: ok. 2 900 zapytań, czyli 20–30 nocy. Tempa nie stroimy

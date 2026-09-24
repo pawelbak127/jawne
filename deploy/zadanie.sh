@@ -4,9 +4,11 @@
 #
 #   zadanie.sh sejm | gus | fundusze | sudop-dzien | sudop-historia
 #
-# Tempo SUDOP (150 zapytan na noc, okno 22:00-07:00) to decyzja Pawla
-# z 22.09.2026, nie parametr do strojenia. Kod nie przyjmie wiecej niz 150.
-# Godziny pracy urzedu zostaja wolne — w dzien kolejka czeka 54 min zamiast 1-3.
+# Tempo SUDOP (150 zapytan na noc) to decyzja Pawla z 22.09.2026, nie parametr
+# do strojenia. Kod nie przyjmie wiecej niz 150.
+# Okno zwezone 24.09.2026 z 22:00-07:00 na 00:30-07:00: dwie noce z rzedu
+# zaczynajace sie o 22:20 dały ZERO zapytan, bo kolejka urzedu nie oddawala
+# wyniku przez pelne 55 minut. Wszystkie udane pomiary sa z godzin 01:00-04:00.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -38,14 +40,18 @@ case "${1:-}" in
   fundusze)
     exec "$TSX" ingest/jobs/import.ts fundusze wyliczenia
     ;;
+  ted)
+    # TED nie ma limitow poza rozsadkiem; miesiac juz kompletny jest pomijany.
+    exec "$TSX" ingest/jobs/import.ts zamowienia
+    ;;
   sudop-dzien)
     sudop --dzienny
     ;;
   sudop-historia)
-    sudop --historia --maks-zapytan=150 --okno=22:00-07:00
+    sudop --historia --maks-zapytan=150 --okno=00:30-07:00
     ;;
   *)
-    echo "Uzycie: $0 sejm|gus|fundusze|sudop-dzien|sudop-historia" >&2
+    echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia" >&2
     exit 2
     ;;
 esac

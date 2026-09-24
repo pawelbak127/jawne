@@ -1,10 +1,15 @@
 [Unit]
-Description=jawne — SUDOP historia co noc o 02:00 (zapytania tylko 01:00–06:00)
+Description=jawne — SUDOP historia co noc o 00:30 (zapytania tylko 00:30–07:00)
 
 [Timer]
-# Persistent=false: przegapiona noc NIE nadrabia sie w dzien. Okno 22:00-07:00
+# Persistent=false: przegapiona noc NIE nadrabia sie w dzien. Okno 00:30-07:00
 # pilnuje tez kod (sudop.ts --okno) — poza nim nie zacznie zapytania.
-OnCalendar=*-*-* 22:20:00 Europe/Warsaw
+#
+# ZMIERZONE: start o 22:20 dal DWIE NOCE Z RZEDU po zero zapytan — kolejka
+# urzedu nie oddala wyniku przez pelne 55 minut, i to zarowno dla zakresu
+# siedmiodniowego, jak i dla pojedynczego dnia. Przesuniete na 00:30:
+# wszystkie udane pomiary (wynik po 1-3 minutach) pochodza z godzin 01:00-04:00.
+OnCalendar=*-*-* 00:30:00 Europe/Warsaw
 Persistent=false
 
 [Install]

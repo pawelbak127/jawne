@@ -1,0 +1,11 @@
+[Unit]
+Description=jawne — TED codziennie o 06:30
+
+[Timer]
+# Miesiac juz kompletny w bazie jest pomijany, wiec codzienny przebieg to
+# ok. 35 zapytan sprawdzajacych plus strony biezacego miesiaca.
+OnCalendar=*-*-* 06:30:00 Europe/Warsaw
+Persistent=true
+
+[Install]
+WantedBy=timers.target

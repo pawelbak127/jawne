@@ -170,6 +170,22 @@ importujemy lokalnie nawet kilka dni później; gdyby liczyła się data importu
 świeży dzień wyglądałby na ustalony. Każda zapisana odpowiedź ma pole
 `pobrano`, a nowsza wersja pliku wygrywa ze starszą.
 
+## Wieczór nie działa — dwie noce zmierzone
+
+| Noc | Start | Co się stało |
+|---|---|---|
+| 22/23.09 | 22:20 | jeden zakres, 59 minut „czeka”, w 60. minucie `404` (rekord kolejki wygasł) |
+| 23/24.09 | 22:20 | dwa zakresy po 55 minut bez wyniku — **także pojedynczy dzień**, nie tylko zakres siedmiodniowy |
+
+Razem: **dwie noce po zero zapytań** z przydziału 150. Dla porównania zadanie
+dzienne o 22:00 w tę samą noc (23/24.09) pobrało dzień 22.09 bez problemu,
+a wszystkie szybkie pomiary kolejki (wynik po 1–3 minutach) pochodzą z godzin
+01:00–04:00.
+
+**Okno przesunięte 24.09.2026 na 00:30–07:00.** To jest wykonanie zapowiedzi
+z 23.09: „jeśli jutro rano znowu będzie zero, przesuwamy start na 00:30”.
+Tempo (150 zapytań) zostaje bez zmian — zmienia się tylko godzina startu.
+
 ## Co z tego wynika — do decyzji Pawła
 
 **Przesłanka D13 „kolejka nie oddaje wyniku przed jego wygaśnięciem”

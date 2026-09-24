@@ -14,7 +14,7 @@ set -euo pipefail
 
 KATALOG=/srv/jawne
 USTAWIENIA=/etc/jawne/jawne.env
-ZADANIA='sudop-dzien sudop-historia sejm gus fundusze'
+ZADANIA='sudop-dzien sudop-historia sejm gus fundusze ted'
 
 [ "$(id -u)" = 0 ] || { echo "Uruchom przez sudo: sudo jawne ${1:-stan}"; exit 1; }
 jako() { (cd "$KATALOG" && sudo -u jawne -H "$@"); }
@@ -41,7 +41,13 @@ stan() {
   # i ten widok pokazywal "jeszcze nie uruchomione" przy zadaniach, ktore
   # sie wykonaly (a nawet padly). Miara konca przebiegu to
   # InactiveEnterTimestamp; Result mowi, jak sie skonczyl.
-  local z wynik kiedy stanUslugi nieudanych=0
+  #
+  # ZMIERZONE 24.09.2026: po RESTARCIE SERWERA systemd gubi te znaczniki
+  # i widok pokazal "jeszcze nie uruchomione" przy WSZYSTKICH piecu zadaniach,
+  # choc noc wczesniej pracowaly — widac to w dzienniku. Gdy systemd nie ma
+  # znacznika, pytamy wiec dziennik i mowimy wprost, skad wiemy. Widok, ktory
+  # po restarcie kasuje historie, klamie tak samo jak ten, ktory jej nie ma.
+  local z wynik kiedy stanUslugi zDziennika nieudanych=0
   for z in $ZADANIA; do
     wynik=$(systemctl show -p Result --value "jawne-$z.service")
     kiedy=$(systemctl show -p InactiveEnterTimestamp --value "jawne-$z.service")
@@ -50,11 +56,16 @@ stan() {
     stanUslugi=$(systemctl is-active "jawne-$z.service" || true)
     if [ "$stanUslugi" != inactive ] && [ "$stanUslugi" != failed ]; then
       printf '   %-16s %-10s %s\n' "$z" "TRWA" "$stanUslugi"
-    elif [ -z "$kiedy" ]; then
-      printf '   %-16s %-10s %s\n' "$z" '' 'jeszcze nie uruchomione'
-    else
+    elif [ -n "$kiedy" ]; then
       printf '   %-16s %-10s %s\n' "$z" "$wynik" "$kiedy"
       [ "$wynik" = success ] || nieudanych=$((nieudanych + 1))
+    else
+      zDziennika=$(journalctl -u "jawne-$z.service" --since -30d -n 1 --no-pager -o short-iso 2>/dev/null | cut -d" " -f1 || true)
+      if [ -n "$zDziennika" ]; then
+        printf '   %-16s %-10s %s\n' "$z" 'z dziennika' "$zDziennika (systemd zapomnial po restarcie)"
+      else
+        printf '   %-16s %-10s %s\n' "$z" '' 'jeszcze nie uruchomione'
+      fi
     fi
   done
   printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona || true)"
