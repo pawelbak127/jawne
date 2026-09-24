@@ -308,11 +308,24 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 35. **Przegląd krajowy liczy tylko dni z `pomoc_publiczna_dni`.** W tej samej
     tabeli leży pełna 10-letnia historia gmin pokazowych — bez filtra Bełchatów
     dodałby do sumy krajowej 13 mld zł.
-36. **GUS BDL: najciaśniejszy jest limit 15-minutowy** — 100 zapytań bez
-    klucza, 500 z kluczem (`GUS_BDL_KLUCZ` w `.env.local`, nagłówek
-    `X-ClientId`). Przerwa 1 s go przekraczała. `przerwaBdlMs()` w `http.ts`
-    dobiera tempo do klucza, `http.ts` respektuje `Retry-After`, a import
+36. **GUS BDL — pełna tabela limitów** (z api.stat.gov.pl, sprawdzone
+    24.09.2026). Klucz podaje się w nagłówku `X-ClientId`:
+
+    | Okres | bez klucza | z kluczem |
+    |---|---|---|
+    | 1 s | 5 | 10 |
+    | 15 min | 100 | 500 |
+    | **12 h** | **1 000** | **5 000** |
+    | 7 dni | 10 000 | 50 000 |
+
+    Przerwa 1 s przekraczała limit 15-minutowy — `przerwaBdlMs()` w `http.ts`
+    dobiera tempo do klucza, a `http.ts` respektuje `Retry-After`. Import
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
+    **Najgroźniejszy jest limit 12-godzinny**: sam etap `dzialy` to ok. 600
+    zapytań, a `budzety` ok. 400 — razem dokładnie tysiąc, czyli cały dobowy
+    przydział użytkownika anonimowego. Klucz BDL jest **generowany
+    automatycznie po rejestracji** na api.stat.gov.pl (nie trzeba o niego
+    pisać, w odróżnieniu od klucza BIR) — i podnosi ten limit pięciokrotnie.
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
 49. **REGON: 350 ms między wywołaniami to za szybko.** Limit GUS to 3 wywołania
