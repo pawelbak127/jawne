@@ -60,6 +60,7 @@ export function Szukajka({
     return [
       ...widoczne.gminy.map((g) => ({ klucz: `g${g.teryt}`, adres: `/gmina/${g.teryt}` })),
       ...widoczne.poslowie.map((p) => ({ klucz: `p${p.slug}`, adres: `/posel/${p.slug}` })),
+      ...widoczne.ustawy.map((u) => ({ klucz: `u${u.numer}`, adres: `/ustawa/${u.numer}` })),
       ...widoczne.firmy.map((f) => ({ klucz: `f${f.nip}`, adres: `/firma/${f.nip}` })),
       ...widoczne.glosowania.map((g) => ({ klucz: `v${g.id}`, adres: `/glosowanie/${g.id}` })),
       { klucz: 'wszystko', adres: `/szukaj?q=${encodeURIComponent(q)}` },
@@ -87,7 +88,7 @@ export function Szukajka({
   }
 
   const pusto = widoczne && !widoczne.gminy.length && !widoczne.poslowie.length
-    && !widoczne.glosowania.length && !widoczne.firmy.length;
+    && !widoczne.glosowania.length && !widoczne.firmy.length && !widoczne.ustawy.length;
 
   return (
     <div className="relative w-full">
@@ -149,7 +150,7 @@ export function Szukajka({
           {pusto ? (
             <p className="px-4 py-3 text-sm text-atrament-2">
               Nic nie znaleźliśmy. Szukamy w nazwach gmin, nazwiskach posłów, tytułach głosowań
-              i wśród firm — po nazwie albo po numerze NIP.
+              i ustaw oraz wśród firm — po nazwie albo po numerze NIP.
             </p>
           ) : null}
 
@@ -178,6 +179,18 @@ export function Szukajka({
                   <span className="ml-auto truncate text-xs text-atrament-3">
                     {p.aktywny ? (p.okreg ?? '') : 'mandat wygasł'}
                   </span>
+                </Link>
+              ))}
+            </Grupa>
+          ) : null}
+
+          {widoczne.ustawy.length ? (
+            <Grupa tytul={`Ustawy — droga przez Sejm (${widoczne.ustawWszystkich})`}>
+              {widoczne.ustawy.map((u) => (
+                <Link key={u.numer} href={`/ustawa/${u.numer}`} role="option" aria-selected={indeks(`u${u.numer}`) === aktywny} className={klasaPozycji(`u${u.numer}`)}>
+                  <span className="liczby shrink-0 text-xs text-atrament-3">{`druk ${u.numer}`}</span>
+                  <span className="min-w-0 flex-1 text-sm leading-snug">{u.tytul}</span>
+                  <span className="shrink-0 text-xs text-atrament-3">{u.stan}</span>
                 </Link>
               ))}
             </Grupa>

@@ -312,6 +312,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     budżetów pomija lata już kompletne w bazie (`--od-nowa` pobiera znowu).
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
+49. **REGON: 350 ms między wywołaniami to za szybko.** Limit GUS to 3 wywołania
+    na sekundę w godzinach pracy urzędu; przy 2,9/s usługa po ok. 400 NIP-ach
+    zrywa połączenie (`TypeError` z `fetch`, pięć ponowień i koniec importu).
+    Teraz 500 ms, a błąd nie kończy przebiegu: przerwa 30 s, ponowne logowanie
+    i ta sama partia jeszcze raz (pięć błędów pod rząd kończy).
 48. **REGON (BIR): `Nipy` przyjmuje NAJWYŻEJ 20 numerów.** Przy 21 usługa
     oddaje **pustą odpowiedź — HTTP 200, bez błędu**. Pierwsza wersja importu
     wysyłała po 100 i „znalazła” 3 podmioty z 28 603. Zmierzone: 20→20, 21→0,

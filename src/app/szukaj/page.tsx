@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { bazaDostepna, szukaj } from '@/lib/dane';
 import { liczba, zlote, zOdmiana } from '@/lib/format';
 import { opisFirmy, opisGminy } from '@/lib/wyszukiwanie';
+import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { KartaGlosowania } from '@/components/KartaGlosowania';
 import { Szukajka } from '@/components/Szukajka';
@@ -21,7 +22,7 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
   const { q = '' } = await searchParams;
   const fraza = q.slice(0, 120);
   const w = szukaj(fraza, GLOSOWAN_NA_STRONIE);
-  const cokolwiek = w.gminy.length + w.poslowie.length + w.glosowania.length + w.firmy.length > 0;
+  const cokolwiek = w.gminy.length + w.poslowie.length + w.glosowania.length + w.firmy.length + w.ustawy.length > 0;
 
   return (
     <div className="obszar max-w-4xl py-10">
@@ -33,7 +34,7 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
       {fraza.trim().length < 2 ? (
         <p className="mt-8 text-atrament-2">
           Wpisz co najmniej dwa znaki — nazwę swojej gminy, nazwisko posła, słowo z tytułu
-          głosowania albo nazwę bądź NIP firmy.
+          głosowania lub ustawy, numer druku albo nazwę bądź NIP firmy.
         </p>
       ) : !cokolwiek ? (
         <p className="mt-8 text-atrament-2">{`Nic nie znaleźliśmy dla „${fraza}”.`}</p>
@@ -78,6 +79,37 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
                   <span className="text-sm text-atrament-2">{p.klub_id ?? 'bez klubu'}</span>
                   <span className="ml-auto text-xs text-atrament-3">
                     {p.aktywny ? p.okreg_nazwa : 'mandat wygasł'}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {w.ustawy.length ? (
+        <section className="mt-10">
+          <h2 className="szryft text-2xl font-semibold">Ustawy</h2>
+          <p className="mt-1 text-sm text-atrament-2">
+            {w.ustawWszystkich > w.ustawy.length
+              ? `Najnowsze ${liczba(w.ustawy.length)} z ${zOdmiana(w.ustawWszystkich, 'znalezionego projektu', 'znalezionych projektów', 'znalezionych projektów')}.`
+              : zOdmiana(w.ustawWszystkich, 'projekt', 'projekty', 'projektów')}
+          </p>
+          <ul className="mt-4 space-y-2">
+            {w.ustawy.map((u) => (
+              <li key={u.numer}>
+                <Link
+                  href={`/ustawa/${u.numer}`}
+                  className="group flex flex-col gap-1 rounded-xl border border-kreska bg-papier-2 p-4 transition-all hover:border-kreska-2 hover:shadow-karta"
+                >
+                  <span className="flex flex-wrap items-baseline gap-x-3">
+                    <span className="liczby shrink-0 text-xs text-atrament-3">{`druk ${u.numer}`}</span>
+                    <span className="min-w-0 flex-1 font-medium group-hover:text-akcent">
+                      {bezNazwiskOsobPrywatnych(u.tytul)}
+                    </span>
+                  </span>
+                  <span className={`text-xs ${u.koniec === 'Uchwalono' ? 'text-akcent' : 'text-atrament-3'}`}>
+                    {u.koniec ?? (u.ostatni_etap ? `W toku · ${u.ostatni_etap}` : 'W toku')}
                   </span>
                 </Link>
               </li>
@@ -140,7 +172,8 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
         <div className="mt-3 space-y-2 leading-relaxed">
           <p>
             Szukamy w nazwach gmin (według danych PKW z wyborów w 2023 r.), w nazwiskach
-            posłów, w tytułach głosowań i wśród firm z rejestru pomocy publicznej.
+            posłów, w tytułach głosowań i ustaw (także po numerze druku) oraz wśród firm
+            z rejestru pomocy publicznej.
             Ogonki można pomijać: „lodz” znajdzie „Łódź”.
           </p>
           <p>

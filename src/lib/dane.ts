@@ -514,6 +514,8 @@ export type GminaWWyszukiwaniu = Gmina & { okreg_nazwa: string | null };
 
 export type WynikiWyszukiwania = {
   fraza: string;
+  ustawy: ProcesSkrot[];
+  ustawWszystkich: number;
   poslowie: PoselSkrot[];
   gminy: GminaWWyszukiwaniu[];
   glosowania: GlosowanieSkrot[];
@@ -529,7 +531,7 @@ export type WynikiWyszukiwania = {
  * ida przez FTS5 — patrz uwagi w tekst.ts o odmianie i o literze "ł".
  */
 export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
-  const pusty: WynikiWyszukiwania = { fraza, poslowie: [], gminy: [], glosowania: [], glosowanWszystkich: 0, firmy: [] };
+  const pusty: WynikiWyszukiwania = { fraza, poslowie: [], gminy: [], glosowania: [], glosowanWszystkich: 0, firmy: [], ustawy: [], ustawWszystkich: 0 };
   const q = uprosc(fraza.trim());
   if (q.length < 2 || !bazaDostepna()) return pusty;
 
@@ -598,7 +600,33 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
     );
   }
 
-  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich, firmy: szukajFirm(fraza) };
+  // Ustawy szukamy tym samym trygramem co glosowan — po druku i po tytule.
+  let ustawy: ProcesSkrot[] = [];
+  let ustawWszystkich = 0;
+  if (fts) {
+    ustawy = bezTabeli(
+      () => wszystkie<ProcesSkrot>(
+        `select ${KOLUMNY_PROCESU} from procesy_szukaj f
+           join procesy p on p.numer = f.numer
+          where procesy_szukaj match ?
+          order by coalesce(p.data_wplyniecia, '') desc limit 6`,
+        fts,
+      ),
+      [],
+    );
+    ustawWszystkich = bezTabeli(
+      () => jeden<{ c: number }>('select count(*) as c from procesy_szukaj where procesy_szukaj match ?', fts)?.c ?? 0,
+      0,
+    );
+  }
+  // Numer druku tez jest kluczem: „druk 30" i „30" maja trafiac w proces.
+  const numer = fraza.trim().replace(/^druk\s*(nr)?\s*/i, '');
+  if (/^\d{1,4}$/.test(numer) && !ustawy.some((u) => u.numer === numer)) {
+    const p = proces(numer);
+    if (p) { ustawy.unshift(p); ustawWszystkich++; }
+  }
+
+  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich, firmy: szukajFirm(fraza), ustawy, ustawWszystkich };
 }
 
 export type FirmaSkrot = {

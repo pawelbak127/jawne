@@ -35,6 +35,12 @@ export type PodpowiedzFirmy = {
   opis: string;
 };
 
+export type PodpowiedzUstawy = {
+  numer: string;
+  tytul: string;
+  stan: string;
+};
+
 export type OdpowiedzWyszukiwania = {
   fraza: string;
   gminy: PodpowiedzGminy[];
@@ -42,6 +48,8 @@ export type OdpowiedzWyszukiwania = {
   glosowania: PodpowiedzGlosowania[];
   glosowanWszystkich: number;
   firmy: PodpowiedzFirmy[];
+  ustawy: PodpowiedzUstawy[];
+  ustawWszystkich: number;
 };
 
 /** Jedna linia pod nazwa firmy: gdzie ma siedzibe i ile razy dostala pomoc. */

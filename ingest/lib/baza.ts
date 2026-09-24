@@ -227,6 +227,16 @@ create table if not exists porownania_poslow (
   Wyszukiwanie glosowan. Tekst trafia tu JUZ UPROSZCZONY (uprosc()), bo
   tokenizer z remove_diacritics nie zamienia "ł" na "l" — zmierzone.
 */
+/*
+  Indeks wyszukiwania ustaw. Ten sam tokenizer co przy glosowaniach —
+  trygram, bo polskiej odmiany nie znamy i szukamy podciagow.
+*/
+create virtual table if not exists procesy_szukaj using fts5(
+  tekst,
+  numer unindexed,
+  tokenize = 'trigram'
+);
+
 create virtual table if not exists glosowania_szukaj using fts5(
   tekst,
   posiedzenie unindexed,

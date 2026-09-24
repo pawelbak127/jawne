@@ -1,5 +1,7 @@
 import { szukaj } from '@/lib/dane';
 import { opisFirmy, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
+import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
+import { skroc } from '@/lib/format';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
 
 /**
@@ -37,6 +39,12 @@ export async function GET(zadanie: Request) {
     // Nazwa przechodzi przez regule prywatnosci juz w `szukajFirm` — tu jest
     // tylko to, co wolno pokazac.
     firmy: w.firmy.slice(0, 4).map((f) => ({ nip: f.nip, nazwa: f.nazwa, opis: opisFirmy(f) })),
+    ustawy: w.ustawy.slice(0, 4).map((u) => ({
+      numer: u.numer,
+      tytul: skroc(bezNazwiskOsobPrywatnych(u.tytul), 110),
+      stan: u.koniec ?? 'w toku',
+    })),
+    ustawWszystkich: w.ustawWszystkich,
   };
 
   return Response.json(odpowiedz, {

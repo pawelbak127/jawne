@@ -439,6 +439,25 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log(`   ${glosowania.length} glosowan w indeksie`);
   odnotujImport(db, 'szukaj-glosowania', glosowania.length);
 
+  log('-> wyliczenia: indeks wyszukiwania ustaw');
+  const maProcesy = db.prepare("select count(*) as c from sqlite_master where name = 'procesy'").get() as { c: number };
+  if (maProcesy.c) {
+    const procesyDoIndeksu = db.prepare('select numer, tytul, opis from procesy').all() as unknown as
+      { numer: string; tytul: string; opis: string | null }[];
+    const wstawProces = db.prepare('insert into procesy_szukaj(tekst, numer) values (?,?)');
+    db.exec('begin');
+    db.exec('delete from procesy_szukaj');
+    for (const p of procesyDoIndeksu) {
+      // Ta sama regula co przy glosowaniach: nazwiska osob prywatnych nie
+      // wchodza do naszego indeksu.
+      const tekst = [p.tytul, p.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
+      wstawProces.run(uprosc(tekst), p.numer);
+    }
+    db.exec('commit');
+    log(`   ${procesyDoIndeksu.length} procesow w indeksie`);
+    odnotujImport(db, 'szukaj-ustawy', procesyDoIndeksu.length);
+  }
+
   log('-> wyliczenia: indeks firm — beneficjentow pomocy publicznej');
   const maPomoc = db.prepare("select count(*) as c from sqlite_master where name = 'pomoc_publiczna'").get() as { c: number };
   if (maPomoc.c) {
@@ -933,8 +952,9 @@ async function importRegon(db: DatabaseSync): Promise<void> {
        teryt=excluded.teryt, rekordow=excluded.rekordow, pobrano=excluded.pobrano`,
   );
 
-  const sid = await zaloguj();
+  let sid = await zaloguj();
   const teraz = new Date().toISOString();
+  let bledow = 0;
   let znalezionych = 0;
   let zTerytem = 0;
   let pusteOdpowiedzi = 0;
@@ -943,7 +963,23 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   try {
     for (let i = 0; i < lista.length; i += NIPOW_NA_RAZ) {
       const partia = lista.slice(i, i + NIPOW_NA_RAZ);
-      const podmioty = await szukajPoNipach(sid, partia);
+      let podmioty;
+      try {
+        podmioty = await szukajPoNipach(sid, partia);
+        bledow = 0;
+      } catch (e) {
+        // ZMIERZONE 24.09.2026: po ok. 400 NIP-ach usluga zrywala polaczenie
+        // (TypeError z fetch) i caly import padal. Teraz: przerwa, ponowne
+        // logowanie i ta sama partia jeszcze raz. Przebieg i tak zaczyna od
+        // miejsca, w ktorym stanal, bo zapisane NIP-y sa pomijane.
+        bledow++;
+        log(`   przerwa po bledzie (${bledow}): ${e instanceof Error ? e.message.slice(0, 90) : String(e)}`);
+        if (bledow >= 5) throw e;
+        await new Promise((ok) => setTimeout(ok, 30_000));
+        sid = await zaloguj();
+        i -= NIPOW_NA_RAZ;
+        continue;
+      }
       // Pusta odpowiedz na pelna paczke to sygnal, ze cos jest nie tak
       // z zapytaniem, a nie ze rejestr nie zna dwudziestu firm pod rzad.
       if (!podmioty.length && partia.length === NIPOW_NA_RAZ) pusteOdpowiedzi++;
@@ -966,7 +1002,9 @@ async function importRegon(db: DatabaseSync): Promise<void> {
         znalezionych++;
       }
       db.exec('commit');
-      await new Promise((ok) => setTimeout(ok, 350));   // limit GUS: 3 na sekunde
+      // Limit GUS: 3 wywolania na sekunde w godzinach pracy urzedu. 350 ms
+      // (2,9/s) ocieralo sie o ten prog i konczylo zerwaniem polaczenia.
+      await new Promise((ok) => setTimeout(ok, 500));
       if (i % 4000 < NIPOW_NA_RAZ || i + NIPOW_NA_RAZ >= lista.length) {
         log(`   ${Math.min(i + NIPOW_NA_RAZ, lista.length)}/${lista.length}`);
       }
