@@ -589,6 +589,8 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
 
 export type FirmaSkrot = {
   nip: string;
+  /** Typ z REGON ('P'/'F'/…), gdy go mamy — rozstrzyga o pokazaniu nazwy. */
+  typ_regon?: string | null;
   /** Nazwa GOTOWA do pokazania — przepuszczona przez regule prywatnosci. */
   nazwa: string;
   przypadkow: number;
@@ -619,15 +621,19 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
   const progAktywny = Boolean(KONTAKT);
 
   const kolumny = `f.nip as nip, f.nazwa as nazwa, f.przypadkow as przypadkow, f.brutto as brutto,
-                   f.max_eur as max_eur, f.teryt as teryt, g.nazwa as gmina`;
+                   f.max_eur as max_eur, f.teryt as teryt, g.nazwa as gmina, r.typ as typ_regon`;
   // Ta sama regula, co na stronie firmy. Wynik wyszukiwania nie moze mowic
   // wiecej niz strona, do ktorej prowadzi.
-  const wolnoPokazac = (w: FirmaSkrot) => !nazwaDoPokazania(w.nazwa, { pomocEur: w.max_eur, progAktywny }).pominieta;
+  const wolnoPokazac = (w: FirmaSkrot) =>
+    !nazwaDoPokazania(w.nazwa, { pomocEur: w.max_eur, progAktywny, typRegon: w.typ_regon }).pominieta;
 
   if (cyfry.length === 10) {
     return bezTabeli(
       () => wszystkie<FirmaSkrot>(
-        `select ${kolumny} from firmy_szukaj f left join gminy g on g.teryt = f.teryt where f.nip = ?`,
+        `select ${kolumny} from firmy_szukaj f
+           left join gminy g on g.teryt = f.teryt
+           left join regon r on r.nip = f.nip
+          where f.nip = ?`,
         cyfry,
       ).filter(wolnoPokazac),
       [],
@@ -637,7 +643,9 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
   // Bierzemy z zapasem, bo czesc nazw odpadnie na regule prywatnosci.
   const kandydaci = bezTabeli(
     () => wszystkie<FirmaSkrot>(
-      `select ${kolumny} from firmy_szukaj f left join gminy g on g.teryt = f.teryt
+      `select ${kolumny} from firmy_szukaj f
+         left join gminy g on g.teryt = f.teryt
+         left join regon r on r.nip = f.nip
         where instr(f.szukaj, ?) > 0
         order by (f.szukaj = ?) desc, f.brutto desc nulls last
         limit ?`,
@@ -1318,6 +1326,8 @@ export function historiaSmup(teryt: string, klucz: string): { rok: number; warto
 export type Firma = {
   nip: string;
   nazwa: string;
+  /** Typ z REGON ('P'/'F'/…), gdy go mamy. */
+  typ_regon: string | null;
   /** Najwieksza POJEDYNCZA pomoc w euro — decyduje o pokazaniu nazwy osoby fizycznej. */
   max_eur: number | null;
   wielkosc: string | null;
@@ -1356,6 +1366,7 @@ export function firma(nip: string): Firma | null {
            from pomoc_publiczna where nip_beneficjenta = ? order by dzien desc, id desc limit 1
        )
        select p.nip_beneficjenta as nip, o.nazwa_beneficjenta as nazwa, max(p.wartosc_brutto_eur) as max_eur,
+              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon,
               o.wielkosc as wielkosc, o.wielkosc_kod as wielkosc_kod, o.pkd as pkd, o.pkd_nazwa as pkd_nazwa,
               o.teryt as teryt, g.nazwa as gmina, g.rodzaj as gmina_rodzaj,
               count(*) as przypadkow, sum(p.wartosc_brutto) as brutto,

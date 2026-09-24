@@ -27,7 +27,23 @@ const OPISY: Record<string, string> = {
   'fundusze-2014-2020': 'Projekty z Funduszy Europejskich 2014–2020',
   sudop: 'Pomoc publiczna (SUDOP, UOKiK) — pełne dane wybranych gmin',
   'sudop-przyrost': 'Pomoc publiczna (SUDOP) — dni pobrane dla całego kraju',
+  'budzety-dzialy': 'Wydatki gmin według działów budżetu (GUS, Bank Danych Lokalnych)',
+  smup: 'Wskaźniki finansowe gmin (SMUP, GUS)',
+  procesy: 'Procesy legislacyjne — droga ustaw przez Sejm',
+  zamowienia: 'Zamówienia publiczne (TED — dziennik zamówień UE)',
+  regon: 'Rejestr REGON — kim jest podmiot o danym NIP-ie (GUS)',
+  'szukaj-firmy': 'Indeks wyszukiwania firm',
 };
+
+/**
+ * Klucz bez opisu to sygnal, ze doszedl nowy etap importu, a nikt nie
+ * powiedzial czytelnikowi, co to jest. Pokazujemy wtedy klucz i mowimy
+ * wprost, ze opisu brakuje — zamiast udawac, ze „budzety-dzialy" to nazwa.
+ */
+function opisZbioru(co: string): { tytul: string; bezOpisu: boolean } {
+  const z = OPISY[co];
+  return z ? { tytul: z, bezOpisu: false } : { tytul: co, bezOpisu: true };
+}
 
 export default function StronaStanu() {
   if (!bazaDostepna()) return <BrakDanych />;
@@ -37,7 +53,7 @@ export default function StronaStanu() {
   const brakujaceGlosy = stan.glosowan - stan.glosowanZGlosami;
 
   return (
-    <div className="obszar max-w-3xl py-10">
+    <div className="obszar max-w-5xl py-10">
       <h1 className="szryft text-3xl font-semibold sm:text-4xl">Stan danych</h1>
       <p className="mt-3 text-atrament-2">
         Ta strona istnieje po to, żeby dało się sprawdzić, czego jeszcze nie mamy.
@@ -45,31 +61,31 @@ export default function StronaStanu() {
         zweryfikowania niż taki, który mówi wprost, gdzie ma dziury.
       </p>
 
-      {/* Trzy kolumny z długą treścią: na telefonie przewija się w swoim
-          kontenerze, zamiast rozpychać całą stronę (zmierzone: 763 px z 390). */}
-      <div className="mt-8 overflow-x-auto">
-      <table className="w-full min-w-[30rem] text-sm">
-        <thead>
-          <tr className="border-b border-kreska text-left text-atrament-2">
-            <th className="py-2 font-medium">Zbiór</th>
-            <th className="py-2 text-right font-medium">Rekordów</th>
-            <th className="py-2 text-right font-medium">Zaimportowano</th>
-          </tr>
-        </thead>
-        <tbody>
-          {wpisy.map((w) => (
-            <tr key={w.co} className="border-b border-kreska align-top">
-              <td className="py-3 pr-3">
-                <span className="font-medium">{OPISY[w.co] ?? w.co}</span>
-                {w.uwagi ? <span className="mt-0.5 block text-xs text-atrament-3">{w.uwagi}</span> : null}
-              </td>
-              <td className="liczby py-3 text-right">{w.ile === null ? '—' : liczba(w.ile)}</td>
-              <td className="py-3 text-right text-atrament-2">{dataSlownie(w.kiedy)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
+      {/*
+        Bez tabeli. ZGLOSZENIE PAWLA 24.09.2026: tabela miala wlasny poziomy
+        suwak („do uwalenia”) — na telefonie nie dalo sie jej czytac, a na
+        szerokim ekranie i tak siedziala w waskiej kolumnie. Lista kart czyta
+        sie tak samo w kazdej szerokosci i nigdzie nie trzeba przewijac w bok.
+      */}
+      <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+        {wpisy.map((w) => (
+          <li key={w.co} className="min-w-0 rounded-2xl border border-kreska bg-papier-2 p-4">
+            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="min-w-0 font-medium">
+                {opisZbioru(w.co).tytul}
+                {opisZbioru(w.co).bezOpisu ? (
+                  <span className="ml-2 text-xs font-normal text-atrament-3">(zbiór bez opisu)</span>
+                ) : null}
+              </span>
+              <span className="liczby shrink-0 text-lg font-semibold">{w.ile === null ? '—' : liczba(w.ile)}</span>
+            </div>
+            <p className="mt-1 text-xs text-atrament-3">{`zaimportowano ${dataSlownie(w.kiedy)}`}</p>
+            {/* Uwagi bywaja jednym dlugim adresem z suma SHA — bez break-all
+                rozpychaja karte i cala strone (zmierzone: 613 px z 390). */}
+            {w.uwagi ? <p className="mt-2 text-xs leading-relaxed break-all text-atrament-3">{w.uwagi}</p> : null}
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-8 rounded-2xl border border-kreska bg-papier-2 p-5">
         <h2 className="font-medium">Głosy imienne</h2>
@@ -110,10 +126,8 @@ export default function StronaStanu() {
           </li>
         </ul>
         <p className="mt-4 text-xs text-atrament-3">
-          Dane pobieramy w całości i przechowujemy lokalnie, żeby serwis działał,
-          gdy rejestr nie odpowiada. Przy budowie tego importu API Sejmu oddawało
-          kolejno przekroczenie czasu, błąd 503 i błąd 404 na poprawny adres —
-          dlatego nie odpytujemy go przy każdym wejściu na stronę.
+          Dane trzymamy u siebie i odświeżamy według harmonogramu — nie pytamy
+          rejestrów przy każdym wejściu na stronę.
         </p>
       </div>
     </div>

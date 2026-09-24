@@ -23,11 +23,11 @@ function widok(nip: string) {
   if (!/^\d{10}$/.test(nip) || !bazaDostepna()) return null;
   const f = firma(nip);
   if (!f) return null;
-  const nazwa = nazwaDoPokazania(f.nazwa, { pomocEur: f.max_eur, progAktywny: Boolean(KONTAKT) });
+  const nazwa = nazwaDoPokazania(f.nazwa, { pomocEur: f.max_eur, progAktywny: Boolean(KONTAKT), typRegon: f.typ_regon });
   if (nazwa.pominieta) return null;
   // Osoba fizyczna odslonieta progiem nie trafia do wyszukiwarek — nazwa jest
   // na stronie, ale nie w tytule ani w indeksie.
-  return { f, nazwa: nazwa.tekst, osobaPrawna: nazwaPodmiotuJawna(f.nazwa) };
+  return { f, nazwa: nazwa.tekst, osobaPrawna: nazwaPodmiotuJawna(f.nazwa, f.typ_regon) };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ nip: string }> }): Promise<Metadata> {

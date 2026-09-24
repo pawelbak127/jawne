@@ -183,3 +183,40 @@ describe('trybBezFiltra', () => {
     }
   });
 });
+
+describe('REGON ma pierwszenstwo przed zgadywaniem z nazwy', () => {
+  it('osoba prawna: nazwe pokazujemy, nawet gdy jest w niej nazwisko', () => {
+    // Bez REGON-u nasza heurystyka chowa te nazwe — bo widzi imie.
+    expect(nazwaPodmiotuJawna('Zakład Fryzjerski Anna Kowalska')).toBe(false);
+    // Rejestr mowi, ze to osoba prawna — wiec nazwa nie jest dana osobowa.
+    expect(nazwaPodmiotuJawna('Zakład Fryzjerski Anna Kowalska', 'P')).toBe(true);
+    expect(nazwaPodmiotuJawna('Jednostka lokalna czegoś', 'LP')).toBe(true);
+  });
+
+  it('osoba fizyczna: chowamy, nawet gdy nazwa wyglada na firme', () => {
+    expect(nazwaPodmiotuJawna('CENTRUM USŁUG BUDOWLANYCH', 'F')).toBe(false);
+    expect(nazwaPodmiotuJawna('CENTRUM USŁUG BUDOWLANYCH', 'LF')).toBe(false);
+  });
+
+  it('nieznana wartosc albo brak typu: wracamy do zgadywania z nazwy', () => {
+    expect(nazwaPodmiotuJawna('FIRMA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ', 'XYZ')).toBe(true);
+    expect(nazwaPodmiotuJawna('Jan Kowalski', null)).toBe(false);
+  });
+
+  it('nazwaDoPokazania bierze typ z REGON', () => {
+    expect(nazwaDoPokazania('Zakład Fryzjerski Anna Kowalska', { typRegon: 'P' }).pominieta).toBe(false);
+    expect(nazwaDoPokazania('CENTRUM USŁUG BUDOWLANYCH', { typRegon: 'F' }).pominieta).toBe(true);
+  });
+});
+
+describe('spolka cywilna: nasza regula jest ostrzejsza niz REGON', () => {
+  it('REGON nadaje s.c. typ P, ale jej nazwa to nazwiska wspolnikow', () => {
+    // Zmierzone na zywej bazie: takie nazwy REGON oznacza jako osobe prawna.
+    expect(nazwaPodmiotuJawna('GP TRUCK TRADING S.C. GRZEGORZ KĄDZIELA AGNIESZKA KĄDZIELA', 'P')).toBe(false);
+    expect(nazwaPodmiotuJawna('DOMOSFERA SC RIL KOZŁOWSCY', 'P')).toBe(false);
+  });
+
+  it('wspolnota mieszkaniowa zostaje poza regula rejestru', () => {
+    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5', 'P')).toBe(false);
+  });
+});

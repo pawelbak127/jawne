@@ -117,7 +117,11 @@ const INSTYTUCJA: readonly RegExp[] = [
 
 // Nigdy z nazwy: spolka cywilna (umowa osob fizycznych) i wspolnota
 // mieszkaniowa (nazwa to adres budynku, w malej wspolnocie — kilku rodzin).
-const NIGDY = /(?<![\p{L}\p{N}])s\.\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna|wspólnot\p{L}*\s+mieszkaniow/iu;
+// ZMIERZONE 24.09.2026: w bazie jest tez zapis BEZ KROPEK — "DOMOSFERA SC RIL
+// KOZLOWSCY" — a REGON nadaje takiej spolce typ „P". Samodzielne "sc" w
+// polskiej nazwie to praktycznie zawsze spolka cywilna, a koszt pomylki jest
+// po bezpiecznej stronie: chowamy nazwe, ktora mozna bylo pokazac.
+const NIGDY = /(?<![\p{L}\p{N}])s\.?\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna|wspólnot\p{L}*\s+mieszkaniow/iu;
 const KOD_POCZTOWY = /(?<!\d)\d{2}-\d{3}(?!\d)/;
 
 // Po tych slowach stoi patron w dopelniaczu: "im. Jana Pawła II", "pw. św. Józefa".
@@ -154,9 +158,41 @@ export function zawieraImie(nazwa: string): boolean {
   return false;
 }
 
-export function nazwaPodmiotuJawna(nazwa: string | null | undefined): boolean {
+/**
+ * Rodzaj podmiotu wprost z rejestru REGON (pole `Typ` w usludze BIR):
+ * `P` osoba prawna, `F` osoba fizyczna prowadzaca dzialalnosc,
+ * `LP` i `LF` — jednostki lokalne jednej i drugiej.
+ *
+ * DECYZJA PAWLA z 24.09.2026: „przyjmujemy zmiane z REGON, pokazujemy tak
+ * duzo, jak tylko mozemy, nie lamiac prawa". Rejestr mowi wprost to, co
+ * dotad zgadywalismy z nazwy — a zgadywanie mylilo sie w obie strony:
+ * chowalo spolki o nazwisku w firmie i przepuszczalo „Zaklad Fryzjerski
+ * Anna …". Nazwa osoby PRAWNEJ nie jest dana osobowa, wiec pokazujemy ja
+ * zawsze. Nazwa osoby FIZYCZNEJ podlega tej samej regule co dotad.
+ */
+export function osobaFizycznaWRegon(typ: string | null | undefined): boolean | null {
+  // Obrona przed `lista.filter(nazwaPodmiotuJawna)`: filter podaje indeks
+  // jako drugi argument, wiec tutaj potrafi wylądowac liczba.
+  if (!typ || typeof typ !== 'string') return null;
+  const t = typ.trim().toUpperCase();
+  if (t === 'F' || t === 'LF') return true;
+  if (t === 'P' || t === 'LP') return false;
+  return null;   // nieznana wartosc slownikowa — wracamy do zgadywania z nazwy
+}
+
+export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: string | null): boolean {
   if (!nazwa || !nazwa.trim()) return false;
+  // NIGDY jest PONAD rejestrem. ZMIERZONE 24.09.2026 na 93 287 nazwach:
+  // REGON nadaje spolkom cywilnym typ „P", a ich nazwy to wprost nazwiska
+  // wspolnikow („GP TRUCK TRADING S.C. GRZEGORZ K… AGNIESZKA K…"). Spolka
+  // cywilna nie jest osoba prawna — to umowa osob fizycznych — wiec tutaj
+  // rejestr myli sie w druga strone niz nasza heurystyka i jego odpowiedzi
+  // nie wolno brac za dobra monete. To samo dotyczy wspolnot mieszkaniowych.
   if (NIGDY.test(nazwa)) return false;
+  const zRejestru = osobaFizycznaWRegon(typRegon);
+  // Poza tym rejestr ma pierwszenstwo przed nasza heurystyka — w obie strony.
+  if (zRejestru === false) return true;
+  if (zRejestru === true) return false;
   if (OSOBA_PRAWNA.some((w) => w.test(nazwa))) return true;
   if (zawieraImie(nazwa) || KOD_POCZTOWY.test(nazwa)) return false;
   return INSTYTUCJA.some((w) => w.test(nazwa));
@@ -183,6 +219,8 @@ export const PROG_JAWNOSCI_EUR = 100_000;
 export type OpcjeNazwy = {
   /** Najwieksza POJEDYNCZA pomoc dla tego podmiotu, w euro. */
   pomocEur?: number | null;
+  /** Rodzaj podmiotu z REGON, gdy go znamy: 'P', 'F', 'LP', 'LF'. */
+  typRegon?: string | null;
   /**
    * Czy prog kwotowy dziala. Warunkiem jest podany adres kontaktowy — bez
    * drogi zlozenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk w ogole.
@@ -207,7 +245,7 @@ export function trybBezFiltra(env: Record<string, string | undefined> = process.
 /** Nazwa do wyswietlenia albo opis zastepczy — nigdy pusty napis. */
 export function nazwaDoPokazania(nazwa: string | null | undefined, opcje: OpcjeNazwy = {}): { tekst: string; pominieta: boolean } {
   if (trybBezFiltra() && nazwa?.trim()) return { tekst: nazwa.trim(), pominieta: false };
-  if (nazwaPodmiotuJawna(nazwa)) return { tekst: nazwa!.trim(), pominieta: false };
+  if (nazwaPodmiotuJawna(nazwa, opcje.typRegon)) return { tekst: nazwa!.trim(), pominieta: false };
   const nadProgiem = opcje.progAktywny === true
     && (opcje.pomocEur ?? 0) >= PROG_JAWNOSCI_EUR
     && Boolean(nazwa?.trim())

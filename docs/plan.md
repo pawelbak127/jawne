@@ -37,6 +37,18 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
 ---
 
+### Zgłoszenia Pawła z 24.09.2026 — zrobione tego samego dnia
+
+| Co zgłosił | Co zrobione |
+|---|---|
+| `sudo jawne ustaw GUS_BIR_KLUCZ` nie znał tego klucza | dopisany do listy dozwolonych nazw |
+| Na mapie **dwie chmurki naraz** | zostaje nasza; systemowy `<title>` usunięty |
+| Na telefonie dotknięcie mapy **od razu przenosiło** na stronę gminy | dotknięcie tylko zaznacza, przejście jest przyciskiem w karcie pod mapą; doszło powiększanie i strzałki |
+| „14,0 tys. zł dochodu na mieszkańca — nie wiem, co w to wchodzi” | rozwijane wyjaśnienie tuż przy liczbie: dochody własne, subwencja, dotacje, i czego tam nie ma (kredyty) |
+| Akapit o awariach API Sejmu na `/stan` — „po co to” | usunięty, został jeden rzeczowy zdanie o harmonogramie |
+| Poziomy suwak na `/stan` — „do uwalenia” | tabela zamieniona na karty; strona szersza (`max-w-5xl`), nic nie przewija się w bok |
+| „Tylko środkowa część ekranu jest wykorzystana” | `/stan` poszerzone; strony tekstowe (`/o-serwisie`, `/prywatnosc`) zostają wąskie, bo tam wąska kolumna jest zaletą |
+
 ## Usterki — zgłoszone, niepilne
 
 | | Co | Zgłoszone |

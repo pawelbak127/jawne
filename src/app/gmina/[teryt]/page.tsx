@@ -382,6 +382,46 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
           : 'Ile gmina miała pieniędzy, ile z tego wypracowała sama i ile przeznaczyła na inwestycje.'}
       </p>
 
+      {/*
+        ZGLOSZENIE PAWLA 24.09.2026: „mam 14,0 tys. zl dochodu na mieszkanca,
+        ale nie wiem, co wchodzi w ten dochod". Liczba bez definicji nie jest
+        informacja. Wyjasnienie jest zwiniete, zeby nie zaglaszalo strony,
+        ale stoi TUZ przy liczbie, ktorej dotyczy.
+      */}
+      <details className="mt-4 rounded-xl border border-kreska bg-papier-2 px-4 py-3 text-sm">
+        <summary className="cursor-pointer font-medium">Co wchodzi w dochody gminy?</summary>
+        <div className="mt-3 space-y-2 leading-relaxed text-atrament-2">
+          <p>
+            To wszystko, co w danym roku wpłynęło do budżetu gminy. GUS dzieli te
+            pieniądze na trzy części:
+          </p>
+          <ul className="ml-5 list-disc space-y-1.5">
+            <li>
+              <span className="font-medium text-atrament">dochody własne</span> — podatek
+              od nieruchomości, rolny, leśny i od środków transportowych, opłaty lokalne,
+              dochody z majątku gminy, a także jej udział w podatkach dochodowych
+              mieszkańców i firm;
+            </li>
+            <li>
+              <span className="font-medium text-atrament">subwencja ogólna</span> z budżetu
+              państwa — największa jej część idzie na oświatę;
+            </li>
+            <li>
+              <span className="font-medium text-atrament">dotacje celowe</span> — pieniądze
+              na konkretne zadania, w tym takie, które gmina wykonuje za państwo.
+            </li>
+          </ul>
+          <p>
+            Nie są tu wliczone pieniądze, które gmina pożyczyła — kredyty i obligacje nie
+            są dochodem. Kwota jest w cenach bieżących, czyli bez korekty o inflację.
+          </p>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="text-atrament-3">Podział i definicje pochodzą z GUS:</span>
+            <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych, budżety gmin" />
+          </p>
+        </div>
+      </details>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
           <p className="liczby szryft text-4xl font-semibold">{zlote(naOsobe)}</p>

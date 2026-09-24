@@ -8,7 +8,7 @@
 #   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
-#   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST (pyta o wartosc)
+#   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST
 #   sudo jawne kopia         baza + odpowiedzi SUDOP do /tmp, do sciagniecia przez scp
 set -euo pipefail
 
@@ -165,8 +165,8 @@ kopia() {
 ustaw() {
   local nazwa=${1:-} wartosc tmp
   case "$nazwa" in
-    GUS_BDL_KLUCZ|SMUP_KLUCZ|JAWNE_KONTAKT|JAWNE_HOST) ;;
-    *) echo "Co ustawic? GUS_BDL_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST"; exit 2 ;;
+    GUS_BDL_KLUCZ|GUS_BIR_KLUCZ|SMUP_KLUCZ|JAWNE_KONTAKT|JAWNE_HOST) ;;
+    *) echo "Co ustawic? GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT albo JAWNE_HOST"; exit 2 ;;
   esac
   read -rp "Wartosc $nazwa (Enter = pusta): " wartosc
   # Plik czyta i systemd, i bash (set -a; . plik) — spacje i cudzyslowy by go zepsuly.

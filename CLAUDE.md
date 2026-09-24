@@ -141,6 +141,17 @@ npm run paczka-na-serwer                                    # baza + odpowiedzi 
    dla możliwej osoby fizycznej oddaje 404, więc wynik wyszukiwania prowadziłby
    w martwy link i mówiłby więcej niż strona. Kwoty tych podmiotów zostają
    w sumach gminy.
+   **Od 24.09.2026 rozstrzyga REGON, nie zgadywanie z nazwy** (decyzja Pawła:
+   „pokazujemy tak dużo, jak możemy, nie łamiąc prawa”). Pole `Typ` z BIR:
+   `P`/`LP` → osoba prawna, nazwa nie jest daną osobową i pokazujemy ją zawsze;
+   `F`/`LF` → osoba fizyczna, obowiązuje reguła jak dotąd. Gdy REGON nie zna
+   NIP-u, wracamy do heurystyki. **Wyjątek `NIGDY` stoi PONAD rejestrem**:
+   REGON nadaje spółkom cywilnym typ `P`, a ich nazwy to wprost nazwiska
+   wspólników („… S.C. GRZEGORZ K… AGNIESZKA K…”) — spółka cywilna nie jest
+   osobą prawną, tylko umową osób fizycznych. Zmierzone na 93 287 nazwach:
+   54 nazwy się odsłaniają (spółki z literówką w formie prawnej, ZOZ-y,
+   PKS), 0 się chowa; osobno 65 nazw ze spółek cywilnych zapisanych bez
+   kropek („… SC …”) przeszło do ukrytych.
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
    po słowach rejestru. Nie wybieramy „ważnych" według siebie.
 9. **Kwota w gminie zawsze na mieszkańca i z punktem odniesienia.** Mediana

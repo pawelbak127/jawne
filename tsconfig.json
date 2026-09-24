@@ -30,5 +30,8 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // dane/ to katalog roboczy poza repozytorium (baza, surowe odpowiedzi,
+  // doraznie skrypty porownawcze). Typecheck projektu nie ma go pilnowac —
+  // inaczej stary skrypt z poprzedniej sesji wywraca `npm run build`.
+  "exclude": ["node_modules", "dane"]
 }
