@@ -274,11 +274,14 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     | 23.09 | 1 dzień, 216 przypadków | **51 min** |
     | 24.09 | 1 dzień, 229 przypadków | **53 min** |
     | 24.09 | te same zakresy ponownie | ponad 55 min — wynik nie przyszedł |
+    | 25.09 | 1 dzień ustalony, 3 730 przypadków | **51 min** |
 
-    Czas odpowiedzi **nie zależy od wielkości zapytania** (200 wierszy czeka
-    tyle, co 62 tysiące) ani **od godziny** (udane o 19:17 i 22:51, nieudane
-    o 01:36). Przy ~52 minutach przetwarzania i godzinnym życiu rekordu
-    zostaje osiem minut zapasu — dlatego czekamy do końca tego, co możliwe.
+    Czas odpowiedzi **nie zależy od wielkości zapytania** (3 730 wierszy wróciło
+    po 51 minutach, tyle samo co 216) ani **od godziny** (udane o 15:31, 19:17,
+    22:51 i 23:42, nieudane o 01:36). Wcześniejsze porażki nie były „za dużym
+    zapytaniem", tylko ogonem rozkładu uciętym na 55. minucie. Przy ~52 minutach
+    przetwarzania i godzinnym życiu rekordu zostaje osiem minut zapasu —
+    dlatego czekamy do końca tego, co możliwe.
     **Skrócenie horyzontu do 20 minut (24.09) dało dwie noce po ZERO zapytań**:
     oba zakresy porzucaliśmy w 20. minucie, zanim urząd zdążył odpowiedzieć.
     Lekcja jest ogólniejsza niż SUDOP: pomiar tempa cudzego systemu bywa ważny
@@ -480,13 +483,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   o 01:36. Godzina nie ma znaczenia — znaczenie ma tylko to, czy czekamy
   pełne 57 minut (pułapka 26). Okno 00:30–07:00 zostaje, ale jako ograniczenie
   obciążenia urzędu, nie jako „pora, o której działa".
-  **25.09.2026 oba zadania SUDOP są WYŁĄCZONE** (`systemctl disable --now`):
-  przy ~52 minutach na jedno zapytanie historia całego kraju to setki nocy,
-  a każda próba zajmuje urzędowi godzinę kolejki. Włączyć z powrotem dopiero
-  po odpowiedzi UOKiK albo po zmierzeniu, że kolejka znów odpowiada w minuty.
-  Szacunek do pełnych 10 lat sprzed spowolnienia: ok. 2 900 zapytań, czyli
-  20–30 nocy. Tempa nie stroimy parametrem; zmiana to decyzja Pawła, a pismo
-  do UOKiK musi opisywać stan faktyczny w dniu wysłania.
+  **Decyzja Pawła z 25.09.2026: praca ciągła** (`--okno=zawsze`, 24 zapytania
+  na przebieg, timer co godzinę; systemd pomija start jednostki, która już
+  działa). Podstawa: pora nie ma znaczenia, a doba mieści najwyżej ~24 zapytania
+  — czyli **sześć razy mniej niż zatwierdzone 22.09 tempo 150 na noc**.
+  Obciążeniem urzędu jest liczba pozycji w kolejce, nie pora ich złożenia,
+  a my zajmujemy najwyżej jedną naraz. Historia (ok. 2 750 zapytań) to przy
+  tym tempie ok. **cztery miesiące** zamiast 20–30 nocy sprzed spowolnienia.
+  Tempa nie stroimy parametrem; zmiana to decyzja Pawła, a pismo do UOKiK
+  (`docs/pismo-uokik.md`) musi opisywać stan faktyczny w dniu wysłania.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 - **Klucze mają dwa miejsca i tylko dwa**: `.env.local` na komputerze
