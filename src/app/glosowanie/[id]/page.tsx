@@ -91,6 +91,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
               barwa: b.jasny,
               barwaCiemna: b.ciemny,
               opis: `${glos.imie_nazwisko} (${klubId}) — ${e.krotka}`,
+              adres: `/posel/${glos.slug}`,
             };
           }),
       };
@@ -193,7 +194,9 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
             <h2 className="szryft text-2xl font-semibold">Kto jak zagłosował</h2>
             <p className="mt-1 max-w-xl text-sm text-atrament-2">
               Miejsca ułożone klubami, kolor pokazuje oddany głos. Jednolity blok
-              znaczy, że klub głosował razem. Najedź na nazwę klubu, żeby go wyróżnić.
+              znaczy, że klub głosował razem. Najedź na kropkę, żeby zobaczyć, kto to
+              i jak zagłosował — kliknięcie prowadzi na stronę posła. Najechanie na nazwę
+              klubu wyróżnia cały klub.
             </p>
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-atrament-2">
               {[...new Set(glosy.map((s) => s.glos))]

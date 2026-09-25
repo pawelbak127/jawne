@@ -1,6 +1,8 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useId, useMemo, useRef, useState } from 'react';
 import { przydzielBloki, ulozPolkole } from '@/lib/polkole';
 
 export type MiejsceWBloku = {
@@ -46,7 +48,12 @@ export function Polkole({
   podpis?: string;
 }) {
   const id = useId();
+  const router = useRouter();
+  const ramka = useRef<HTMLDivElement>(null);
   const [podswietlony, ustawPodswietlony] = useState<string | null>(null);
+  const [pod, ustawPod] = useState<{ nr: number; x: number; y: number } | null>(null);
+  const [wybrane, ustawWybrane] = useState<number | null>(null);
+  const [dotykiem, ustawDotykiem] = useState(false);
 
   const { uklad, przydzial, plaskie } = useMemo(() => {
     const plaskie = bloki.flatMap((b) => b.miejsca.map((m) => ({ ...m, blok: b.id })));
@@ -56,6 +63,7 @@ export function Polkole({
   }, [bloki]);
 
   const polowaX = uklad.szerokosc / 2;
+  const klikalne = plaskie.some((m) => m.adres);
 
   return (
     <figure className="w-full">
@@ -65,7 +73,7 @@ export function Polkole({
         (szerokosc ~212), wiec text-5xl rozrastal sie razem z wykresem
         i zaslanial kropki — widac to bylo dopiero na zrzucie ekranu.
       */}
-      <div className="relative">
+      <div className="relative" ref={ramka}>
         <svg
           viewBox={`${-polowaX} ${-uklad.wysokosc} ${uklad.szerokosc} ${uklad.wysokosc}`}
           className="w-full overflow-visible"
@@ -82,8 +90,8 @@ export function Polkole({
                 key={i}
                 cx={m.x}
                 cy={m.y}
-                r={m.r}
-                className="miejsce"
+                r={i === pod?.nr || i === wybrane ? m.r * 1.9 : m.r}
+                className={dane.adres ? 'miejsce cursor-pointer' : 'miejsce'}
                 style={
                   {
                     '--b': dane.barwa,
@@ -91,9 +99,24 @@ export function Polkole({
                     opacity: przygaszony ? 0.18 : 1,
                   } as React.CSSProperties
                 }
-              >
-                <title>{dane.opis}</title>
-              </circle>
+                onMouseMove={(e) => {
+                  const r = ramka.current?.getBoundingClientRect();
+                  if (r) ustawPod({ nr: i, x: e.clientX - r.left, y: e.clientY - r.top });
+                }}
+                onPointerDown={(e) => {
+                  if ((e.pointerType !== 'mouse') !== dotykiem) ustawDotykiem(e.pointerType !== 'mouse');
+                }}
+                onClick={() => {
+                  if (!dane.adres) return;
+                  // Na dotyku pierwsze dotkniecie tylko ZAZNACZA — kropka jest
+                  // mniejsza niz palec, a pomylka konczylaby sie cudza strona.
+                  if (dotykiem) {
+                    ustawWybrane(i);
+                    return;
+                  }
+                  router.push(dane.adres);
+                }}
+              />
             );
           })}
         </svg>
@@ -102,7 +125,40 @@ export function Polkole({
             {srodek}
           </div>
         ) : null}
+
+        {/* Chmurka JEST NASZA, a kropka nie ma juz elementu `title` —
+            przegladarka pokazywalaby wtedy druga, systemowa obok naszej
+            (blad zgloszony przez Pawla na mapie gmin). */}
+        {pod && !dotykiem ? (
+          <div
+            className="pointer-events-none absolute z-10 max-w-[18rem] rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
+            style={{ left: Math.min(pod.x + 14, 420), top: pod.y + 14 }}
+          >
+            {plaskie[pod.nr]?.opis}
+          </div>
+        ) : null}
       </div>
+
+      {/* Na dotyku to karta, a nie dotkniecie wykresu, prowadzi dalej. */}
+      {klikalne && dotykiem ? (
+        <div className="mt-3 min-h-[3.5rem] rounded-2xl border border-kreska bg-papier-2 p-3 text-sm">
+          {wybrane !== null && plaskie[wybrane] ? (
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <span>{plaskie[wybrane]!.opis}</span>
+              {plaskie[wybrane]!.adres ? (
+                <Link
+                  href={plaskie[wybrane]!.adres!}
+                  className="rounded-xl bg-atrament px-3 py-1.5 text-sm font-medium text-papier"
+                >
+                  Zobacz posła →
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <span className="text-atrament-3">Dotknij kropki, żeby zobaczyć, kto to.</span>
+          )}
+        </div>
+      ) : null}
 
       <figcaption className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
         {bloki.map((b) => (
