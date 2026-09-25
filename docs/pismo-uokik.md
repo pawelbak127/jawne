@@ -91,7 +91,26 @@ i ma charakter przejściowy, oraz czy rozważane jest wydłużenie czasu życia
 rekordu kolejki ponad 60 minut — przy obecnej wydajności ten limit sam
 w sobie uniemożliwia pobranie części danych.
 
-### 4. Informacja o moim ruchu
+### 4. Wniosek o indywidualny klucz dostępowy
+
+W instrukcji „Wprowadzenie do korzystania z interfejsu API SUDOP", udostępnionej
+przez Urząd na portalu dane.gov.pl, czytam:
+
+> „Przygotowywana jest możliwość szerszego dostępu do danych, za pośrednictwem
+> indywidualnego klucza dostępowego. Usługa będzie udostępniona na wniosek
+> (moduł obecnie jest niedostępny)."
+
+Uprzejmie proszę o informację, czy moduł ten jest już dostępny, a jeżeli tak —
+**traktuję niniejsze pismo jako wniosek o przyznanie takiego klucza**.
+Zobowiązuję się korzystać z niego w sposób opisany w punkcie 5: jedno zapytanie
+w toku, kolejne dopiero po otrzymaniu poprzedniego wyniku.
+
+Dodam, że ta sama instrukcja podaje jako przewidywany czas przygotowania
+odpowiedzi **60 sekund**. Pomiary z punktu 3 pokazują 51–56 minut, czyli
+pięćdziesiąt razy więcej — stąd przypuszczenie, że obecny stan nie jest
+zamierzony.
+
+### 5. Informacja o moim ruchu
 
 Traktuję zasoby Urzędu jak zasób wspólny. Na dzień dzisiejszy wstrzymałem
 nocne zadania pobierające dane historyczne; pozostaje jedno zapytanie na dobę,
