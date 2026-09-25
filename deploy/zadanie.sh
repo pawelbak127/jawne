@@ -6,9 +6,12 @@
 #
 # Tempo SUDOP (150 zapytan na noc) to decyzja Pawla z 22.09.2026, nie parametr
 # do strojenia. Kod nie przyjmie wiecej niz 150.
-# Okno zwezone 24.09.2026 z 22:00-07:00 na 00:30-07:00: dwie noce z rzedu
-# zaczynajace sie o 22:20 dały ZERO zapytan, bo kolejka urzedu nie oddawala
-# wyniku przez pelne 55 minut. Wszystkie udane pomiary sa z godzin 01:00-04:00.
+# UWAGA: teza "kolejka odpowiada tylko miedzy 01:00 a 04:00" zostala OBALONA
+# 25.09.2026. Udane pobrania sa o 19:17, 22:51 i 15:31, nieudane o 01:36 —
+# godzina nie ma znaczenia. Znaczenie ma to, ze kolejka urzedu odpowiada dzis
+# po 51-56 minutach zamiast po minucie, a rekord zyje 60 minut (pulapka 26
+# w CLAUDE.md). Okno 00:30-07:00 zostaje jako ograniczenie obciazenia urzedu,
+# nie jako "pora, o ktorej dziala".
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
