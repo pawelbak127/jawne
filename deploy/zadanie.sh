@@ -13,23 +13,32 @@
 # liczba pozycji w kolejce, nie pora ich zlozenia. W kazdej chwili zajmujemy
 # najwyzej jedna pozycje.
 # UWAGA: teza "kolejka odpowiada tylko miedzy 01:00 a 04:00" zostala OBALONA
-# 25.09.2026. Udane pobrania sa o 19:17, 22:51 i 15:31, nieudane o 01:36 —
-# godzina nie ma znaczenia. Znaczenie ma to, ze kolejka urzedu odpowiada dzis
-# po 51-56 minutach zamiast po minucie, a rekord zyje 60 minut (pulapka 26
-# w CLAUDE.md). Okno 00:30-07:00 zostaje jako ograniczenie obciazenia urzedu,
-# nie jako "pora, o ktorej dziala".
+# 25.09.2026. Udane pobrania sa o 15:31, 19:17, 22:51 i 23:42, nieudane
+# o 01:36 — godzina nie ma znaczenia. Znaczenie ma to, ze kolejka urzedu
+# odpowiada dzis po 51-56 minutach zamiast po minucie, a rekord zyje 60 minut
+# (pulapka 26 w CLAUDE.md). Dlatego okno godzinowe znika (--okno=zawsze).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 TSX=node_modules/.bin/tsx
 
-# Jedno pobieranie z SUDOP naraz: zadanie dzienne i nocne moga sie zazebic
-# (dzienne czeka w kolejce urzedu, a juz startuje nocne). flock ustawia je
-# w kolejce u nas, zamiast wysylac drugie zapytanie. Blokada w sudop.ts
+# Jedno pobieranie z SUDOP naraz. flock ustawia zadania w kolejce U NAS,
+# zamiast wysylac drugie zapytanie do urzedu. Blokada w sudop.ts
 # (dane/zrodla/sudop/.blokada) zostaje jako druga linia obrony.
+#
+# CZAS CZEKANIA JEST ROZNY DLA ROZNYCH ZADAN i to jest istotne od 25.09.2026,
+# odkad historia chodzi w trybie ciaglym (24 zapytania po ~52 min to ok. 21
+# godzin jednego przebiegu):
+#  - DZIENNE musi sie doczekac, bo inaczej serwis przestaje byc aktualny;
+#    czeka wiec 22 godziny, czyli dluzej niz trwa przebieg historii,
+#  - HISTORIA ma ustapic: jesli cokolwiek innego trwa, odpuszcza po minucie
+#    i sprobuje przy nastepnym tyknieciu timera (co godzine).
+# Bez tego rozroznienia historia trzymalaby blokade non stop, a zadanie
+# dzienne odpadaloby po czterech godzinach czekania.
 sudop() {
+  local czekaj=$1; shift
   mkdir -p dane
-  exec flock --wait 14400 dane/.sudop.flock "$TSX" ingest/jobs/sudop.ts "$@"
+  exec flock --wait "$czekaj" dane/.sudop.flock "$TSX" ingest/jobs/sudop.ts "$@"
 }
 
 case "${1:-}" in
@@ -62,10 +71,14 @@ case "${1:-}" in
     fi
     ;;
   sudop-dzien)
-    sudop --dzienny
+    sudop 79200 --dzienny
     ;;
   sudop-historia)
-    sudop --historia --maks-zapytan=24 --okno=zawsze
+    # 20, nie 24: nieudane zapytanie kosztuje 57 min czekania i kwadrans
+    # przerwy, czyli 72 min. Dwadziescia razy 72 min to niecala doba, wiec
+    # przebieg na pewno skonczy sie w ciagu dnia i zwolni blokade zadaniu
+    # dziennemu. Przy samych sukcesach (52 min) to ok. 17 godzin.
+    sudop 60 --historia --maks-zapytan=20 --okno=zawsze
     ;;
   *)
     echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia" >&2

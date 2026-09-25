@@ -483,9 +483,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   o 01:36. Godzina nie ma znaczenia — znaczenie ma tylko to, czy czekamy
   pełne 57 minut (pułapka 26). Okno 00:30–07:00 zostaje, ale jako ograniczenie
   obciążenia urzędu, nie jako „pora, o której działa".
-  **Decyzja Pawła z 25.09.2026: praca ciągła** (`--okno=zawsze`, 24 zapytania
+  **Decyzja Pawła z 25.09.2026: praca ciągła** (`--okno=zawsze`, 20 zapytań
   na przebieg, timer co godzinę; systemd pomija start jednostki, która już
-  działa). Podstawa: pora nie ma znaczenia, a doba mieści najwyżej ~24 zapytania
+  działa). Zadanie dzienne czeka na blokadę 22 h, historia ustępuje po minucie
+  — bez tego rozróżnienia ciągła historia trzymałaby blokadę non stop,
+  a zadanie dzienne odpadałoby po czterech godzinach czekania. Podstawa: pora nie ma znaczenia, a doba mieści najwyżej ~24 zapytania
   — czyli **sześć razy mniej niż zatwierdzone 22.09 tempo 150 na noc**.
   Obciążeniem urzędu jest liczba pozycji w kolejce, nie pora ich złożenia,
   a my zajmujemy najwyżej jedną naraz. Historia (ok. 2 750 zapytań) to przy
