@@ -65,6 +65,19 @@ const CO_ILE_MS = 60_000;
 // Skrocenie tego czasu do 20 minut (24.09) dalo dwie noce po ZERO zapytan:
 // oba zakresy porzucalismy w 20. minucie, zanim urzad zdazyl odpowiedziec.
 const HORYZONT_MS = 57 * 60_000;
+
+/**
+ * Sciezka `przypadki-pomocy-bez-kolejki` z oficjalnej specyfikacji OpenAPI
+ * (`/sudop-api/v3/api-docs`), ktorej NIE MA w instrukcji z dane.gov.pl.
+ *
+ * NIE JEST to droga na skroty i tak ja tu traktujemy: naglowek
+ * `ingest/lib/sudop.ts` notuje, ze poprzedni projekt odpytywal wlasnie ta
+ * sciezke przez godzine i nic nie dostal. Roznica jest taka, ze tamten kod
+ * nie mial `redirect: 'manual'` i mogl gubic adres z naglowka `Location`.
+ * Flaga `--bez-kolejki` istnieje po to, zeby sprawdzic to JEDNYM zapytaniem,
+ * a nie po to, zeby jej uzywac na co dzien.
+ */
+const BEZ_KOLEJKI = process.argv.includes('--bez-kolejki');
 const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
 
 async function get(url: string) {
@@ -122,6 +135,14 @@ async function wyszukaj(url: string, opis: string, horyzontMs = HORYZONT_MS): Pr
   const rej = await get(url);
   if (rej.status !== 303 || !rej.location) {
     throw new Error(`${opis}: rejestracja zwrocila ${rej.status} ${rej.tekst.slice(0, 200)}`);
+  }
+  // Sciezka bez kolejki ma kierowac wprost na `/api/wynik/{id}` — wtedy nie
+  // ma kolejki do odpytywania i wynik jest od razu.
+  if (/\/wynik\//.test(rej.location)) {
+    const w = await get(pelny(rej.location));
+    if (w.status !== 200) throw new Error(`${opis}: wynik zwrocil ${w.status} ${w.tekst.slice(0, 200)}`);
+    log(`   ${opis}: gotowe od razu, bez kolejki`);
+    return JSON.parse(w.tekst) as OdpowiedzSudop;
   }
   const kolejka = pelny(rej.location);
   const start = Date.now();
@@ -273,7 +294,7 @@ async function pobierzPrzyrost(
       log(`   strona ${strona}: z pliku`);
     } else {
       sprawdzBudzet(budzet);
-      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
+      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona, BEZ_KOLEJKI), `strona ${strona}`);
       odp.pobrano = new Date().toISOString();
       zapytan++;
       if (budzet) budzet.uzyte++;
@@ -519,6 +540,7 @@ async function main(): Promise<void> {
     log('Podaj gminy: --gminy=100101,100102   (TERYT, 6 cyfr)');
     log('albo zakres dni dla calego kraju: --przyrost=2026-09-15..2026-09-17');
     log('Dodaj --z-plikow, zeby zapisac do bazy wczesniej pobrane odpowiedzi bez pytania urzedu.');
+    log('Dodaj --bez-kolejki, zeby JEDNORAZOWO sprawdzic sciezke bez kolejki (patrz komentarz przy BEZ_KOLEJKI).');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
     log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=150] [--okno=22:00-07:00]');

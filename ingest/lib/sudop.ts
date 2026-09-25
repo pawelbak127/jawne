@@ -126,7 +126,13 @@ export function adresWyszukania(kody: readonly string[], od: string, strona = 1)
  * mozna powtarzac tak samo jak gmine. Podanie calego slownika form (70 kodow)
  * daje caly kraj: 3 531 przypadkow z jednego dnia, 1 150 gmin, jedna strona.
  */
-export function adresPrzyrostu(formy: readonly string[], od: string, doDnia: string, strona = 1): string {
+export function adresPrzyrostu(
+  formy: readonly string[],
+  od: string,
+  doDnia: string,
+  strona = 1,
+  bezKolejki = false,
+): string {
   if (!formy.length) throw new Error('Brak kodow form pomocy — API odrzuci zapytanie o same daty');
   for (const d of [od, doDnia]) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error(`Data ma format RRRR-MM-DD: "${d}"`);
@@ -137,7 +143,11 @@ export function adresPrzyrostu(formy: readonly string[], od: string, doDnia: str
   p.set('dzien-udzielenia-pomocy-od', od);
   p.set('dzien-udzielenia-pomocy-do', doDnia);
   p.set('strona', String(strona));
-  return `${SUDOP_BAZA}/api/przypadki-pomocy?${p}`;
+  // `przypadki-pomocy-bez-kolejki` jest w oficjalnej specyfikacji OpenAPI
+  // (api-sudop.uokik.gov.pl/sudop-api/v3/api-docs), ale NIE MA go w instrukcji
+  // z dane.gov.pl, z ktorej budowalismy ten import. Przyjmuje te same
+  // parametry i tak samo oddaje `303`; roznica ma byc w tym, dokad kieruje.
+  return `${SUDOP_BAZA}/api/przypadki-pomocy${bezKolejki ? '-bez-kolejki' : ''}?${p}`;
 }
 
 /** TERYT gminy (6 cyfr) z 7-cyfrowego kodu SUDOP; null, gdy kod jest inny. */
