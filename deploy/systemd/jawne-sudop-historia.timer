@@ -1,15 +1,16 @@
 [Unit]
-Description=jawne — SUDOP historia co noc o 00:30 (zapytania tylko 00:30–07:00)
+Description=jawne — SUDOP historia, praca ciągła (jedno zapytanie w toku)
 
 [Timer]
-# Persistent=false: przegapiona noc NIE nadrabia sie w dzien. Okno 00:30-07:00
-# pilnuje tez kod (sudop.ts --okno) — poza nim nie zacznie zapytania.
+# Co godzine, ale przebieg trwa kilkanascie godzin (24 zapytania po ~52 min),
+# a systemd POMIJA start jednostki, ktora juz dziala. Tyk co godzine jest wiec
+# tylko wznowieniem po zakonczonym albo przerwanym przebiegu.
 #
-# ZMIERZONE: start o 22:20 dal DWIE NOCE Z RZEDU po zero zapytan — kolejka
-# urzedu nie oddala wyniku przez pelne 55 minut, i to zarowno dla zakresu
-# siedmiodniowego, jak i dla pojedynczego dnia. Przesuniete na 00:30:
-# wszystkie udane pomiary (wynik po 1-3 minutach) pochodza z godzin 01:00-04:00.
-OnCalendar=*-*-* 00:30:00 Europe/Warsaw
+# ZMIERZONE 25.09.2026: pora nie ma znaczenia (udane pobrania o 15:31, 19:17,
+# 22:51 i 23:42, nieudane o 01:36), a czas odpowiedzi nie zalezy od wielkosci
+# zapytania — 3 730 wierszy wrocilo po 51 minutach, tyle samo co 216 wierszy.
+# Dlatego okno godzinowe znika: ono nie chronilo urzedu, tylko nas spowalnialo.
+OnCalendar=*-*-* *:07:00 Europe/Warsaw
 Persistent=false
 
 [Install]

@@ -73,8 +73,12 @@ export function stanDnia(dzien: string, pobrano: string | null | undefined): 'br
  * Okno moze przechodzic przez polnoc: "23:00-05:00".
  */
 export function wOknie(chwila: Date, okno: string): boolean {
+  // „zawsze" to praca ciagla. Ma sens dopiero od 25.09.2026: kolejka urzedu
+  // odpowiada po ~52 minutach niezaleznie od pory i od wielkosci zapytania,
+  // wiec okno godzinowe nic nie chroni — ogranicza tylko nas.
+  if (okno === 'zawsze') return true;
   const m = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/.exec(okno);
-  if (!m) throw new Error(`Okno podaj jako GG:MM-GG:MM, np. 01:00-06:00 (jest: "${okno}")`);
+  if (!m) throw new Error(`Okno podaj jako GG:MM-GG:MM albo "zawsze" (jest: "${okno}")`);
   const od = Number(m[1]) * 60 + Number(m[2]);
   const doMinuty = Number(m[3]) * 60 + Number(m[4]);
   const [g, min] = new Intl.DateTimeFormat('en-GB', { timeZone: STREFA, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })

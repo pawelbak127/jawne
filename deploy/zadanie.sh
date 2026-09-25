@@ -4,8 +4,14 @@
 #
 #   zadanie.sh sejm | gus | fundusze | sudop-dzien | sudop-historia
 #
-# Tempo SUDOP (150 zapytan na noc) to decyzja Pawla z 22.09.2026, nie parametr
-# do strojenia. Kod nie przyjmie wiecej niz 150.
+# Tempo SUDOP to decyzja Pawla, nie parametr do strojenia. Kod nie przyjmie
+# wiecej niz 150 zapytan na przebieg.
+# 22.09.2026: 150 zapytan na noc, gdy kolejka oddawala wynik po 1-3 minutach.
+# 25.09.2026: kolejka oddaje wynik po ~52 minutach, wiec doba miesci najwyzej
+# ~24 zapytania. Praca ciagla (--okno=zawsze) jest wiec SZESC RAZY LAGODNIEJSZA
+# dla urzedu niz zatwierdzone wczesniej tempo, a nie ostrzejsza: liczy sie
+# liczba pozycji w kolejce, nie pora ich zlozenia. W kazdej chwili zajmujemy
+# najwyzej jedna pozycje.
 # UWAGA: teza "kolejka odpowiada tylko miedzy 01:00 a 04:00" zostala OBALONA
 # 25.09.2026. Udane pobrania sa o 19:17, 22:51 i 15:31, nieudane o 01:36 —
 # godzina nie ma znaczenia. Znaczenie ma to, ze kolejka urzedu odpowiada dzis
@@ -59,7 +65,7 @@ case "${1:-}" in
     sudop --dzienny
     ;;
   sudop-historia)
-    sudop --historia --maks-zapytan=150 --okno=00:30-07:00
+    sudop --historia --maks-zapytan=24 --okno=zawsze
     ;;
   *)
     echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia" >&2

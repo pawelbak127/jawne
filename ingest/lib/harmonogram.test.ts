@@ -43,6 +43,18 @@ describe('ustalony', () => {
 });
 
 describe('wOknie', () => {
+  it('„zawsze" znaczy praca ciagla — o kazdej porze', () => {
+    // Od 25.09.2026: kolejka UOKiK odpowiada po ~52 min niezaleznie od pory,
+    // wiec okno godzinowe nie chroni urzedu, tylko nas spowalnia.
+    for (const chwila of ['2026-09-19T02:00:00Z', '2026-09-19T12:00:00Z', '2026-09-19T20:00:00Z']) {
+      expect(wOknie(new Date(chwila), 'zawsze')).toBe(true);
+    }
+  });
+
+  it('zly zapis okna konczy sie bledem, zanim cokolwiek zapytamy urzad', () => {
+    expect(() => wOknie(new Date(), '22-07')).toThrow(/GG:MM-GG:MM/);
+  });
+
   it('liczy godziny po polsku', () => {
     // 23:30 UTC 18.09 = 01:30 w Warszawie
     expect(wOknie(new Date('2026-09-18T23:30:00Z'), '01:00-06:00')).toBe(true);

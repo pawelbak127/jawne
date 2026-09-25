@@ -67,6 +67,7 @@ za każdym razem o tę samą operację: rejestrację zapytania do zasobu
 | 23.09.2026 | 1 dzień, cały kraj | 216 | **51 minut** |
 | 24.09.2026 | 1 dzień, cały kraj | 229 | **53 minuty** |
 | 25.09.2026 | 1 dzień, cały kraj | 254 | **56 minut** |
+| 25.09.2026 | 1 dzień, cały kraj (dzień ustalony) | 3 730 | **51 minut** |
 | 23–25.09.2026 | dni sprzed dwóch tygodni (ok. 4 000–5 000 wierszy) | — | wynik nie nadszedł |
 
 Dwie obserwacje, które mogą być dla Urzędu istotne:
@@ -74,7 +75,8 @@ Dwie obserwacje, które mogą być dla Urzędu istotne:
 1. **Czas oczekiwania wzrósł w ciągu dwóch dni z około minuty do około
    pięćdziesięciu pięciu minut**, i nie zależy od wielkości zapytania:
    zapytanie zwracające 62 674 wiersze zostało obsłużone w minutę,
-   a zapytanie zwracające 254 wiersze — w pięćdziesiąt sześć minut.
+   zapytanie zwracające 254 wiersze — w pięćdziesiąt sześć minut,
+   a zapytanie zwracające 3 730 wierszy — w pięćdziesiąt jeden minut.
    Pomiary z dwóch niezależnych łączy (serwer w chmurze i łącze domowe
    w Polsce) dają ten sam wynik, więc nie jest to kwestia jednego adresu IP.
 
@@ -112,10 +114,17 @@ zamierzony.
 
 ### 5. Informacja o moim ruchu
 
-Traktuję zasoby Urzędu jak zasób wspólny. Na dzień dzisiejszy wstrzymałem
-nocne zadania pobierające dane historyczne; pozostaje jedno zapytanie na dobę,
-pobierające dane z poprzedniego dnia. Jeżeli Urząd wskaże dogodniejszą porę
-lub tempo, dostosuję się do wskazania.
+Traktuję zasoby Urzędu jak zasób wspólny. **W każdej chwili zajmuję najwyżej
+jedną pozycję w kolejce** — kolejne zapytanie wysyłam dopiero po otrzymaniu
+poprzedniego wyniku. Przy obecnym czasie obsługi daje to najwyżej około
+24 zapytań na dobę.
+
+Wcześniej, gdy Urząd oddawał wynik po 1–3 minutach, wysyłałem do 150 zapytań
+w ciągu jednej nocy. Obecny sposób pracy jest więc dla Urzędu **sześciokrotnie
+łagodniejszy**, a nie intensywniejszy: obciążeniem jest liczba pozycji
+w kolejce, nie pora ich złożenia.
+
+Jeżeli Urząd wskaże dogodniejsze tempo lub porę, dostosuję się do wskazania.
 
 Odpowiedź proszę kierować na adres [e-mail].
 

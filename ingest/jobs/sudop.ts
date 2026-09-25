@@ -543,17 +543,23 @@ async function main(): Promise<void> {
     log('Dodaj --bez-kolejki, zeby JEDNORAZOWO sprawdzic sciezke bez kolejki (patrz komentarz przy BEZ_KOLEJKI).');
     log('Dodaj --tylko-pobierz, zeby pobrac bez zapisu do bazy (GitHub Actions).');
     log('Dodaj --odswiez, zeby pobrac ponownie dni, ktore juz mamy (dzien ustala sie po 14 dniach).');
-    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=150] [--okno=22:00-07:00]');
+    log('Serwer: --dzienny (wczoraj i dzien sprzed 14 dni) albo --historia [--maks-zapytan=24] [--okno=zawsze]');
     log('        --historia --plan pokazuje, co pobralaby noc — bez pytania urzedu.');
     process.exit(2);
   }
-  // Tempo wobec UOKiK: decyzja Pawla z 22.09.2026 — 150 zapytan na noc
-  // w oknie 22:00-07:00 (wczesniej 50 w oknie 01:00-06:00). Godziny pracy
-  // urzedu zostaja wolne: zmierzone czekanie w kolejce to 1-3 min w nocy
-  // i 54 min w dzien. Limit siedzi w kodzie, zeby nie dalo sie go
+  // Tempo wobec UOKiK. Limit siedzi w kodzie, zeby nie dalo sie go
   // "podkrecic" samym parametrem w harmonogramie ani przez autopilota;
-  // podniesienie wymaga zmiany tutaj, wpisu w docs/plan.md i poprawienia
-  // akapitu o tempie w docs/uokik-sprostowanie.md.
+  // podniesienie wymaga zmiany tutaj i wpisu w docs/plan.md.
+  //
+  // 22.09.2026 (decyzja Pawla): 150 zapytan na noc, gdy kolejka oddawala
+  // wynik po 1-3 minutach.
+  // 25.09.2026 (decyzja Pawla): praca ciagla, --okno=zawsze. Pora przestala
+  // miec znaczenie — udane pobrania sa o 15:31, 19:17, 22:51 i 23:42 —
+  // a kolejka oddaje wynik po ~52 minutach niezaleznie od wielkosci zapytania
+  // (3 730 wierszy po 51 min, tyle samo co 216 wierszy). Doba miesci przez to
+  // najwyzej ~24 zapytania, czyli SZESC RAZY MNIEJ niz zatwierdzone tempo
+  // nocne. Dla urzedu liczy sie liczba pozycji w kolejce, nie pora ich
+  // zlozenia, a my zajmujemy najwyzej jedna pozycje naraz.
   const maks = Number(arg('maks-zapytan') ?? 150);
   if (historia && !(Number.isInteger(maks) && maks >= 1 && maks <= 150)) {
     throw new Error(`--maks-zapytan musi byc liczba 1–150 (jest: ${arg('maks-zapytan')})`);
