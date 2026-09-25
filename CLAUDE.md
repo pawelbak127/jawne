@@ -264,10 +264,26 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     Źródłem tych ustaleń jest instrukcja UOKiK (dane.gov.pl, zbiór 6068).
     **Rekord kolejki żyje równo godzinę** (zmierzone 22/23.09.2026: 59 × `200`
     „czeka”, w 60. minucie `404` „Nie znaleziono rekordu”). Czekanie dłużej
-    niż godzinę to gwarantowany `404` — horyzont ma 55 minut, ale **pierwsza
-    strona zakresu w nocnym zadaniu czeka tylko 20 minut**: kolejka odpowiada
-    nocą po 1–3 minutach (najdłużej zmierzone 14), więc cisza przez 20 minut
-    znaczy, że nie odpowie wcale. Po nieudanym zakresie kwadrans przerwy. Zakres, którego
+    niż godzinę to gwarantowany `404`, więc horyzont ma 57 minut.
+    **Ile urząd każe czekać, ZMIENIŁO SIĘ w ciągu dwóch dni** (dziennik serwera):
+
+    | Kiedy | Zapytanie | Odpowiedź |
+    |---|---|---|
+    | 21.09 | 7 dni, 62 674 przypadki | **1 min** (25 zapytań tej nocy, 1–14 min) |
+    | 22.09 | kolejne zakresy | 1–31 min |
+    | 23.09 | 1 dzień, 216 przypadków | **51 min** |
+    | 24.09 | 1 dzień, 229 przypadków | **53 min** |
+    | 24.09 | te same zakresy ponownie | ponad 55 min — wynik nie przyszedł |
+
+    Czas odpowiedzi **nie zależy od wielkości zapytania** (200 wierszy czeka
+    tyle, co 62 tysiące) ani **od godziny** (udane o 19:17 i 22:51, nieudane
+    o 01:36). Przy ~52 minutach przetwarzania i godzinnym życiu rekordu
+    zostaje osiem minut zapasu — dlatego czekamy do końca tego, co możliwe.
+    **Skrócenie horyzontu do 20 minut (24.09) dało dwie noce po ZERO zapytań**:
+    oba zakresy porzucaliśmy w 20. minucie, zanim urząd zdążył odpowiedzieć.
+    Lekcja jest ogólniejsza niż SUDOP: pomiar tempa cudzego systemu bywa ważny
+    dwa dni, a próg oparty na nim trzeba sprawdzić, zanim się go zacieśni.
+    Po nieudanym zakresie kwadrans przerwy. Zakres, którego
     kolejka nie oddała, jest odkładany i wraca następnej nocy; **błąd jednego
     zakresu nie kończy nocy** (dopiero trzy pod rząd), bo inaczej jedna
     nieudana rejestracja kosztuje cały przydział zapytań.
@@ -459,15 +475,18 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   **Decyzja Pawła z 19.09.2026:** historia całego kraju od pierwszej nocy
   serwera. Tempo podnoszone dwa razy na podstawie pomiarów: 25 → 50
   (21.09) → **150 zapytań na noc (22.09, kod odrzuca więcej niż 150)**.
-  **Okno zwężone 24.09.2026 z 22:00–07:00 na 00:30–07:00**: dwie noce z rzędu
-  startujące o 22:20 dały ZERO zapytań — kolejka nie oddała wyniku przez
-  pełne 55 minut, i to zarówno dla zakresu siedmiodniowego, jak i dla
-  pojedynczego dnia. Wszystkie udane pomiary (1–3 min) są z godzin 01:00–04:00. Podstawa: 25 zapytań zajęło 59 minut, kolejka oddaje
-  wynik po 1–3 minutach w nocy i po **54 minutach w godzinach pracy urzędu**
-  — dlatego okno rośnie w stronę wieczora i nocy, a nie w dzień. Szacunek
-  do pełnych 10 lat: ok. 2 900 zapytań, czyli 20–30 nocy. Tempa nie stroimy
-  parametrem; zmiana to decyzja Pawła, a pismo do UOKiK musi opisywać stan
-  faktyczny w dniu wysłania.
+  **Teoria „kolejka odpowiada tylko nocą" była błędna** (postawiona 24.09,
+  obalona dziennikiem 25.09): udane pobrania są o 19:17 i 22:51, nieudane
+  o 01:36. Godzina nie ma znaczenia — znaczenie ma tylko to, czy czekamy
+  pełne 57 minut (pułapka 26). Okno 00:30–07:00 zostaje, ale jako ograniczenie
+  obciążenia urzędu, nie jako „pora, o której działa".
+  **25.09.2026 oba zadania SUDOP są WYŁĄCZONE** (`systemctl disable --now`):
+  przy ~52 minutach na jedno zapytanie historia całego kraju to setki nocy,
+  a każda próba zajmuje urzędowi godzinę kolejki. Włączyć z powrotem dopiero
+  po odpowiedzi UOKiK albo po zmierzeniu, że kolejka znów odpowiada w minuty.
+  Szacunek do pełnych 10 lat sprzed spowolnienia: ok. 2 900 zapytań, czyli
+  20–30 nocy. Tempa nie stroimy parametrem; zmiana to decyzja Pawła, a pismo
+  do UOKiK musi opisywać stan faktyczny w dniu wysłania.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 - **Klucze mają dwa miejsca i tylko dwa**: `.env.local` na komputerze

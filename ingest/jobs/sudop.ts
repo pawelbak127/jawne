@@ -46,9 +46,25 @@ const CO_ILE_MS = 60_000;
 // ZMIERZONE w nocy 22/23.09.2026: rekord kolejki zyje ROWNO godzine. Zadanie
 // czekalo 59 minut ("czeka (1 min)" ... "czeka (59 min)"), a w 60. minucie
 // urzad oddal 404 "Nie znaleziono rekordu o podanym identyfikatorze".
-// Czekanie dluzej niz godzine nie moze sie udac — konczymy piec minut
-// wczesniej i mowimy wprost, ze wynik nie przyszedl w czasie zycia rekordu.
-const HORYZONT_MS = 55 * 60_000;
+// Czekanie dluzej niz godzine nie moze sie udac.
+//
+// ILE URZAD KAZE CZEKAC — to sie zmienilo w ciagu dwoch dni i dlatego ten
+// horyzont nie jest parametrem do strojenia „na wyczucie" (ZMIERZONE
+// w dzienniku serwera):
+//
+//   21.09  7 dni, 62 674 przypadki  ->  1 min   (25 zapytan tej nocy, 1-14 min)
+//   22.09  kolejne zakresy          ->  1-31 min
+//   23.09  1 dzien, 216 przypadkow  -> 51 min
+//   24.09  1 dzien, 229 przypadkow  -> 53 min
+//   24.09  te same zakresy ponownie -> ponad 55 min, wynik nie przyszedl
+//
+// Czas odpowiedzi NIE ZALEZY od wielkosci zapytania (200 wierszy czeka tyle,
+// co 62 tysiace) ani od godziny (udane o 19:17 i o 22:51, nieudane o 01:36).
+// Przy ~52 minutach przetwarzania i godzinnym zyciu rekordu zostaje osiem
+// minut zapasu — dlatego czekamy do konca tego, co mozliwe, a nie krocej.
+// Skrocenie tego czasu do 20 minut (24.09) dalo dwie noce po ZERO zapytan:
+// oba zakresy porzucalismy w 20. minucie, zanim urzad zdazyl odpowiedziec.
+const HORYZONT_MS = 57 * 60_000;
 const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
 
 async function get(url: string) {
@@ -68,14 +84,6 @@ type Budzet = {
   maks: number;
   uzyte: number;
   okno: string | null;
-  /**
-   * Ile czekamy na PIERWSZY wynik danego zakresu. ZMIERZONE: kolejka
-   * odpowiada noca po 1-3 minutach (najdluzej 14), wiec gdy milczy 20 minut,
-   * to nie jest wolna kolejka, tylko kolejka, ktora nie odpowie. Czekanie
-   * pelnych 55 minut na kazdy z trzech zakresow kosztowalo nas prawie trzy
-   * godziny nocy — i tak zakonczone zerem (noce 22/23 i 23/24.09.2026).
-   */
-  horyzontPierwszejMs?: number;
 };
 
 /** Koniec przydzialu — nie blad. Pobrane strony zostaja na dysku do wznowienia. */
@@ -265,12 +273,7 @@ async function pobierzPrzyrost(
       log(`   strona ${strona}: z pliku`);
     } else {
       sprawdzBudzet(budzet);
-      // Pierwsza strona zakresu ma krotszy horyzont, jesli zadanie go poda:
-      // po niej wiadomo, czy kolejka w ogole odpowiada.
-      const horyzont = strona === 1 && zapytan === 0 && budzet?.horyzontPierwszejMs
-        ? budzet.horyzontPierwszejMs
-        : HORYZONT_MS;
-      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`, horyzont);
+      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona), `strona ${strona}`);
       odp.pobrano = new Date().toISOString();
       zapytan++;
       if (budzet) budzet.uzyte++;
@@ -393,7 +396,7 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     log(`Poza oknem ${o.okno} (czas polski) — nie pytam urzedu.`);
     return;
   }
-  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno, horyzontPierwszejMs: 20 * 60_000 };
+  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno };
   // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
   // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
   // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
