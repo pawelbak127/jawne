@@ -15,6 +15,23 @@ if (
   );
 }
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  /*
+   * ZMIERZONE 27.09.2026 na serwerze: `next build` przewrocil sie na
+   * „took more than 60 seconds" dla `/`, `/okregi`, `/pomoc-publiczna`
+   * i stron poslow. Powod nie jest w Next, tylko w danych: `/pomoc-publiczna`
+   * robi OSIEM osobnych przebiegow po calej tabeli pomocy publicznej
+   * (razem, trzy grupowania, wielkosc firm, wojewodztwa, najwieksze).
+   * Na 168 tys. wierszy jeden taki przebieg trwa 1,6 s; na serwerze jest ich
+   * juz 2,5 mln, czyli okolo 24 s na przebieg i ponad trzy minuty na strone.
+   * Do tego maszyna jest mala i budowala strone w trakcie pobierania SUDOP.
+   *
+   * Podniesienie limitu to LEK NA OBJAW, nie na przyczyne: przy pelnej
+   * historii (ok. 30 mln wierszy) ta strona bedzie liczyc sie kwadransami.
+   * Prawdziwe rozwiazanie to policzenie przegladu RAZ, przy imporcie,
+   * i czytanie gotowych liczb — patrz docs/plan.md, „przejscie na agregaty".
+   */
+  staticPageGenerationTimeout: 300,
+};
 
 export default nextConfig;

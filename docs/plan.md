@@ -76,6 +76,32 @@ z rejestrem co do jednego mandatu we wszystkich 12 klubach (suma 460).
 i `ADRES_ZRODLA` w skrypcie, uruchomić go i sprawdzić, czy nadal wychodzi
 460 z 460.
 
+### Przejście na agregaty — teraz to już blokada, nie pomysł (27.09.2026)
+
+`next build` na serwerze przewrócił się: `/`, `/okregi`, `/pomoc-publiczna`
+i strony posłów przekroczyły limit 60 s na stronę.
+
+**Zmierzona przyczyna.** `przegladKrajowy()` w `dane.ts` robi **osiem osobnych
+przebiegów po całej tabeli `pomoc_publiczna`**: razem, trzy grupowania
+(udzielający, przeznaczenia, formy), wielkość firm, województwa i piętnaście
+największych. Plan zapytania to `SCAN pomoc_publiczna` — i słusznie, bo filtr
+`dzien in (dni ustalone)` obejmuje 97% wierszy, więc indeks nic by nie dał.
+
+| wierszy | jeden przebieg | cała strona |
+|---|---|---|
+| 168 tys. (komputer) | 1,6 s | ~13 s |
+| **2,5 mln (serwer dziś)** | **~24 s** | **ponad 3 min** |
+| ~30 mln (pełna historia) | ~5 min | ~40 min |
+
+Doraźnie podniesiony `staticPageGenerationTimeout` na 300 s — to lek na objaw.
+Strona odbudowuje się co godzinę (`revalidate = 3600`), więc już dziś zjada
+trzy minuty procesora na każdą odbudowę.
+
+**Do zrobienia:** policzyć przegląd RAZ, po imporcie, i zapisać gotowe liczby
+(np. tabela `przeglad_krajowy` odświeżana przez `ingest/jobs/sudop.ts` po
+udanym zakresie). Strona czyta wtedy kilkanaście wierszy zamiast 2,5 mln.
+To samo dotyczy mapy (`wartosciMapy`) i sum na stronie głównej.
+
 ## Usterki — zgłoszone, niepilne
 
 | | Co | Zgłoszone |
