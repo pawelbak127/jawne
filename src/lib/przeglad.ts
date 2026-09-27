@@ -52,8 +52,9 @@ export const DNI_DO_USTALENIA = 14;
 export const DNI_USTALONE = `(select dzien from pomoc_publiczna_dni
   where julianday(coalesce(pobrano_dzien, substr(pobrano, 1, 10))) - julianday(dzien) >= ${DNI_DO_USTALENIA})`;
 
-/** Klucz przegladu w tabeli `agregaty`. */
+/** Klucze w tabeli `agregaty`. */
 export const KLUCZ_PRZEGLADU = 'przeglad-krajowy';
+export const KLUCZ_MAPY_POMOCY = 'mapa-pomoc';
 
 /**
  * Odcisk zbioru dni, z ktorych liczymy sumy. Zmienia sie, gdy dojdzie dzien
@@ -134,4 +135,36 @@ export function policzPrzeglad(cz: Czytnik, terytWarszawy: string): PrzegladPomo
     wojewodztwa,
     najwieksze,
   };
+}
+
+/** Jedna gmina na mapie: ile pomocy na mieszkanca. */
+export type WartoscNaMapie = { teryt: string; wartosc: number };
+
+/**
+ * Mapa pomocy publicznej na mieszkanca.
+ *
+ * `/mapa` jest trasa DYNAMICZNA, wiec to zapytanie placi kazdy czytelnik,
+ * a nie raz na godzine build. Zmierzone: 508 ms przy 168 tys. wierszy —
+ * przy pelnej historii bylby to ponad minuta na wejscie. Dlatego takze ono
+ * liczy sie raz, przy imporcie.
+ *
+ * Liczymy TYLKO z dni pobranych dla calego kraju: pelna historia gmin
+ * pokazowych zawyzylaby je kilkudziesieciokrotnie (pulapka 35).
+ */
+export function policzMapePomocy(cz: Czytnik, terytWarszawy: string): WartoscNaMapie[] {
+  const warszawa = cz.jeden<{ osob: number | null }>(
+    "select sum(l.osob) as osob from gminy g join ludnosc l on l.teryt = g.teryt where g.rodzaj = 'dzielnica Warszawy'",
+  )?.osob ?? 0;
+  return cz.wszystkie<WartoscNaMapie>(
+    `with ludzie as (
+       select teryt, osob from ludnosc
+       union all select '${terytWarszawy}', ${warszawa}
+     )
+     select p.teryt as teryt, sum(p.wartosc_brutto) * 1.0 / l.osob as wartosc
+       from pomoc_publiczna p
+       join ludzie l on l.teryt = p.teryt
+       join pomoc_publiczna_dni d on d.dzien = p.dzien
+      where l.osob > 0
+      group by p.teryt, l.osob`,
+  );
 }

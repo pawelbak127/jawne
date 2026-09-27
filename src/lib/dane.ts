@@ -10,7 +10,8 @@ import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
 import {
-  DNI_USTALONE, KLUCZ_PRZEGLADU, podpisDni, policzPrzeglad, type Czytnik, type PrzegladPomocy,
+  DNI_USTALONE, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy, policzPrzeglad,
+  type Czytnik, type PrzegladPomocy,
 } from './przeglad';
 
 /**
@@ -746,17 +747,16 @@ export function wartosciMapy(miara: MiaraMapy): WartoscNaMapie[] {
           where f.okres = '2021-2027' and f.tylko_tu_ue is not null and l.osob > 0`,
       );
     }
-    // Pomoc publiczna TYLKO z dni pobranych dla calego kraju — historia gmin
-    // pokazowych zawyzylaby je kilkudziesieciokrotnie (pulapka 35).
-    return wszystkie<WartoscNaMapie>(
-      `with ${ludnoscCTE}
-       select p.teryt as teryt, sum(p.wartosc_brutto) * 1.0 / l.osob as wartosc
-         from pomoc_publiczna p
-         join ludzie l on l.teryt = p.teryt
-         join pomoc_publiczna_dni d on d.dzien = p.dzien
-        where l.osob > 0
-        group by p.teryt, l.osob`,
+    // Pomoc publiczna: gotowy wynik z importu. `/mapa` jest trasa DYNAMICZNA,
+    // wiec liczenie tutaj placilby kazdy czytelnik — 508 ms przy 168 tys.
+    // wierszy i ponad minute przy pelnej historii. Bez agregatu liczymy
+    // na miejscu, zeby mapa dzialala takze na swiezej bazie.
+    const zapisana = bezTabeli(
+      () => jeden<{ wartosc: string }>('select wartosc from agregaty where klucz = ?', KLUCZ_MAPY_POMOCY),
+      null,
     );
+    if (zapisana) return JSON.parse(zapisana.wartosc) as WartoscNaMapie[];
+    return policzMapePomocy(czytnik, TERYT_WARSZAWY);
   }, []);
 }
 
