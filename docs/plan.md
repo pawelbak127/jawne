@@ -76,7 +76,7 @@ z rejestrem co do jednego mandatu we wszystkich 12 klubach (suma 460).
 i `ADRES_ZRODLA` w skrypcie, uruchomić go i sprawdzić, czy nadal wychodzi
 460 z 460.
 
-### Przejście na agregaty — teraz to już blokada, nie pomysł (27.09.2026)
+### Przejście na agregaty — ZROBIONE 27.09.2026
 
 `next build` na serwerze przewrócił się: `/`, `/okregi`, `/pomoc-publiczna`
 i strony posłów przekroczyły limit 60 s na stronę.
@@ -93,14 +93,31 @@ największych. Plan zapytania to `SCAN pomoc_publiczna` — i słusznie, bo filt
 | **2,5 mln (serwer dziś)** | **~24 s** | **ponad 3 min** |
 | ~30 mln (pełna historia) | ~5 min | ~40 min |
 
-Doraźnie podniesiony `staticPageGenerationTimeout` na 300 s — to lek na objaw.
-Strona odbudowuje się co godzinę (`revalidate = 3600`), więc już dziś zjada
-trzy minuty procesora na każdą odbudowę.
+**Zrobione.** SQL przeniesiony do `src/lib/przeglad.ts` — wspólny dla importu
+i dla strony, żeby dwie kopie tych samych zapytań się nie rozjechały. Wynik
+ląduje w tabeli `agregaty` razem z podpisem zbioru dni i datą policzenia.
 
-**Do zrobienia:** policzyć przegląd RAZ, po imporcie, i zapisać gotowe liczby
-(np. tabela `przeglad_krajowy` odświeżana przez `ingest/jobs/sudop.ts` po
-udanym zakresie). Strona czyta wtedy kilkanaście wierszy zamiast 2,5 mln.
-To samo dotyczy mapy (`wartosciMapy`) i sum na stronie głównej.
+| | przed | po |
+|---|---|---|
+| przegląd krajowy | 1 338 ms | **0 ms** |
+| mapa pomocy (`/mapa`, trasa dynamiczna) | 535 ms | **3 ms** |
+
+Zmierzone lokalnie na 168 tys. wierszy; na serwerze przegląd zajmował ponad
+trzy minuty. Liczby identyczne co do grosza (mapa: 2 439 gmin, zero rozjazdów).
+
+Przeliczenie wchodzi tam, gdzie dane się zmieniają: etap `npm run import
+agregaty`, koniec każdego przebiegu SUDOP i migracje tuż przed `next build`.
+Gdy agregatu nie ma — albo nie ma całej tabeli, bo baza jest starsza —
+strona liczy na miejscu zamiast pokazać pusto (sprawdzone z ukrytą tabelą).
+Strona pisze, kiedy zestawienie policzono, i mówi, gdy od tego czasu doszły
+nowe dni.
+
+`staticPageGenerationTimeout` zostaje na 300 s jako zabezpieczenie, ale nie
+jest już tym, co trzyma build przy życiu.
+
+**Zostaje do obserwacji:** sumy na stronie głównej i `/gmina/[teryt]` liczą
+się z indeksu po `teryt`, więc na razie są tanie. Gdy baza urośnie do pełnej
+historii, sprawdzić je tą samą metodą (`explain query plan` + pomiar).
 
 ## Usterki — zgłoszone, niepilne
 
