@@ -85,6 +85,7 @@ npm run import ludnosc                     # GUS BDL, ~10 s
 npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
 npm run import smup                        # wskazniki SMUP gmin (SMUP_KLUCZ), ~4 min
 npm run import fundusze wyliczenia         # listy FE z dane.gov.pl, ~3 min
+npm run import agregaty                    # przeglad krajowy liczony raz, bez sieci (~1 s)
 node scripts/imiona-pesel.mjs              # odtwarza src/lib/imiona-pesel.ts (lista PESEL)
 node --experimental-strip-types scripts/granice-gmin.mjs   # public/mapa/gminy.json z PRG (patrz ingest/zrodla/prg)
 node scripts/plan-sali.mjs                 # src/lib/plan-sali.ts z rysunku sali (ingest/zrodla/sejm-sala)
@@ -441,6 +442,23 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     kręci się w kółko („too many redirects”). `www.sejm.gov.pl` oddaje `403`
     nawet z ciasteczkami — strony HTML Sejmu nie da się tak pobrać, `api.sejm.gov.pl`
     i `orka` działają.
+
+---
+
+52. **Strona, która liczy sumy przy każdej odbudowie, przewróci build.**
+    `/pomoc-publiczna` robiło **osiem osobnych przebiegów po całej tabeli**
+    pomocy publicznej. Indeks nic nie daje: filtr „dni ustalone” obejmuje 97%
+    wierszy, więc `SCAN` jest planem właściwym. Skaluje się za to fatalnie —
+    168 tys. wierszy to 1,6 s na przebieg, 2,5 mln to ~24 s, a pełna historia
+    będzie ~5 min. **27.09.2026 `next build` na serwerze padł** na „took more
+    than 60 seconds" i zostawił stronę wyłączoną (`instaluj.sh` zatrzymuje ją
+    PRZED budową). Od tego dnia przegląd liczy się **raz, przy imporcie**
+    (`src/lib/przeglad.ts` + tabela `agregaty`), a strona czyta gotowy wynik:
+    1 338 ms → 0 ms, te same liczby. Zasada ogólna: **jeśli zapytanie skaluje
+    się z liczbą wierszy, a strona jest odbudowywana automatycznie, to jego
+    miejsce jest w imporcie.** Kolejny kandydat: `wartosciMapy('pomoc')`
+    (508 ms lokalnie, `/mapa` jest trasą dynamiczną, więc płaci za to każdy
+    czytelnik).
 
 ---
 

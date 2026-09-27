@@ -20,6 +20,7 @@ import { opisGlosowania } from '../../src/lib/opis-glosowania.js';
 import { bezNazwiskOsobPrywatnych } from '../../src/lib/prywatnosc.js';
 import { nazwaDzialu, NAZWY_DZIALOW } from '../../src/lib/dzialy.js';
 import { nipZTekstu } from '../../src/lib/nip.js';
+import { policzAgregaty } from '../lib/agregaty.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
@@ -1444,6 +1445,19 @@ async function importSmup(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'smup', razem, `${MIARY.length} miar, lata ${lata[lata.length - 1]}–${lata[0]}, gmin ${gmin}`);
 }
 
+/**
+ * Gotowe wyniki dla stron, ktore inaczej liczylyby je przy kazdej odbudowie.
+ * Bez sieci — czyta wylacznie to, co juz jest w bazie.
+ */
+async function etapAgregatow(db: DatabaseSync): Promise<void> {
+  log('-> agregaty (bez sieci; przeglad krajowy pomocy publicznej)');
+  const start = Date.now();
+  const w = policzAgregaty(db);
+  const sekund = Math.round((Date.now() - start) / 1000);
+  log(`   ${w.opis} (${sekund} s)`);
+  odnotujImport(db, 'agregaty', w.policzono ? 1 : 0, `${w.opis}; liczone ${sekund} s`);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -1460,6 +1474,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   smup: importSmup,
   fundusze: importFunduszy,
   wyliczenia,
+  agregaty: etapAgregatow,
 };
 
 const zadane = process.argv.slice(2).filter((a) => !a.startsWith('--'));

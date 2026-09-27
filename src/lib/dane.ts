@@ -9,6 +9,9 @@ import { nazwaDoPokazania } from './prywatnosc';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
+import {
+  DNI_USTALONE, KLUCZ_PRZEGLADU, podpisDni, policzPrzeglad, type Czytnik, type PrzegladPomocy,
+} from './przeglad';
 
 /**
  * JEDYNY dostep do danych dla stron publicznych.
@@ -53,6 +56,9 @@ function jeden<T>(sql: string, ...params: unknown[]): T | null {
   if (!d) return null;
   return (d.prepare(sql).get(...(params as never[])) as unknown as T) ?? null;
 }
+
+/** To samo polaczenie, w ksztalcie, ktorego oczekuje `przeglad.ts`. */
+const czytnik: Czytnik = { wszystkie, jeden };
 
 /**
  * Brak tabeli = brakujacy etap importu, nie awaria. Strona pokazuje wtedy
@@ -1500,28 +1506,8 @@ export function przypadkiFirmy(nip: string, ile = 50): PrzypadekFirmy[] {
   );
 }
 
-export type WierszPrzegladu = { nazwa: string; przypadkow: number; brutto: number | null };
+export type { WierszPrzegladu, PrzegladPomocy } from './przeglad';
 
-export type PrzegladPomocy = {
-  od: string;
-  do: string;
-  dni: number;
-  /** Dni pobrane, ale jeszcze nieustalone — pominiete w sumach. */
-  swiezych: number;
-  przypadkow: number;
-  beneficjentow: number;
-  gmin: number;
-  brutto: number | null;
-  udzielajacy: WierszPrzegladu[];
-  przeznaczenia: WierszPrzegladu[];
-  formy: WierszPrzegladu[];
-  wielkosc: (WierszPrzegladu & { kod: string | null })[];
-  wojewodztwa: { wojewodztwo: string; przypadkow: number; brutto: number | null; osob: number | null }[];
-  najwieksze: {
-    nip: string | null; nazwa: string; max_eur: number | null; dzien: string; brutto: number | null;
-    przeznaczenie: string | null; udzielajacy: string | null; teryt: string; gmina: string | null;
-  }[];
-};
 
 /**
  * Pomoc publiczna w calym kraju — WYLACZNIE z dni pobranych dla calego kraju.
@@ -1532,60 +1518,39 @@ export type PrzegladPomocy = {
  * Warszawa (146501) nie ma wiersza w tabeli gmin (sa dzielnice), wiec jej
  * wojewodztwo podajemy wprost.
  */
-export function przegladPomocy(): PrzegladPomocy | null {
+export type PrzegladZeZnacznikiem = PrzegladPomocy & {
+  /** Kiedy policzony. `null` = policzony przed chwila, na tej stronie. */
+  policzono: string | null;
+  /** `true`, gdy od policzenia doszly nowe dni ustalone. */
+  nieaktualny: boolean;
+};
+
+/**
+ * Przeglad krajowy: czytamy GOTOWY wynik zapisany przez import.
+ *
+ * Liczenie go tutaj oznaczaloby osiem przebiegow po calej tabeli pomocy
+ * przy kazdej odbudowie strony — 3 minuty na 2,5 mln wierszy i kilkanascie
+ * na pelnej historii (patrz `src/lib/przeglad.ts`). Gdy agregatu nie ma
+ * (swiezy klon repozytorium, import bez etapu `agregaty`), liczymy na
+ * miejscu: wolno, ale bez klamstwa i bez pustej strony.
+ */
+export function przegladPomocy(): PrzegladZeZnacznikiem | null {
+  // Brak TABELI `agregaty` (stara baza sprzed 27.09.2026) to nie to samo,
+  // co brak wiersza — w obu wypadkach liczymy na miejscu, ale gdyby caly
+  // odczyt szedl przez jedno `bezTabeli`, brak tabeli wygaszalby strone.
+  const zapisany = bezTabeli(
+    () => jeden<{ wartosc: string; podpis: string; policzono: string }>(
+      'select wartosc, podpis, policzono from agregaty where klucz = ?', KLUCZ_PRZEGLADU,
+    ),
+    null,
+  );
+  if (zapisany) {
+    const p = JSON.parse(zapisany.wartosc) as PrzegladPomocy;
+    return { ...p, policzono: zapisany.policzono, nieaktualny: zapisany.podpis !== podpisDni(czytnik) };
+  }
   return bezTabeli(() => {
-    // Tylko dni ustalone: swiezy dzien ma dopiero czesc zgloszen i zanizylby
-    // sumy (patrz DNI_DO_USTALENIA).
-    const zakres = jeden<{ od: string | null; do: string | null; dni: number }>(
-      `select min(dzien) as od, max(dzien) as do, count(*) as dni from ${DNI_USTALONE}`,
-    );
-    if (!zakres?.od || !zakres.do) return null;
-    const swiezych = (jeden<{ c: number }>(
-      `select count(*) as c from pomoc_publiczna_dni where dzien not in ${DNI_USTALONE}`,
-    )?.c ?? 0);
-    const Z = `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
-    const razem = jeden<{ przypadkow: number; beneficjentow: number; gmin: number; brutto: number | null }>(
-      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow,
-              count(distinct teryt) as gmin, sum(wartosc_brutto) as brutto from ${Z}`,
-    )!;
-    const grupa = (kolumna: string, ile: number) => wszystkie<WierszPrzegladu>(
-      `select ${kolumna} as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${Z} where ${kolumna} is not null group by ${kolumna} order by brutto desc nulls last limit ?`,
-      ile,
-    );
-    const wielkosc = wszystkie<WierszPrzegladu & { kod: string | null }>(
-      `select wielkosc_kod as kod, max(wielkosc) as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${Z} group by wielkosc_kod order by wielkosc_kod`,
-    );
-    const wojewodztwa = wszystkie<{ wojewodztwo: string; przypadkow: number; brutto: number | null; osob: number | null }>(
-      `with p as (
-         select case when z.teryt = '${TERYT_WARSZAWY}' then 'mazowieckie' else g.wojewodztwo end as wojewodztwo,
-                z.wartosc_brutto
-           from ${Z} z left join gminy g on g.teryt = z.teryt
-       ),
-       l as (
-         select g.wojewodztwo, sum(l.osob) as osob from gminy g join ludnosc l on l.teryt = g.teryt group by g.wojewodztwo
-       )
-       select p.wojewodztwo as wojewodztwo, count(*) as przypadkow, sum(p.wartosc_brutto) as brutto, l.osob as osob
-         from p left join l on l.wojewodztwo = p.wojewodztwo
-        where p.wojewodztwo is not null
-        group by p.wojewodztwo order by p.wojewodztwo`,
-    );
-    const najwieksze = wszystkie<PrzegladPomocy['najwieksze'][number]>(
-      `select z.nip_beneficjenta as nip, z.nazwa_beneficjenta as nazwa, z.wartosc_brutto_eur as max_eur,
-              z.dzien as dzien, z.wartosc_brutto as brutto, z.przeznaczenie as przeznaczenie,
-              z.udzielajacy as udzielajacy, z.teryt as teryt,
-              case when z.teryt = '${TERYT_WARSZAWY}' then 'Warszawa' else g.nazwa end as gmina
-         from ${Z} z left join gminy g on g.teryt = z.teryt
-        order by z.wartosc_brutto desc nulls last limit 15`,
-    );
-    return {
-      od: zakres.od, do: zakres.do, dni: zakres.dni, swiezych, ...razem,
-      udzielajacy: grupa('udzielajacy', 12),
-      przeznaczenia: grupa('przeznaczenie', 12),
-      formy: grupa('forma', 8),
-      wielkosc, wojewodztwa, najwieksze,
-    };
+    const p = policzPrzeglad(czytnik, TERYT_WARSZAWY);
+    return p && { ...p, policzono: null, nieaktualny: false };
   }, null);
 }
 
@@ -1699,11 +1664,8 @@ export function zrodloImportu(co: string): ZrodloImportu {
  * pobrane po 3-4 tygodniach — 5 657 i 7 850. Dajemy tydzien zapasu na
  * publikacje w SUDOP: 14 dni.
  */
-export const DNI_DO_USTALENIA = 14;
-
-/** Dni pobrane dla calego kraju, ktore juz sie ustalily (SQL). */
-const DNI_USTALONE = `(select dzien from pomoc_publiczna_dni
-  where julianday(coalesce(pobrano_dzien, substr(pobrano, 1, 10))) - julianday(dzien) >= ${DNI_DO_USTALENIA})`;
+/* Jedna definicja dla strony i dla importu — patrz `src/lib/przeglad.ts`. */
+export { DNI_DO_USTALENIA } from './przeglad';
 
 /**
  * Skad mamy dane o pomocy dla tej gminy:

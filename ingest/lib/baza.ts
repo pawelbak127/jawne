@@ -510,6 +510,21 @@ create table if not exists smup_dane (
 
 create index if not exists smup_dane_klucz_rok on smup_dane(klucz, rok);
 
+/*
+  Gotowe wyniki liczone RAZ, przy imporcie. Powod jest zmierzony: przeglad
+  krajowy pomocy publicznej to osiem przebiegow po calej tabeli, czyli ponad
+  trzy minuty przy 2,5 mln wierszy i kilkanascie przy pelnej historii.
+  Kolumna podpis mowi, z jakiego zbioru dni policzono wynik — strona po nim
+  pozna, ze agregat jest starszy niz dane, i moze to napisac zamiast udawac.
+  (Bez odwrotnych apostrofow w tym komentarzu: caly SCHEMAT to szablon JS.)
+*/
+create table if not exists agregaty (
+  klucz     text primary key,
+  podpis    text not null,
+  wartosc   text not null,
+  policzono text not null
+);
+
 /* Tabele funduszy UE tworzy wylacznie etap "fundusze" (SCHEMAT_FE) — przebudowuje je w calosci. */
 create table if not exists import (
   co        text primary key,

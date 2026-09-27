@@ -68,6 +68,23 @@ export default function StronaPomocy() {
             {`Pomijamy ${zOdmiana(p.swiezych, 'świeży dzień', 'świeże dni', 'świeżych dni')}: urzędy mają 7 dni na zgłoszenie pomocy, więc dzień wliczamy dopiero ${DNI_DO_USTALENIA} dni po jego dacie.`}
           </>
         ) : null}
+        {/*
+          Liczby na tej stronie sa policzone RAZ, przy imporcie — osiem
+          przebiegow po calej tabeli nie zmiescilo by sie w czasie budowy
+          (src/lib/przeglad.ts). Skoro pokazujemy wynik sprzed chwili, a nie
+          z tej sekundy, to trzeba napisac, z ktorej chwili.
+        */}
+        {p.policzono ? (
+          <>
+            {' '}
+            <span className="text-atrament-3">{`Zestawienie policzone ${dataSlownie(p.policzono.slice(0, 10))}.`}</span>
+            {p.nieaktualny ? (
+              <span className="text-atrament-3">
+                {' '}Od tego czasu doszły nowe dni — wejdą do sum po najbliższym imporcie.
+              </span>
+            ) : null}
+          </>
+        ) : null}
       </p>
 
       <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
+import { policzAgregaty } from '../lib/agregaty.js';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
 import {
   dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
@@ -620,10 +621,19 @@ async function main(): Promise<void> {
     db.close();
     throw new Error(`W bazie jest ${znane.size} gmin zamiast ok. 2 500. Najpierw: npm run import okregi`);
   }
+  /** Agregaty licza sie z tego, co wlasnie doszlo — inaczej strona pokaze wczoraj. */
+  const przeliczAgregaty = () => {
+    const start = Date.now();
+    const w = policzAgregaty(db);
+    log(`-> agregaty: ${w.opis} (${Math.round((Date.now() - start) / 1000)} s)`);
+  };
   if (dzienny || historia) {
     try {
       if (dzienny) await dzienne(db, znane);
       else await nocne(db, znane, { maks, okno, tylkoPlan });
+      // Nawet gdy przebieg nic nie pobral, dzien moze sie w miedzyczasie
+      // ustalic — wtedy sumy sie zmieniaja i agregat musi za tym nadazyc.
+      if (!tylkoPlan) przeliczAgregaty();
     } finally {
       db.close();
     }
