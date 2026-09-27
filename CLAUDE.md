@@ -275,11 +275,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     | 24.09 | 1 dzień, 229 przypadków | **53 min** |
     | 24.09 | te same zakresy ponownie | ponad 55 min — wynik nie przyszedł |
     | 25.09 | 1 dzień ustalony, 3 730 przypadków | **51 min** |
+    | 27.09 | 7 dni (2025-10-01..07) | **4 × ponad 57 min — nigdy nie wrócił** |
 
-    Czas odpowiedzi **nie zależy od wielkości zapytania** (3 730 wierszy wróciło
-    po 51 minutach, tyle samo co 216) ani **od godziny** (udane o 15:31, 19:17,
-    22:51 i 23:42, nieudane o 01:36). Wcześniejsze porażki nie były „za dużym
-    zapytaniem", tylko ogonem rozkładu uciętym na 55. minucie. Przy ~52 minutach
+    Czas odpowiedzi **nie zależy od godziny** (udane o 15:31, 19:17, 22:51
+    i 23:42, nieudane o 01:36) i **prawie nie zależy od wielkości**: 3 730
+    wierszy wróciło po 51 minutach, tyle samo co 216. Ale **przy naprawdę dużym
+    wyniku jednak rośnie**: zakres 2025-10-01..2025-10-07 nie wrócił ani razu
+    w czterech próbach po 57 minut, podczas gdy 280 innych dni poszło gładko.
+    Dlatego po błędzie **długość zakresu tnie się na pół** (7 → 3 → 1 dnia)
+    i wraca do siedmiu po sukcesie. Zakres z błędem trzeba przy tym pominąć,
+    bo jego strony leżą na dysku i krok „przerwane" podałby go w całości
+    niezależnie od nowej długości. Przy ~52 minutach
     przetwarzania i godzinnym życiu rekordu zostaje osiem minut zapasu —
     dlatego czekamy do końca tego, co możliwe.
     **Skrócenie horyzontu do 20 minut (24.09) dało dwie noce po ZERO zapytań**:

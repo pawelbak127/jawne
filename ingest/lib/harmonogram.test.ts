@@ -103,6 +103,26 @@ function dni(od: string, doDnia: string, pobrano: string) {
 describe('planHistorii', () => {
   const OKNO = '2016-01-01';
 
+  it('krotsza dlugosc daje krotszy krok historii, mimo dlugiego zakresu z dysku', () => {
+    // ZMIERZONE 27.09.2026: zakres 2025-10-01..2025-10-07 nie wrocil ani razu
+    // w czterech probach po 57 minut. Po bledzie skracamy `dlugosc`, ale krok
+    // „przerwane" i tak poda caly zakres z dysku — dlatego pobieranie MUSI
+    // go pomijac, a wtedy te same dni wracaja krokiem „historia", juz krotsze.
+    const wejscie = {
+      dni: dni('2025-10-08', '2025-10-20', '2026-09-27T05:00:00.000Z'),
+      zakresyPlikow: ['2025-10-01..2025-10-07'],
+      dzis: '2026-09-27',
+      poczatekOkna: OKNO,
+    };
+    const siedem = planHistorii(wejscie);
+    expect(siedem[0]).toMatchObject({ od: '2025-10-01', do: '2025-10-07', powod: 'przerwane' });
+    expect(siedem.at(-1)).toMatchObject({ od: '2025-10-01', do: '2025-10-07', powod: 'historia' });
+
+    const trzy = planHistorii({ ...wejscie, dlugosc: 3 });
+    expect(trzy[0]).toMatchObject({ powod: 'przerwane' });
+    expect(trzy.at(-1)).toMatchObject({ od: '2025-10-05', do: '2025-10-07', powod: 'historia' });
+  });
+
   it('stan bazy z 19.09.2026: najpierw przerwany zakres, potem dziura, potem historia', () => {
     const plan = planHistorii({
       dni: [

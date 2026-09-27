@@ -30,7 +30,8 @@ import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
 import {
-  dodajDni, DNI_DO_USTALENIA, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow, type DzienPobrany,
+  dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
+  type DzienPobrany,
 } from '../lib/harmonogram.js';
 import {
   adresPrzyrostu, adresWyszukania, kluczePorcji, kodySudopGminy, kwota, poczatekOknaDanych,
@@ -294,10 +295,13 @@ async function pobierzPrzyrost(
       log(`   strona ${strona}: z pliku`);
     } else {
       sprawdzBudzet(budzet);
-      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona, BEZ_KOLEJKI), `strona ${strona}`);
-      odp.pobrano = new Date().toISOString();
+      // Liczymy PRZED wyslaniem: zapytanie, ktore nie oddalo wyniku, i tak
+      // zajelo urzedowi pozycje w kolejce na godzine. Liczone po powrocie
+      // dawalo w dzienniku „0 z 24" po calej dobie nieudanych prob.
       zapytan++;
       if (budzet) budzet.uzyte++;
+      odp = await wyszukaj(adresPrzyrostu(formy, od, doDnia, strona, BEZ_KOLEJKI), `strona ${strona}`);
+      odp.pobrano = new Date().toISOString();
       writeFileSync(plik, JSON.stringify(odp), 'utf8');
       // Stara spakowana wersja tej strony jest juz nieaktualna.
       if (existsSync(`${plik}.gz`)) rmSync(`${plik}.gz`);
@@ -400,7 +404,18 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
  */
 async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: number; okno: string; tylkoPlan: boolean }): Promise<void> {
   const dzis = dzienWarszawa(new Date());
+  /**
+   * Ile dni bierzemy w jednym zakresie. ZMIERZONE 27.09.2026: zakres
+   * 2025-10-01..2025-10-07 nie wrocil ANI RAZU w czterech probach po 57 minut,
+   * podczas gdy inne zakresy szly bez problemu — a poniewaz byl jednoczesnie
+   * dziura i nastepnym krokiem historii, plan nie mial co podac zamiast niego
+   * i kazdy przebieg konczyl sie na nim. Wniosek: przy DUZYM wyniku czas
+   * obslugi jednak rosnie na tyle, ze przekracza godzinne zycie rekordu.
+   * Dlatego po bledzie tniemy zakres na pol, a po sukcesie wracamy do siedmiu.
+   */
+  let dlugosc = DNI_W_ZAKRESIE;
   const plan = () => planHistorii({
+    dlugosc,
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
     dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
@@ -454,6 +469,10 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
       try {
         await przyrost(db, zakres, znane, z.odswiez, budzet);
         bledowPodRzad = 0;
+        if (dlugosc < DNI_W_ZAKRESIE) {
+          dlugosc = Math.min(DNI_W_ZAKRESIE, dlugosc * 2);
+          log(`   wracam do zakresow po ${dlugosc} dni`);
+        }
       } catch (e) {
         if (e instanceof KoniecPrzydzialu) throw e;
         const tresc = e instanceof Error ? e.message : String(e);
@@ -462,6 +481,15 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
         zBledem.set(zakres, tresc);
         bledowPodRzad++;
         poprzedni = '';
+        // Zakres z bledem musi trafic do zBledem, INACZEJ plan poda go znowu:
+        // strony leza na dysku, wiec krok „przerwane" zwraca go w calosci,
+        // niezaleznie od `dlugosc`. Pominiety, ustepuje miejsca krokowi
+        // „historia", ktory JUZ liczy sie z nowa, krotsza dlugoscia — i te
+        // same dni wracaja w mniejszych kawalkach.
+        if (dlugosc > 1) {
+          dlugosc = Math.max(1, Math.floor(dlugosc / 2));
+          log(`   tne zakresy na ${dlugosc} dni — te same dni wroca mniejszymi porcjami`);
+        }
         if (bledowPodRzad >= MAKS_BLEDOW_POD_RZAD) {
           log(`   ${bledowPodRzad} zakresy pod rzad skonczyly sie bledem — koncze noc, zeby nie dobijac urzedu.`);
           break;
