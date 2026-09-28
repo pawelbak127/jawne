@@ -164,6 +164,11 @@ EOF
   jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build"
   [ -f "$KATALOG/.next-budowa/prerender-manifest.json" ]     || { echo "Budowa nie zostawila kompletu plikow — nie podmieniam dzialajacej strony."; exit 1; }
 
+  # Next dopisuje do tsconfig.json sciezki katalogu budowy. Wpisy dla
+  # `.next-budowa` sa juz w repozytorium, ale gdyby kiedys dopisal cokolwiek
+  # jeszcze, brudny plik zatrzymalby NASTEPNE wdrozenie na `git pull --ff-only`.
+  jako git checkout -- tsconfig.json 2>/dev/null || true
+
   krok "Podmiana wersji (tu strona na chwile milknie)"
   systemctl stop jawne-strona 2>/dev/null || true
   jako rm -rf .next-poprzednia

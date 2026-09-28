@@ -35,8 +35,8 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    ".next-proba/types/**/*.ts",
-    ".next-proba/dev/types/**/*.ts"
+    ".next-budowa/types/**/*.ts",
+    ".next-budowa/dev/types/**/*.ts"
   ],
   // dane/ to katalog roboczy poza repozytorium (baza, surowe odpowiedzi,
   // doraznie skrypty porownawcze). Typecheck projektu nie ma go pilnowac —
