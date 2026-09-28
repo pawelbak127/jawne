@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+# Wdrozenie buduje obok i podmienia po sukcesie (deploy/instaluj.sh).
+/.next-budowa/
+/.next-poprzednia/
 
 # production
 /build

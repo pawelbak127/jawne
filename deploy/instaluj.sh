@@ -154,9 +154,22 @@ EOF
   # nie jest lapana jak brakujaca tabela — wywrocilaby strone gminy.
   jako node_modules/.bin/tsx ingest/jobs/migracje.ts
 
-  krok "Budowa strony (kilka minut; strona w tym czasie nie odpowiada)"
+  # Budujemy OBOK i podmieniamy dopiero po sukcesie. Przedtem bylo odwrotnie:
+  # najpierw `stop`, potem budowa w `.next` w miejscu — wiec nieudana budowa
+  # zostawiala i wylaczony serwis, i uszkodzony katalog. Tak zniknela strona
+  # na dobe 27.09.2026 i drugi raz 28.09.2026. Teraz stara wersja serwuje
+  # przez caly czas budowy, a przerwa trwa tyle, co restart.
+  krok "Budowa strony (kilkanascie minut; strona dziala na starej wersji)"
+  jako rm -rf .next-budowa
+  jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build"
+  [ -f "$KATALOG/.next-budowa/prerender-manifest.json" ]     || { echo "Budowa nie zostawila kompletu plikow — nie podmieniam dzialajacej strony."; exit 1; }
+
+  krok "Podmiana wersji (tu strona na chwile milknie)"
   systemctl stop jawne-strona 2>/dev/null || true
-  jako bash -c "set -a; . '$USTAWIENIA'; set +a; exec npm run build"
+  jako rm -rf .next-poprzednia
+  [ -d "$KATALOG/.next" ] && jako mv .next .next-poprzednia
+  jako mv .next-budowa .next
+  systemctl reset-failed jawne-strona 2>/dev/null || true
   systemctl enable jawne-strona >/dev/null
   systemctl restart jawne-strona
 

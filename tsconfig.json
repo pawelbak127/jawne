@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,7 +23,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -28,10 +34,15 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-proba/types/**/*.ts",
+    ".next-proba/dev/types/**/*.ts"
   ],
   // dane/ to katalog roboczy poza repozytorium (baza, surowe odpowiedzi,
   // doraznie skrypty porownawcze). Typecheck projektu nie ma go pilnowac —
   // inaczej stary skrypt z poprzedniej sesji wywraca `npm run build`.
-  "exclude": ["node_modules", "dane"]
+  "exclude": [
+    "node_modules",
+    "dane"
+  ]
 }

@@ -17,6 +17,15 @@ if (
 
 const nextConfig: NextConfig = {
   /*
+   * Katalog wyniku budowy. Domyslnie `.next`, ale wdrozenie buduje do katalogu
+   * OBOK i podmienia go dopiero po udanej budowie (`deploy/instaluj.sh`).
+   * Powod jest zmierzony dwoma awariami: `next build` pisze po `.next`
+   * w miejscu, wiec nieudana budowa psuje katalog DZIALAJACEJ strony —
+   * 27 i 28.09.2026 serwis lezal przez to dobe, z bledem
+   * `ENOENT .next/prerender-manifest.json` przy kazdej probie startu.
+   */
+  distDir: process.env.JAWNE_KATALOG_BUDOWY?.trim() || '.next',
+  /*
    * ZMIERZONE 27.09.2026 na serwerze: `next build` przewrocil sie na
    * „took more than 60 seconds" dla `/`, `/okregi`, `/pomoc-publiczna`
    * i stron poslow. Powod nie jest w Next, tylko w danych: `/pomoc-publiczna`
