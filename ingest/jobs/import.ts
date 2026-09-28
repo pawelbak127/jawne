@@ -1446,6 +1446,60 @@ async function importSmup(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Obecnosc poslow w dniach obrad — 499 zapytan do `/MP/{id}/votings/stats`.
+ *
+ * Po co: rejestr podaje tam `absenceExcuse`, czyli czy nieobecnosc tego dnia
+ * byla usprawiedliwiona. Bez tego nasza najglosniejsza liczba — „ile razy
+ * posla nie bylo" — jest niepelna, a z tym nadal nie zgadujemy powodu
+ * (regula 2): cytujemy, co zapisal rejestr, i mowimy, ze dotyczy calego dnia.
+ *
+ * `numMissed` z API NIE ZGADZA SIE z naszym licznikiem ABSENT (zmierzone:
+ * Ziobro 4190 vs 4100, Jazlowiecka 2246 vs 2274). Zapisujemy wiec OBIE
+ * liczby osobno i nie mieszamy ich w jednej sumie — rozjazd jest po stronie
+ * rejestru i strona ma go pokazac, a nie zasypac.
+ */
+async function importObecnosci(db: DatabaseSync): Promise<void> {
+  log('-> obecnosc poslow w dniach obrad (499 zapytan do API Sejmu)');
+  const poslowie = db.prepare('select id from poslowie order by id').all() as unknown as { id: number }[];
+
+  const wyniki = await dlaKazdego(poslowie, async (p) => {
+    try {
+      return { id: p.id, dni: await api.obecnoscPosla(p.id), blad: null as string | null };
+    } catch (e) {
+      return { id: p.id, dni: [] as api.ApiObecnosc[], blad: e instanceof Error ? e.message : String(e) };
+    }
+  }, { opis: 'poslowie', co: 100 });
+
+  const wstaw = db.prepare(
+    `insert into obecnosc(posel_id, posiedzenie, dzien, glosowan, glosowal, opuscil, usprawiedliwiony)
+     values (?,?,?,?,?,?,?)
+     on conflict(posel_id, posiedzenie, dzien) do update set
+       glosowan = excluded.glosowan, glosowal = excluded.glosowal,
+       opuscil = excluded.opuscil, usprawiedliwiony = excluded.usprawiedliwiony`,
+  );
+
+  let wierszy = 0;
+  db.exec('begin');
+  for (const w of wyniki) {
+    for (const d of w.dni) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) continue; // kontrola dziedziny przed zapisem
+      wstaw.run(w.id, d.sitting, d.date, d.numVotings, d.numVoted, d.numMissed, d.absenceExcuse ? 1 : 0);
+      wierszy++;
+    }
+  }
+  db.exec('commit');
+
+  const bledy = wyniki.filter((w) => w.blad);
+  const usprawiedliwione = db.prepare(
+    'select count(*) as c from obecnosc where usprawiedliwiony = 1 and opuscil > 0',
+  ).get() as unknown as { c: number };
+  log(`   ${wierszy} dni obrad dla ${wyniki.length - bledy.length} poslow`);
+  log(`   dni z nieobecnoscia usprawiedliwiona: ${usprawiedliwione.c}`);
+  if (bledy.length) log(`   UWAGA: rejestr nie oddal statystyk dla ${bledy.length} poslow`);
+  odnotujImport(db, 'obecnosc', wierszy, `${wyniki.length - bledy.length} poslow; bledow: ${bledy.length}`);
+}
+
+/**
  * Gotowe wyniki dla stron, ktore inaczej liczylyby je przy kazdej odbudowie.
  * Bez sieci — czyta wylacznie to, co juz jest w bazie.
  */
@@ -1467,6 +1521,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   zamowienia: importZamowien,
   regon: importRegon,
   zdjecia: importZdjec,
+  obecnosc: importObecnosci,
   okregi: importOkregow,
   ludnosc: importLudnosci,
   budzety: importBudzetow,

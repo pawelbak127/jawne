@@ -511,6 +511,26 @@ create table if not exists smup_dane (
 create index if not exists smup_dane_klucz_rok on smup_dane(klucz, rok);
 
 /*
+  Obecnosc posla w dniach obrad — z /MP/{id}/votings/stats.
+  Jedyne miejsce w API, gdzie rejestr podaje, czy nieobecnosc byla
+  usprawiedliwiona; dotyczy calego DNIA, nie pojedynczego glosowania.
+  Nie wyliczamy z tego zadnej oceny — pokazujemy to, co zapisal rejestr.
+*/
+create table if not exists obecnosc (
+  posel_id        integer not null,
+  posiedzenie     integer not null,
+  dzien           text not null,
+  glosowan        integer not null,
+  glosowal        integer not null,
+  opuscil         integer not null,
+  usprawiedliwiony integer not null,
+  primary key (posel_id, posiedzenie, dzien),
+  foreign key (posel_id) references poslowie(id)
+) without rowid;
+
+create index if not exists obecnosc_dzien on obecnosc(dzien);
+
+/*
   Gotowe wyniki liczone RAZ, przy imporcie. Powod jest zmierzony: przeglad
   krajowy pomocy publicznej to osiem przebiegow po calej tabeli, czyli ponad
   trzy minuty przy 2,5 mln wierszy i kilkanascie przy pelnej historii.

@@ -52,6 +52,27 @@ export const glosowanie = (posiedzenie: number, numer: number) =>
 
 export const adresZdjecia = (id: number) => `${BAZA}/MP/${id}/photo`;
 
+/**
+ * Dzien obrad w statystyce jednego posla.
+ *
+ * ZMIERZONE 24.09.2026: `/MP/{id}/votings/stats` oddaje po jednym wierszu
+ * na DZIEN obrad, a nie na glosowanie. Pole `absenceExcuse` to jedyne miejsce
+ * w calym API, gdzie rejestr mowi, czy nieobecnosc byla usprawiedliwiona —
+ * i dotyczy calego dnia, nie pojedynczego glosowania. Tego nie wolno przy
+ * pokazywaniu pominac (regula 3: liczba zawsze z mianownikiem).
+ */
+export type ApiObecnosc = {
+  sitting: number;
+  date: string;
+  numVotings: number;
+  numVoted: number;
+  numMissed: number;
+  absenceExcuse: boolean;
+};
+
+export const obecnoscPosla = (id: number) =>
+  pobierzJson<ApiObecnosc[]>(`${BAZA}/MP/${id}/votings/stats`);
+
 export function adresPdf(g: ApiGlosowanie): string {
   return g.links?.find((l) => l.rel === 'pdf')?.href
     ?? `${BAZA}/votings/${g.sitting}/${g.votingNumber}/pdf`;

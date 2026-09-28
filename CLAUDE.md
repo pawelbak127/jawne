@@ -79,6 +79,7 @@ npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692
 npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
 npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), ~11 min
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
+npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 npm run import ludnosc                     # GUS BDL, ~10 s
@@ -459,6 +460,22 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     miejsce jest w imporcie.** Kolejny kandydat: `wartosciMapy('pomoc')`
     (508 ms lokalnie, `/mapa` jest trasą dynamiczną, więc płaci za to każdy
     czytelnik).
+
+53. **Rejestr podaje, czy nieobecność była USPRAWIEDLIWIONA** — i jest to
+    jedyne takie miejsce w całym API: pole `absenceExcuse`
+    w `/MP/{id}/votings/stats`. Dotyczy **całego dnia obrad**, nie pojedynczego
+    głosowania, więc przeliczanie go na głosowania byłoby naszym wymysłem.
+    Zmierzone 28.09.2026: 74 853 dni poselskich, 18 252 dni z nieobecnością,
+    **4 127 usprawiedliwionych**, 437 z 499 posłów ma choć jeden taki dzień.
+    **Dwa końce tego samego rejestru liczą głosowania inaczej**: na 162 dniach
+    obrad `/votings` i statystyka posła zgadzają się w 102, a w 60 statystyka
+    podaje MNIEJ (raz o 105 głosowań; nigdy więcej). Dlatego głosowania liczymy
+    po swojemu (z `glosy`), a dni — po rejestrowemu, i nie sumujemy jednego
+    z drugim. Powodu nieobecności rejestr nie podaje nigdy, więc reguła 2
+    obowiązuje dalej.
+    **Uwaga przy sprawdzaniu:** `glosowania.data` to pełny znacznik czasu
+    (`2023-11-13T15:17:22`), a `obecnosc.dzien` to data — porównanie wprost
+    daje zero trafień i wygląda jak dziura w imporcie. Tak się nabrałem.
 
 ---
 

@@ -213,6 +213,42 @@ export function statystykiPosla(id: number): StatystykiPosla {
 }
 
 /** Ostatnie glosowania, w ktorych posel figuruje — z jego glosem. */
+export type ObecnoscPosla = {
+  /** Dni obrad, ktore rejestr w ogole zapisal dla tego posla. */
+  dni: number;
+  /** Dni, w ktorych opuscil choc jedno glosowanie. */
+  dniZNieobecnoscia: number;
+  /** Z nich: dni, ktore rejestr oznaczyl jako usprawiedliwione. */
+  dniUsprawiedliwione: number;
+};
+
+/**
+ * Obecnosc posla w dniach obrad — z `/MP/{id}/votings/stats`.
+ *
+ * Liczymy DNI, nie glosowania, i to nie jest wybor estetyczny: znacznik
+ * `absenceExcuse` dotyczy calego dnia obrad, wiec przeliczanie go na
+ * pojedyncze glosowania bylo by naszym wymyslem, nie trescia rejestru.
+ *
+ * Nie mieszamy tez tej liczby z naszym licznikiem nieobecnosci przy
+ * glosowaniach. ZMIERZONE 28.09.2026: ten sam rejestr podaje w `/votings`
+ * inna liczbe glosowan danego dnia niz w statystyce posla — na 162 dniach
+ * obrad zgadza sie 102, a w 60 statystyka podaje MNIEJ (raz az o 105).
+ * Kazda z tych liczb jest wiec prawdziwa w swoim zrodle i tak je pokazujemy:
+ * glosowania po naszemu, dni po rejestrowemu.
+ */
+export function obecnoscPosla(id: number): ObecnoscPosla | null {
+  return bezTabeli(
+    () => jeden<ObecnoscPosla>(
+      `select count(*) as dni,
+              sum(case when opuscil > 0 then 1 else 0 end) as dniZNieobecnoscia,
+              sum(case when opuscil > 0 and usprawiedliwiony = 1 then 1 else 0 end) as dniUsprawiedliwione
+         from obecnosc where posel_id = ?`,
+      id,
+    ),
+    null,
+  );
+}
+
 export function ostatnieGlosyPosla(id: number, ile = 8): (GlosowanieSkrot & { glos: string })[] {
   return wszystkie<GlosowanieSkrot & { glos: string }>(
     `select ${KOLUMNY_GLOSOWANIA}, s.glos as glos

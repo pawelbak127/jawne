@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, listaPoslow, ostatnieGlosyPosla, porownanieZKlubem, posel, slugiPoslow,
-  statystykiPosla,
+  bazaDostepna, kluby, listaPoslow, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
+  slugiPoslow, statystykiPosla,
 } from '@/lib/dane';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
 import { stylGlosu } from '@/lib/barwy-glosu';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
-import { dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
+import { dataSlownie, liczba, odmien, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
@@ -50,6 +50,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const miejsce = miejscePosla(MIEJSCA, p.id);
   const planSali = miejsce ? polaczPlan(MIEJSCA, listaPoslow()).miejsca : [];
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
+  const obecnosc = obecnoscPosla(p.id);
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 
   return (
@@ -282,14 +283,34 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                   {liczba(staty.mianownik - nieobecnosci)} z {liczba(staty.mianownik)}
                 </p>
                 {/*
-                  Zasada redakcyjna: NIE ZGADUJEMY POWODOW. Sprawowanie urzedu,
-                  choroba i zwykla nieobecnosc wygladaja w rejestrze identycznie,
-                  wiec nie wolno nam ich rozroznic ani zasugerowac roznicy.
+                  Rejestr MOWI, czy nieobecnosc byla usprawiedliwiona — i to
+                  jedyne miejsce w calym API, gdzie to podaje. Powodu nie podaje
+                  nigdy, wiec nadal go nie zgadujemy (regula 2).
+                  Liczymy DNI, nie glosowania: znacznik dotyczy calego dnia
+                  obrad, a przeliczanie go na pojedyncze glosowania byloby
+                  naszym wymyslem. Do tego dwa konce tego samego rejestru
+                  licza glosowania inaczej (patrz `obecnoscPosla` w dane.ts).
                 */}
-                <p className="mt-4 border-t border-kreska pt-3 text-xs leading-relaxed text-atrament-3">
-                  Rejestr nie podaje, dlaczego posła nie było. Wyjazd służbowy,
-                  choroba i nieobecność bez powodu wyglądają w danych tak samo —
-                  więc nie rozstrzygamy tego za rejestr.
+                {obecnosc && obecnosc.dniZNieobecnoscia > 0 ? (
+                  <div className="mt-4 border-t border-kreska pt-3">
+                    <p className="text-sm leading-relaxed">
+                      Rejestr uznał za usprawiedliwione{' '}
+                      <span className="liczby font-medium">
+                        {liczba(obecnosc.dniUsprawiedliwione)} z {liczba(obecnosc.dniZNieobecnoscia)}
+                      </span>{' '}
+                      {odmien(obecnosc.dniZNieobecnoscia, 'dnia', 'dni', 'dni')}, w których posła
+                      zabrakło przy głosowaniu.
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-atrament-3">
+                      Usprawiedliwienie dotyczy całego dnia obrad, nie pojedynczego
+                      głosowania — dlatego liczymy tu dni, a nie głosowania.
+                    </p>
+                  </div>
+                ) : null}
+                <p className="mt-3 border-t border-kreska pt-3 text-xs leading-relaxed text-atrament-3">
+                  Rejestr nie podaje, <span className="italic">dlaczego</span> posła nie było.
+                  Wyjazd służbowy, choroba i nieobecność bez powodu wyglądają w danych
+                  tak samo — więc nie rozstrzygamy tego za rejestr.
                 </p>
               </div>
             </div>
