@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { ADRES_SERWISU } from '@/lib/adres';
-import { bazaDostepna, beneficjenciDoMapy, glosowaniaDoMapy, okregi, procesyDoMapy, slugiPoslow, terytyGmin, wojewodztwaGmin } from '@/lib/dane';
-import { nazwaPodmiotuJawna, pominietoNazwiska } from '@/lib/prywatnosc';
+import { bazaDostepna, firmyDoMapy, glosowaniaDoMapy, okregi, procesyDoMapy, slugiPoslow, terytyGmin, wojewodztwaGmin } from '@/lib/dane';
+import { pominietoNazwiska } from '@/lib/prywatnosc';
+import { MAKS_ADRESOW_MAPY } from '@/lib/przeglad';
 import { adresWojewodztwa } from '@/lib/tekst';
 
 /**
@@ -19,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
   const stale = ['/', '/gminy', '/mapa', '/okregi', '/sala', '/ustawy', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
   if (!bazaDostepna()) return stale;
-  return [
+  const wszystko = [
     ...stale,
     ...slugiPoslow().map((s) => ({ url: adres(`/posel/${s}`) })),
     ...okregi().map((o) => ({ url: adres(`/okreg/${o.nr}`) })),
@@ -28,10 +29,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Druki z nazwiskiem osoby prywatnej w tytule maja noindex — jak glosowania.
     ...procesyDoMapy().filter((p) => !pominietoNazwiska(p.tytul)).map((p) => ({ url: adres(`/ustawa/${p.numer}`) })),
     // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
-    // bylaby sprzecznoscia.
-    ...beneficjenciDoMapy().filter((b) => nazwaPodmiotuJawna(b.nazwa)).map((b) => ({ url: adres(`/firma/${b.nip}`) })),
+    // bylaby sprzecznoscia. Regule sprawdza IMPORT — patrz `firmyDoMapy`.
+    ...firmyDoMapy().map((nip) => ({ url: adres(`/firma/${nip}`) })),
     ...glosowaniaDoMapy()
       .filter((g) => !pominietoNazwiska(g.tytul) && !pominietoNazwiska(g.temat) && !pominietoNazwiska(g.opis))
       .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data })),
   ];
+  // Limit protokolu jest twardy: plik z 240 tysiacami adresow jest nie tylko
+  // niezgodny, ale i tak nie zostanie w calosci wczytany. Docinamy na koncu,
+  // zeby zadna nowa sekcja nie przekroczyla go po cichu.
+  return wszystko.slice(0, MAKS_ADRESOW_MAPY);
 }

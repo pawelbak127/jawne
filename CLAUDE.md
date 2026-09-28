@@ -489,6 +489,19 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     **jednym** `<path>` z odcinków zerowej długości i zaokrąglonym
     zakończeniem zamiast 459 elementów `<circle>`. Zmierzone: 258 → 144 → 103 kB.
 
+55. **To mapa strony wywróciła wdrożenie, nie pamięć maszyny.** 28.09.2026
+    `next build` padł na `/sitemap.xml` po trzech próbach po 300 s, a systemd
+    zaraportował **`1.2G memory peak, 0B memory swap peak`** — czyli 2 GB
+    w zupełności starczyło i teoria o swapie była błędna. Powód: `sitemap.ts`
+    robił `group by nip_beneficjenta` po całej tabeli pomocy (2,5 mln wierszy
+    → ~230 tys. firm), a potem przepuszczał **każdą** nazwę przez
+    `nazwaPodmiotuJawna()` — heurystykę z listą imion PESEL. Przy okazji mapa
+    łamała własny limit: deklarowała „poniżej 50 tys. adresów", a generowała
+    240 tysięcy. Teraz listę liczy import (`agregaty`, klucz `mapa-firmy`),
+    już po regule jawności i przycięta do `MAKS_ADRESOW_MAPY`, a strona tylko
+    ją czyta: **22 ms i 21 026 adresów**. Zasada ta sama co w pułapce 52 —
+    tyle że tu ofiarą była trasa, o której nikt nie myśli jak o „stronie".
+
 ---
 
 ## Wzorce obowiązujące

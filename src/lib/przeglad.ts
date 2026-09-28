@@ -55,6 +55,14 @@ export const DNI_USTALONE = `(select dzien from pomoc_publiczna_dni
 /** Klucze w tabeli `agregaty`. */
 export const KLUCZ_PRZEGLADU = 'przeglad-krajowy';
 export const KLUCZ_MAPY_POMOCY = 'mapa-pomoc';
+export const KLUCZ_FIRM_DO_MAPY = 'mapa-firmy';
+
+/**
+ * Limit adresow w jednym pliku mapy strony (sitemap.xml) — z protokolu
+ * sitemaps.org. Nie jest ozdoba: 28.09.2026 mapa liczyla 240 tysiecy adresow
+ * i to ona, a nie pamiec maszyny, wywrocila budowe na serwerze.
+ */
+export const MAKS_ADRESOW_MAPY = 50_000;
 
 /**
  * Odcisk zbioru dni, z ktorych liczymy sumy. Zmienia sie, gdy dojdzie dzien
@@ -166,5 +174,32 @@ export function policzMapePomocy(cz: Czytnik, terytWarszawy: string): WartoscNaM
        join pomoc_publiczna_dni d on d.dzien = p.dzien
       where l.osob > 0
       group by p.teryt, l.osob`,
+  );
+}
+
+/** Firma w mapie strony: NIP i nazwa do sprawdzenia reguly jawnosci. */
+export type FirmaDoMapy = { nip: string; nazwa: string };
+
+/**
+ * Beneficjenci do mapy strony — NAJWIEKSI, bo wszyscy sie nie miesza.
+ *
+ * ZMIERZONE 28.09.2026: pelna lista to ~230 tysiecy firm, a kazda z nich
+ * przechodzila przy renderowaniu mapy przez `nazwaPodmiotuJawna()`.
+ * Trzy proby po ponad 300 sekund i `next build` przerwal wdrozenie —
+ * serwis stal przez to dobe. Liczymy to wiec raz, przy imporcie, i tylko
+ * tylu, ilu zmiesci sie w limicie protokolu.
+ *
+ * Kolejnosc po wartosci pomocy nie jest ocena ani rankingiem — to wybor
+ * TECHNICZNY, ktory adres podpowiedziec wyszukiwarce jako pierwszy.
+ * Zadna strona firmy nie znika: wszystkie sa osiagalne ze stron gmin.
+ */
+export function policzFirmyDoMapy(cz: Czytnik, ile: number): FirmaDoMapy[] {
+  return cz.wszystkie<FirmaDoMapy>(
+    `select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa
+       from pomoc_publiczna where nip_beneficjenta is not null
+      group by nip_beneficjenta
+      order by sum(wartosc_brutto) desc nulls last
+      limit ?`,
+    ile,
   );
 }

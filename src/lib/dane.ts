@@ -10,8 +10,8 @@ import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
 import {
-  DNI_USTALONE, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy, policzPrzeglad,
-  type Czytnik, type PrzegladPomocy,
+  DNI_USTALONE, KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy,
+  policzPrzeglad, type Czytnik, type PrzegladPomocy,
 } from './przeglad';
 
 /**
@@ -1517,15 +1517,21 @@ export function firma(nip: string): Firma | null {
  * ktorych nazwe wolno pokazac BEZ progu kwotowego. Osoby fizyczne odslaniane
  * progiem maja `noindex` i do mapy nie trafiaja.
  */
-export function beneficjenciDoMapy(): { nip: string; nazwa: string }[] {
-  return bezTabeli(
-    () => wszystkie<{ nip: string; nazwa: string }>(
-      `select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa
-         from pomoc_publiczna where nip_beneficjenta is not null
-        group by nip_beneficjenta`,
-    ),
-    [],
+/**
+ * NIP-y firm do mapy strony — GOTOWA lista z importu, juz po regule jawnosci
+ * i juz przycieta do limitu protokolu.
+ *
+ * Liczenie tego przy renderowaniu wywrocilo wdrozenie 28.09.2026: pelne
+ * grupowanie po 2,5 mln wierszy dawalo ~230 tysiecy firm, z ktorych kazda
+ * przechodzila przez `nazwaPodmiotuJawna()`. Trzy proby po ponad 300 sekund
+ * i `next build` przerwal prace, zostawiajac serwis wylaczony na dobe.
+ */
+export function firmyDoMapy(): string[] {
+  const zapisane = bezTabeli(
+    () => jeden<{ wartosc: string }>('select wartosc from agregaty where klucz = ?', KLUCZ_FIRM_DO_MAPY),
+    null,
   );
+  return zapisane ? (JSON.parse(zapisane.wartosc) as string[]) : [];
 }
 
 /** Pojedyncze przypadki pomocy dla firmy, od najnowszych. */

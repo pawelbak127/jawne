@@ -1,6 +1,8 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { nazwaPodmiotuJawna } from '../../src/lib/prywatnosc.js';
 import {
-  KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy, policzPrzeglad, type Czytnik,
+  KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, MAKS_ADRESOW_MAPY, podpisDni,
+  policzFirmyDoMapy, policzMapePomocy, policzPrzeglad, type Czytnik,
 } from '../../src/lib/przeglad.js';
 import { TERYT_WARSZAWY } from './fe.js';
 
@@ -44,17 +46,33 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
   const mapa = policzMapePomocy(czytnik, TERYT_WARSZAWY);
   zapisz(KLUCZ_MAPY_POMOCY, mapa);
 
+  /*
+   * Firmy do mapy strony. Regule jawnosci sprawdzamy TUTAJ, a nie przy
+   * renderowaniu: przy 230 tysiacach beneficjentow `nazwaPodmiotuJawna()`
+   * liczyla sie ponad 300 sekund i wywracala `next build` (28.09.2026).
+   * Bierzemy z zapasem, bo czesc odpadnie na regule, i tniemy do limitu.
+   */
+  const firmy = policzFirmyDoMapy(czytnik, MAKS_ADRESOW_MAPY * 2)
+    .filter((f) => nazwaPodmiotuJawna(f.nazwa))
+    .slice(0, MAKS_ADRESOW_MAPY)
+    .map((f) => f.nip);
+  zapisz(KLUCZ_FIRM_DO_MAPY, firmy);
+
   const przeglad = policzPrzeglad(czytnik, TERYT_WARSZAWY);
   if (!przeglad) {
     // Zaden dzien sie jeszcze nie ustalil — nie ma czego liczyc i nie jest
     // to blad. Stary agregat zostawiamy: mowi prawde o tym, co bylo.
-    return { policzono: false, opis: `mapa: ${mapa.length} gmin; brak dni ustalonych — przegladu nie licze` };
+    return {
+      policzono: false,
+      opis: `mapa: ${mapa.length} gmin, ${firmy.length} firm; brak dni ustalonych — przegladu nie licze`,
+    };
   }
 
   zapisz(KLUCZ_PRZEGLADU, przeglad);
 
   return {
     policzono: true,
-    opis: `przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; mapa: ${mapa.length} gmin`,
+    opis: `przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
+      + `mapa: ${mapa.length} gmin, ${firmy.length} firm`,
   };
 }
