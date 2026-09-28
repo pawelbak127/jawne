@@ -28,9 +28,16 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
    * dokladaloby jedenascie minut przestoju strony — a dane sie w tym czasie
    * nie zmienily. `--wymus` jest na wypadek zmiany samego SQL-a.
    */
-  const juz = db.prepare('select podpis from agregaty where klucz = ?').get(KLUCZ_PRZEGLADU) as
-    { podpis?: string } | undefined;
-  if (!wymus && juz?.podpis === podpis) {
+  const WSZYSTKIE_KLUCZE = [KLUCZ_PRZEGLADU, KLUCZ_MAPY_POMOCY, KLUCZ_FIRM_DO_MAPY];
+  const maja = db.prepare(
+    `select count(*) as ile from agregaty
+      where podpis = ? and klucz in (${WSZYSTKIE_KLUCZE.map(() => '?').join(',')})`,
+  ).get(podpis, ...WSZYSTKIE_KLUCZE) as { ile: number };
+  // Warunkiem jest KOMPLET, nie sam podpis. ZMIERZONE 28.09.2026 na serwerze:
+  // dolozony klucz `mapa-firmy` nie policzyl sie ani razu, bo dane sie nie
+  // zmienily — a mapa strony wyszla przez to bez firm (9 483 adresy zamiast
+  // ponad 20 tysiecy). Nowy agregat musi sie policzyc od razu.
+  if (!wymus && maja.ile === WSZYSTKIE_KLUCZE.length) {
     return { policzono: false, opis: `bez zmian (${podpis}) — nie licze od nowa` };
   }
 
