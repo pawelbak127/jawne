@@ -11,13 +11,27 @@ import { TERYT_WARSZAWY } from './fe.js';
  * w `src/lib/przeglad.ts`, wspolny dla importu i dla strony — inaczej dwie
  * kopie tych samych zapytan rozjechalyby sie przy pierwszej zmianie regul.
  */
-export function policzAgregaty(db: DatabaseSync): { policzono: boolean; opis: string } {
+export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: boolean; opis: string } {
   const czytnik: Czytnik = {
     wszystkie: <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as never[])) as unknown as T[],
     jeden: <T>(sql: string, ...p: unknown[]) => (db.prepare(sql).get(...(p as never[])) as unknown as T) ?? null,
   };
 
   const podpis = podpisDni(czytnik);
+
+  /*
+   * Przeliczamy tylko wtedy, gdy zmienil sie zbior dni ustalonych.
+   * ZMIERZONE 28.09.2026 na serwerze: pelne policzenie zajelo 676 sekund
+   * (2,5 mln wierszy, maszyna 2 GB). Bez tego warunku KAZDE wdrozenie
+   * dokladaloby jedenascie minut przestoju strony — a dane sie w tym czasie
+   * nie zmienily. `--wymus` jest na wypadek zmiany samego SQL-a.
+   */
+  const juz = db.prepare('select podpis from agregaty where klucz = ?').get(KLUCZ_PRZEGLADU) as
+    { podpis?: string } | undefined;
+  if (!wymus && juz?.podpis === podpis) {
+    return { policzono: false, opis: `bez zmian (${podpis}) — nie licze od nowa` };
+  }
+
   const zapisz = (klucz: string, wartosc: unknown) => db.prepare(
     `insert into agregaty (klucz, podpis, wartosc, policzono) values (?, ?, ?, ?)
        on conflict(klucz) do update set podpis = excluded.podpis,

@@ -27,7 +27,7 @@ function main(): void {
     // osiem przebiegow po calej tabeli i przekracza limit czasu budowy
     // (zmierzone 27.09.2026 na serwerze: ponad 3 minuty przy 2,5 mln wierszy).
     const start = Date.now();
-    const w = policzAgregaty(db);
+    const w = policzAgregaty(db, process.argv.includes('--agregaty-od-nowa'));
     log(`   ${w.opis} (${Math.round((Date.now() - start) / 1000)} s)`);
   } finally {
     db.close();

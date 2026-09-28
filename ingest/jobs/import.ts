@@ -1506,7 +1506,7 @@ async function importObecnosci(db: DatabaseSync): Promise<void> {
 async function etapAgregatow(db: DatabaseSync): Promise<void> {
   log('-> agregaty (bez sieci; przeglad krajowy pomocy publicznej)');
   const start = Date.now();
-  const w = policzAgregaty(db);
+  const w = policzAgregaty(db, process.argv.includes('--od-nowa'));
   const sekund = Math.round((Date.now() - start) / 1000);
   log(`   ${w.opis} (${sekund} s)`);
   odnotujImport(db, 'agregaty', w.policzono ? 1 : 0, `${w.opis}; liczone ${sekund} s`);
