@@ -477,6 +477,18 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     (`2023-11-13T15:17:22`), a `obecnosc.dzien` to data — porównanie wprost
     daje zero trafień i wygląda jak dziura w imporcie. Tak się nabrałem.
 
+54. **Ten sam komponent na 499 stronach to nie ten sam koszt.** Wstawienie
+    interaktywnego planu sali na stronę posła podniosło ją z **88 kB do 258 kB**:
+    każda z 499 stron niosła nazwisko, slug, klub i okręg wszystkich 460 posłów
+    — raz w HTML-u i drugi raz w danych Reacta. Na serwerze z 2 GB pamięci
+    build po ~400 stronach wpadł w swap i **pięciu ostatnim stronom zabrakło
+    300 sekund NA STRONĘ** (`/sala`, `/sitemap.xml`, `/stan`, `/szukaj`,
+    `/ustawy` — nie dlatego, że są ciężkie, tylko dlatego, że były ostatnie).
+    Lekarstwo: na stronie posła plan jest ILUSTRACJĄ, nie narzędziem —
+    osobny komponent serwerowy bez nazwisk i bez JavaScriptu, a tło rysowane
+    **jednym** `<path>` z odcinków zerowej długości i zaokrąglonym
+    zakończeniem zamiast 459 elementów `<circle>`. Zmierzone: 258 → 144 → 103 kB.
+
 ---
 
 ## Wzorce obowiązujące

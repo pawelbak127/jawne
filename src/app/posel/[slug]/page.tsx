@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, listaPoslow, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
+  bazaDostepna, kluby, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
   slugiPoslow, statystykiPosla,
 } from '@/lib/dane';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
@@ -13,10 +13,10 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { KartaGlosowania } from '@/components/KartaGlosowania';
-import { PlanSali } from '@/components/PlanSali';
+import { PlanSaliMiejsce } from '@/components/PlanSaliMiejsce';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
 import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU, ZRODLO_PLANU } from '@/lib/plan-sali';
-import { miejscePosla, polaczPlan } from '@/lib/sala';
+import { miejscePosla } from '@/lib/sala';
 
 export function generateStaticParams() {
   if (!bazaDostepna()) return [];
@@ -48,7 +48,6 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const porownanie = porownanieZKlubem(p.id);
   // Plan sali jest starszy niz sklad izby, wiec posel moze go nie miec.
   const miejsce = miejscePosla(MIEJSCA, p.id);
-  const planSali = miejsce ? polaczPlan(MIEJSCA, listaPoslow()).miejsca : [];
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const obecnosc = obecnoscPosla(p.id);
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
@@ -140,12 +139,14 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
             </Link>
           </p>
           <div className="mt-4 max-w-3xl">
-            <PlanSali
-              miejsca={planSali}
+            <PlanSaliMiejsce
+              plan={MIEJSCA}
+              wyroznionyId={p.id}
+              barwa={k?.barwa ?? '#9a958c'}
+              barwaCiemna={k?.barwaCiemna ?? '#8e8a95'}
               szerokosc={PLAN_SZEROKOSC}
               wysokosc={PLAN_WYSOKOSC}
-              wyroznionyId={p.id}
-              stan={dataSlownie(STAN_PLANU)}
+              opis={`Plan sali posiedzeń Sejmu ze stanem na ${dataSlownie(STAN_PLANU)}; zaznaczone miejsce posła ${p.imie_nazwisko}.`}
             />
           </div>
         </section>
