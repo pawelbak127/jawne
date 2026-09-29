@@ -119,6 +119,29 @@ jest już tym, co trzyma build przy życiu.
 się z indeksu po `teryt`, więc na razie są tanie. Gdy baza urośnie do pełnej
 historii, sprawdzić je tą samą metodą (`explain query plan` + pomiar).
 
+### Agregaty przyrostowe — zanim baza urośnie trzykrotnie (do zrobienia)
+
+**Zmierzone 29.09.2026 na serwerze.** Pełne przeliczenie agregatów przy
+3,78 mln wierszy zajęło **29 minut** (16:49 → 17:18: mapa, potem lista firm,
+potem przegląd krajowy). Poprzedni pomiar przy 2,5 mln to było 676 sekund,
+czyli skaluje się gorzej niż liniowo — maszyna ma 2 GB i baza przestaje się
+mieścić w pamięci podręcznej.
+
+To liczy się **na końcu każdego przebiegu SUDOP**, a historia kończy przebieg
+mniej więcej raz na dobę. Dziś to akceptowalne. Przy pełnej historii
+(~30 mln wierszy, czyli 8× więcej) będzie to **kilka godzin na przeliczenie**
+— na maszynie z jednym rdzeniem, który w tym czasie obsługuje też stronę.
+
+**Do zrobienia:** liczyć przyrostowo zamiast od zera. Sumy per dzień w osobnej
+tabeli (`pomoc_dzienne`: dzień → przypadków, brutto, per teryt, per forma…),
+uzupełniane przy zapisie dnia, a przegląd krajowy i mapa składane z tych sum.
+Koszt przestaje wtedy zależeć od rozmiaru historii, tylko od liczby nowych dni.
+
+Trudny kawałek: `count(distinct nip_beneficjenta)` i lista największych
+beneficjentów nie sumują się po dniach. Dla nich trzeba albo osobnej tabeli
+per NIP (aktualizowanej przyrostowo), albo przeliczenia rzadziej niż raz
+na dobę — do rozstrzygnięcia pomiarem, nie z góry.
+
 ## Usterki — zgłoszone, niepilne
 
 | | Co | Zgłoszone |
