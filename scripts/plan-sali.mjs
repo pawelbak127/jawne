@@ -180,6 +180,17 @@ const srodek = (e) => (e.x + e.koniec) / 2;
 const OPISY_SALI = new Set(['Mównica', 'Podest dla osób niepełnosprawnych', 'dla osób', 'niepełnosprawnych']);
 
 /**
+ * Punkty orientacyjne sali: bez nich polkolo kropek nie mowi, gdzie jest
+ * przod izby. Bierzemy je z tego samego rysunku co miejsca — sa tam
+ * podpisane, wiec nie zgadujemy polozenia.
+ */
+const ORIENTACJA = [
+  { szukaj: /^Mównica$/, etykieta: 'Mównica' },
+  { szukaj: /^FOTEL$/, etykieta: 'Fotel Prezydenta' },
+  { szukaj: /^STENOGRAFOWIE$/, etykieta: 'Stenografowie' },
+];
+
+/**
  * Laczy nazwisko rozbite na dwie etykiety: „Borys-" + „ Szopa". Obie leza
  * w tym samym wierszu, jedna za druga — rysownik rozdzielil je spacja,
  * ktora w strumieniu wypada poza zasieg sklejania glifow.
@@ -363,6 +374,15 @@ function main() {
     wedlugNazwiska.get(k).push(p);
   }
 
+  // Punkty orientacyjne — z tych samych etykiet rysunku.
+  const orientacja = [];
+  for (const o of ORIENTACJA) {
+    const e = etykiety.find((x) => x.kat === 0 && o.szukaj.test(x.tekst));
+    if (e) orientacja.push({ etykieta: o.etykieta, x: srodek(e), y: e.y });
+    else log(`UWAGA: nie znalazlem w rysunku punktu „${o.etykieta}"`);
+  }
+  log(`punktow orientacyjnych: ${orientacja.length} z ${ORIENTACJA.length}`);
+
   const rozpoznani = rozdzielPodpisy(podpisy, wedlugNazwiska);
   const numerMiejsca = przypiszNumery(podpisy, numery);
   const miejsca = [];
@@ -407,6 +427,20 @@ function main() {
   const minY = Math.min(...ys) - margines;
   const szerokosc = Math.max(...xs) - minX + margines;
   const wysokosc = Math.max(...ys) - minY + margines;
+  const punkty = orientacja
+    .map((o) => ({
+      etykieta: o.etykieta,
+      x: +(o.x - minX).toFixed(1),
+      y: +(wysokosc - (o.y - minY)).toFixed(1),
+    }))
+    // Poza obszarem miejsc (np. fotel Prezydenta stoi przed sala) — nie
+    // rozciagamy dla nich rysunku, ale mowimy o tym wprost.
+    .filter((o) => {
+      const w = o.x >= 0 && o.y >= 0 && o.x <= szerokosc && o.y <= wysokosc;
+      if (!w) log(`   „${o.etykieta}" lezy poza obszarem miejsc — pomijam na rysunku`);
+      return w;
+    });
+
   const wiersze = miejsca
     .map((m) => ({
       id: m.id,
@@ -439,6 +473,13 @@ export const PLAN_WYSOKOSC = ${wysokosc.toFixed(1)};
 
 /** [id posla, numer miejsca albo null, x, y] */
 export type MiejsceNaSali = readonly [id: number, numer: number | null, x: number, y: number];
+
+/** Punkt orientacyjny sali — z podpisu na rysunku, nie z naszego domysłu. */
+export type PunktSali = { etykieta: string; x: number; y: number };
+
+export const PUNKTY_SALI: readonly PunktSali[] = [
+${punkty.map((o) => `  { etykieta: '${o.etykieta}', x: ${o.x}, y: ${o.y} },`).join('\n')}
+];
 
 export const MIEJSCA: readonly MiejsceNaSali[] = [
 ${wiersze.map((w) => `  [${w.id}, ${w.numer ?? 'null'}, ${w.x}, ${w.y}],`).join('\n')}

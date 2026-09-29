@@ -22,6 +22,14 @@ export const PLAN_WYSOKOSC = 445.5;
 /** [id posla, numer miejsca albo null, x, y] */
 export type MiejsceNaSali = readonly [id: number, numer: number | null, x: number, y: number];
 
+/** Punkt orientacyjny sali — z podpisu na rysunku, nie z naszego domysłu. */
+export type PunktSali = { etykieta: string; x: number; y: number };
+
+export const PUNKTY_SALI: readonly PunktSali[] = [
+  { etykieta: 'Mównica', x: 380.3, y: 419.5 },
+  { etykieta: 'Stenografowie', x: 371.4, y: 380.1 },
+];
+
 export const MIEJSCA: readonly MiejsceNaSali[] = [
   [470, 267, 377.6, 12],
   [18, 319, 402.1, 15.1],

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
+import { PUNKTY_SALI } from '@/lib/plan-sali';
 import type { MiejscePosla } from '@/lib/sala';
 import { uprosc } from '@/lib/tekst';
 
@@ -118,6 +119,27 @@ export function PlanSali({
             if ((e.pointerType !== 'mouse') !== dotykiem) ustawDotykiem(e.pointerType !== 'mouse');
           }}
         >
+          {/*
+            Punkty orientacyjne z rysunku Kancelarii. Bez nich polkolo kropek
+            nie mowi, gdzie jest przod izby — a to pierwsze pytanie, jakie
+            zadaje ktos, kto na nie patrzy. Pozycje sa z rysunku, nie z naszego
+            domyslu; fotel Prezydenta stoi poza obszarem miejsc i dlatego
+            go tu nie ma (skrypt to zglasza).
+          */}
+          {PUNKTY_SALI.map((p) => (
+            <g key={p.etykieta} pointerEvents="none">
+              <circle cx={p.x} cy={p.y} r={3} className="fill-atrament-3" />
+              <text
+                x={p.x}
+                y={p.y + 14}
+                textAnchor="middle"
+                className="fill-atrament-3"
+                style={{ fontSize: 11 }}
+              >
+                {p.etykieta}
+              </text>
+            </g>
+          ))}
           {miejsca.map((m) => (
             <circle
               key={m.id}
