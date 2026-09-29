@@ -71,7 +71,15 @@ async function main() {
   const suma = createHash('sha256').update(readFileSync(ZRODLO)).digest('hex');
   log(`-> zrodlo PRG, SHA-256 ${suma.slice(0, 16)}…`);
 
-  const katalog = await rozpakuj(ZRODLO, ['A03_Granice_gmin.shp', 'A03_Granice_gmin.dbf']);
+  const katalog = await rozpakuj(ZRODLO, [
+    'A03_Granice_gmin.shp', 'A03_Granice_gmin.dbf',
+    // Granice wojewodztw bierzemy z WLASNEJ warstwy PRG, a nie sklejamy
+    // z gmin. ZMIERZONE 29.09.2026: po uproszczeniu kazdej gminy osobno
+    // wspolne krawedzie sasiadow NIE sa identyczne (46 327 krawedzi wystepuje
+    // raz, tylko 22 326 dwa razy), wiec scalanie po krawedziach daloby
+    // poszarpany obrys. Wizualnie granice pasuja, punktowo nie.
+    'A01_Granice_wojewodztw.shp', 'A01_Granice_wojewodztw.dbf',
+  ]);
   const zrodlo = await otworzShp(
     createReadStream(join(katalog, 'A03_Granice_gmin.shp')),
     createReadStream(join(katalog, 'A03_Granice_gmin.dbf')),
@@ -104,6 +112,30 @@ async function main() {
     if (pierscienie.length) gminy.push({ teryt, pierscienie });
   }
   log(`   ${gminy.length} gmin, punktow ${punktowPrzed} -> ${punktowPo}`);
+
+  // Wojewodztwa: ta sama tolerancja, zeby obrys lezal na granicach gmin.
+  const zrodloW = await otworzShp(
+    createReadStream(join(katalog, 'A01_Granice_wojewodztw.shp')),
+    createReadStream(join(katalog, 'A01_Granice_wojewodztw.dbf')),
+    { encoding: 'utf-8' },
+  );
+  const wojewodztwa = [];
+  for (let w = await zrodloW.read(); !w.done; w = await zrodloW.read()) {
+    const kodW = String(w.value.properties.JPT_KOD_JE ?? '').slice(0, 2);
+    const nazwa = String(w.value.properties.JPT_NAZWA_ ?? '').trim().toLowerCase();
+    if (!/^\d{2}$/.test(kodW)) continue;
+    const g = w.value.geometry;
+    const wielokaty = g.type === 'MultiPolygon' ? g.coordinates : g.type === 'Polygon' ? [g.coordinates] : [];
+    const pierscienie = [];
+    for (const wielokat of wielokaty) {
+      const zewn = wielokat[0];
+      if (!zewn) continue;
+      const u = domknij(uprosc(zewn.map((p) => [p[0], p[1]]), TOLERANCJA));
+      if (u.length >= 4 && pole(u) > 0.0001) pierscienie.push(u);
+    }
+    if (pierscienie.length) wojewodztwa.push({ kod: kodW, nazwa, pierscienie });
+  }
+  log(`   ${wojewodztwa.length} wojewodztw, punktow ${wojewodztwa.reduce((a, w) => a + w.pierscienie.reduce((b, p) => b + p.length, 0), 0)}`);
 
   // Kontrola dziedziny: czy kody z PRG zgadzaja sie z naszymi gminami.
   const baza = join(process.cwd(), 'dane', 'sejm.db');
@@ -144,12 +176,13 @@ async function main() {
     return czesci.join(' ');
   };
   const wynik = {
-    zrodlo: 'PRG (GUGiK), warstwa A03_Granice_gmin',
+    zrodlo: 'PRG (GUGiK), warstwy A03_Granice_gmin i A01_Granice_wojewodztw',
     sha256: suma,
     skala: SKALA,
     tolerancja: TOLERANCJA,
     zakres,
     gminy: Object.fromEntries(gminy.map((g) => [g.teryt, g.pierscienie.map(kod)])),
+    wojewodztwa: wojewodztwa.map((w) => ({ kod: w.kod, nazwa: w.nazwa, ksztalt: w.pierscienie.map(kod) })),
   };
   mkdirSync(join(process.cwd(), 'public', 'mapa'), { recursive: true });
   writeFileSync(WYJSCIE, JSON.stringify(wynik), 'utf8');

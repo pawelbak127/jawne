@@ -9,6 +9,13 @@ export type PlikMapy = {
   skala: number;
   zakres: { xmin: number; ymin: number; xmax: number; ymax: number };
   gminy: Record<string, string[]>;
+  /**
+   * Granice wojewodztw z WLASNEJ warstwy PRG (A01), nie sklejone z gmin.
+   * ZMIERZONE 29.09.2026: po uproszczeniu kazdej gminy osobno wspolne
+   * krawedzie sasiadow nie sa identyczne (46 327 wystepuje raz, 22 326 dwa
+   * razy), wiec scalanie po krawedziach daloby poszarpany obrys.
+   */
+  wojewodztwa?: { kod: string; nazwa: string; ksztalt: string[] }[];
 };
 
 /**
@@ -102,8 +109,38 @@ export function MapaGmin({
     const naX = (x: number) => ((x / s - xmin) * zwezenie * 1000) / szer;
     const naY = (y: number) => ((ymax - y / s) * 1000 * (wys / szer)) / wys;
 
-    return Object.entries(plik.gminy).map(([teryt, pierscienie]) => {
-      const d = pierscienie
+    const sciezka = (pierscienie: string[]) => pierscienie
+      .map((ciag) => {
+        let x = 0;
+        let y = 0;
+        const kroki: string[] = [];
+        for (const para of ciag.split(' ')) {
+          const przecinek = para.indexOf(',');
+          x += Number(para.slice(0, przecinek));
+          y += Number(para.slice(przecinek + 1));
+          kroki.push(`${kroki.length === 0 ? 'M' : 'L'}${naX(x).toFixed(1)} ${naY(y).toFixed(1)}`);
+        }
+        return `${kroki.join('')}Z`;
+      })
+      .join('');
+
+    return Object.entries(plik.gminy).map(([teryt, pierscienie]) => ({ teryt, d: sciezka(pierscienie) }));
+  }, [plik]);
+
+  /** Obrysy wojewodztw — rysowane NAD gminami, ale nieklikalne. */
+  const granice = useMemo(() => {
+    if (!plik?.wojewodztwa) return [];
+    const { xmin, xmax, ymin, ymax } = plik.zakres;
+    const s = plik.skala;
+    const zwezenie = Math.cos(((ymin + ymax) / 2) * (Math.PI / 180));
+    const szer = (xmax - xmin) * zwezenie;
+    const wys = ymax - ymin;
+    const naX = (x: number) => ((x / s - xmin) * zwezenie * 1000) / szer;
+    const naY = (y: number) => ((ymax - y / s) * 1000 * (wys / szer)) / wys;
+    return plik.wojewodztwa.map((w) => ({
+      kod: w.kod,
+      nazwa: w.nazwa,
+      d: w.ksztalt
         .map((ciag) => {
           let x = 0;
           let y = 0;
@@ -116,9 +153,15 @@ export function MapaGmin({
           }
           return `${kroki.join('')}Z`;
         })
-        .join('');
-      return { teryt, d };
-    });
+        .join(''),
+    }));
+  }, [plik]);
+
+  /** Nazwa wojewodztwa po dwoch pierwszych cyfrach TERYT-u gminy. */
+  const wojewodztwoGminy = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const w of plik?.wojewodztwa ?? []) m.set(w.kod, w.nazwa);
+    return (teryt: string) => m.get(teryt.slice(0, 2)) ?? null;
   }, [plik]);
 
   const barwa = (teryt: string) => {
@@ -218,6 +261,37 @@ export function MapaGmin({
                 }}
               />
             ))}
+            {/*
+              Granice wojewodztw NAD gminami i bez lapania myszy: to warstwa
+              orientacyjna, a klikalna jednostka pozostaje gmina. Grubosc dzielona
+              przez powiekszenie, bo inaczej po przyblizeniu kreska rosnie razem
+              z mapa i zalewa male gminy.
+            */}
+            {granice.map((w) => (
+              <g key={w.kod} pointerEvents="none">
+                {/*
+                  Dwie kreski, nie jedna: jasna otoczka pod spodem i ciemna
+                  linia na wierzchu. Sama ciemna linia gubi sie na ciemnych
+                  gminach, sama jasna — na jasnych. Tak robi sie granice
+                  na mapach papierowych i tu dziala tak samo.
+                */}
+                <path
+                  d={w.d}
+                  fill="none"
+                  stroke="var(--papier)"
+                  strokeWidth={4 / powiekszenie}
+                  strokeLinejoin="round"
+                  opacity={0.85}
+                />
+                <path
+                  d={w.d}
+                  fill="none"
+                  stroke="var(--atrament-2)"
+                  strokeWidth={1.6 / powiekszenie}
+                  strokeLinejoin="round"
+                />
+              </g>
+            ))}
           </svg>
 
           {/* Chmurka tylko dla myszy — na dotyku jest karta pod mapa. */}
@@ -227,6 +301,9 @@ export function MapaGmin({
               style={{ left: Math.min(pod.x + 12, 700), top: pod.y + 12 }}
             >
               <p className="font-medium">{wg.get(pod.teryt)![1]}</p>
+              {wojewodztwoGminy(pod.teryt) ? (
+                <p className="text-xs text-atrament-3">{`woj. ${wojewodztwoGminy(pod.teryt)}`}</p>
+              ) : null}
               <p className="liczby text-atrament-2">{opis(wg.get(pod.teryt)!)}</p>
             </div>
           ) : null}
@@ -274,6 +351,9 @@ export function MapaGmin({
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
             <div>
               <p className="font-medium">{karta[1]}</p>
+              {wojewodztwoGminy(karta[0]) ? (
+                <p className="text-xs text-atrament-3">{`woj. ${wojewodztwoGminy(karta[0])}`}</p>
+              ) : null}
               <p className="liczby text-sm text-atrament-2">{opis(karta)}</p>
             </div>
             <Link
