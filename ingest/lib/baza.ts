@@ -24,7 +24,15 @@ export function otworz(doZapisu = false): DatabaseSync {
   db.exec('pragma foreign_keys = on');
   // Import SUDOP trwa minutami i moze pracowac rownolegle z innymi etapami.
   // Bez tego drugi zapis dostaje od razu SQLITE_BUSY zamiast chwile poczekac.
-  db.exec('pragma busy_timeout = 60000');
+  /*
+   * Czekanie na zwolnienie bazy przez innego pisarza. Bylo 60 s i wystarczalo,
+   * dopoki importy nie nachodzily na siebie. ZMIERZONE 29.09.2026: odkad
+   * historia SUDOP chodzi ciagle, trafia na nocne zadanie `sejm`, ktorego
+   * etap „indeks firm" pisze JEDNA transakcja przez szesnascie minut —
+   * i noc konczyla sie bledem `database is locked`. Czekanie jest tansze niz
+   * porzucony zakres: te zadania i tak chodza w tle.
+   */
+  db.exec('pragma busy_timeout = 1800000');
   if (doZapisu) {
     // Import to setki tysiecy wstawek. Bez tego kazda transakcja czeka na fsync.
     db.exec('pragma synchronous = normal');
@@ -596,6 +604,31 @@ export function zalozSchemat(db: DatabaseSync): string[] {
     zrobione.push(`uzupelniono polska date pobrania dla ${bezDaty.length} dni`);
   }
   return zrobione;
+}
+
+/**
+ * Transakcja, ktora NA PEWNO sie zamyka.
+ *
+ * ZMIERZONE 29.09.2026: `db.exec('begin')` bez wycofania zostawial otwarta
+ * transakcje po kazdym bledzie w srodku — i kazdy nastepny zapis w tym
+ * procesie konczyl sie `cannot start a transaction within a transaction`.
+ * W dzienniku wygladalo to na trzy rozne usterki, a bylo jedna: pierwszy
+ * blad (`database is locked`) psul cala reszte przebiegu.
+ */
+export function wTransakcji<T>(db: DatabaseSync, fn: () => T): T {
+  db.exec('begin');
+  try {
+    const wynik = fn();
+    db.exec('commit');
+    return wynik;
+  } catch (e) {
+    try {
+      db.exec('rollback');
+    } catch {
+      /* Transakcja mogla sie juz zamknac sama — wtedy nie ma czego wycofywac. */
+    }
+    throw e;
+  }
 }
 
 export function odnotujImport(db: DatabaseSync, co: string, ile: number, uwagi = ''): void {

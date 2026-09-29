@@ -502,6 +502,21 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     ją czyta: **22 ms i 21 026 adresów**. Zasada ta sama co w pułapce 52 —
     tyle że tu ofiarą była trasa, o której nikt nie myśli jak o „stronie".
 
+56. **`begin` bez wycofania zamienia jeden błąd w serię.** ZMIERZONE
+    29.09.2026 w nocy SUDOP: w dzienniku wyglądało to na trzy różne usterki —
+    `database is locked`, potem `kolejka nie oddala wyniku`, potem
+    **`cannot start a transaction within a transaction`** — a była jedna.
+    Pierwszy błąd wystąpił w środku `db.exec('begin')` … `db.exec('commit')`,
+    transakcja została otwarta i **każdy następny zapis w tym procesie padał**.
+    Od teraz każda transakcja idzie przez `wTransakcji()` z `ingest/lib/baza.ts`
+    (25 miejsc w `import.ts`, 2 w `sudop.ts`); jedno miejsce zostaje po staremu,
+    bo jest asynchroniczne i ma własne wycofanie.
+    Źródłem pierwszego błędu było `busy_timeout = 60000`: odkąd historia SUDOP
+    chodzi ciągle, trafia na nocne zadanie `sejm`, którego etap „indeks firm"
+    pisze **jedną transakcją przez szesnaście minut**. Limit podniesiony
+    do 30 minut — czekanie jest tańsze niż porzucony zakres, bo oba zadania
+    i tak chodzą w tle.
+
 ---
 
 ## Wzorce obowiązujące

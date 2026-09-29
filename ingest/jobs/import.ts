@@ -8,7 +8,7 @@
  *   npx tsx ingest/jobs/import.ts kluby poslowie glosowania glosy
  *   npx tsx ingest/jobs/import.ts wszystko
  */
-import { otworz, zalozSchemat, odnotujImport, SCHEMAT_FE } from '../lib/baza.js';
+import { otworz, zalozSchemat, odnotujImport, wTransakcji, SCHEMAT_FE } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
 import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl, kluczSmup } from '../lib/http.js';
@@ -48,13 +48,13 @@ async function importKlubow(db: DatabaseSync): Promise<void> {
      on conflict(id) do update set nazwa=excluded.nazwa, mandaty=excluded.mandaty,
        email=excluded.email, telefon=excluded.telefon, faks=excluded.faks`,
   );
-  db.exec('begin');
-  for (const k of kluby) {
-    // membersCount bywa nieobecne - kolo, ktorego rejestr juz nie liczy.
-    // Zapisujemy null, bo zero znaczyloby "zmierzylismy zero czlonkow".
-    wstaw.run(k.id, k.name ?? null, k.membersCount ?? null, k.email ?? null, k.phone ?? null, k.fax ?? null);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const k of kluby) {
+      // membersCount bywa nieobecne - kolo, ktorego rejestr juz nie liczy.
+      // Zapisujemy null, bo zero znaczyloby "zmierzylismy zero czlonkow".
+      wstaw.run(k.id, k.name ?? null, k.membersCount ?? null, k.email ?? null, k.phone ?? null, k.fax ?? null);
+    }
+  });
   const bezLiczby = kluby.filter((k) => k.membersCount === undefined).map((k) => k.id);
   const suma = kluby.reduce((a, k) => a + (k.membersCount ?? 0), 0);
   log(`   ${kluby.length} klubow, suma mandatow: ${suma}`);
@@ -83,9 +83,9 @@ async function importPoslow(db: DatabaseSync): Promise<void> {
   const obce = [...new Set(lista.map((p) => p.club).filter((c): c is string => Boolean(c) && !znaneKluby.has(c)))];
   if (obce.length) {
     const wstawKlub = db.prepare('insert into kluby(id, nazwa, mandaty) values (?, null, null) on conflict(id) do nothing');
-    db.exec('begin');
-    for (const id of obce) wstawKlub.run(id);
-    db.exec('commit');
+    wTransakcji(db, () => {
+      for (const id of obce) wstawKlub.run(id);
+    });
     for (const id of obce) {
       const ilu = lista.filter((p) => p.club === id).length;
       log(`   UWAGA - klub "${id}" wystepuje u ${ilu} poslow, ale nie ma go w /clubs`);
@@ -120,20 +120,20 @@ async function importPoslow(db: DatabaseSync): Promise<void> {
        ma_zdjecie=coalesce(excluded.ma_zdjecie, poslowie.ma_zdjecie)`,
   );
 
-  db.exec('begin');
-  for (const p of lista) {
-    const slug = istniejace.get(p.id) ?? slugPosla(p.firstLastName, zajete, p.id);
-    zajete.add(slug);
-    wstaw.run(
-      p.id, slug, p.firstName, p.secondName ?? null, p.lastName, p.firstLastName,
-      p.club || null, p.districtNum ?? null, p.districtName ?? null, p.voivodeship ?? null,
-      p.profession ?? null, p.educationLevel ?? null, p.birthDate ?? null,
-      p.birthLocation ?? null, p.numberOfVotes ?? null, p.email ?? null,
-      p.active ? 1 : 0, p.inactiveCause ?? null, p.mandateExpiryDate ?? null,
-      null,  // ma_zdjecie ustawia etap "zdjecia" — on jedyny wie to na pewno
-    );
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const p of lista) {
+      const slug = istniejace.get(p.id) ?? slugPosla(p.firstLastName, zajete, p.id);
+      zajete.add(slug);
+      wstaw.run(
+        p.id, slug, p.firstName, p.secondName ?? null, p.lastName, p.firstLastName,
+        p.club || null, p.districtNum ?? null, p.districtName ?? null, p.voivodeship ?? null,
+        p.profession ?? null, p.educationLevel ?? null, p.birthDate ?? null,
+        p.birthLocation ?? null, p.numberOfVotes ?? null, p.email ?? null,
+        p.active ? 1 : 0, p.inactiveCause ?? null, p.mandateExpiryDate ?? null,
+        null,  // ma_zdjecie ustawia etap "zdjecia" — on jedyny wie to na pewno
+      );
+    }
+  });
   const nieaktywni = lista.filter((p) => !p.active).length;
   log(`   ${lista.length} poslow (nieaktywnych: ${nieaktywni})`);
   odnotujImport(db, 'poslowie', lista.length, `nieaktywnych: ${nieaktywni}`);
@@ -145,9 +145,9 @@ async function importGlosowan(db: DatabaseSync): Promise<void> {
   const wstawP = db.prepare(
     'insert into posiedzenia(numer, tytul, daty) values (?,?,?) on conflict(numer) do update set tytul=excluded.tytul, daty=excluded.daty',
   );
-  db.exec('begin');
-  for (const p of lista) wstawP.run(p.number, p.title ?? null, JSON.stringify(p.dates ?? []));
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const p of lista) wstawP.run(p.number, p.title ?? null, JSON.stringify(p.dates ?? []));
+  });
   log(`   ${lista.length} posiedzen`);
 
   const partie = await dlaKazdego(lista, async (p) => {
@@ -171,15 +171,15 @@ async function importGlosowan(db: DatabaseSync): Promise<void> {
        przeciw=excluded.przeciw, wstrzymalo=excluded.wstrzymalo,
        nieobecnych=excluded.nieobecnych, glosowalo=excluded.glosowalo, pdf=excluded.pdf`,
   );
-  db.exec('begin');
-  for (const g of wszystkie) {
-    wstaw.run(
-      g.sitting, g.votingNumber, g.sittingDay ?? null, g.date, g.title,
-      g.topic ?? null, g.description ?? null, g.kind ?? null, g.majorityType ?? null,
-      g.yes, g.no, g.abstain, g.notParticipating, g.totalVoted, api.adresPdf(g),
-    );
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const g of wszystkie) {
+      wstaw.run(
+        g.sitting, g.votingNumber, g.sittingDay ?? null, g.date, g.title,
+        g.topic ?? null, g.description ?? null, g.kind ?? null, g.majorityType ?? null,
+        g.yes, g.no, g.abstain, g.notParticipating, g.totalVoted, api.adresPdf(g),
+      );
+    }
+  });
   log(`   ${wszystkie.length} glosowan`);
   odnotujImport(db, 'glosowania', wszystkie.length);
 }
@@ -219,33 +219,33 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
   for (let i = 0; i < doPobrania.length; i += PORCJA) {
     const kawalek = doPobrania.slice(i, i + PORCJA);
     const pelne = await dlaKazdego(kawalek, (g) => api.glosowanie(g.posiedzenie, g.numer));
-    db.exec('begin');
-    for (const g of pelne) {
-      for (const v of g.votes ?? []) {
-        if (!GLOSY_ZNANE.has(v.vote)) nieznaneGlosy.set(v.vote, (nieznaneGlosy.get(v.vote) ?? 0) + 1);
+    wTransakcji(db, () => {
+      for (const g of pelne) {
+        for (const v of g.votes ?? []) {
+          if (!GLOSY_ZNANE.has(v.vote)) nieznaneGlosy.set(v.vote, (nieznaneGlosy.get(v.vote) ?? 0) + 1);
 
-        // KLUBY HISTORYCZNE. Glos niesie klub z DNIA GLOSOWANIA, a /clubs
-        // podaje tylko stan biezacy. ZMIERZONE na pelnym imporcie: w glosach
-        // wystepuja Kukiz15 (2993 glosy), Republikanie (9604), PSL (256)
-        // i Nowa_Lewica (208) — kluby, ktorych dzis juz nie ma.
-        //
-        // Zapisanie przy nich null byloby cicha utrata informacji: glos oddany
-        // przez czlonka Kukiz15 pokazywalby sie jako "bez klubu", czyli
-        // nieprawde. Zakladamy wiec klub z samym identyfikatorem, tak samo jak
-        // przy posle wskazujacym klub spoza listy.
-        if (v.club && !znaneKluby.has(v.club)) {
-          wstawKlub.run(v.club);
-          znaneKluby.add(v.club);
-          klubyHistoryczne.set(v.club, 0);
+          // KLUBY HISTORYCZNE. Glos niesie klub z DNIA GLOSOWANIA, a /clubs
+          // podaje tylko stan biezacy. ZMIERZONE na pelnym imporcie: w glosach
+          // wystepuja Kukiz15 (2993 glosy), Republikanie (9604), PSL (256)
+          // i Nowa_Lewica (208) — kluby, ktorych dzis juz nie ma.
+          //
+          // Zapisanie przy nich null byloby cicha utrata informacji: glos oddany
+          // przez czlonka Kukiz15 pokazywalby sie jako "bez klubu", czyli
+          // nieprawde. Zakladamy wiec klub z samym identyfikatorem, tak samo jak
+          // przy posle wskazujacym klub spoza listy.
+          if (v.club && !znaneKluby.has(v.club)) {
+            wstawKlub.run(v.club);
+            znaneKluby.add(v.club);
+            klubyHistoryczne.set(v.club, 0);
+          }
+          if (v.club && klubyHistoryczne.has(v.club)) {
+            klubyHistoryczne.set(v.club, (klubyHistoryczne.get(v.club) ?? 0) + 1);
+          }
+          wstaw.run(g.sitting, g.votingNumber, v.MP, v.club || null, v.vote);
+          zapisanych++;
         }
-        if (v.club && klubyHistoryczne.has(v.club)) {
-          klubyHistoryczne.set(v.club, (klubyHistoryczne.get(v.club) ?? 0) + 1);
-        }
-        wstaw.run(g.sitting, g.votingNumber, v.MP, v.club || null, v.vote);
-        zapisanych++;
       }
-    }
-    db.exec('commit');
+    });
     zrobione += kawalek.length;
     log(`   ${zrobione}/${doPobrania.length} glosowan, ${zapisanych} glosow`);
   }
@@ -295,12 +295,12 @@ async function importZdjec(db: DatabaseSync): Promise<void> {
     }
   }, { opis: 'zdjecia', co: 100 });
 
-  db.exec('begin');
-  for (const w of wyniki) {
-    if (w.bajty && w.typ) wstaw.run(w.id, w.typ, w.bajty);
-    oznacz.run(w.bajty ? 1 : 0, w.id);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const w of wyniki) {
+      if (w.bajty && w.typ) wstaw.run(w.id, w.typ, w.bajty);
+      oznacz.run(w.bajty ? 1 : 0, w.id);
+    }
+  });
 
   const maja = wyniki.filter((w) => w.bajty).length;
   const bajtow = wyniki.reduce((a, w) => a + (w.bajty?.length ?? 0), 0);
@@ -360,12 +360,12 @@ async function importOkregow(db: DatabaseSync): Promise<void> {
        uprawnionych=excluded.uprawnionych, szukaj=excluded.szukaj`,
   );
 
-  db.exec('begin');
-  for (const o of okregi) wstawOkreg.run(o.nr, o.nazwa, o.wojewodztwo, o.kraj, o.zagr);
-  for (const g of wynik.gminy) {
-    wstawGmine.run(g.teryt, g.nazwa, g.rodzaj, g.powiat, g.wojewodztwo, g.okreg, g.uprawnionych, uprosc(g.nazwa));
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const o of okregi) wstawOkreg.run(o.nr, o.nazwa, o.wojewodztwo, o.kraj, o.zagr);
+    for (const g of wynik.gminy) {
+      wstawGmine.run(g.teryt, g.nazwa, g.rodzaj, g.powiat, g.wojewodztwo, g.okreg, g.uprawnionych, uprosc(g.nazwa));
+    }
+  });
 
   log(`   ${okregi.length} okregow, ${wynik.gminy.length} gmin, ${wynik.zagranica.length} obwodow za granica`);
   odnotujImport(db, 'okregi', okregi.length, `gmin: ${wynik.gminy.length}; zrodlo: PKW, wybory do Sejmu 2023`);
@@ -378,17 +378,17 @@ async function importOkregow(db: DatabaseSync): Promise<void> {
 async function wyliczenia(db: DatabaseSync): Promise<void> {
   log('-> wyliczenia: sumy glosow klubow');
   const start = Date.now();
-  db.exec('begin');
-  db.exec('delete from glosy_klubow');
-  db.exec(`
-    insert into glosy_klubow(posiedzenie, numer, klub_id, za, przeciw, wstrzymalo, nieobecnych, innych)
-    select posiedzenie, numer, klub_id,
-           sum(glos = 'YES'), sum(glos = 'NO'), sum(glos = 'ABSTAIN'), sum(glos = 'ABSENT'),
-           sum(glos not in ('YES', 'NO', 'ABSTAIN', 'ABSENT'))
-      from glosy
-     where klub_id is not null
-     group by posiedzenie, numer, klub_id`);
-  db.exec('commit');
+  wTransakcji(db, () => {
+    db.exec('delete from glosy_klubow');
+    db.exec(`
+      insert into glosy_klubow(posiedzenie, numer, klub_id, za, przeciw, wstrzymalo, nieobecnych, innych)
+      select posiedzenie, numer, klub_id,
+             sum(glos = 'YES'), sum(glos = 'NO'), sum(glos = 'ABSTAIN'), sum(glos = 'ABSENT'),
+             sum(glos not in ('YES', 'NO', 'ABSTAIN', 'ABSENT'))
+        from glosy
+       where klub_id is not null
+       group by posiedzenie, numer, klub_id`);
+  });
   const wierszy = (db.prepare('select count(*) as c from glosy_klubow').get() as { c: number }).c;
 
   // Kontrola: sumy klubow musza dac sume glosow. Rozjazd znaczy, ze cos
@@ -413,13 +413,13 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   );
   const wstawPorownanie = db.prepare('insert into porownania_poslow(posel_id, porownywalnych, odmiennych) values (?,?,?)');
   const idPoslow = (db.prepare('select id from poslowie').all() as unknown as { id: number }[]).map((r) => r.id);
-  db.exec('begin');
-  db.exec('delete from porownania_poslow');
-  for (const id of idPoslow) {
-    const p = porownajZKlubem(wierszePosla.all(id) as unknown as GlosZKlubem[]);
-    wstawPorownanie.run(id, p.porownywalnych, p.odmiennych);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    db.exec('delete from porownania_poslow');
+    for (const id of idPoslow) {
+      const p = porownajZKlubem(wierszePosla.all(id) as unknown as GlosZKlubem[]);
+      wstawPorownanie.run(id, p.porownywalnych, p.odmiennych);
+    }
+  });
   log(`   ${idPoslow.length} poslow`);
   odnotujImport(db, 'porownania-poslow', idPoslow.length);
 
@@ -428,15 +428,15 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     posiedzenie: number; numer: number; tytul: string; temat: string | null; opis: string | null;
   }[];
   const wstaw = db.prepare('insert into glosowania_szukaj(tekst, posiedzenie, numer) values (?,?,?)');
-  db.exec('begin');
-  db.exec('delete from glosowania_szukaj');
-  for (const g of glosowania) {
-    // Do indeksu idzie tekst BEZ nazwisk osob prywatnych: nasze wyszukiwanie
-    // nie moze znajdowac prywatnego oskarzyciela po nazwisku (prywatnosc.ts).
-    const tekst = [g.temat, g.tytul, g.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
-    wstaw.run(uprosc(tekst), g.posiedzenie, g.numer);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    db.exec('delete from glosowania_szukaj');
+    for (const g of glosowania) {
+      // Do indeksu idzie tekst BEZ nazwisk osob prywatnych: nasze wyszukiwanie
+      // nie moze znajdowac prywatnego oskarzyciela po nazwisku (prywatnosc.ts).
+      const tekst = [g.temat, g.tytul, g.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
+      wstaw.run(uprosc(tekst), g.posiedzenie, g.numer);
+    }
+  });
   log(`   ${glosowania.length} glosowan w indeksie`);
   odnotujImport(db, 'szukaj-glosowania', glosowania.length);
 
@@ -446,15 +446,15 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     const procesyDoIndeksu = db.prepare('select numer, tytul, opis from procesy').all() as unknown as
       { numer: string; tytul: string; opis: string | null }[];
     const wstawProces = db.prepare('insert into procesy_szukaj(tekst, numer) values (?,?)');
-    db.exec('begin');
-    db.exec('delete from procesy_szukaj');
-    for (const p of procesyDoIndeksu) {
-      // Ta sama regula co przy glosowaniach: nazwiska osob prywatnych nie
-      // wchodza do naszego indeksu.
-      const tekst = [p.tytul, p.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
-      wstawProces.run(uprosc(tekst), p.numer);
-    }
-    db.exec('commit');
+    wTransakcji(db, () => {
+      db.exec('delete from procesy_szukaj');
+      for (const p of procesyDoIndeksu) {
+        // Ta sama regula co przy glosowaniach: nazwiska osob prywatnych nie
+        // wchodza do naszego indeksu.
+        const tekst = [p.tytul, p.opis].filter(Boolean).map((t) => bezNazwiskOsobPrywatnych(t!)).join(' • ');
+        wstawProces.run(uprosc(tekst), p.numer);
+      }
+    });
     log(`   ${procesyDoIndeksu.length} procesow w indeksie`);
     odnotujImport(db, 'szukaj-ustawy', procesyDoIndeksu.length);
   }
@@ -462,32 +462,32 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log('-> wyliczenia: indeks firm — beneficjentow pomocy publicznej');
   const maPomoc = db.prepare("select count(*) as c from sqlite_master where name = 'pomoc_publiczna'").get() as { c: number };
   if (maPomoc.c) {
-    db.exec('begin');
-    db.exec(`
-      drop table if exists firmy_szukaj;
-      create table firmy_szukaj (
-        nip        text primary key,
-        nazwa      text not null,       -- z NAJNOWSZEGO przypadku, jak na stronie firmy
-        szukaj     text not null,       -- uprosc(nazwa); '' dopoki nie wypelnione
-        przypadkow integer not null,
-        brutto     real,
-        max_eur    real,                -- najwieksza POJEDYNCZA pomoc: decyduje o progu jawnosci
-        teryt      text
-      ) without rowid;
-      insert into firmy_szukaj(nip, nazwa, szukaj, przypadkow, brutto, max_eur, teryt)
-      select s.nip, coalesce(n.nazwa, ''), '', s.przypadkow, s.brutto, s.max_eur, n.teryt
-        from (select nip_beneficjenta as nip, count(*) as przypadkow,
-                     sum(wartosc_brutto) as brutto, max(wartosc_brutto_eur) as max_eur
-                from pomoc_publiczna where nip_beneficjenta is not null
-               group by nip_beneficjenta) s
-        join (select nip, nazwa, teryt from
-                (select nip_beneficjenta as nip, nazwa_beneficjenta as nazwa, teryt,
-                        row_number() over (partition by nip_beneficjenta
-                                           order by (nazwa_beneficjenta is null), dzien desc, id desc) as rn
-                   from pomoc_publiczna where nip_beneficjenta is not null)
-               where rn = 1) n on n.nip = s.nip;
-    `);
-    db.exec('commit');
+    wTransakcji(db, () => {
+      db.exec(`
+        drop table if exists firmy_szukaj;
+        create table firmy_szukaj (
+          nip        text primary key,
+          nazwa      text not null,       -- z NAJNOWSZEGO przypadku, jak na stronie firmy
+          szukaj     text not null,       -- uprosc(nazwa); '' dopoki nie wypelnione
+          przypadkow integer not null,
+          brutto     real,
+          max_eur    real,                -- najwieksza POJEDYNCZA pomoc: decyduje o progu jawnosci
+          teryt      text
+        ) without rowid;
+        insert into firmy_szukaj(nip, nazwa, szukaj, przypadkow, brutto, max_eur, teryt)
+        select s.nip, coalesce(n.nazwa, ''), '', s.przypadkow, s.brutto, s.max_eur, n.teryt
+          from (select nip_beneficjenta as nip, count(*) as przypadkow,
+                       sum(wartosc_brutto) as brutto, max(wartosc_brutto_eur) as max_eur
+                  from pomoc_publiczna where nip_beneficjenta is not null
+                 group by nip_beneficjenta) s
+          join (select nip, nazwa, teryt from
+                  (select nip_beneficjenta as nip, nazwa_beneficjenta as nazwa, teryt,
+                          row_number() over (partition by nip_beneficjenta
+                                             order by (nazwa_beneficjenta is null), dzien desc, id desc) as rn
+                     from pomoc_publiczna where nip_beneficjenta is not null)
+                 where rn = 1) n on n.nip = s.nip;
+      `);
+    });
     // uprosc() to funkcja TS (SQL-owy lower() nie zdejmuje ogonkow), wiec klucz
     // wyszukiwania wypelniamy partiami — przy calej historii to miliony firm
     // i jeden select all() nie zmiescilby sie w pamieci.
@@ -497,9 +497,9 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     for (;;) {
       const partia = doKlucza.all() as unknown as { nip: string; nazwa: string }[];
       if (!partia.length) break;
-      db.exec('begin');
-      for (const f of partia) ustawKlucz.run(uprosc(f.nazwa) || ' ', f.nip);
-      db.exec('commit');
+      wTransakcji(db, () => {
+        for (const f of partia) ustawKlucz.run(uprosc(f.nazwa) || ' ', f.nip);
+      });
       firm += partia.length;
     }
     log(`   ${firm} firm w indeksie`);
@@ -511,43 +511,43 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log('-> wyliczenia: fundusze UE w gminach i powiatach');
   const maFundusze = db.prepare("select count(*) as c from sqlite_master where name = 'fe_miejsca'").get() as { c: number };
   if (maFundusze.c) {
-    db.exec('begin');
-    db.exec(`
-      drop table if exists fe_gminy;
-      create table fe_gminy (
-        teryt            text not null,
-        okres            text not null,
-        tylko_tu         integer not null,   -- projekty realizowane WYLACZNIE w tej gminie
-        tylko_tu_wartosc real,               -- ich wartosc (tylko PLN)
-        tylko_tu_ue      real,               -- ich dofinansowanie z UE (tylko PLN)
-        wspolnych        integer not null,   -- projekty tu I gdzie indziej — kwot nie dzielimy
-        primary key (teryt, okres)
-      ) without rowid;
-      insert into fe_gminy
-      select teryt, okres, sum(miejsc = 1),
-             sum(case when miejsc = 1 and waluta = 'PLN' then wartosc end),
-             sum(case when miejsc = 1 and waluta = 'PLN' then dofinansowanie_ue end),
-             sum(miejsc > 1)
-        from (select distinct m.teryt as teryt, p.id, p.okres as okres, p.miejsc as miejsc,
-                     p.waluta as waluta, p.wartosc as wartosc, p.dofinansowanie_ue as dofinansowanie_ue
-                from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
-               where m.teryt is not null)
-       group by teryt, okres;
+    wTransakcji(db, () => {
+      db.exec(`
+        drop table if exists fe_gminy;
+        create table fe_gminy (
+          teryt            text not null,
+          okres            text not null,
+          tylko_tu         integer not null,   -- projekty realizowane WYLACZNIE w tej gminie
+          tylko_tu_wartosc real,               -- ich wartosc (tylko PLN)
+          tylko_tu_ue      real,               -- ich dofinansowanie z UE (tylko PLN)
+          wspolnych        integer not null,   -- projekty tu I gdzie indziej — kwot nie dzielimy
+          primary key (teryt, okres)
+        ) without rowid;
+        insert into fe_gminy
+        select teryt, okres, sum(miejsc = 1),
+               sum(case when miejsc = 1 and waluta = 'PLN' then wartosc end),
+               sum(case when miejsc = 1 and waluta = 'PLN' then dofinansowanie_ue end),
+               sum(miejsc > 1)
+          from (select distinct m.teryt as teryt, p.id, p.okres as okres, p.miejsc as miejsc,
+                       p.waluta as waluta, p.wartosc as wartosc, p.dofinansowanie_ue as dofinansowanie_ue
+                  from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+                 where m.teryt is not null)
+         group by teryt, okres;
 
-      drop table if exists fe_powiaty;
-      create table fe_powiaty (
-        teryt_powiatu text not null,
-        okres         text not null,
-        projektow     integer not null,      -- projekty wskazane tylko do poziomu powiatu
-        primary key (teryt_powiatu, okres)
-      ) without rowid;
-      insert into fe_powiaty
-      select m.teryt_powiatu, p.okres, count(distinct p.id)
-        from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
-       where m.poziom = 'powiat' and m.teryt_powiatu is not null
-       group by m.teryt_powiatu, p.okres;
-    `);
-    db.exec('commit');
+        drop table if exists fe_powiaty;
+        create table fe_powiaty (
+          teryt_powiatu text not null,
+          okres         text not null,
+          projektow     integer not null,      -- projekty wskazane tylko do poziomu powiatu
+          primary key (teryt_powiatu, okres)
+        ) without rowid;
+        insert into fe_powiaty
+        select m.teryt_powiatu, p.okres, count(distinct p.id)
+          from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+         where m.poziom = 'powiat' and m.teryt_powiatu is not null
+         group by m.teryt_powiatu, p.okres;
+      `);
+    });
     const g = db.prepare('select count(*) as c, sum(tylko_tu) as p from fe_gminy').get() as { c: number; p: number };
     log(`   ${g.c} wierszy gmina x okres, ${g.p} projektow przypisanych do jednej gminy`);
   } else {
@@ -559,14 +559,14 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     'insert into glosowania_cechy(posiedzenie, numer, nad_caloscia, porzadkowe) values (?,?,?,?)',
   );
   let nadCaloscia = 0;
-  db.exec('begin');
-  db.exec('delete from glosowania_cechy');
-  for (const g of glosowania) {
-    const o = opisGlosowania({ tytul: g.tytul, temat: g.temat });
-    if (o.nadCaloscia) nadCaloscia++;
-    wstawCechy.run(g.posiedzenie, g.numer, o.nadCaloscia ? 1 : 0, o.porzadkowe ? 1 : 0);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    db.exec('delete from glosowania_cechy');
+    for (const g of glosowania) {
+      const o = opisGlosowania({ tytul: g.tytul, temat: g.temat });
+      if (o.nadCaloscia) nadCaloscia++;
+      wstawCechy.run(g.posiedzenie, g.numer, o.nadCaloscia ? 1 : 0, o.porzadkowe ? 1 : 0);
+    }
+  });
   log(`   nad caloscia projektu: ${nadCaloscia} z ${glosowania.length}`);
   odnotujImport(db, 'cechy-glosowan', glosowania.length, `nad caloscia: ${nadCaloscia}`);
 }
@@ -750,10 +750,10 @@ async function importLudnosci(db: DatabaseSync): Promise<void> {
       continue;
     }
     const wstaw = db.prepare('insert into ludnosc(teryt, rok, osob) values (?,?,?) on conflict(teryt) do update set rok=excluded.rok, osob=excluded.osob');
-    db.exec('begin');
-    db.exec('delete from ludnosc');
-    for (const [teryt, osob] of doZapisu) wstaw.run(teryt, rok, osob);
-    db.exec('commit');
+    wTransakcji(db, () => {
+      db.exec('delete from ludnosc');
+      for (const [teryt, osob] of doZapisu) wstaw.run(teryt, rok, osob);
+    });
     const suma = doZapisu.reduce((a, [, o]) => a + o, 0);
     log(`   zapisano ${doZapisu.length} gmin, lacznie ${suma} osob (rok ${rok})`);
     odnotujImport(db, 'ludnosc', doZapisu.length, `GUS BDL, zmienna 72305, rok ${rok}; suma ${suma}`);
@@ -877,25 +877,25 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
       continue;
     }
 
-    db.exec('begin');
-    db.exec(`delete from budzety_gmin where rok = ${rok}`);
-    for (const teryt of oczekiwane) {
-      if (!dochody.has(teryt)) continue;
-      wstaw.run(
-        teryt, rok,
-        zaokr(dochody, teryt),
-        zaokr(kolumny.get('dochody_wlasne')!, teryt),
-        zaokr(kolumny.get('wydatki')!, teryt),
-        zaokr(kolumny.get('wydatki_majatkowe')!, teryt),
-        zaokr(kolumny.get('wydatki_inwestycyjne')!, teryt),
-        zaokr(kolumny.get('subwencja')!, teryt),
-        zaokr(kolumny.get('dotacje')!, teryt),
-        zaokr(kolumny.get('udzial_pit')!, teryt),
-        zaokr(kolumny.get('udzial_cit')!, teryt),
-        zaokr(kolumny.get('podatek_nieruchomosc')!, teryt),
-      );
-    }
-    db.exec('commit');
+    wTransakcji(db, () => {
+      db.exec(`delete from budzety_gmin where rok = ${rok}`);
+      for (const teryt of oczekiwane) {
+        if (!dochody.has(teryt)) continue;
+        wstaw.run(
+          teryt, rok,
+          zaokr(dochody, teryt),
+          zaokr(kolumny.get('dochody_wlasne')!, teryt),
+          zaokr(kolumny.get('wydatki')!, teryt),
+          zaokr(kolumny.get('wydatki_majatkowe')!, teryt),
+          zaokr(kolumny.get('wydatki_inwestycyjne')!, teryt),
+          zaokr(kolumny.get('subwencja')!, teryt),
+          zaokr(kolumny.get('dotacje')!, teryt),
+          zaokr(kolumny.get('udzial_pit')!, teryt),
+          zaokr(kolumny.get('udzial_cit')!, teryt),
+          zaokr(kolumny.get('podatek_nieruchomosc')!, teryt),
+        );
+      }
+    });
     const suma = [...oczekiwane].reduce((a, t) => a + (dochody.get(t) ?? 0), 0);
     log(`   rok ${rok}: ${komplet} gmin, dochody razem ${(suma / 1e9).toFixed(1)} mld zl`);
     zapisaneLata.push(rok);
@@ -1012,18 +1012,18 @@ async function importRegon(db: DatabaseSync): Promise<void> {
       // pewnosci tam, gdzie jej nie ma.
       const wgNipu = new Map<string, typeof podmioty>();
       for (const p of podmioty) wgNipu.set(p.nip, [...(wgNipu.get(p.nip) ?? []), p]);
-      db.exec('begin');
-      for (const [nip, wpisy] of wgNipu) {
-        const p = wpisy[0]!;
-        const teryt = terytZNazw(p.gmina, p.powiat, p.wojewodztwo);
-        if (teryt) zTerytem++;
-        typy.set(p.typ ?? '(brak)', (typy.get(p.typ ?? '(brak)') ?? 0) + 1);
-        if (wpisy.length > 1) wielokrotnych++;
-        wstaw.run(nip, p.regon, p.nazwa, p.typ, p.silos, p.wojewodztwo, p.powiat, p.gmina,
-          p.miejscowosc, p.kodPocztowy, teryt, wpisy.length, teraz);
-        znalezionych++;
-      }
-      db.exec('commit');
+      wTransakcji(db, () => {
+        for (const [nip, wpisy] of wgNipu) {
+          const p = wpisy[0]!;
+          const teryt = terytZNazw(p.gmina, p.powiat, p.wojewodztwo);
+          if (teryt) zTerytem++;
+          typy.set(p.typ ?? '(brak)', (typy.get(p.typ ?? '(brak)') ?? 0) + 1);
+          if (wpisy.length > 1) wielokrotnych++;
+          wstaw.run(nip, p.regon, p.nazwa, p.typ, p.silos, p.wojewodztwo, p.powiat, p.gmina,
+            p.miejscowosc, p.kodPocztowy, teryt, wpisy.length, teraz);
+          znalezionych++;
+        }
+      });
       // Limit GUS: 3 wywolania na sekunde w godzinach pracy urzedu. 350 ms
       // (2,9/s) ocieralo sie o ten prog i konczylo zerwaniem polaczenia.
       await new Promise((ok) => setTimeout(ok, 500));
@@ -1098,29 +1098,29 @@ async function importZamowien(db: DatabaseSync): Promise<void> {
     const stron = Math.min(Math.ceil(wTed / 250), 60);   // okno TED: 60 x 250
     for (let strona = 1; strona <= stron; strona++) {
       const odp = strona === 1 ? pierwsza : await szukajTed(zapytanie, strona);
-      db.exec('begin');
-      for (const o of odp.notices ?? []) {
-        const nipy = (o['winner-identifier'] ?? []).map((t) => nipZTekstu(t));
-        const nazwy = o['organisation-name-tenderer']?.pol ?? [];
-        // Nazwy wiazemy z NIP-ami po pozycji TYLKO, gdy list jest tyle samo.
-        // Zmierzone: w 9 na 250 ogloszen dlugosci sie roznia — wtedy nazwy
-        // nie zapisujemy, zamiast przypisac firmie cudzy NIP.
-        const mozna = nipy.length === nazwy.length;
-        if (!mozna && nipy.length) rozjazdNazw++;
-        wstawOgl.run(
-          o['publication-number'], (o['publication-date'] ?? '').slice(0, 10),
-          poPolsku(o['notice-title']), poPolsku(o['organisation-name-buyer']),
-          o['organisation-identifier-buyer']?.[0] ?? null,
-          o['total-value'] ?? null, o['total-value-cur']?.[0] ?? null,
-          o['classification-cpv']?.[0] ?? null, nipy.length,
-        );
-        nipy.forEach((nip, i) => {
-          if (!nip) { bezNipu++; return; }
-          wstawWyk.run(o['publication-number'], nip, mozna ? (nazwy[i] ?? null) : null);
-          wykonawcow++;
-        });
-      }
-      db.exec('commit');
+      wTransakcji(db, () => {
+        for (const o of odp.notices ?? []) {
+          const nipy = (o['winner-identifier'] ?? []).map((t) => nipZTekstu(t));
+          const nazwy = o['organisation-name-tenderer']?.pol ?? [];
+          // Nazwy wiazemy z NIP-ami po pozycji TYLKO, gdy list jest tyle samo.
+          // Zmierzone: w 9 na 250 ogloszen dlugosci sie roznia — wtedy nazwy
+          // nie zapisujemy, zamiast przypisac firmie cudzy NIP.
+          const mozna = nipy.length === nazwy.length;
+          if (!mozna && nipy.length) rozjazdNazw++;
+          wstawOgl.run(
+            o['publication-number'], (o['publication-date'] ?? '').slice(0, 10),
+            poPolsku(o['notice-title']), poPolsku(o['organisation-name-buyer']),
+            o['organisation-identifier-buyer']?.[0] ?? null,
+            o['total-value'] ?? null, o['total-value-cur']?.[0] ?? null,
+            o['classification-cpv']?.[0] ?? null, nipy.length,
+          );
+          nipy.forEach((nip, i) => {
+            if (!nip) { bezNipu++; return; }
+            wstawWyk.run(o['publication-number'], nip, mozna ? (nazwy[i] ?? null) : null);
+            wykonawcow++;
+          });
+        }
+      });
     }
     log(`   ${okres.od.slice(0, 7)}: ${wTed} ogloszen w TED, pobrane`);
   }
@@ -1180,29 +1180,29 @@ async function importProcesow(db: DatabaseSync): Promise<void> {
   for (let i = 0; i < lista.length; i += PORCJA) {
     const kawalek = lista.slice(i, i + PORCJA);
     const pelne = await dlaKazdego(kawalek, (p) => api.proces(p.number));
-    db.exec('begin');
-    for (const p of pelne) {
-      wstawProces.run(
-        p.number, p.title, p.documentType ?? null, p.documentTypeEnum ?? null,
-        p.passed === undefined ? null : Number(p.passed),
-        p.processStartDate ?? null, p.closureDate ?? null, p.ELI ?? null, p.displayAddress ?? null,
-        p.urgencyStatus ?? null, p.shortenProcedure === undefined ? null : Number(p.shortenProcedure),
-        p.UE ?? null, p.description ?? null, p.changeDate ?? null,
-      );
-      db.prepare('delete from etapy_procesow where proces = ?').run(p.number);
-      splaszcz(p.stages ?? []).forEach(({ e, poziom }, k) => {
-        typy.set(e.stageType ?? '(bez typu)', (typy.get(e.stageType ?? '(bez typu)') ?? 0) + 1);
-        const gp = e.voting?.sitting ?? null;
-        const gn = e.voting?.votingNumber ?? null;
-        if (gp !== null && gn !== null) zGlosowaniem++;
-        wstawEtap.run(
-          p.number, k, poziom, e.stageType ?? null, e.stageName, e.date ?? null, e.printNumber ?? null,
-          e.committeeCode ?? null, e.decision ?? null, e.comment ?? null, e.sittingNum ?? null, gp, gn,
+    wTransakcji(db, () => {
+      for (const p of pelne) {
+        wstawProces.run(
+          p.number, p.title, p.documentType ?? null, p.documentTypeEnum ?? null,
+          p.passed === undefined ? null : Number(p.passed),
+          p.processStartDate ?? null, p.closureDate ?? null, p.ELI ?? null, p.displayAddress ?? null,
+          p.urgencyStatus ?? null, p.shortenProcedure === undefined ? null : Number(p.shortenProcedure),
+          p.UE ?? null, p.description ?? null, p.changeDate ?? null,
         );
-        etapow++;
-      });
-    }
-    db.exec('commit');
+        db.prepare('delete from etapy_procesow where proces = ?').run(p.number);
+        splaszcz(p.stages ?? []).forEach(({ e, poziom }, k) => {
+          typy.set(e.stageType ?? '(bez typu)', (typy.get(e.stageType ?? '(bez typu)') ?? 0) + 1);
+          const gp = e.voting?.sitting ?? null;
+          const gn = e.voting?.votingNumber ?? null;
+          if (gp !== null && gn !== null) zGlosowaniem++;
+          wstawEtap.run(
+            p.number, k, poziom, e.stageType ?? null, e.stageName, e.date ?? null, e.printNumber ?? null,
+            e.committeeCode ?? null, e.decision ?? null, e.comment ?? null, e.sittingNum ?? null, gp, gn,
+          );
+          etapow++;
+        });
+      }
+    });
     if ((i + PORCJA) % 400 === 0 || i + PORCJA >= lista.length) log(`   ${Math.min(i + PORCJA, lista.length)}/${lista.length}`);
   }
 
@@ -1304,18 +1304,19 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
       continue;
     }
 
-    db.exec('begin');
-    db.exec(`delete from budzety_dzialy where rok = ${rok}`);
-    let wierszy = 0;
-    for (const [kod] of DZIALY_BUDZETU) {
-      for (const [teryt, kwota] of kwoty.get(kod)!) {
-        if (!oczekiwane.has(teryt)) continue;
-        // Brak wartosci to brak wiersza (regula 4) — zera nie dopisujemy.
-        wstaw.run(teryt, rok, kod, kwota);
-        wierszy++;
+    const wierszy = wTransakcji(db, () => {
+      db.exec(`delete from budzety_dzialy where rok = ${rok}`);
+      let ile = 0;
+      for (const [kod] of DZIALY_BUDZETU) {
+        for (const [teryt, kwota] of kwoty.get(kod)!) {
+          if (!oczekiwane.has(teryt)) continue;
+          // Brak wartosci to brak wiersza (regula 4) — zera nie dopisujemy.
+          wstaw.run(teryt, rok, kod, kwota);
+          ile++;
+        }
       }
-    }
-    db.exec('commit');
+      return ile;
+    });
 
     // Kontrola druga droga: "ogolem" z tematu dzialow wobec "wydatkow ogolem"
     // z tematu budzetow (osobna zmienna BDL, pobrana osobnym etapem).
@@ -1377,11 +1378,11 @@ async function importSmup(db: DatabaseSync): Promise<void> {
      on conflict(klucz) do update set etykieta=excluded.etykieta, jednostka=excluded.jednostka,
        wskazniki=excluded.wskazniki, nazwy=excluded.nazwy`,
   );
-  db.exec('begin');
-  for (const m of MIARY) {
-    wstawMiare.run(m.klucz, m.etykieta, m.jednostka, m.zrodla.join(','), m.zrodla.map((id) => nazwy.get(id) ?? '?').join(' | '));
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    for (const m of MIARY) {
+      wstawMiare.run(m.klucz, m.etykieta, m.jednostka, m.zrodla.join(','), m.zrodla.map((id) => nazwy.get(id) ?? '?').join(' | '));
+    }
+  });
 
   const wstaw = db.prepare(
     `insert into smup_dane(teryt, klucz, rok, wartosc, flaga, precyzja) values (?,?,?,?,?,?)
@@ -1418,16 +1419,16 @@ async function importSmup(db: DatabaseSync): Promise<void> {
           const wiersze = porcja.data ?? [];
           const problemy = sprawdzPorcjeSmup(wiersze, id, rok);
           if (problemy.length) throw new Error(`SMUP ${miara.klucz} (wskaznik ${id}, ${rok}): ${problemy.slice(0, 5).join('; ')}`);
-          db.exec('begin');
-          for (const w of wiersze) {
-            const teryt = teryty.get(w['id-teryt']);
-            if (!teryt || !znane.has(teryt)) continue;
-            if (!FLAGI_ZNANE.has(w['id-flaga'])) nieznaneFlagi.set(w['id-flaga'], (nieznaneFlagi.get(w['id-flaga']) ?? 0) + 1);
-            wstaw.run(teryt, miara.klucz, rok, wartoscDoZapisu(w), w['id-flaga'], w.precyzja ?? null);
-            wRoku++;
-            wMiary++;
-          }
-          db.exec('commit');
+          wTransakcji(db, () => {
+            for (const w of wiersze) {
+              const teryt = teryty.get(w['id-teryt']);
+              if (!teryt || !znane.has(teryt)) continue;
+              if (!FLAGI_ZNANE.has(w['id-flaga'])) nieznaneFlagi.set(w['id-flaga'], (nieznaneFlagi.get(w['id-flaga']) ?? 0) + 1);
+              wstaw.run(teryt, miara.klucz, rok, wartoscDoZapisu(w), w['id-flaga'], w.precyzja ?? null);
+              wRoku++;
+              wMiary++;
+            }
+          });
           await new Promise((ok) => setTimeout(ok, 400));
           if (strona >= (porcja['page-count'] ?? 1)) break;
         }
@@ -1479,15 +1480,15 @@ async function importObecnosci(db: DatabaseSync): Promise<void> {
   );
 
   let wierszy = 0;
-  db.exec('begin');
-  for (const w of wyniki) {
-    for (const d of w.dni) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) continue; // kontrola dziedziny przed zapisem
-      wstaw.run(w.id, d.sitting, d.date, d.numVotings, d.numVoted, d.numMissed, d.absenceExcuse ? 1 : 0);
-      wierszy++;
+  wTransakcji(db, () => {
+    for (const w of wyniki) {
+      for (const d of w.dni) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) continue; // kontrola dziedziny przed zapisem
+        wstaw.run(w.id, d.sitting, d.date, d.numVotings, d.numVoted, d.numMissed, d.absenceExcuse ? 1 : 0);
+        wierszy++;
+      }
     }
-  }
-  db.exec('commit');
+  });
 
   const bledy = wyniki.filter((w) => w.blad);
   const usprawiedliwione = db.prepare(

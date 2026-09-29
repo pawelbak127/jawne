@@ -29,7 +29,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { policzAgregaty } from '../lib/agregaty.js';
-import { odnotujImport, otworz, zalozSchemat } from '../lib/baza.js';
+import { odnotujImport, otworz, wTransakcji, zalozSchemat } from '../lib/baza.js';
 import {
   dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
   type DzienPobrany,
@@ -202,17 +202,17 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
   if (problemy.length) {
     throw new Error(`Gmina ${teryt}: porcja nie przeszla kontroli:\n  ${problemy.slice(0, 10).join('\n  ')}`);
   }
-  db.exec('begin');
-  // Cala gmina jest zastepowana naraz: SUDOP koryguje stare przypadki, wiec
-  // dopisywanie zostawiloby w bazie wersje, ktorych urzad juz nie pokazuje.
-  db.prepare('delete from pomoc_publiczna where teryt = ?').run(teryt);
-  wstawWiersze(db, wyniki, () => teryt);
-  db.prepare(
-    `insert into pomoc_publiczna_pobrania(teryt, od, pobrano, wierszy, zapytan, sekund) values (?,?,?,?,?,?)
-     on conflict(teryt) do update set od=excluded.od, pobrano=excluded.pobrano, wierszy=excluded.wierszy,
-       zapytan=excluded.zapytan, sekund=excluded.sekund`,
-  ).run(teryt, od, new Date().toISOString(), wyniki.length, zapytan, sekund);
-  db.exec('commit');
+  wTransakcji(db, () => {
+    // Cala gmina jest zastepowana naraz: SUDOP koryguje stare przypadki, wiec
+    // dopisywanie zostawiloby w bazie wersje, ktorych urzad juz nie pokazuje.
+    db.prepare('delete from pomoc_publiczna where teryt = ?').run(teryt);
+    wstawWiersze(db, wyniki, () => teryt);
+    db.prepare(
+      `insert into pomoc_publiczna_pobrania(teryt, od, pobrano, wierszy, zapytan, sekund) values (?,?,?,?,?,?)
+       on conflict(teryt) do update set od=excluded.od, pobrano=excluded.pobrano, wierszy=excluded.wierszy,
+         zapytan=excluded.zapytan, sekund=excluded.sekund`,
+    ).run(teryt, od, new Date().toISOString(), wyniki.length, zapytan, sekund);
+  });
 }
 
 /**
@@ -233,34 +233,34 @@ function zapiszPrzyrost(
     const t = terytGminyZKodu(w['gmina-siedziby-kod']);
     return t !== null && znane.has(t);
   });
-  db.exec('begin');
-  db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
-  wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!);
-  const wstawDzien = db.prepare(
-    `insert into pomoc_publiczna_dni(dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)
-     on conflict(dzien) do update set pobrano=excluded.pobrano, pobrano_dzien=excluded.pobrano_dzien,
-       wierszy=excluded.wierszy`,
-  );
-  const naDzien = new Map<string, number>();
-  for (const w of nasze) {
-    const d = w['dzien-udzielenia-pomocy']!;
-    naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
-  }
-  // Dni bez ani jednego przypadku tez odnotowujemy — inaczej nie odroznimy
-  // "nie pytalismy" od "pytalismy i nic nie bylo".
-  for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
-    const dzien = d.toISOString().slice(0, 10);
-    // Stary plik bez naszej metryczki: zostawiamy date pobrania, ktora juz
-    // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
-    const istniejaca = pobrano ? null
-      : (db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(dzien) as { pobrano: string } | undefined)?.pobrano;
-    const kiedy = pobrano ?? istniejaca ?? new Date().toISOString();
-    // Polska data tej samej chwili. Liczymy ja RAZ, przy zapisie: nocne
-    // zadanie o 01:17 ma w UTC jeszcze poprzedni dzien, a regula 14 dni
-    // jest kalendarzowa (ZMIERZONE 22.09.2026 — patrz ingest/lib/baza.ts).
-    wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
-  }
-  db.exec('commit');
+  wTransakcji(db, () => {
+    db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
+    wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!);
+    const wstawDzien = db.prepare(
+      `insert into pomoc_publiczna_dni(dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)
+       on conflict(dzien) do update set pobrano=excluded.pobrano, pobrano_dzien=excluded.pobrano_dzien,
+         wierszy=excluded.wierszy`,
+    );
+    const naDzien = new Map<string, number>();
+    for (const w of nasze) {
+      const d = w['dzien-udzielenia-pomocy']!;
+      naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
+    }
+    // Dni bez ani jednego przypadku tez odnotowujemy — inaczej nie odroznimy
+    // "nie pytalismy" od "pytalismy i nic nie bylo".
+    for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+      const dzien = d.toISOString().slice(0, 10);
+      // Stary plik bez naszej metryczki: zostawiamy date pobrania, ktora juz
+      // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
+      const istniejaca = pobrano ? null
+        : (db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(dzien) as { pobrano: string } | undefined)?.pobrano;
+      const kiedy = pobrano ?? istniejaca ?? new Date().toISOString();
+      // Polska data tej samej chwili. Liczymy ja RAZ, przy zapisie: nocne
+      // zadanie o 01:17 ma w UTC jeszcze poprzedni dzien, a regula 14 dni
+      // jest kalendarzowa (ZMIERZONE 22.09.2026 — patrz ingest/lib/baza.ts).
+      wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
+    }
+  });
   return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
 }
 
