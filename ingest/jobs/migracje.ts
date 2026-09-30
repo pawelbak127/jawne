@@ -40,7 +40,10 @@ function main(): void {
      */
     if (process.argv.includes('--sprawdz')) {
       const t = Date.now();
-      const rozjazdy = sprawdzSumy(db, TERYT_WARSZAWY);
+      const wierszy = (db.prepare('select count(*) as c from pomoc_publiczna').get() as { c: number }).c;
+      log(`   kontrola druga droga na ${wierszy.toLocaleString('pl')} wierszach — to kilkadziesiat minut.`);
+      log('   Nie przerywaj: polecenie nic nie zapisuje, tylko liczy i porownuje.');
+      const rozjazdy = sprawdzSumy(db, TERYT_WARSZAWY, log);
       if (rozjazdy.length) {
         log(`   ROZJAZD (${rozjazdy.length}) — sumy przyrostowe nie zgadzaja sie ze zrodlem:`);
         for (const r of rozjazdy.slice(0, 20)) log(`      ${r}`);

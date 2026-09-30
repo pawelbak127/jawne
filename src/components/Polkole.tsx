@@ -73,7 +73,14 @@ export function Polkole({
         (szerokosc ~212), wiec text-5xl rozrastal sie razem z wykresem
         i zaslanial kropki — widac to bylo dopiero na zrzucie ekranu.
       */}
-      <div className="relative" ref={ramka}>
+      {/*
+        ZGLOSZENIE PAWLA 30.09.2026: chmurka zostawala na wykresie po zjechaniu
+        myszka w bok. Nic jej nie kasowalo — `onMouseMove` na kropce tylko
+        ustawialo stan. `PlanSali` i mapa gmin mialy to od poczatku, tutaj
+        wypadlo. Kasujemy na PUDELKU, nie na `svg`: wykres ma
+        `overflow-visible`, wiec kropki wystaja poza jego ramke.
+      */}
+      <div className="relative" ref={ramka} onMouseLeave={() => ustawPod(null)}>
         <svg
           viewBox={`${-polowaX} ${-uklad.wysokosc} ${uklad.szerokosc} ${uklad.wysokosc}`}
           className="w-full overflow-visible"

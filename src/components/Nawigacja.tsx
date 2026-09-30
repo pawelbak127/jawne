@@ -38,7 +38,9 @@ const MENU: Grupa[] = [
     etykieta: 'Pieniądze',
     pozycje: [
       { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', opis: 'dotacje i ulgi dla firm (UOKiK)' },
-      { adres: '/gminy', etykieta: 'Pieniądze w gminie', opis: 'budżet gminy i projekty unijne' },
+      // „Pieniadze w gminie" prowadzilo POD TEN SAM adres, co zakladka „Gminy"
+      // obok (zgloszenie Pawla 30.09.2026). Dwa wejscia do jednej strony to
+      // nie wybor, tylko zgadywanka — zostaje to widoczniejsze.
       { adres: '/mapa', etykieta: 'Mapa gmin', opis: 'cała Polska, zawsze na mieszkańca' },
     ],
   },

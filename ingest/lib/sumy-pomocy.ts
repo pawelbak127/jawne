@@ -474,15 +474,29 @@ const ROWNE = (a: number | null, b: number | null): boolean => {
  * sprawdzi je niezaleznie. Przebieg jest DROGI (kilka przebiegow po calej
  * tabeli), wiec uruchamia sie go recznie, a nie przy kazdym imporcie.
  */
-export function sprawdzSumy(db: DatabaseSync, terytWarszawy: string): string[] {
+export function sprawdzSumy(
+  db: DatabaseSync,
+  terytWarszawy: string,
+  // Bez tego polecenie milczy kilkadziesiat minut i wyglada na zawieszone
+  // (zgloszenie Pawla 30.09.2026: „nadal wisza"). Dlugie liczenie ma mowic,
+  // co robi — inaczej czlowiek je przerwie, i slusznie.
+  mow: (s: string) => void = () => {},
+): string[] {
   const rozjazdy: string[] = [];
+  const etap = (co: string) => {
+    const t = Date.now();
+    return () => mow(`      ${co}: ${Math.round((Date.now() - t) / 1000)} s`);
+  };
   const cz = {
     wszystkie: <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as never[])) as unknown as T[],
     jeden: <T>(sql: string, ...p: unknown[]) => (db.prepare(sql).get(...(p as never[])) as unknown as T) ?? null,
   };
 
   // 1. Przeglad krajowy: pole po polu.
+  mow('   licze przeglad krajowy od zera (osiem przebiegow po tabeli pomocy)…');
+  let koniec = etap('przeglad');
   const zZera = przegladOdZera(cz, terytWarszawy);
+  koniec();
   const zeStanu = przegladZeSum(db, terytWarszawy);
   if (!zZera !== !zeStanu) {
     rozjazdy.push(`przeglad: jedna droga oddaje null, druga nie (${!!zZera} vs ${!!zeStanu})`);
@@ -516,6 +530,8 @@ export function sprawdzSumy(db: DatabaseSync, terytWarszawy: string): string[] {
   }
 
   // 2. Mapa gmin.
+  mow('   licze mape gmin od zera…');
+  koniec = etap('mapa');
   const d = policzDelte(db);
   const mapaA = new Map(mapaOdZera(cz, terytWarszawy).map((w) => [w.teryt, w.wartosc]));
   const mapaB = new Map(mapaZeSum(db, terytWarszawy, d).map((w) => [w.teryt, w.wartosc]));
@@ -523,8 +539,11 @@ export function sprawdzSumy(db: DatabaseSync, terytWarszawy: string): string[] {
   for (const [teryt, w] of mapaA) {
     if (!ROWNE(w, mapaB.get(teryt) ?? null)) rozjazdy.push(`mapa/${teryt}: ${w} vs ${mapaB.get(teryt)}`);
   }
+  koniec();
 
   // 3. Sumy na NIP — tu drugą drogą jest zwykłe „group by" po całej tabeli.
+  mow('   licze sumy na NIP od zera…');
+  koniec = etap('firmy');
   const firmyB = sumyFirm(db, d);
   const firmyA = db.prepare(
     'select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa, sum(wartosc_brutto) as brutto'
@@ -538,6 +557,7 @@ export function sprawdzSumy(db: DatabaseSync, terytWarszawy: string): string[] {
     // Nazwa nie jest ozdoba: od niej zalezy, czy wolno ja pokazac.
     if (r.nazwa !== s.nazwa) rozjazdy.push(`firmy/${r.nip} nazwa: „${r.nazwa}" vs „${s.nazwa}"`);
   }
+  koniec();
 
   return rozjazdy;
 }

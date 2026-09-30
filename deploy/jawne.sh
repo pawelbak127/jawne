@@ -6,7 +6,7 @@
 #   sudo jawne logi [zad]    dziennik: sudop-dzien, sudop-historia, sejm, gus, fundusze, strona
 #   sudo jawne uruchom zad   uruchom zadanie teraz i poczekaj na koniec (np. sejm)
 #   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
-#   sudo jawne sumy          kontrola sum pomocy druga droga (drogie, na zadanie)
+#   sudo jawne sumy          kontrola sum pomocy druga droga (kilkadziesiat minut)
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
 #   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST
@@ -248,9 +248,10 @@ case "${1:-stan}" in
   sprawdz) sprawdz ;;
   sumy)
     # Kontrola druga droga: sumy przyrostowe kontra to samo policzone SQL-em
-    # po calej tabeli pomocy. DROGIE (kilka przebiegow po milionach wierszy),
-    # wiec na zadanie — ale bez tej drogi sumy sa liczbami, ktorych nikt
-    # nie sprawdza. Zero rozjazdow = wynik oczekiwany.
+    # po calej tabeli pomocy. To dokladnie ta droga, od ktorej uciekalismy,
+    # wiec trwa KILKADZIESIAT MINUT — na zadanie, nigdy co noc. Bez niej
+    # sumy sa liczbami, ktorych nikt nie sprawdza.
+    # Zero rozjazdow = wynik oczekiwany.
     jako node_modules/.bin/tsx ingest/jobs/migracje.ts --sprawdz 2>&1 | bez_szumu
     ;;
   aktualizuj)
