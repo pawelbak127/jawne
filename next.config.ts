@@ -41,6 +41,19 @@ const nextConfig: NextConfig = {
    * i czytanie gotowych liczb — patrz docs/plan.md, „przejscie na agregaty".
    */
   staticPageGenerationTimeout: 300,
+  /*
+   * Mapy zrodel kosztuja pamiec, a serwer ma jej 1,8 GB. ZMIERZONE
+   * 30.09.2026: `next build` zostal tam zabity przez jadro trzy razy,
+   * przy 1,4–1,5 GB RSS jednego procesu. Mapy zrodel sa nam na produkcji
+   * niepotrzebne — czytamy blad z dziennika serwera, nie z przegladarki.
+   */
+  productionBrowserSourceMaps: false,
+  enablePrerenderSourceMaps: false,
+  experimental: {
+    serverSourceMaps: false,
+    // Dziala tylko przy budowie webpackiem (patrz `npm run build`).
+    webpackMemoryOptimizations: true,
+  },
 };
 
 export default nextConfig;

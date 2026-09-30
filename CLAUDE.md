@@ -68,7 +68,7 @@ Jeśli GitHub Actions działa, najpierw `npm run sudop:artefakty -- --import`
 
 ```powershell
 npm run dev
-npm run build
+npm run build                              # webpack, nie Turbopack — patrz pulapka 58
 npm run typecheck
 npm test
 npx eslint src ingest
@@ -562,6 +562,32 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     **zero rozjazdów**. Indeks `pomoc_dzien` jest do tego konieczny:
     `select distinct dzien` idzie wtedy indeksem pokrywającym (7 ms przy
     168 tys. wierszy), a nie przebiegiem po tabeli.
+
+58. **Turbopack kompiluje w Ruście, więc `--max-old-space-size` go nie
+    dotyczy.** 30.09.2026 `next build` na serwerze został zabity przez jądro
+    **trzy razy**, zawsze w fazie „Creating an optimized production build”.
+    `Killed` bez słowa wyjaśnienia to komunikat POWŁOKI, nie Next — przyczynę
+    podaje dopiero `dmesg -T | grep -i "killed process"`:
+    `anon-rss:1525048kB`, czyli 1,5 GB przy 1,8 GB pamięci maszyny.
+    Zmierzone lokalnie na samej kompilacji (`next build
+    --experimental-build-mode compile`, szczyt sumy procesów node):
+
+    | bundler | szczyt pamięci | czas |
+    |---|---|---|
+    | Turbopack (domyślny) | **1 357 MB** | 5 s |
+    | webpack (`--webpack`) | **912 MB** | 14 s |
+
+    Te 445 MB to dokładnie brakujący margines. Od tego dnia `npm run build`
+    ma `--webpack`, a `next.config.ts` — `webpackMemoryOptimizations` i mapy
+    źródeł wyłączone. **Lokalnie budujemy tak samo jak serwer**: inaczej
+    „u mnie działa” przestaje cokolwiek znaczyć, a to właśnie ten rozjazd
+    kosztował trzy nieudane wdrożenia.
+    Pierwsza hipoteza — że winne jest zadanie SUDOP w tle — była tylko
+    częścią prawdy: `jawne-sudop-historia` startuje o :07 każdej godziny
+    i czeka na kolejkę do 57 minut, więc rzeczywiście zabierało pamięć
+    (`instaluj.sh` zatrzymuje teraz zadania na czas budowy). Ale po ich
+    wyłączeniu build padł znowu — przy 1 158 MB wolnej pamięci i 1 567 MB
+    wolnego swapu. Dopiero pomiar obu bundlerów pokazał, gdzie jest różnica.
 
 ---
 
