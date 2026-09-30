@@ -1024,9 +1024,23 @@ async function importRegon(db: DatabaseSync): Promise<void> {
           znalezionych++;
         }
       });
-      // Limit GUS: 3 wywolania na sekunde w godzinach pracy urzedu. 350 ms
-      // (2,9/s) ocieralo sie o ten prog i konczylo zerwaniem polaczenia.
-      await new Promise((ok) => setTimeout(ok, 500));
+      /*
+       * TRZY SEKUNDY, nie pol — tak liczy to urzad.
+       *
+       * Odpowiedz GUS na nasze pytanie (30.09.2026): w instrukcji „kazdy
+       * podmiot to jedno zadanie", wiec paczka 20 NIP-ow to 20 zadan, a nie
+       * jedno. Przy limicie 3 zadan na sekunde nasze 500 ms miedzy paczkami
+       * dawalo 40 zadan na sekunde — trzynastokrotnie za szybko. Urzad
+       * jednoczesnie wprowadza zachete do pytan zbiorczych: paczka
+       * dwudziestu moze isc RAZ NA TRZY SEKUNDY (zamiast ~6,7 s, ile
+       * wyszloby z przeliczenia jeden do jednego).
+       *
+       * To tez poprawia nasza wlasna diagnoze z 24.09.2026: zerwane
+       * polaczenie po ok. 400 NIP-ach (20 wywolan) tlumaczylismy tempem
+       * „2,9 wywolania na sekunde przy limicie 3". Kierunek byl dobry,
+       * jednostka zla — bylismy kilkanascie razy nad limitem, nie tuz pod nim.
+       */
+      await new Promise((ok) => setTimeout(ok, 3000));
       if (i % 4000 < NIPOW_NA_RAZ || i + NIPOW_NA_RAZ >= lista.length) {
         log(`   ${Math.min(i + NIPOW_NA_RAZ, lista.length)}/${lista.length}`);
       }

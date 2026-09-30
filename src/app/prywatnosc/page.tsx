@@ -91,6 +91,15 @@ export default function StronaPrywatnosci() {
             </Zewnetrzny>.
           </li>
           <li>
+            <span className="font-medium text-atrament">Podmioty z rejestru REGON</span> —
+            nazwa, forma prawna, gmina i kod pocztowy, pobierane po numerze NIP. Służą
+            do ustalenia, czy nazwa jest nazwą firmy, czy nazwiskiem osoby prowadzącej
+            działalność, i gdzie podmiot ma siedzibę. Źródło: rejestr REGON, Główny Urząd
+            Statystyczny (licencja CC BY 4.0), z datą pobrania przy danych. Pobierając te
+            dane stajemy się ich niezależnym administratorem — potwierdził to GUS
+            w odpowiedzi z 30 września 2026 r.
+          </li>
+          <li>
             <span className="font-medium text-atrament">Dane o gminach</span> (ludność,
             budżety, wskaźniki) z{' '}
             <Zewnetrzny adres="https://bdl.stat.gov.pl">GUS</Zewnetrzny> i przypisanie gmin

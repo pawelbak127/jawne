@@ -356,11 +356,25 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     pisać, w odróżnieniu od klucza BIR) — i podnosi ten limit pięciokrotnie.
 34. **Udzielającym pomocy bywa osoba fizyczna** (firmy szkoleniowe przy
     projektach UE) — lista „Kto udzielił” przechodzi przez ten sam filtr.
-49. **REGON: 350 ms między wywołaniami to za szybko.** Limit GUS to 3 wywołania
-    na sekundę w godzinach pracy urzędu; przy 2,9/s usługa po ok. 400 NIP-ach
-    zrywa połączenie (`TypeError` z `fetch`, pięć ponowień i koniec importu).
-    Teraz 500 ms, a błąd nie kończy przebiegu: przerwa 30 s, ponowne logowanie
-    i ta sama partia jeszcze raz (pięć błędów pod rząd kończy).
+49. **REGON: limit liczy się w PODMIOTACH, nie w wywołaniach** — i to my
+    liczyliśmy go źle. Pisemna odpowiedź GUS (30.09.2026) na nasze pytanie:
+    w instrukcji „każdy podmiot to jedno żądanie”, więc paczka 20 NIP-ów to
+    **20 żądań**. Przy limicie 3 żądań na sekundę nasze 500 ms między paczkami
+    dawało 40 żądań na sekundę — **trzynaście razy za szybko**, a nie „tuż pod
+    progiem”, jak zapisaliśmy tu 24.09. Zerwane połączenie po ok. 400 NIP-ach
+    (czyli po 20 wywołaniach) tłumaczyliśmy tempem 2,9 wywołania na sekundę:
+    kierunek dobry, jednostka zła. GUS jednocześnie wprowadza **zachętę do pytań
+    zbiorczych: paczka dwudziestu może iść raz na 3 sekundy** (zamiast ~6,7 s
+    z przeliczenia jeden do jednego) — „szybkość pobierania wzrasta ok.
+    dwukrotnie”, zapis trafi do instrukcji przy najbliższej aktualizacji.
+    Stąd 3 000 ms w `import.ts`. Limit liczy się **dla adresu IP**, a przy
+    poważnym przekroczeniu urząd kontaktuje się; zmiany IP nie trzeba zgłaszać.
+    Błąd nie kończy przebiegu: przerwa 30 s, ponowne logowanie i ta sama partia
+    jeszcze raz (pięć błędów pod rząd kończy).
+    **Pobierając REGON stajemy się niezależnym administratorem danych
+    osobowych** — GUS napisał to wprost przy potwierdzeniu licencji CC BY 4.0.
+    Oznaczenie źródła: „Źródło: rejestr REGON, Główny Urząd Statystyczny”
+    z datą pobrania (urząd potwierdził, że to wystarczy).
 48. **REGON (BIR): `Nipy` przyjmuje NAJWYŻEJ 20 numerów.** Przy 21 usługa
     oddaje **pustą odpowiedź — HTTP 200, bez błędu**. Pierwsza wersja importu
     wysyłała po 100 i „znalazła” 3 podmioty z 28 603. Zmierzone: 20→20, 21→0,
