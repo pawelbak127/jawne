@@ -69,6 +69,7 @@ export function MapaGmin({
   const [wybrany, ustawWybranego] = useState<string | null>(null);
   const [powiekszenie, ustawPowiekszenie] = useState(1);
   const [srodek, ustawSrodek] = useState({ x: 0.5, y: 0.5 });
+  const [wojewodztwo, ustawWojewodztwo] = useState<string | null>(null);
   const ramka = useRef<SVGSVGElement>(null);
   const przeciaganie = useRef<{ x: number; y: number; srodek: { x: number; y: number }; ruszyl: boolean } | null>(null);
   // ZGLOSZENIE PAWLA 24.09.2026: przeciagniecie mapy myszka konczylo sie
@@ -98,8 +99,13 @@ export function MapaGmin({
       / ((plik.zakres.xmax - plik.zakres.xmin) * Math.cos(((plik.zakres.ymin + plik.zakres.ymax) / 2) * (Math.PI / 180))))
     : 620;
 
-  const ksztalty = useMemo(() => {
-    if (!plik) return [];
+  /**
+   * Rzut wspolrzednych geograficznych na uklad SVG (0..1000 w poziomie).
+   * Jedna funkcja dla gmin i dla obrysow wojewodztw — dwie kopie tego samego
+   * rachunku rozjechalyby sie przy pierwszej zmianie.
+   */
+  const sciezka = useMemo(() => {
+    if (!plik) return null;
     const { xmin, xmax, ymin, ymax } = plik.zakres;
     const s = plik.skala;
     // Poludniki zbiegaja sie ku biegunowi: bez tego Polska jest za szeroka.
@@ -109,38 +115,15 @@ export function MapaGmin({
     const naX = (x: number) => ((x / s - xmin) * zwezenie * 1000) / szer;
     const naY = (y: number) => ((ymax - y / s) * 1000 * (wys / szer)) / wys;
 
-    const sciezka = (pierscienie: string[]) => pierscienie
-      .map((ciag) => {
-        let x = 0;
-        let y = 0;
-        const kroki: string[] = [];
-        for (const para of ciag.split(' ')) {
-          const przecinek = para.indexOf(',');
-          x += Number(para.slice(0, przecinek));
-          y += Number(para.slice(przecinek + 1));
-          kroki.push(`${kroki.length === 0 ? 'M' : 'L'}${naX(x).toFixed(1)} ${naY(y).toFixed(1)}`);
-        }
-        return `${kroki.join('')}Z`;
-      })
-      .join('');
-
-    return Object.entries(plik.gminy).map(([teryt, pierscienie]) => ({ teryt, d: sciezka(pierscienie) }));
-  }, [plik]);
-
-  /** Obrysy wojewodztw — rysowane NAD gminami, ale nieklikalne. */
-  const granice = useMemo(() => {
-    if (!plik?.wojewodztwa) return [];
-    const { xmin, xmax, ymin, ymax } = plik.zakres;
-    const s = plik.skala;
-    const zwezenie = Math.cos(((ymin + ymax) / 2) * (Math.PI / 180));
-    const szer = (xmax - xmin) * zwezenie;
-    const wys = ymax - ymin;
-    const naX = (x: number) => ((x / s - xmin) * zwezenie * 1000) / szer;
-    const naY = (y: number) => ((ymax - y / s) * 1000 * (wys / szer)) / wys;
-    return plik.wojewodztwa.map((w) => ({
-      kod: w.kod,
-      nazwa: w.nazwa,
-      d: w.ksztalt
+    // Zwraca takze prostokat obejmujacy — z niego bierze sie przyblizenie
+    // na wybrane wojewodztwo. Liczony przy okazji rysowania, bo i tak
+    // przechodzimy po wszystkich punktach.
+    return (pierscienie: string[]) => {
+      let x0 = Infinity;
+      let y0 = Infinity;
+      let x1 = -Infinity;
+      let y1 = -Infinity;
+      const d = pierscienie
         .map((ciag) => {
           let x = 0;
           let y = 0;
@@ -149,13 +132,34 @@ export function MapaGmin({
             const przecinek = para.indexOf(',');
             x += Number(para.slice(0, przecinek));
             y += Number(para.slice(przecinek + 1));
-            kroki.push(`${kroki.length === 0 ? 'M' : 'L'}${naX(x).toFixed(1)} ${naY(y).toFixed(1)}`);
+            const px = naX(x);
+            const py = naY(y);
+            if (px < x0) x0 = px;
+            if (px > x1) x1 = px;
+            if (py < y0) y0 = py;
+            if (py > y1) y1 = py;
+            kroki.push(`${kroki.length === 0 ? 'M' : 'L'}${px.toFixed(1)} ${py.toFixed(1)}`);
           }
           return `${kroki.join('')}Z`;
         })
-        .join(''),
-    }));
+        .join('');
+      return { d, x0, y0, x1, y1 };
+    };
   }, [plik]);
+
+  const ksztalty = useMemo(() => {
+    if (!plik || !sciezka) return [];
+    return Object.entries(plik.gminy).map(([teryt, pierscienie]) => ({ teryt, d: sciezka(pierscienie).d }));
+  }, [plik, sciezka]);
+
+  /** Obrysy wojewodztw — rysowane NAD gminami, ale nieklikalne. */
+  const granice = useMemo(() => {
+    if (!plik?.wojewodztwa || !sciezka) return [];
+    return plik.wojewodztwa
+      .map((w) => ({ kod: w.kod, nazwa: w.nazwa, ...sciezka(w.ksztalt) }))
+      // Alfabetycznie po polsku: w liscie do wyboru szuka sie nazwy, nie kodu.
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, 'pl'));
+  }, [plik, sciezka]);
 
   /** Nazwa wojewodztwa po dwoch pierwszych cyfrach TERYT-u gminy. */
   const wojewodztwoGminy = useMemo(() => {
@@ -188,6 +192,26 @@ export function MapaGmin({
     }));
   };
 
+  /**
+   * Przyblizenie na wybrane wojewodztwo. Powiekszenie bierze sie z prostokata
+   * obejmujacego jego obrys, nie z tabeli — inaczej kazda zmiana konturow
+   * wymagalaby poprawienia szesnastu liczb w kodzie.
+   */
+  const pokazWojewodztwo = (kod: string | null) => {
+    ustawWojewodztwo(kod);
+    const w = kod === null ? null : granice.find((g) => g.kod === kod);
+    if (!w) {
+      ustawPowiekszenie(1);
+      ustawSrodek({ x: 0.5, y: 0.5 });
+      return;
+    }
+    // Zapas 12%: obrys dotykajacy krawedzi ramki wyglada na uciety.
+    const zapas = 1.12;
+    const z = Math.min(1000 / ((w.x1 - w.x0) * zapas), wysokosc / ((w.y1 - w.y0) * zapas));
+    ustawPowiekszenie(Math.min(Math.max(z, 1), MAKS_POWIEKSZENIE));
+    ustawSrodek({ x: (w.x0 + w.x1) / 2 / 1000, y: (w.y0 + w.y1) / 2 / wysokosc });
+  };
+
   const karta = wybrany ? wg.get(wybrany) : null;
 
   if (blad) {
@@ -207,6 +231,34 @@ export function MapaGmin({
           Wczytuję kontury gmin…
         </div>
       ) : (
+        <>
+          {granice.length > 0 ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <label htmlFor="mapa-wojewodztwo" className="text-sm text-atrament-2">
+                Województwo
+              </label>
+              <select
+                id="mapa-wojewodztwo"
+                value={wojewodztwo ?? ''}
+                onChange={(e) => pokazWojewodztwo(e.target.value || null)}
+                className="rounded-xl border border-kreska bg-papier px-3 py-2 text-sm"
+              >
+                <option value="">cała Polska</option>
+                {granice.map((w) => (
+                  <option key={w.kod} value={w.kod}>{w.nazwa}</option>
+                ))}
+              </select>
+              {wojewodztwo ? (
+                <button
+                  type="button"
+                  onClick={() => pokazWojewodztwo(null)}
+                  className="rounded-xl border border-kreska bg-papier px-3 py-2 text-sm transition-colors hover:bg-papier-3"
+                >
+                  Cała Polska
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         <div className="relative">
           <svg
             ref={ramka}
@@ -245,6 +297,10 @@ export function MapaGmin({
                 fill={barwa(k.teryt)}
                 stroke={k.teryt === wybrany ? 'var(--atrament)' : 'var(--papier-2)'}
                 strokeWidth={k.teryt === wybrany ? 1.6 / powiekszenie : 0.4 / powiekszenie}
+                /* Gminy z innych wojewodztw zostaja na mapie — przy granicy
+                   trzeba widziec, co jest po drugiej stronie — ale przygaszone,
+                   zeby kubelki czytalo sie w obrebie wybranego wojewodztwa. */
+                opacity={wojewodztwo && k.teryt.slice(0, 2) !== wojewodztwo ? 0.22 : 1}
                 className="cursor-pointer"
                 onMouseMove={(e) => {
                   const r = ramka.current?.getBoundingClientRect();
@@ -286,8 +342,8 @@ export function MapaGmin({
                 <path
                   d={w.d}
                   fill="none"
-                  stroke="var(--atrament-2)"
-                  strokeWidth={1.6 / powiekszenie}
+                  stroke={w.kod === wojewodztwo ? 'var(--atrament)' : 'var(--atrament-2)'}
+                  strokeWidth={(w.kod === wojewodztwo ? 2.6 : 1.6) / powiekszenie}
                   strokeLinejoin="round"
                 />
               </g>
@@ -335,7 +391,7 @@ export function MapaGmin({
               <button type="button" aria-label="W górę" onClick={() => przesun(0, -0.12)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">↑</button>
               <span />
               <button type="button" aria-label="W lewo" onClick={() => przesun(-0.12, 0)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">←</button>
-              <button type="button" aria-label="Wyśrodkuj" onClick={() => { ustawPowiekszenie(1); ustawSrodek({ x: 0.5, y: 0.5 }); }} className="h-8 w-8 rounded-lg border border-kreska bg-papier text-xs shadow-karta">∘</button>
+              <button type="button" aria-label="Wyśrodkuj" onClick={() => pokazWojewodztwo(null)} className="h-8 w-8 rounded-lg border border-kreska bg-papier text-xs shadow-karta">∘</button>
               <button type="button" aria-label="W prawo" onClick={() => przesun(0.12, 0)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">→</button>
               <span />
               <button type="button" aria-label="W dół" onClick={() => przesun(0, 0.12)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">↓</button>
@@ -343,6 +399,7 @@ export function MapaGmin({
             </div>
           ) : null}
         </div>
+        </>
       )}
 
       {/* Karta wybranej gminy — to ona, a nie dotkniecie mapy, prowadzi dalej. */}
