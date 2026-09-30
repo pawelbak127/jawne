@@ -215,8 +215,14 @@ sudo jawne plan
 
 - `stan` — `npm run stan`, timery (najbliższy SUDOP dziś o 22:00), wynik
   ostatnich przebiegów, dysk.
-- `sprawdz` — sześć stron lokalnie i pod adresem publicznym: `OK`, tytuł,
-  obecny `noindex`. Na końcu „Wszystko odpowiada.”
+- `sprawdz` — osiem stron lokalnie i pod adresem publicznym: `OK`, **czas
+  odpowiedzi**, tytuł, obecny `noindex`. Na końcu „Wszystko odpowiada.”
+  Czas nie jest ozdobą: `/mapa`, `/gmina/…` i `/szukaj` czytają bazę przy
+  każdym wejściu, a baza dawno nie mieści się w pamięci maszyny. To jedyna
+  liczba, która mówi, czy dołożenie RAM-u cokolwiek da. Strony statyczne
+  (`/`, `/stan`, `/poslowie`) odpowiadają w kilka milisekund i są punktem
+  odniesienia — jeśli one są szybkie, a dynamiczne wolne, wąskim gardłem
+  jest odczyt z dysku, czyli właśnie pamięć podręczna systemu plików.
 - `plan` — co pobierze najbliższa noc, bez pytania urzędu.
 - `sumy` — kontrola drugą drogą sum pomocy publicznej: te same liczby, które
   liczą się przyrostowo dzień po dniu, policzone jeszcze raz SQL-em po całej

@@ -101,18 +101,26 @@ stan() {
 }
 
 sprawdz() {
-  local host adres sciezka kod plik bledow=0
+  local host adres sciezka kod czas plik bledow=0
   host=$(sed -n 's/^JAWNE_HOST=//p' "$USTAWIENIA")
   plik=$(mktemp)
   for adres in http://127.0.0.1:3000 ${host:+https://$host}; do
     echo "== $adres"
-    for sciezka in / /stan /poslowie /glosowania /pomoc-publiczna /gmina/100101; do
-      kod=$(curl -s -o "$plik" -w '%{http_code}' --max-time 60 "$adres$sciezka" || true)
+    # Trasy DYNAMICZNE (/mapa, /gmina, /szukaj) czytaja baze przy kazdym
+    # wejsciu, a baza dawno nie miesci sie w pamieci maszyny. Czas odpowiedzi
+    # jest jedyna miara, ktora mowi, czy dolozenie RAM-u cokolwiek da.
+    # Strony statyczne odpowiadaja w kilka ms i sa tu punktem odniesienia.
+    for sciezka in / /stan /poslowie /glosowania /pomoc-publiczna /gmina/100101 /mapa "/szukaj?q=gmina"; do
+      kod=$(curl -s -o "$plik" -w '%{http_code} %{time_total}' --max-time 60 "$adres$sciezka" || true)
+      czas=${kod#* }
+      kod=${kod%% *}
+      # Gdy curl w ogole nie odpowie, oba pola sa puste — printf %f by sie wywrocil.
+      case $czas in ''|*[!0-9.]*) czas=0 ;; esac
       # noindex zostaje do premiery — strona bez niego to blad, nie drobiazg.
       if [ "$kod" = 200 ] && grep -q 'noindex' "$plik"; then
-        printf '   OK   %-18s %s\n' "$sciezka" "$(grep -o '<title>[^<]*' "$plik" | head -1 | sed 's/<title>//')"
+        printf '   OK   %-22s %6.2f s  %s\n' "$sciezka" "$czas" "$(grep -o '<title>[^<]*' "$plik" | head -1 | sed 's/<title>//')"
       else
-        printf '   BLAD %-18s HTTP %s%s\n' "$sciezka" "$kod" "$(grep -q noindex "$plik" || echo ', brak noindex')"
+        printf '   BLAD %-22s %6.2f s  HTTP %s%s\n' "$sciezka" "$czas" "$kod" "$(grep -q noindex "$plik" || echo ', brak noindex')"
         bledow=$((bledow + 1))
       fi
     done
