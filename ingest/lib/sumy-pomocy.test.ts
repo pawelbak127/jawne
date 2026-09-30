@@ -124,6 +124,38 @@ describe('sumy przyrostowe', () => {
     expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
   });
 
+  it('WYKRYWA rozjazd — kontrola, ktora nigdy nic nie zglasza, jest bezwartosciowa', () => {
+    dodajDzien('2026-01-01', 20, [
+      { nip: '1111111111', nazwa: 'Alfa', brutto: 1000 },
+      { nip: '2222222222', nazwa: 'Beta', teryt: '020102', brutto: 500 },
+    ]);
+    odswiezSumy(db);
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+
+    // Kwota w gminie: psujemy stan, zrodlo zostaje bez zmian.
+    db.prepare('update pomoc_sumy_gmin set brutto = brutto + 1 where teryt = ?').run('020101');
+    expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/mapa\/020101/);
+
+    // Nazwa firmy: od niej zalezy, czy wolno ja pokazac, wiec tez musi sie zgadzac.
+    db.prepare('update pomoc_sumy_gmin set brutto = brutto - 1 where teryt = ?').run('020101');
+    db.prepare('update pomoc_sumy_firm set nazwa = ? where nip = ?').run('Cos innego', '2222222222');
+    expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/nazwa/);
+  });
+
+  it('nie zbiera w nieskonczonosc listy bledow', () => {
+    // 25 gmin, kazda rozjechana — lista ma sie zatrzymac na dwudziestu
+    // i powiedziec, ilu rozjazdow nie pokazala.
+    const wiersze = Array.from({ length: 25 }, (_, i) => ({
+      nip: String(1000000000 + i), nazwa: `Firma ${i}`, teryt: '020101', brutto: 10,
+    }));
+    dodajDzien('2026-01-01', 20, wiersze);
+    odswiezSumy(db);
+    db.prepare('update pomoc_sumy_firm set brutto = brutto + 1').run();
+    const r = sprawdzSumy(db, WARSZAWA);
+    expect(r.length).toBe(21);
+    expect(r.at(-1)).toMatch(/dalszych rozjazdow/);
+  });
+
   it('brak kwoty to nie zero (regula 4)', () => {
     dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: null }]);
     odswiezSumy(db);

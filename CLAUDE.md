@@ -557,9 +557,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     — nie rosną razem z historią.
     Kontrola: `pomoc_sumy_dni` pamięta znacznik pobrania każdego policzonego
     dnia; gdy się zmieni, stan liczy się od zera bez pytania.
-    `npx tsx ingest/jobs/migracje.ts --sprawdz` liczy to samo drugą drogą
-    (SQL po całej tabeli) i porównuje pole po polu — na prawdziwej bazie
-    **zero rozjazdów**. Indeks `pomoc_dzien` jest do tego konieczny:
+    `npx tsx ingest/jobs/migracje.ts --sprawdz` (`sudo jawne sumy`) liczy to
+    samo drugą drogą — SQL po całej tabeli — i porównuje pole po polu.
+    **Ta kontrola musi czytać STRUMIENIEM.** Zmierzone 30.09.2026 na serwerze:
+    `.all()` na grupowaniu po NIP-ie przewróciło proces po 64 minutach
+    („Reached heap limit”, w stosie `StatementExecutionHelper::All`) — wynik
+    to kilkaset tysięcy wierszy, a każdy staje się osobnym obiektem JS i nie
+    mieści się w domyślnej stercie 920 MB. `.iterate()` trzyma jeden wiersz.
+    Z tego samego powodu lista rozjazdów ma sufit: kontrola, która pada przy
+    zgłaszaniu błędu, nie zgłasza niczego. Indeks `pomoc_dzien` jest do tego konieczny:
     `select distinct dzien` idzie wtedy indeksem pokrywającym (7 ms przy
     168 tys. wierszy), a nie przebiegiem po tabeli.
 

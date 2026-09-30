@@ -483,6 +483,18 @@ export function sprawdzSumy(
   mow: (s: string) => void = () => {},
 ): string[] {
   const rozjazdy: string[] = [];
+  /*
+   * Sufit na liste rozjazdow. Gdyby rozjechal sie KAZDY z kilkuset tysiecy
+   * NIP-ow, sama lista bledow zjadlaby pamiec — a kontrola, ktora pada przy
+   * zglaszaniu bledu, nie zglasza niczego. Dwadziescia przykladow wystarczy,
+   * zeby zobaczyc wzorzec; liczbe wszystkich podajemy na koncu.
+   */
+  const MAKS_ROZJAZDOW = 20;
+  let wszystkichRozjazdow = 0;
+  const dopisz = (co: string) => {
+    wszystkichRozjazdow += 1;
+    if (rozjazdy.length < MAKS_ROZJAZDOW) rozjazdy.push(co);
+  };
   const etap = (co: string) => {
     const t = Date.now();
     return () => mow(`      ${co}: ${Math.round((Date.now() - t) / 1000)} s`);
@@ -499,12 +511,12 @@ export function sprawdzSumy(
   koniec();
   const zeStanu = przegladZeSum(db, terytWarszawy);
   if (!zZera !== !zeStanu) {
-    rozjazdy.push(`przeglad: jedna droga oddaje null, druga nie (${!!zZera} vs ${!!zeStanu})`);
+    dopisz(`przeglad: jedna droga oddaje null, druga nie (${!!zZera} vs ${!!zeStanu})`);
   } else if (zZera && zeStanu) {
     for (const k of ['od', 'do', 'dni', 'swiezych', 'przypadkow', 'beneficjentow', 'gmin'] as const) {
-      if (zZera[k] !== zeStanu[k]) rozjazdy.push(`przeglad.${k}: ${zZera[k]} vs ${zeStanu[k]}`);
+      if (zZera[k] !== zeStanu[k]) dopisz(`przeglad.${k}: ${zZera[k]} vs ${zeStanu[k]}`);
     }
-    if (!ROWNE(zZera.brutto, zeStanu.brutto)) rozjazdy.push(`przeglad.brutto: ${zZera.brutto} vs ${zeStanu.brutto}`);
+    if (!ROWNE(zZera.brutto, zeStanu.brutto)) dopisz(`przeglad.brutto: ${zZera.brutto} vs ${zeStanu.brutto}`);
     const listy: [string, WierszPrzegladu[], WierszPrzegladu[]][] = [
       ['udzielajacy', zZera.udzielajacy, zeStanu.udzielajacy],
       ['przeznaczenia', zZera.przeznaczenia, zeStanu.przeznaczenia],
@@ -514,18 +526,18 @@ export function sprawdzSumy(
     for (const [nazwa, a, b] of listy) {
       const wgNazwy = (l: WierszPrzegladu[]) => new Map(l.map((r) => [r.nazwa, r]));
       const mb = wgNazwy(b);
-      if (a.length !== b.length) rozjazdy.push(`przeglad.${nazwa}: ${a.length} vs ${b.length} pozycji`);
+      if (a.length !== b.length) dopisz(`przeglad.${nazwa}: ${a.length} vs ${b.length} pozycji`);
       for (const r of a) {
         const s = mb.get(r.nazwa);
-        if (!s) { rozjazdy.push(`przeglad.${nazwa}: brak „${r.nazwa}" w sumach`); continue; }
+        if (!s) { dopisz(`przeglad.${nazwa}: brak „${r.nazwa}" w sumach`); continue; }
         if (s.przypadkow !== r.przypadkow || !ROWNE(s.brutto, r.brutto)) {
-          rozjazdy.push(`przeglad.${nazwa}/${r.nazwa}: ${r.przypadkow}/${r.brutto} vs ${s.przypadkow}/${s.brutto}`);
+          dopisz(`przeglad.${nazwa}/${r.nazwa}: ${r.przypadkow}/${r.brutto} vs ${s.przypadkow}/${s.brutto}`);
         }
       }
     }
     const naj = (l: PrzegladPomocy['najwieksze']) => l.map((r) => `${r.teryt}:${r.dzien}:${r.brutto}`).join(' | ');
     if (naj(zZera.najwieksze) !== naj(zeStanu.najwieksze)) {
-      rozjazdy.push(`przeglad.najwieksze: ${naj(zZera.najwieksze)} vs ${naj(zeStanu.najwieksze)}`);
+      dopisz(`przeglad.najwieksze: ${naj(zZera.najwieksze)} vs ${naj(zeStanu.najwieksze)}`);
     }
   }
 
@@ -535,29 +547,44 @@ export function sprawdzSumy(
   const d = policzDelte(db);
   const mapaA = new Map(mapaOdZera(cz, terytWarszawy).map((w) => [w.teryt, w.wartosc]));
   const mapaB = new Map(mapaZeSum(db, terytWarszawy, d).map((w) => [w.teryt, w.wartosc]));
-  if (mapaA.size !== mapaB.size) rozjazdy.push(`mapa: ${mapaA.size} vs ${mapaB.size} gmin`);
+  if (mapaA.size !== mapaB.size) dopisz(`mapa: ${mapaA.size} vs ${mapaB.size} gmin`);
   for (const [teryt, w] of mapaA) {
-    if (!ROWNE(w, mapaB.get(teryt) ?? null)) rozjazdy.push(`mapa/${teryt}: ${w} vs ${mapaB.get(teryt)}`);
+    if (!ROWNE(w, mapaB.get(teryt) ?? null)) dopisz(`mapa/${teryt}: ${w} vs ${mapaB.get(teryt)}`);
   }
   koniec();
 
-  // 3. Sumy na NIP — tu drugą drogą jest zwykłe „group by" po całej tabeli.
+  /*
+   * 3. Sumy na NIP — druga droga to zwykle „group by" po calej tabeli.
+   *
+   * STRUMIENIEM, nie `.all()`. ZMIERZONE 30.09.2026 na serwerze: `.all()`
+   * na tym zapytaniu przewrocilo proces po 64 minutach — „Reached heap limit
+   * Allocation failed", a w stosie `node::sqlite::StatementExecutionHelper::All`.
+   * Wynik to kilkaset tysiecy wierszy, a kazdy staje sie osobnym obiektem JS;
+   * razem z mapa sum ze stanu nie miesci sie to w domyslnej stercie (920 MB
+   * przy 1,8 GB pamieci maszyny). `.iterate()` oddaje wiersz po wierszu
+   * i trzyma w pamieci tylko jeden.
+   */
   mow('   licze sumy na NIP od zera…');
   koniec = etap('firmy');
   const firmyB = sumyFirm(db, d);
-  const firmyA = db.prepare(
+  let ileA = 0;
+  for (const r of db.prepare(
     'select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa, sum(wartosc_brutto) as brutto'
     + ' from pomoc_publiczna where nip_beneficjenta is not null group by nip_beneficjenta',
-  ).all() as unknown as { nip: string; nazwa: string | null; brutto: number | null }[];
-  if (firmyA.length !== firmyB.size) rozjazdy.push(`firmy: ${firmyA.length} vs ${firmyB.size} NIP-ow`);
-  for (const r of firmyA) {
+  ).iterate() as unknown as Iterable<{ nip: string; nazwa: string | null; brutto: number | null }>) {
+    ileA += 1;
     const s = firmyB.get(r.nip);
-    if (!s) { rozjazdy.push(`firmy: brak NIP-u ${r.nip} w sumach`); continue; }
-    if (!ROWNE(r.brutto, s.brutto)) rozjazdy.push(`firmy/${r.nip}: ${r.brutto} vs ${s.brutto}`);
+    if (!s) { dopisz(`firmy: brak NIP-u ${r.nip} w sumach`); continue; }
+    if (!ROWNE(r.brutto, s.brutto)) dopisz(`firmy/${r.nip}: ${r.brutto} vs ${s.brutto}`);
     // Nazwa nie jest ozdoba: od niej zalezy, czy wolno ja pokazac.
-    if (r.nazwa !== s.nazwa) rozjazdy.push(`firmy/${r.nip} nazwa: „${r.nazwa}" vs „${s.nazwa}"`);
+    if (r.nazwa !== s.nazwa) dopisz(`firmy/${r.nip} nazwa: „${r.nazwa}" vs „${s.nazwa}"`);
   }
+  if (ileA !== firmyB.size) dopisz(`firmy: ${ileA} vs ${firmyB.size} NIP-ow`);
   koniec();
 
+  // Gdy przycielismy liste, czytelnik ma wiedziec, ile bylo naprawde.
+  if (wszystkichRozjazdow > rozjazdy.length) {
+    rozjazdy.push(`… i ${wszystkichRozjazdow - rozjazdy.length} dalszych rozjazdow (pokazuje ${MAKS_ROZJAZDOW})`);
+  }
   return rozjazdy;
 }
