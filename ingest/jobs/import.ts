@@ -1515,6 +1515,91 @@ async function importObecnosci(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Interpelacje poselskie — metryczka, nie tresc.
+ *
+ * Tresc interpelacji i odpowiedzi zostaje w rejestrze: to dziesiatki tysiecy
+ * dokumentow PDF, ktorych nie mamy po co kopiowac. My trzymamy to, czego
+ * rejestr NIE daje w jednym miejscu — kto ile zlozyl, do kogo i czy przyszla
+ * odpowiedz — i odsylamy do sejm.gov.pl po tresc.
+ *
+ * ZMIERZONE 30.09.2026: kadencja 10 ma ok. 20 100 interpelacji, `limit=500`
+ * dziala, wiec to ok. 41 zapytan. Pusta odpowiedz znaczy koniec — rejestr
+ * nie podaje liczby wszystkich w tresci.
+ */
+async function importInterpelacji(db: DatabaseSync): Promise<void> {
+  log('-> interpelacje poselskie (Sejm)');
+  const PORCJA = 500;
+  const wszystkie: api.ApiInterpelacja[] = [];
+  for (let offset = 0; ; offset += PORCJA) {
+    const paczka = await api.interpelacje(offset, PORCJA);
+    wszystkie.push(...paczka);
+    if (paczka.length < PORCJA) break;
+    if (offset > 200_000) throw new Error('interpelacje: rejestr nie konczy stronicowania');
+  }
+  log(`   ${wszystkie.length} interpelacji w kadencji`);
+  if (!wszystkie.length) return;
+
+  const znaniPoslowie = new Set(
+    (db.prepare('select id from poslowie').all() as unknown as { id: number }[]).map((r) => r.id),
+  );
+
+  const wstaw = db.prepare(
+    `insert into interpelacje(numer, tytul, data_wplywu, data_wyslania, adresaci, odpowiedzi,
+                              ostatnia_odpowiedz, opoznienie_dni, adres, zmieniony)
+     values (?,?,?,?,?,?,?,?,?,?)
+     on conflict(numer) do update set tytul=excluded.tytul, data_wplywu=excluded.data_wplywu,
+       data_wyslania=excluded.data_wyslania, adresaci=excluded.adresaci,
+       odpowiedzi=excluded.odpowiedzi, ostatnia_odpowiedz=excluded.ostatnia_odpowiedz,
+       opoznienie_dni=excluded.opoznienie_dni, adres=excluded.adres, zmieniony=excluded.zmieniony`,
+  );
+  const wstawAutora = db.prepare(
+    'insert or ignore into interpelacje_autorzy(numer, posel_id) values (?,?)',
+  );
+
+  let autorow = 0;
+  let obcy = 0;
+  let bezDaty = 0;
+  const wieluAutorow = wszystkie.filter((i) => i.from.length > 1).length;
+  wTransakcji(db, () => {
+    db.prepare('delete from interpelacje_autorzy').run();
+    for (const i of wszystkie) {
+      // Kontrola dziedziny przed zapisem: data spoza wzorca to nie data.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(i.receiptDate)) { bezDaty++; continue; }
+      const odpowiedzi = i.replies?.length ?? 0;
+      const ostatnia = (i.replies ?? [])
+        .map((o) => o.receiptDate ?? o.lastModified?.slice(0, 10))
+        .filter((d): d is string => Boolean(d))
+        .sort()
+        .at(-1) ?? null;
+      wstaw.run(
+        i.num, i.title, i.receiptDate, i.sentDate ?? null,
+        (i.recipientDetails ?? []).map((r) => r.name).join('; ') || null,
+        odpowiedzi, ostatnia, i.answerDelayedDays ?? null,
+        i.links?.find((l) => l.rel === 'web-description')?.href ?? null,
+        i.lastModified ?? null,
+      );
+      for (const id of i.from) {
+        const nr = Number(id);
+        // Posel spoza naszej listy jest RAPORTOWANY, nie przerywa importu
+        // (wzorzec 2) — inaczej jeden nieznany identyfikator kosztuje przebieg.
+        if (!Number.isInteger(nr) || !znaniPoslowie.has(nr)) { obcy++; continue; }
+        wstawAutora.run(i.num, nr);
+        autorow++;
+      }
+    }
+  });
+
+  const bezOdpowiedzi = db.prepare('select count(*) as c from interpelacje where odpowiedzi = 0')
+    .get() as unknown as { c: number };
+  log(`   ${autorow} podpisow autorow, ${wieluAutorow} interpelacji ma wiecej niz jednego autora`);
+  log(`   bez odpowiedzi w rejestrze: ${bezOdpowiedzi.c}`);
+  if (obcy) log(`   UWAGA: ${obcy} podpisow z identyfikatorem posla spoza naszej listy`);
+  if (bezDaty) log(`   UWAGA: ${bezDaty} interpelacji bez poprawnej daty wplywu — pominiete`);
+  odnotujImport(db, 'interpelacje', wszystkie.length,
+    `${autorow} podpisow; bez odpowiedzi: ${bezOdpowiedzi.c}${obcy ? `; obcych autorow: ${obcy}` : ''}`);
+}
+
+/**
  * Gotowe wyniki dla stron, ktore inaczej liczylyby je przy kazdej odbudowie.
  * Bez sieci — czyta wylacznie to, co juz jest w bazie.
  */
@@ -1533,6 +1618,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosowania: importGlosowan,
   glosy: importGlosow,
   procesy: importProcesow,
+  interpelacje: importInterpelacji,
   zamowienia: importZamowien,
   regon: importRegon,
   zdjecia: importZdjec,

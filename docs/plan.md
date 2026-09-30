@@ -444,8 +444,19 @@ na serwerze, obok danych.
 - **Okręg wyborczy jako klamra.** Ile pieniędzy trafia do okręgu i jak głosowali
   posłowie z tego okręgu. **Uwaga:** dane nie mówią, że to zasługa posła.
   Bez zdania sugerującego sprawczość.
-- **Interpelacje poselskie** (23 846 w starej bazie Supabase) — mają temat
-  i adresata, więc da się je powiązać z gminą albo tematem.
+- ~~**Interpelacje poselskie**~~ **zrobione 30.09.2026**: etap `interpelacje`
+  (20 145 interpelacji, 36 524 podpisy autorów, ~55 s) i sekcja na stronie
+  posła — ile podpisał z ilu złożonych w kadencji, ile bez odpowiedzi
+  w rejestrze, pięć ostatnich z odnośnikiem do sejm.gov.pl. Trzymamy
+  **metryczkę, nie treść**: pełne teksty to dziesiątki tysięcy PDF-ów, które
+  rejestr i tak udostępnia.
+  Sekcja jest także przy zerze (58 posłów nie podpisało żadnej) — ukrycie
+  pokazywałoby niepełny obraz, a powodu rejestr nie podaje, więc go nie
+  dopisujemy. Brak odpowiedzi opisujemy jako fakt o adresacie, nie o pośle.
+  Prywatność sprawdzona na wszystkich 20 145 tytułach: „Pan/Pani + nazwisko"
+  zero trafień, jedyne nazwisko w tytule należy do wiceminister w jej roli
+  publicznej. Filtr `bezNazwiskOsobPrywatnych` zostaje mimo to — tytuły piszą
+  posłowie i jutro może być inaczej.
 - **Proces legislacyjny** (1 681 procesów, 15 907 etapów w starej bazie) —
   „co się stało z ustawą” to jedna z trzech rzeczy z pierwotnego briefu,
   której dziś nie ma.

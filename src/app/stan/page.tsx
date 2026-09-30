@@ -31,6 +31,7 @@ const OPISY: Record<string, string> = {
   'budzety-dzialy': 'Wydatki gmin według działów budżetu (GUS, Bank Danych Lokalnych)',
   smup: 'Wskaźniki finansowe gmin (SMUP, GUS)',
   procesy: 'Procesy legislacyjne — droga ustaw przez Sejm',
+  interpelacje: 'Interpelacje poselskie — metryczka (kto, do kogo, czy jest odpowiedź)',
   zamowienia: 'Zamówienia publiczne (TED — dziennik zamówień UE)',
   regon: 'Rejestr REGON — kim jest podmiot o danym NIP-ie (GUS)',
   'szukaj-firmy': 'Indeks wyszukiwania firm',

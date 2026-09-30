@@ -854,6 +854,62 @@ export function wartosciMapyPowiatow(miara: MiaraMapy): WartoscNaMapie[] {
 }
 
 // ---------------------------------------------------------------------------
+// Interpelacje poselskie
+// ---------------------------------------------------------------------------
+
+export type Interpelacja = {
+  numer: number;
+  tytul: string;
+  data_wplywu: string;
+  adresaci: string | null;
+  odpowiedzi: number;
+  adres: string | null;
+  /** Ilu poslow ja podpisalo — bez tego „interpelacja posla X" bywa nieprawda. */
+  autorow: number;
+};
+
+export type InterpelacjePosla = {
+  /** Ile zlozyl (albo wspolpodpisal) — licznik. */
+  ile: number;
+  /** Ile z nich nie ma jeszcze odpowiedzi w rejestrze. */
+  bezOdpowiedzi: number;
+  /** Ile jest w calej kadencji — mianownik (regula 3). */
+  wKadencji: number;
+  ostatnie: Interpelacja[];
+};
+
+/**
+ * Interpelacje jednego posla.
+ *
+ * Wspolautorstwo liczymy tak samo jak autorstwo — rejestr ich nie rozroznia,
+ * a 4 138 z 20 145 interpelacji ma wiecej niz jednego autora. Przy kazdej
+ * pozycja mowi, ilu poslow ja podpisalo, zeby nie sugerowac, ze byl sam.
+ *
+ * `odpowiedzi = 0` to fakt o ADRESACIE, nie o posle — nie komentujemy go.
+ */
+export function interpelacjePosla(id: number, ile = 5): InterpelacjePosla {
+  return bezTabeli(() => {
+    const licznik = jeden<{ ile: number; bez: number }>(
+      `select count(*) as ile, sum(case when i.odpowiedzi = 0 then 1 else 0 end) as bez
+         from interpelacje_autorzy a join interpelacje i on i.numer = a.numer
+        where a.posel_id = ?`,
+      id,
+    );
+    const wKadencji = jeden<{ c: number }>('select count(*) as c from interpelacje')?.c ?? 0;
+    const ostatnie = wszystkie<Interpelacja>(
+      `select i.numer as numer, i.tytul as tytul, i.data_wplywu as data_wplywu,
+              i.adresaci as adresaci, i.odpowiedzi as odpowiedzi, i.adres as adres,
+              (select count(*) from interpelacje_autorzy b where b.numer = i.numer) as autorow
+         from interpelacje_autorzy a join interpelacje i on i.numer = a.numer
+        where a.posel_id = ?
+        order by i.data_wplywu desc, i.numer desc limit ?`,
+      id, ile,
+    );
+    return { ile: licznik?.ile ?? 0, bezOdpowiedzi: licznik?.bez ?? 0, wKadencji, ostatnie };
+  }, { ile: 0, bezOdpowiedzi: 0, wKadencji: 0, ostatnie: [] });
+}
+
+// ---------------------------------------------------------------------------
 // Zamowienia publiczne z TED
 // ---------------------------------------------------------------------------
 

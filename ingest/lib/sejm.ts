@@ -115,3 +115,32 @@ export type ApiProces = {
 // ZMIERZONE 23.09.2026: kadencja 10 ma 1692 procesy, limit=1700 oddaje wszystkie.
 export const procesy = () => pobierzJson<ApiProces[]>(`${BAZA}/processes?limit=2000`);
 export const proces = (numer: string) => pobierzJson<ApiProces>(`${BAZA}/processes/${numer}`);
+
+/**
+ * Interpelacja poselska. Pola ZMIERZONE na zywym API (probka 500 z 20 100):
+ * `from` to identyfikatory poslow jako NAPISY, 66 na 500 interpelacji ma
+ * wiecej niz jednego autora, a `answerDelayedDays` mowi o opoznieniu
+ * ODPOWIEDZI ministra — nie o poslu.
+ */
+export type ApiInterpelacja = {
+  num: number;
+  term: number;
+  title: string;
+  receiptDate: string;
+  sentDate?: string;
+  lastModified?: string;
+  answerDelayedDays?: number;
+  from: string[];
+  recipientDetails?: { name: string; sent?: string; answerDelayedDays?: number }[];
+  replies?: { from?: string; key?: string; receiptDate?: string; lastModified?: string; onlyAttachment?: boolean }[];
+  links?: { rel: string; href: string }[];
+};
+
+/**
+ * Interpelacje sa STRONICOWANE. ZMIERZONE 30.09.2026: `limit=500` dziala,
+ * a kadencja 10 ma ok. 20 100 interpelacji — czyli ok. 41 zapytan.
+ * Pusta tablica znaczy „koniec", bo API nie podaje liczby wszystkich
+ * w tresci odpowiedzi.
+ */
+export const interpelacje = (offset: number, limit = 500) =>
+  pobierzJson<ApiInterpelacja[]>(`${BAZA}/interpellations?limit=${limit}&offset=${offset}`);

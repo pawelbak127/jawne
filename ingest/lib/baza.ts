@@ -379,6 +379,32 @@ create table if not exists pomoc_sumy_naj (
   udzielajacy   text
 );
 
+/*
+ * Interpelacje poselskie. Tresc zostaje w rejestrze — my trzymamy metryczke
+ * i odsylamy do sejm.gov.pl. Autorow moze byc kilku (66 na 500 w probce),
+ * stad osobna tabela; opoznienie odpowiedzi dotyczy MINISTRA, nie posla.
+ */
+create table if not exists interpelacje (
+  numer           integer primary key,
+  tytul           text not null,
+  data_wplywu     text not null,
+  data_wyslania   text,
+  adresaci        text,                  -- nazwy rozdzielone srednikiem, jak podaje rejestr
+  odpowiedzi      integer not null,
+  ostatnia_odpowiedz text,
+  opoznienie_dni  integer,
+  adres           text,                  -- strona opisu w sejm.gov.pl
+  zmieniony       text
+);
+create index if not exists interpelacje_data on interpelacje(data_wplywu desc);
+
+create table if not exists interpelacje_autorzy (
+  numer     integer not null references interpelacje(numer),
+  posel_id  integer not null references poslowie(id),
+  primary key (numer, posel_id)
+);
+create index if not exists interpelacje_autorzy_posel on interpelacje_autorzy(posel_id);
+
 /* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */
 create table if not exists ludnosc (
   teryt  text primary key,               -- 6 cyfr

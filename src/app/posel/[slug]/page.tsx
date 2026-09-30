@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
+  bazaDostepna, interpelacjePosla, kluby, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
   slugiPoslow, statystykiPosla,
 } from '@/lib/dane';
+import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
 import { stylGlosu } from '@/lib/barwy-glosu';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
@@ -50,6 +51,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const miejsce = miejscePosla(MIEJSCA, p.id);
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const obecnosc = obecnoscPosla(p.id);
+  const interpelacje = interpelacjePosla(p.id, 5);
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 
   return (
@@ -316,6 +318,86 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
               </div>
             </div>
           </section>
+
+          {/*
+            Sekcja jest takze przy zerze: 58 poslow nie podpisalo zadnej
+            interpelacji i ukrycie tego pokazywaloby niepelny obraz (regula 4 —
+            zero jest zmierzone, regula 5 — nikogo nie chowamy). Powodu rejestr
+            nie podaje, wiec go nie dopisujemy (regula 2).
+            ALE gdy `wKadencji` to zero, znaczy to, ze etapu importu jeszcze
+            nie bylo — i wtedy sekcji NIE MA. „Rejestr nie odnotowuje zadnej"
+            przy pustej tabeli byloby zdaniem o danych, ktorych nie mamy;
+            brak danych to stan, nie zmierzone zero (wzorzec 6).
+          */}
+          {interpelacje.wKadencji > 0 ? (
+          <section className="mt-12">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h2 className="szryft text-2xl font-semibold">Interpelacje</h2>
+                <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="rejestr interpelacji" />
+              </div>
+              {/* Bez form osobowych: „podpisał/podpisała" wymagaloby rodzaju,
+                  ktorego nie zapisujemy, a rejestr go nie podaje. */}
+              <p className="mt-2 max-w-2xl text-sm text-atrament-2">
+                <span className="liczby">
+                  {`Podpisane interpelacje: ${liczba(interpelacje.ile)} z ${liczba(interpelacje.wKadencji)}`}
+                </span>
+                {' złożonych w tej kadencji. '}
+                {interpelacje.ile === 0
+                  ? 'Rejestr nie odnotowuje żadnej.'
+                  : interpelacje.bezOdpowiedzi > 0
+                    ? `Bez odpowiedzi w rejestrze: ${liczba(interpelacje.bezOdpowiedzi)} — to informacja o adresacie, nie o pośle.`
+                    : 'Wszystkie mają w rejestrze odpowiedź.'}
+              </p>
+              <ul className="mt-5 space-y-2">
+                {interpelacje.ostatnie.map((i) => (
+                  <li
+                    key={i.numer}
+                    className="rounded-2xl border border-kreska bg-papier-2 p-4 transition-colors hover:border-kreska-2"
+                  >
+                    <p className="liczby text-xs text-atrament-3">
+                      {`nr ${i.numer} · ${dataSlownie(i.data_wplywu)}`}
+                      {i.autorow > 1 ? ` · ${zOdmiana(i.autorow, 'autor', 'autorów', 'autorów')}` : ''}
+                      {i.odpowiedzi === 0 ? ' · bez odpowiedzi' : ''}
+                    </p>
+                    {/*
+                      Tytul przechodzi przez te sama regule, co tytul
+                      glosowania — jedna regula dla wszystkich (regula 7).
+                      ZMIERZONE 30.09.2026 na 20 145 tytulach: dzis nie zmienia
+                      ani jednego, bo tytuly interpelacji sa tematami polityki,
+                      nie sprawami jednostkowymi. Sprawdzone tez osobno:
+                      „Pan/Pani + nazwisko" 0 trafien, inicjaly 2 (oba falszywe:
+                      patron szpitala, numer uchwaly), jedyne nazwisko w tytule
+                      nalezy do WICEMINISTER w jej roli publicznej. Zostawiamy
+                      filtr, bo tytuly pisza poslowie i jutro moze byc inaczej.
+                    */}
+                    <p className="mt-1">
+                      {i.adres ? (
+                        <a
+                          href={i.adres}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-akcent"
+                        >
+                          {skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)}
+                        </a>
+                      ) : (
+                        skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)
+                      )}
+                    </p>
+                    {i.adresaci ? (
+                      <p className="mt-1 text-sm text-atrament-2">{`do: ${i.adresaci}`}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {interpelacje.ile > 0 ? (
+                <p className="mt-3 text-xs text-atrament-3">
+                  Pokazujemy metryczkę, nie treść: pełny tekst interpelacji i odpowiedzi jest
+                  w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="mt-12">
             <div className="flex flex-wrap items-baseline justify-between gap-3">

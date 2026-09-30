@@ -76,8 +76,9 @@ npx eslint src ingest
 npm run import wszystko                    # pełny import (~25 min), bez SUDOP
 npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
 npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692 procesy)
+npm run import interpelacje                # metryczka interpelacji, ~55 s (20 145 sztuk)
 npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
-npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), ~11 min
+npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), 3 s na paczke 20 NIP-ow
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
