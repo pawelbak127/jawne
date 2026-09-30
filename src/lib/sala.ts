@@ -14,6 +14,8 @@ export type MiejscePosla = {
   okreg: string | null;
   barwa: string;
   barwaCiemna: string;
+  /** 1/0/null jak w bazie: `null` znaczy „nie sprawdzalismy", nie „nie ma". */
+  maZdjecie: number | null;
 };
 
 /** Posel w zakresie potrzebnym planowi sali — tyle, ile daje `listaPoslow()`. */
@@ -24,6 +26,7 @@ export type PoselDoPlanu = {
   klub_id: string | null;
   okreg_nazwa: string | null;
   okreg_nr: number | null;
+  ma_zdjecie: number | null;
 };
 
 /** Barwa dla posla bez klubu — ta sama, ktora ma kolo „niez." w `kluby.ts`. */
@@ -64,6 +67,7 @@ export function polaczPlan(
       okreg: p.okreg_nazwa ? `okręg ${p.okreg_nr} · ${p.okreg_nazwa}` : null,
       barwa: k?.barwa ?? BEZ_KLUBU.barwa,
       barwaCiemna: k?.barwaCiemna ?? BEZ_KLUBU.barwaCiemna,
+      maZdjecie: p.ma_zdjecie,
     });
   }
   return { miejsca, bezPosla };

@@ -1,7 +1,12 @@
 import Link from 'next/link';
-import { bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, okregi, ostatnieGlosowania, podsumowanie } from '@/lib/dane';
-import { dataSlownie, liczba, zOdmiana } from '@/lib/format';
-import { Polkole, type Blok } from '@/components/Polkole';
+import {
+  bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, listaPoslow, okregi, ostatnieGlosowania,
+  podsumowanie,
+} from '@/lib/dane';
+import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU } from '@/lib/plan-sali';
+import { polaczPlan } from '@/lib/sala';
+import { dataSlownie, liczba } from '@/lib/format';
+import { PlanSali } from '@/components/PlanSali';
 import { Szukajka } from '@/components/Szukajka';
 import { Kafel, Zrodlo } from '@/components/Zrodlo';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -20,20 +25,10 @@ export default function StronaGlowna() {
   const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
   const ustawUchwalonych = liczbaProcesow('projekt ustawy', 'uchwalone');
 
-  const bloki: Blok[] = listaKlubow
-    .filter((k) => k.mandaty !== null && k.mandaty > 0)
-    .map((k) => ({
-      id: k.id,
-      etykieta: k.id,
-      pelnaNazwa: k.nazwa,
-      miejsca: Array.from({ length: k.mandaty ?? 0 }, () => ({
-        barwa: k.barwa,
-        barwaCiemna: k.barwaCiemna,
-        opis: `${k.nazwa ?? k.id} — ${zOdmiana(k.mandaty ?? 0, 'mandat', 'mandaty', 'mandatów')}`,
-      })),
-    }));
-
-  const mandatow = bloki.reduce((a, b) => a + b.miejsca.length, 0);
+  const { miejsca: miejscaNaSali } = polaczPlan(MIEJSCA, listaPoslow());
+  // Liczba mandatow z REJESTRU, nie z rysunku sali — to dwa rozne zrodla
+  // i nie wolno ich mylic. Ze sie zgadzaja, pilnuje test w sala.test.ts.
+  const mandatow = listaKlubow.reduce((a, k) => a + (k.mandaty ?? 0), 0);
 
   return (
     <>
@@ -129,16 +124,23 @@ export default function StronaGlowna() {
             <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/clubs" etykieta="rejestr klubów" />
           </div>
 
-          <div className="mx-auto mt-6 max-w-2xl">
-            <Polkole
-              bloki={bloki}
-              podpis={`Rozkład ${mandatow} mandatów między kluby i koła poselskie`}
-              srodek={
-                <>
-                  <span className="liczby szryft text-3xl font-semibold leading-none sm:text-5xl">{mandatow}</span>
-                  <span className="mt-1 text-xs text-atrament-2">mandatów</span>
-                </>
-              }
+          {/*
+            PRAWDZIWA sala, nie polkole ulozone klubami. Do 30.09.2026 stal tu
+            wykres, ktory wygladal jak izba, ale miejsca ustawial po kolei
+            wedlug klubow — a odkad mamy rysunek Kancelarii, nie ma powodu
+            rysowac przyblizenia. Przy okazji jest klikalny, o co prosil Pawel.
+          */}
+          <p className="mt-4 text-sm text-atrament-2">
+            <span className="liczby font-medium">{liczba(mandatow)} mandatów</span> — każda kropka
+            to jedno miejsce w sali posiedzeń. Najedź, żeby zobaczyć, kto na nim siedzi.
+          </p>
+          <div className="mt-4">
+            <PlanSali
+              miejsca={miejscaNaSali}
+              szerokosc={PLAN_SZEROKOSC}
+              wysokosc={PLAN_WYSOKOSC}
+              stan={dataSlownie(STAN_PLANU)}
+              zSzukaniem={false}
             />
           </div>
 

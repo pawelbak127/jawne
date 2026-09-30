@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
+import { Portret } from '@/components/Portret';
 import { PUNKTY_SALI } from '@/lib/plan-sali';
 import type { MiejscePosla } from '@/lib/sala';
 import { uprosc } from '@/lib/tekst';
@@ -24,6 +25,7 @@ export function PlanSali({
   wysokosc,
   wyroznionyId,
   stan,
+  zSzukaniem = true,
 }: {
   miejsca: MiejscePosla[];
   szerokosc: number;
@@ -31,6 +33,8 @@ export function PlanSali({
   /** Miejsce jednego posla — reszta sali jest tlem (strona posla). */
   wyroznionyId?: number;
   stan: string;
+  /** `false` tam, gdzie strona ma juz wlasne pole szukania (strona glowna). */
+  zSzukaniem?: boolean;
 }) {
   const router = useRouter();
   const ramka = useRef<SVGSVGElement>(null);
@@ -83,7 +87,7 @@ export function PlanSali({
 
   return (
     <div>
-      {wyroznionyId === undefined ? (
+      {wyroznionyId === undefined && zSzukaniem ? (
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <input
             type="search"
@@ -177,11 +181,19 @@ export function PlanSali({
             trzeba to napisac. Na szerokim plan miesci sie caly. */}
         {podKursorem && !dotykiem ? (
           <div
-            className="pointer-events-none absolute z-10 max-w-[18rem] rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
+            className="pointer-events-none absolute z-10 flex max-w-[20rem] items-center gap-3 rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
             style={{ left: Math.min(pod!.x + 14, 620), top: pod!.y + 14 }}
           >
-            <p className="font-medium">{podKursorem.nazwa}</p>
-            <p className="liczby text-atrament-2">{opis(podKursorem)}</p>
+            <Portret
+              slug={podKursorem.slug}
+              imieNazwisko={podKursorem.nazwa}
+              maZdjecie={podKursorem.maZdjecie}
+              rozmiar="maly"
+            />
+            <span className="min-w-0">
+              <span className="block font-medium">{podKursorem.nazwa}</span>
+              <span className="liczby block text-atrament-2">{opis(podKursorem)}</span>
+            </span>
           </div>
         ) : null}
       </div>
@@ -194,10 +206,18 @@ export function PlanSali({
         <>
           <div className="mt-3 min-h-[4.5rem] rounded-2xl border border-kreska bg-papier-2 p-4">
             {karta ? (
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-                <div>
-                  <p className="font-medium">{karta.nazwa}</p>
-                  <p className="liczby text-sm text-atrament-2">{opis(karta)}</p>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className="flex items-center gap-3">
+                  <Portret
+                    slug={karta.slug}
+                    imieNazwisko={karta.nazwa}
+                    maZdjecie={karta.maZdjecie}
+                    rozmiar="maly"
+                  />
+                  <div>
+                    <p className="font-medium">{karta.nazwa}</p>
+                    <p className="liczby text-sm text-atrament-2">{opis(karta)}</p>
+                  </div>
                 </div>
                 <Link
                   href={`/posel/${karta.slug}`}

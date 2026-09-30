@@ -10,6 +10,7 @@ const posel = (id: number, nazwisko: string, klub: string | null = 'KO'): PoselD
   klub_id: klub,
   okreg_nazwa: 'Kraków',
   okreg_nr: 13,
+  ma_zdjecie: 1,
 });
 
 describe('plan sali (dane z rysunku Kancelarii Sejmu)', () => {
