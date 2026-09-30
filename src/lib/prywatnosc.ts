@@ -214,11 +214,33 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
  * Prog NIE znosi listy `NIGDY`: spolka cywilna i wspolnota mieszkaniowa
  * zostaja ukryte niezaleznie od kwoty (w pomiarze wpadla tam "U&B s.c.").
  */
-// DO SPRAWDZENIA (24.09.2026): opisujemy te kwote jako „prog GBER", ale
-// tekstu rozporzadzenia 651/2014 nie udalo sie tego dnia otworzyc (EUR-Lex
-// oddaje pusta odpowiedz). Jesli prog transparentnosci w art. 9 jest WYZSZY,
-// to miedzy progami pokazujemy nazwiska, ktorych prawo publikowac nie kaze —
-// a na tym stoi uzasadnienie w tescie rownowagi. Bloker 3a w docs/plan.md.
+/*
+ * SPRAWDZONE 30.09.2026 — kwota sie zgadza. EUR-Lex nadal oddaje pusta
+ * odpowiedz (HTTP 202, zero bajtow), ale tekst nowelizacji GBER lezy takze
+ * na stronie Komisji: C(2023) 1712 final, przyjete jako rozporzadzenie
+ * 2023/1315, obowiazuje od 1.07.2023. Nowe brzmienie art. 9 ust. 1 lit. c):
+ *
+ *   „the information referred to in Annex III on each individual aid award
+ *    exceeding EUR 100 000, or for aid involved in financial products
+ *    supported by the InvestEU fund under Section 16 on each individual aid
+ *    award exceeding EUR 500 000, or for beneficiaries active in primary
+ *    agricultural production or in the fishery and aquaculture sector (…)
+ *    on each individual aid award exceeding EUR 10 000."
+ *
+ *   https://competition-policy.ec.europa.eu/system/files/2023-03/
+ *   GBER_amendment_2023_EC_communication_annex_0.pdf
+ *
+ * Przed ta nowelizacja prog ogolny wynosil 500 tys. EUR — stad rozbieznosc
+ * w starszych opracowaniach. Dwa przypisy do naszego progu:
+ *  - w rolnictwie pierwotnym i w rybolowstwie prawo kaze publikowac juz
+ *    od 10 tys. EUR, wiec tam jestesmy OSTROZNIEJSI, niz trzeba,
+ *  - dla produktow finansowych z InvestEU (sekcja 16) prog wynosi 500 tys.
+ *    EUR — to jedyne pasmo, w ktorym jestesmy mniej ostrozni niz GBER.
+ *    SUDOP nie oznacza tych przypadkow osobno, wiec ich nie wydzielamy;
+ *    decyzja o zwezeniu progu nalezy do Pawla.
+ * Liczymy POJEDYNCZA pomoc, nie sume dla podmiotu — to takze strona
+ * ostrozniejsza: trzy razy po 50 tys. EUR progu nie przekracza.
+ */
 export const PROG_JAWNOSCI_EUR = 100_000;
 
 export type OpcjeNazwy = {

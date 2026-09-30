@@ -105,6 +105,24 @@ Każde z nich jest w kodzie i objęte testami:
    tam, gdzie publikacji wymagają przepisy unijne — i **tylko gdy działa adres
    do zgłoszenia sprzeciwu**. Bez adresu próg jest wyłączony w kodzie, nie
    w deklaracji.
+
+   **Sprawdzone 30.09.2026 w tekście przepisu.** Art. 9 ust. 1 lit. c)
+   rozporządzenia 651/2014 w brzmieniu nadanym rozporządzeniem 2023/1315
+   (obowiązuje od 1 lipca 2023 r.) nakazuje publikować informacje z załącznika
+   III „on each individual aid award exceeding EUR 100 000”; 500 tys. EUR
+   dotyczy produktów finansowych InvestEU z sekcji 16, a 10 tys. EUR —
+   rolnictwa pierwotnego oraz rybołówstwa i akwakultury. Przed tą nowelizacją
+   próg ogólny wynosił 500 tys. EUR, stąd wyższa kwota w starszych
+   opracowaniach. Źródło:
+   <https://competition-policy.ec.europa.eu/system/files/2023-03/GBER_amendment_2023_EC_communication_annex_0.pdf>
+
+   Dwa miejsca, w których jesteśmy **ostrożniejsi niż przepis**: liczymy
+   pojedynczą pomoc, a nie sumę dla podmiotu (trzy razy po 50 tys. EUR progu
+   nie przekracza), i w rolnictwie oraz rybołówstwie stosujemy próg 100 tys.
+   zamiast 10 tys. EUR. Jedno, w którym jesteśmy mniej ostrożni: dla produktów
+   InvestEU przepis wymaga publikacji dopiero powyżej 500 tys. EUR, a SUDOP
+   nie oznacza tych przypadków osobno — w tym wąskim paśmie nazwa może się
+   pokazać, choć prawo tego nie wymaga.
 4. **Strona odsłonięta progiem ma `noindex`** — informacja zostaje w serwisie,
    ale nie buduje śladu w wyszukiwarkach.
 5. **Wyszukiwarka nie znajduje osób fizycznych** — ani po nazwisku, ani po
