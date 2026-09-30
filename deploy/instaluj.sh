@@ -154,6 +154,34 @@ EOF
   # nie jest lapana jak brakujaca tabela — wywrocilaby strone gminy.
   jako node_modules/.bin/tsx ingest/jobs/migracje.ts
 
+  # Budowa NIE dzieli maszyny z zadaniami danych.
+  #
+  # ZMIERZONE 30.09.2026: wdrozenie o 17:52 zostalo zabite przez jadro
+  # („Killed" w fazie kompilacji). O :07 kazdej godziny startuje
+  # jawne-sudop-historia, ktore czeka na kolejke urzedu DO 57 MINUT — wiec
+  # w czasie budowy zyl drugi proces Node, trzymajacy pamiec i baze.
+  # Na maszynie z 2 GB przegrywa ten wiekszy, czyli build.
+  #
+  # Zatrzymanie pobierania SUDOP kosztuje najwyzej jedno zapytanie: zakres,
+  # ktorego kolejka nie oddala, wraca w nastepnym przebiegu, a blokada
+  # (.blokada) jest zdejmowana na SIGTERM. Timery wracaja ZAWSZE — takze
+  # po nieudanej budowie, przez pulapke nizej.
+  krok "Zatrzymanie zadan danych na czas budowy"
+  local timery=()
+  local zadanie
+  for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted; do
+    if systemctl is-enabled --quiet "jawne-$zadanie.timer" 2>/dev/null; then timery+=("jawne-$zadanie.timer"); fi
+    systemctl stop "jawne-$zadanie.timer" 2>/dev/null || true
+    if systemctl is-active --quiet "jawne-$zadanie.service" 2>/dev/null; then
+      echo "   przerywam trwajace zadanie: $zadanie"
+      systemctl stop "jawne-$zadanie.service" 2>/dev/null || true
+    fi
+  done
+  # shellcheck disable=SC2064
+  trap "systemctl start ${timery[*]:-} 2>/dev/null || true" EXIT
+  echo "   wylaczone na czas budowy: ${#timery[@]} timerow"
+  free -m | sed 's/^/   /'
+
   # Budujemy OBOK i podmieniamy dopiero po sukcesie. Przedtem bylo odwrotnie:
   # najpierw `stop`, potem budowa w `.next` w miejscu — wiec nieudana budowa
   # zostawiala i wylaczony serwis, i uszkodzony katalog. Tak zniknela strona
@@ -161,7 +189,13 @@ EOF
   # przez caly czas budowy, a przerwa trwa tyle, co restart.
   krok "Budowa strony (kilkanascie minut; strona dziala na starej wersji)"
   jako rm -rf .next-budowa
-  jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build"
+  # „Killed" bez zadnego wyjasnienia to komunikat POWLOKI o zabiciu procesu
+  # przez jadro. Nazwijmy mechanizm od razu, zamiast kazac go szukac.
+  if ! jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build"; then
+    echo "Budowa nie doszla do konca. Ostatnie zabicia procesu przez jadro (brak pamieci):"
+    dmesg -T 2>/dev/null | grep -iE 'killed process|out of memory' | tail -3 | sed 's/^/   /'       || echo "   (dziennik jadra niedostepny — sprawdz: sudo dmesg -T | grep -i 'killed process')"
+    exit 1
+  fi
   [ -f "$KATALOG/.next-budowa/prerender-manifest.json" ]     || { echo "Budowa nie zostawila kompletu plikow — nie podmieniam dzialajacej strony."; exit 1; }
 
   # Next dopisuje do tsconfig.json sciezki katalogu budowy. Wpisy dla
