@@ -74,9 +74,78 @@ wierszy. Serwer ma **1,8 GB pamięci i 2 rdzenie**.
 
 ---
 
+## Pierwotny zamysł — i to, że go jeszcze nie ma
+
+**To jest najważniejszy akapit tego briefu.** Serwis miał od początku
+pokazywać trzy rzeczy:
+
+1. **poglądy polityków** — na czym komu zależy i jak kto stoi w sprawach,
+   które ludzi obchodzą,
+2. **ich majątki** — w sposób wizualny, a nie jako tabela z PDF-a,
+3. **dokąd idą publiczne pieniądze** — łatwo i przystępnie.
+
+Zbudowane jest głównie to trzecie, i to od strony hydrauliki: mamy dane,
+mamy odnośniki do rejestrów, mamy sumy na mieszkańca. Punkty 1 i 2 nie
+istnieją wcale. Projekt przez rok szedł w stronę inżynierii danych i tam jest
+dobry — ale pierwotny pomysł na to, **po co ktoś miałby tu wejść**, został
+z tyłu.
+
+Zadanie ma to odwrócić. Interesuje nas najbardziej to, czego nie ma.
+
+### Poglądy — dlaczego to jest trudne, a nie tylko niezrobione
+
+Mamy 2,1 mln głosów imiennych. Kusi, żeby zrobić z nich „poglądy posła”.
+**Głos w konkretnym głosowaniu jest faktem — etykieta światopoglądowa
+wyklejona z głosów jest naszą interpretacją.** Reguła 6 zakazuje ocen,
+reguła 2 zakazuje zgadywania. Jednocześnie zdanie „ten poseł głosował za
+ustawą X, a przeciw Y” jest w pełni uczciwe i to właśnie jest treść, po którą
+ludzie przychodzą.
+
+Nie wiemy, gdzie dokładnie biegnie ta granica, i tego od Was chcemy:
+**jak pokazać stanowiska posłów tak, żeby czytelnik zobaczył różnice między
+nimi, a serwis nie zaczął ich etykietować.** Dodatkowa trudność: temat
+głosowania jest w rejestrze tekstem, nie kategorią — pogrupowanie głosowań
+w „sprawy” to już nasza decyzja i trzeba ją umieć obronić.
+
+Przypomnienie z pułapki 12 w `CLAUDE.md`: tytuł i temat głosowania zamieniają
+się rolami i trzeba czytać je przez `opisGlosowania()`. Mamy też
+`glosowania_cechy` z rozpoznanym „głosowaniem nad całością projektu”
+i 1 692 procesy legislacyjne z etapami — czyli da się dojść od głosu do
+ustawy.
+
+### Majątki — co wiemy o dostępności
+
+`docs/zrodla.md` mówi: oświadczenia majątkowe i rejestr korzyści są na
+sejm.gov.pl, **bez API, w dużej części jako skany**. To znaczy: ręczne
+przepisywanie z podwójną kontrolą, dla 460 osób, co roku. Przy zasadzie
+„błąd w liczbie przy czyimś nazwisku kosztuje więcej niż tydzień opóźnienia”
+to jest poważne zobowiązanie, nie weekend pracy.
+
+Pytania: czy istnieje droga, której nie widzimy (inny rejestr, dane
+w formie maszynowej, wcześniejsze opracowania na otwartej licencji)? Jeśli
+nie — czy da się zrobić wersję ograniczoną, która jest uczciwa
+(np. tylko to, co da się odczytać automatycznie i zweryfikować), zamiast
+całości przepisanej ręcznie? I jak pokazać majątek **wizualnie**, nie
+sugerując przy tym niczego o jego pochodzeniu?
+
+### Przystępność — trzecia noga
+
+„Łatwo i przystępnie” to nie jest to samo, co „dokładnie”. Dziś strona gminy
+podaje kwoty na mieszkańca z medianą w województwie i odnośnikiem do
+rejestru — to jest rzetelne i nadal wymaga od czytelnika wysiłku. Szukamy
+sposobów, żeby ktoś bez przygotowania zobaczył **swoją** sprawę w pierwszych
+dziesięciu sekundach.
+
+---
+
 ## Zadanie
 
-Trzy pytania, w tej kolejności ważności.
+Cztery pytania. Pierwsze dwa są ważniejsze od pozostałych.
+
+### 0. Jak zrobić poglądy i majątki, nie łamiąc zasad?
+
+Opisane wyżej. Oczekujemy konkretu: co dokładnie widać na ekranie, z czego
+to jest policzone i gdzie przebiega granica, za którą byłaby to już ocena.
 
 ### 1. Co da się powiedzieć z POŁĄCZENIA tych danych, czego nie mówi nikt inny?
 
@@ -108,7 +177,7 @@ w nich jest nie tak** — każde źródło ma haczyk, a my zapisujemy haczyki.
 Nie proponuj: rejestrów zawierających wyłącznie osoby fizyczne, danych
 wymagających zgody ministra, źródeł bez licencji na republikację.
 
-### 3. Co sprawi, że ktoś tu wróci drugi raz?
+### 3. Co sprawi, że ktoś tu wróci drugi raz — i zrozumie, co widzi?
 
 Serwis pokazuje liczby i nie ocenia. To uczciwe, ale bierne. Szukamy
 sposobów, żeby czytelnik znalazł **swoją** sprawę: swoją gminę, swojego posła,
