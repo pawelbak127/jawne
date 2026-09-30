@@ -294,8 +294,16 @@ function rozdzielPodpisy(podpisy, wedlugNazwiska) {
 }
 
 /**
- * Numer miejsca dla podpisu: etykieta liczbowa lezaca POD nim, wysrodkowana
- * wzgledem niego. Nazwiska w jednym rzedzie sa poprzesuwane w pionie, a dluzsze
+ * Numer miejsca dla podpisu — i JEGO POZYCJA, bo to ona jest miejscem.
+ *
+ * ZGLOSZENIE PAWLA 30.09.2026: „kropki sa mocno rozjechane". Mial racje
+ * i blad byl moj: bralem pozycje NAZWISKA, a rysownik przesuwa nazwiska
+ * w pionie, zeby dluzsze sie nie nachodzily. ZMIERZONE: w rzedach powyzej
+ * pieciu miejsc sredni rozrzut w pionie wynosil 13,8 jednostki przy odstepie
+ * miedzy sasiadami okolo 19. Numer stoi w rzedzie rowno, wiec bierzemy jego
+ * wspolrzedne, a pozycje nazwiska tylko wtedy, gdy numeru nie ma.
+ *
+ * Etykieta liczbowa lezy POD podpisem, wysrodkowana wzgledem niego. Nazwiska w jednym rzedzie sa poprzesuwane w pionie, a dluzsze
  * wystaja poza swoje miejsce, wiec idziemy od przypadkow oczywistych do coraz
  * luzniejszych — i za kazdym razem numer moze trafic tylko do jednego podpisu.
  * Gdy po trzech turach nic nie pasuje, numer zostaje `null`. Zgadywanie numeru
@@ -324,7 +332,7 @@ function przypiszNumery(podpisy, numery) {
     pary.sort((a, b) => a.koszt - b.koszt);
     for (const { i, j } of pary) {
       if (przypisane.has(i) || zajete.has(j)) continue;
-      przypisane.set(i, Number(numery[j].tekst));
+      przypisane.set(i, { numer: Number(numery[j].tekst), x: srodek(numery[j]), y: numery[j].y });
       zajete.add(j);
     }
   };
@@ -396,9 +404,10 @@ function main() {
     miejsca.push({
       id: posel.id,
       nazwa: `${posel.imie} ${posel.nazwisko}`,
-      numer: numerMiejsca.get(i) ?? null,
-      x: srodek(n),
-      y: n.y,
+      numer: numerMiejsca.get(i)?.numer ?? null,
+      // Numer stoi w rzedzie rowno; nazwisko bywa przesuniete w pionie.
+      x: numerMiejsca.get(i)?.x ?? srodek(n),
+      y: numerMiejsca.get(i)?.y ?? n.y,
     });
   });
 
