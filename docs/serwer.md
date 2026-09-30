@@ -218,6 +218,14 @@ sudo jawne plan
 - `sprawdz` — sześć stron lokalnie i pod adresem publicznym: `OK`, tytuł,
   obecny `noindex`. Na końcu „Wszystko odpowiada.”
 - `plan` — co pobierze najbliższa noc, bez pytania urzędu.
+- `sumy` — kontrola drugą drogą sum pomocy publicznej: te same liczby, które
+  liczą się przyrostowo dzień po dniu, policzone jeszcze raz SQL-em po całej
+  tabeli i porównane pole po polu. **Drogie** (kilka przebiegów po milionach
+  wierszy), więc na żądanie, a nie co noc. Wynik oczekiwany: „kontrola drugą
+  drogą: zero rozjazdów”. Rozjazd oznacza, że sumy przyrostowe rozeszły się
+  ze źródłem — wtedy `sudo jawne uruchom sejm` nie pomoże, trzeba przeliczyć
+  od zera:
+  `sudo -u jawne -H bash -c 'cd /srv/jawne && node_modules/.bin/tsx ingest/jobs/migracje.ts --agregaty-od-nowa'`.
 
 Otwórz w przeglądarce adres z `sudo jawne stan` → `/stan` albo z końca
 kroku 8 (`https://<ip-z-myślnikami>.sslip.io`).

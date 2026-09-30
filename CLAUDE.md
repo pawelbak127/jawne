@@ -101,7 +101,7 @@ npm run sudop:artefakty -- --import                         # zaciąga to, co po
 npx tsx ingest/jobs/sudop.ts --historia --plan              # co pobierze noc serwera — bez sieci
 npm run paczka-na-serwer                                    # baza + odpowiedzi SUDOP dla serwera
 
-# Serwer (docs/serwer.md): sudo jawne stan | plan | logi ZAD | sprawdz | aktualizuj
+# Serwer (docs/serwer.md): sudo jawne stan | plan | logi ZAD | sprawdz | sumy | aktualizuj
 # Zadania serwera: sudop-dzien, sudop-historia, sejm, gus, fundusze, ted
 ```
 
