@@ -9,6 +9,7 @@ import { nazwaDoPokazania } from './prywatnosc';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
+import { zwinDoPowiatow, type LudnoscGminy, type WartoscNaMapie } from './mapa';
 import {
   DNI_USTALONE, KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy,
   policzPrzeglad, type Czytnik, type PrzegladPomocy,
@@ -751,7 +752,7 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
 
 export type MiaraMapy = 'dochody' | 'unia' | 'pomoc';
 
-export type WartoscNaMapie = { teryt: string; wartosc: number };
+export type { WartoscNaMapie } from './mapa';
 
 /**
  * Wartosci do mapy: jedna liczba na gmine, ZAWSZE na mieszkanca.
@@ -794,6 +795,62 @@ export function wartosciMapy(miara: MiaraMapy): WartoscNaMapie[] {
     if (zapisana) return JSON.parse(zapisana.wartosc) as WartoscNaMapie[];
     return policzMapePomocy(czytnik, TERYT_WARSZAWY);
   }, []);
+}
+
+/**
+ * Ludnosc gmin — mianownik zwijania mapy do powiatow.
+ *
+ * Warszawa jak wszedzie indziej: 18 dzielnic skladamy w jedna jednostke
+ * `146501`, bo tak wyglada w granicach PRG i tak liczy ja `wartosciMapy`
+ * (pulapka 24).
+ */
+export function ludnoscGmin(): LudnoscGminy[] {
+  return bezTabeli(
+    () => wszystkie<LudnoscGminy>(
+      `select l.teryt as teryt, l.osob as osob
+         from ludnosc l join gminy g on g.teryt = l.teryt
+        where g.rodzaj <> 'dzielnica Warszawy'
+       union all
+       select '${TERYT_WARSZAWY}', sum(l.osob)
+         from ludnosc l join gminy g on g.teryt = l.teryt
+        where g.rodzaj = 'dzielnica Warszawy'
+       having count(*) > 0`,
+    ),
+    [],
+  );
+}
+
+/**
+ * Nazwy powiatow po czterech pierwszych cyfrach TERYT-u, w pisowni PKW.
+ *
+ * Powiat ziemski ma nazwe przymiotnikowa mala litera („bolesławiecki"),
+ * miasto na prawach powiatu — wlasna („Wrocław"). Tej roznicy nie da sie
+ * wyczytac z kodu, a na mapie trzeba napisac „powiat bolesławiecki", ale
+ * samo „Wrocław"; dlatego oddajemy nazwe surowa i decyzje zostawiamy
+ * stronie. PRG zna te same 380 kodow (kontrola w `granice-gmin.mjs`).
+ */
+export function nazwyPowiatow(): Map<string, string> {
+  return bezTabeli(() => {
+    const m = new Map<string, string>();
+    for (const r of wszystkie<{ kod: string; powiat: string }>(
+      `select substr(teryt, 1, 4) as kod, min(powiat) as powiat
+         from gminy where rodzaj <> 'dzielnica Warszawy' group by 1`,
+    )) m.set(r.kod, r.powiat);
+    m.set(TERYT_WARSZAWY.slice(0, 4), 'Warszawa');
+    return m;
+  }, new Map<string, string>());
+}
+
+/**
+ * To samo, co `wartosciMapy`, ale na poziomie powiatu.
+ *
+ * Skladane z wartosci gmin, a nie liczone osobnym SQL-em: pomoc publiczna
+ * przychodzi z gotowego agregatu (pulapka 52), wiec drugie zapytanie po
+ * calej tabeli oznaczaloby albo minuty na kazde wejscie, albo trzeci klucz
+ * w `agregaty`. Zwijanie jest czysta funkcja z testem — `zwinDoPowiatow`.
+ */
+export function wartosciMapyPowiatow(miara: MiaraMapy): WartoscNaMapie[] {
+  return zwinDoPowiatow(wartosciMapy(miara), ludnoscGmin());
 }
 
 // ---------------------------------------------------------------------------

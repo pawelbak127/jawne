@@ -8,7 +8,9 @@ import { zlote } from '@/lib/format';
 export type PlikMapy = {
   skala: number;
   zakres: { xmin: number; ymin: number; xmax: number; ymax: number };
-  gminy: Record<string, string[]>;
+  /** Ksztalty jednego poziomu — plik gmin ma `gminy`, plik powiatow `powiaty`. */
+  gminy?: Record<string, string[]>;
+  powiaty?: Record<string, string[]>;
   /**
    * Granice wojewodztw z WLASNEJ warstwy PRG (A01), nie sklejone z gmin.
    * ZMIERZONE 29.09.2026: po uproszczeniu kazdej gminy osobno wspolne
@@ -52,23 +54,39 @@ export type PozycjaMapy = [teryt: string, nazwa: string, wartosc: number | null]
 const BARWY = ['#dbeee9', '#b3ddd3', '#84c7b6', '#55ac97', '#2f8a76', '#1b6152'];
 const BEZ_DANYCH = 'var(--kreska-2)';
 const KROK_POWIEKSZENIA = 1.6;
+export type Poziom = 'gminy' | 'powiaty';
 const MAKS_POWIEKSZENIE = 12;
 
 export function MapaGmin({
   pozycje,
   progi,
+  poziom = 'gminy',
+  przyblizDo = null,
+  miara = 'dochody',
 }: {
   pozycje: PozycjaMapy[];
   /** Granice kubelkow policzone na serwerze — legenda i mapa z jednej listy. */
   progi: number[];
+  /** Ktory podzial rysujemy. Kazdy poziom ma WLASNY plik konturow. */
+  poziom?: Poziom;
+  /** Kod powiatu, na ktory mapa ma byc od razu przyblizona (`?powiat=`). */
+  przyblizDo?: string | null;
+  /** Do adresu „pokaz gminy tego powiatu" — wybor miary ma sie nie gubic. */
+  miara?: string;
 }) {
   const router = useRouter();
   const [plik, ustawPlik] = useState<PlikMapy | null>(null);
   const [blad, ustawBlad] = useState(false);
   const [pod, ustawPod] = useState<{ teryt: string; x: number; y: number } | null>(null);
   const [wybrany, ustawWybranego] = useState<string | null>(null);
-  const [powiekszenie, ustawPowiekszenie] = useState(1);
-  const [srodek, ustawSrodek] = useState({ x: 0.5, y: 0.5 });
+  /*
+   * Widok to JEDEN stan, a `null` znaczy „czytelnik jeszcze nic nie ruszyl".
+   * Dopiero wtedy moze zadzialac przyblizenie z adresu (`?powiat=`). Gdyby
+   * powiekszenie bylo stanem ustawianym w efekcie po wczytaniu konturow,
+   * kazde wejscie renderowaloby mape dwa razy — i tak samo wygladaloby
+   * „cofniecie" widoku, gdyby czytelnik zdazyl nim ruszyc.
+   */
+  const [widok, ustawWidok] = useState<{ z: number; x: number; y: number } | null>(null);
   const [wojewodztwo, ustawWojewodztwo] = useState<string | null>(null);
   const ramka = useRef<SVGSVGElement>(null);
   const przeciaganie = useRef<{ x: number; y: number; srodek: { x: number; y: number }; ruszyl: boolean } | null>(null);
@@ -83,14 +101,14 @@ export function MapaGmin({
 
   useEffect(() => {
     let zywe = true;
-    fetch('/mapa/gminy.json')
+    fetch(`/mapa/${poziom}.json`)
       .then((o) => (o.ok ? o.json() : Promise.reject(new Error(String(o.status)))))
       .then((j: PlikMapy) => zywe && ustawPlik(j))
       .catch(() => zywe && ustawBlad(true));
     return () => {
       zywe = false;
     };
-  }, []);
+  }, [poziom]);
 
   const wg = useMemo(() => new Map(pozycje.map((p) => [p[0], p])), [pozycje]);
 
@@ -149,7 +167,8 @@ export function MapaGmin({
 
   const ksztalty = useMemo(() => {
     if (!plik || !sciezka) return [];
-    return Object.entries(plik.gminy).map(([teryt, pierscienie]) => ({ teryt, d: sciezka(pierscienie).d }));
+    const jednostki = plik.gminy ?? plik.powiaty ?? {};
+    return Object.entries(jednostki).map(([teryt, pierscienie]) => ({ teryt, ...sciezka(pierscienie) }));
   }, [plik, sciezka]);
 
   /** Obrysy wojewodztw — rysowane NAD gminami, ale nieklikalne. */
@@ -178,6 +197,36 @@ export function MapaGmin({
 
   const opis = (p: PozycjaMapy) => (p[2] === null ? 'brak danych' : `${zlote(Math.round(p[2]))} na mieszkańca`);
 
+  /**
+   * Prostokat obejmujacy jednostki o danym prefiksie TERYT-u, przeliczony
+   * na widok. Sluzy i przyblizeniu z adresu, i wyborowi wojewodztwa.
+   */
+  const widokNa = useMemo(() => (prefiks: string, zapas: number) => {
+    const swoje = ksztalty.filter((k) => k.teryt.startsWith(prefiks));
+    if (swoje.length === 0) return null;
+    const x0 = Math.min(...swoje.map((k) => k.x0));
+    const x1 = Math.max(...swoje.map((k) => k.x1));
+    const y0 = Math.min(...swoje.map((k) => k.y0));
+    const y1 = Math.max(...swoje.map((k) => k.y1));
+    const z = Math.min(1000 / ((x1 - x0) * zapas), wysokosc / ((y1 - y0) * zapas));
+    return {
+      z: Math.min(Math.max(z, 1), MAKS_POWIEKSZENIE),
+      x: (x0 + x1) / 2 / 1000,
+      y: (y0 + y1) / 2 / wysokosc,
+    };
+  }, [ksztalty, wysokosc]);
+
+  /*
+   * Deep-link `?powiat=1465`: po kliknieciu w powiat wracamy na poziom gmin
+   * przyblizeni na ten powiat. Widok gmin nie zna obrysow powiatow, wiec
+   * prostokat skladamy z prostokatow gmin o tym prefiksie TERYT-u.
+   * Zapas 1,3 — powiat bez otoczenia nie mowi, gdzie w kraju lezy.
+   */
+  const zAdresu = przyblizDo ? widokNa(przyblizDo, 1.3) : null;
+  const biezacy = widok ?? zAdresu ?? { z: 1, x: 0.5, y: 0.5 };
+  const powiekszenie = biezacy.z;
+  const srodek = { x: biezacy.x, y: biezacy.y };
+
   // viewBox po powiekszeniu: srodek trzymamy w ulamkach, zeby dzialal
   // tak samo przy kazdej szerokosci ekranu.
   const szerWidoku = 1000 / powiekszenie;
@@ -185,12 +234,11 @@ export function MapaGmin({
   const vx = Math.min(Math.max(srodek.x * 1000 - szerWidoku / 2, 0), 1000 - szerWidoku);
   const vy = Math.min(Math.max(srodek.y * wysokosc - wysWidoku / 2, 0), wysokosc - wysWidoku);
 
-  const przesun = (dx: number, dy: number) => {
-    ustawSrodek((s) => ({
-      x: Math.min(Math.max(s.x + dx, 0), 1),
-      y: Math.min(Math.max(s.y + dy, 0), 1),
-    }));
-  };
+  const przesun = (dx: number, dy: number) => ustawWidok({
+    z: powiekszenie,
+    x: Math.min(Math.max(srodek.x + dx, 0), 1),
+    y: Math.min(Math.max(srodek.y + dy, 0), 1),
+  });
 
   /**
    * Przyblizenie na wybrane wojewodztwo. Powiekszenie bierze sie z prostokata
@@ -199,25 +247,25 @@ export function MapaGmin({
    */
   const pokazWojewodztwo = (kod: string | null) => {
     ustawWojewodztwo(kod);
-    const w = kod === null ? null : granice.find((g) => g.kod === kod);
-    if (!w) {
-      ustawPowiekszenie(1);
-      ustawSrodek({ x: 0.5, y: 0.5 });
-      return;
-    }
     // Zapas 12%: obrys dotykajacy krawedzi ramki wyglada na uciety.
-    const zapas = 1.12;
-    const z = Math.min(1000 / ((w.x1 - w.x0) * zapas), wysokosc / ((w.y1 - w.y0) * zapas));
-    ustawPowiekszenie(Math.min(Math.max(z, 1), MAKS_POWIEKSZENIE));
-    ustawSrodek({ x: (w.x0 + w.x1) / 2 / 1000, y: (w.y0 + w.y1) / 2 / wysokosc });
+    ustawWidok((kod === null ? null : widokNa(kod, 1.12)) ?? { z: 1, x: 0.5, y: 0.5 });
   };
+
+  /*
+   * Powiat nie ma wlasnej strony i nie bedzie jej mial na sile: klikniecie
+   * prowadzi na te sama mape, o poziom nizej i przyblizona na ten powiat.
+   * To jedyna droga „w dol", jaka te dane naprawde maja.
+   */
+  const dokad = (teryt: string) => (poziom === 'powiaty'
+    ? `/mapa?${[miara === 'dochody' ? null : `miara=${miara}`, `powiat=${teryt}`].filter(Boolean).join('&')}`
+    : `/gmina/${teryt}`);
 
   const karta = wybrany ? wg.get(wybrany) : null;
 
   if (blad) {
     return (
       <p className="rounded-2xl border border-kreska bg-papier-2 p-6 text-sm text-atrament-2">
-        Nie udało się wczytać konturów gmin.{' '}
+        {poziom === 'powiaty' ? 'Nie udało się wczytać konturów powiatów. ' : 'Nie udało się wczytać konturów gmin. '}
         <Link href="/gminy" className="text-akcent underline underline-offset-4">Spis gmin</Link>{' '}
         pokazuje te same dane bez mapy.
       </p>
@@ -228,7 +276,7 @@ export function MapaGmin({
     <div>
       {!plik ? (
         <div className="grid h-[420px] place-items-center rounded-2xl border border-kreska bg-papier-2 text-sm text-atrament-3">
-          Wczytuję kontury gmin…
+          {poziom === 'powiaty' ? 'Wczytuję kontury powiatów…' : 'Wczytuję kontury gmin…'}
         </div>
       ) : (
         <>
@@ -265,7 +313,7 @@ export function MapaGmin({
             viewBox={`${vx} ${vy} ${szerWidoku} ${wysWidoku}`}
             className="w-full touch-none rounded-2xl border border-kreska bg-papier-2"
             role="img"
-            aria-label="Mapa gmin — kliknięcie wybiera gminę"
+            aria-label={poziom === 'powiaty' ? 'Mapa powiatów — kliknięcie wybiera powiat' : 'Mapa gmin — kliknięcie wybiera gminę'}
             onMouseLeave={() => ustawPod(null)}
             onPointerDown={(e) => {
               if ((e.pointerType !== 'mouse') !== dotykiem) ustawDotykiem(e.pointerType !== 'mouse');
@@ -283,7 +331,8 @@ export function MapaGmin({
               if (powiekszenie === 1) return;
               const r = ramka.current?.getBoundingClientRect();
               if (!r) return;
-              ustawSrodek({
+              ustawWidok({
+                z: powiekszenie,
                 x: Math.min(Math.max(p.srodek.x - (e.clientX - p.x) / (r.width * powiekszenie), 0), 1),
                 y: Math.min(Math.max(p.srodek.y - (e.clientY - p.y) / (r.height * powiekszenie), 0), 1),
               });
@@ -313,7 +362,7 @@ export function MapaGmin({
                   // Na dotyku klikniecie tylko ZAZNACZA — przejscie jest
                   // osobnym przyciskiem, bo palec trafia w sasiednia gmine.
                   if (dotykiem) { ustawWybranego(k.teryt); return; }
-                  if (wg.has(k.teryt)) router.push(`/gmina/${k.teryt}`);
+                  if (wg.has(k.teryt)) router.push(dokad(k.teryt));
                 }}
               />
             ))}
@@ -368,7 +417,7 @@ export function MapaGmin({
             <button
               type="button"
               aria-label="Powiększ"
-              onClick={() => ustawPowiekszenie((z) => Math.min(z * KROK_POWIEKSZENIA, MAKS_POWIEKSZENIE))}
+              onClick={() => ustawWidok({ ...biezacy, z: Math.min(powiekszenie * KROK_POWIEKSZENIA, MAKS_POWIEKSZENIE) })}
               className="grid h-9 w-9 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
             >
               +
@@ -376,7 +425,7 @@ export function MapaGmin({
             <button
               type="button"
               aria-label="Pomniejsz"
-              onClick={() => ustawPowiekszenie((z) => Math.max(z / KROK_POWIEKSZENIA, 1))}
+              onClick={() => ustawWidok({ ...biezacy, z: Math.max(powiekszenie / KROK_POWIEKSZENIA, 1) })}
               className="grid h-9 w-9 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
             >
               −
@@ -414,15 +463,17 @@ export function MapaGmin({
               <p className="liczby text-sm text-atrament-2">{opis(karta)}</p>
             </div>
             <Link
-              href={`/gmina/${karta[0]}`}
+              href={dokad(karta[0])}
               className="rounded-xl bg-atrament px-4 py-2 text-sm font-medium text-papier transition-opacity hover:opacity-90"
             >
-              Zobacz tę gminę →
+              {poziom === 'powiaty' ? 'Pokaż gminy tego powiatu →' : 'Zobacz tę gminę →'}
             </Link>
           </div>
         ) : (
           <p className="text-sm text-atrament-3">
-            Dotknij gminy, żeby ją wybrać — potem przycisk przeniesie Cię na jej stronę.
+            {poziom === 'powiaty'
+              ? 'Dotknij powiatu, żeby go wybrać — potem przycisk pokaże jego gminy. '
+              : 'Dotknij gminy, żeby ją wybrać — potem przycisk przeniesie Cię na jej stronę. '}
             Przyciskiem <span className="liczby">+</span> powiększysz mapę.
           </p>
         )}

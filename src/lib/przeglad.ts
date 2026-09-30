@@ -16,6 +16,8 @@
  * ale poprawnie. Brak agregatu jest stanem, nie awaria (wzorzec 6).
  */
 
+import type { WartoscNaMapie } from './mapa.js';
+
 /** Minimum, jakiego potrzebuje ten modul od polaczenia z baza. */
 export type Czytnik = {
   wszystkie<T>(sql: string, ...params: unknown[]): T[];
@@ -145,8 +147,8 @@ export function policzPrzeglad(cz: Czytnik, terytWarszawy: string): PrzegladPomo
   };
 }
 
-/** Jedna gmina na mapie: ile pomocy na mieszkanca. */
-export type WartoscNaMapie = { teryt: string; wartosc: number };
+/** Jedna gmina na mapie: ile pomocy na mieszkanca. Typ zyje w `mapa.ts`. */
+export type { WartoscNaMapie } from './mapa.js';
 
 /**
  * Mapa pomocy publicznej na mieszkanca.
