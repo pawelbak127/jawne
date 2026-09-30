@@ -184,6 +184,21 @@ sposobów, żeby czytelnik znalazł **swoją** sprawę: swoją gminę, swojego p
 firmę z sąsiedztwa — i miał powód wrócić. Bez powiadomień push, bez kont
 użytkowników, bez newslettera wymagającego obsługi.
 
+### 4. Co w tym produkcie jest ZŁE?
+
+Pytanie zadane wprost przez Pawła: „mogę się też mylić i moje wybory mogą być
+błędne, chętnie przyjmę również krytykę, nie muszą być to tylko przytakiwania”.
+
+Odpowiedź, która głównie chwali, jest **niewykonaniem zadania**. Do zaatakowania
+jest wszystko, łącznie z założeniami tego briefu: czy ktokolwiek tego
+potrzebuje, czy to nie istnieje już lepiej, czy zasada „nie oceniamy” nie jest
+wymówką, czy standard wiarygodności nie zjada projektu, czy utrzyma to jedna
+osoba, czy sam pierwotny zamysł (poglądy, majątki) jest dobry — i co
+najprawdopodobniej sprawi, że za rok tego nie będzie.
+
+Przy każdym zarzucie: czy jest odwracalny. Błąd w kodzie się poprawia, błędny
+wybór produktu kosztuje rok.
+
 ---
 
 ## Czego wymagamy od każdej propozycji
