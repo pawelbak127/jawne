@@ -1,12 +1,19 @@
 # Granice gmin — PRG (GUGiK)
 
-Plik źródłowy **nie leży w repozytorium**: ma 164 MB. W repozytorium jest
-tylko wynik konwersji, `public/mapa/gminy.json` (ok. 940 kB), żeby zbudowanie
-serwisu nie wymagało pobierania źródła.
+Plik źródłowy **nie leży w repozytorium**: ma 164 MB. W repozytorium są
+tylko wyniki konwersji — `public/mapa/gminy.json` (ok. 1,0 MB) i
+`public/mapa/powiaty.json` (ok. 448 kB) — żeby zbudowanie serwisu nie
+wymagało pobierania źródła.
+
+**Dwa pliki, nie jeden.** Mapa ma dwa poziomy i każdy pobiera dokładnie
+jeden plik. Dołożenie 380 powiatów do `gminy.json` podniosło go z 1 020 kB
+do 1 401 kB — płaciliby za to także czytelnicy, którzy zostają na gminach.
+Obrysy województw (7 875 punktów, ok. 77 kB) są w obu plikach: to taniej
+niż trzecie żądanie sieciowe.
 
 | | |
 |---|---|
-| Nazwa | Państwowy Rejestr Granic, warstwa `A03_Granice_gmin` |
+| Nazwa | Państwowy Rejestr Granic, warstwy `A03_Granice_gmin`, `A02_Granice_powiatow`, `A01_Granice_wojewodztw` |
 | Wydawca | Główny Urząd Geodezji i Kartografii |
 | Adres | <https://opendata.geoportal.gov.pl/prg/granice/00_jednostki_administracyjne.zip> |
 | Pobrane | 23.09.2026 |
@@ -34,3 +41,15 @@ node --experimental-strip-types scripts/granice-gmin.mjs
   przekształcone później. Na mapie zostają szare („brak danych”).
 - Warszawa jest w PRG **jedną jednostką 146501**, a u nas ma 18 dzielnic
   (pułapka 24). Na mapie pokazujemy jedną Warszawę.
+
+## Warstwy zbiorcze (dołożone 30.09.2026)
+
+- **16 województw**, 7 875 punktów. Granice bierzemy z własnej warstwy PRG,
+  a nie sklejamy z gmin: po uproszczeniu każdej gminy osobno wspólne
+  krawędzie sąsiadów nie są identyczne (46 327 krawędzi występuje raz,
+  22 326 dwa razy), więc scalanie dałoby poszarpany obrys.
+- **380 powiatów**, 37 826 punktów. Ta sama tolerancja co gminy, żeby
+  po przełączeniu poziomu granica kraju nie „drgała”.
+- **Nazwy powiatów bierze strona z naszej tabeli `gminy`** (pisownia PKW),
+  nie z PRG — PRG zapisuje miasta na prawach powiatu jako „powiat Warszawa”.
+  Skrypt sprawdza tylko zgodność list kodów: **380 = 380, zero rozjazdów**.
