@@ -84,6 +84,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const importFe = zrodloImportu('fundusze-2021-2027');
   const zamowienia = zamowieniaGminy(terytFunduszy);
   const importTed = zrodloImportu('zamowienia');
+  const importRegon = zrodloImportu('regon');
 
   return (
     <div className="obszar py-10">
@@ -223,7 +224,14 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
       </section>
 
-      {zamowienia.ogloszen ? <ZamowieniaWGminie z={zamowienia} dzielnica={dzielnica} pobrano={importTed?.kiedy ?? null} /> : null}
+      {zamowienia.ogloszen ? (
+        <ZamowieniaWGminie
+          z={zamowienia}
+          dzielnica={dzielnica}
+          pobrano={importTed?.kiedy ?? null}
+          pobranoRegon={importRegon?.kiedy ?? null}
+        />
+      ) : null}
 
       {/*
         Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
@@ -766,7 +774,14 @@ function BrakPomocy() {
  * urzad gminy, i strona musi to powiedziec, zeby nikt nie odczytal tego
  * jako „tyle wydala gmina".
  */
-function ZamowieniaWGminie({ z, dzielnica, pobrano }: { z: ZamowieniaGminy; dzielnica: boolean; pobrano: string | null }) {
+function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
+  z: ZamowieniaGminy;
+  dzielnica: boolean;
+  pobrano: string | null;
+  /** Data pobrania REGON-u — GUS potwierdzil (30.09.2026), ze oznaczenie
+      zrodla ma ja zawierac. To inny dzien niz pobranie ogloszen z TED. */
+  pobranoRegon: string | null;
+}) {
   return (
     <section id="zamowienia" className="mt-14 scroll-mt-20">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -882,7 +897,8 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano }: { z: ZamowieniaGminy; dzie
           (uwaga z przegladu 24.09.2026). */}
       <p className="mt-3 text-xs leading-relaxed text-atrament-3">
         {`Ogłoszenia od 13 listopada 2023 (początek kadencji) do dziś${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. `}
-        Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON (GUS, licencja CC BY 4.0).
+        {'Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON '
+          + `(Główny Urząd Statystyczny, licencja CC BY 4.0${pobranoRegon ? `, pobrany ${dataSlownie(pobranoRegon)}` : ''}).`}
       </p>
     </section>
   );
