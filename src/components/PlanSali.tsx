@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { Portret } from '@/components/Portret';
+import { BARWY_GLOSU } from '@/lib/barwy-glosu';
+import { etykieta } from '@/lib/glosy';
 import { PUNKTY_SALI } from '@/lib/plan-sali';
 import type { MiejscePosla } from '@/lib/sala';
 import { uprosc } from '@/lib/tekst';
@@ -42,20 +44,55 @@ export function PlanSali({
   const [wybrany, ustawWybranego] = useState<number | null>(wyroznionyId ?? null);
   const [dotykiem, ustawDotykiem] = useState(false);
   const [szukane, ustawSzukane] = useState('');
-  const [klubPodSpodem, ustawKlubPodSpodem] = useState<string | null>(null);
+  const [grupaPodSpodem, ustawGrupePodSpodem] = useState<string | null>(null);
 
   const wgId = useMemo(() => new Map(miejsca.map((m) => [m.id, m])), [miejsca]);
 
-  const kluby = useMemo(() => {
+  /*
+   * Gdy pokazujemy glosowanie, barwa miejsca mowi o GLOSIE, nie o klubie.
+   * Dwa znaczenia na jednej kropce nie daja sie odczytac naraz, a glos jest
+   * tym, po co czytelnik tu przyszedl. Legenda przelacza sie razem z barwami.
+   */
+  const zGlosami = miejsca.some((m) => m.glos !== undefined);
+  const barwyMiejsca = (m: MiejscePosla) => {
+    if (!zGlosami) return { b: m.barwa, bc: m.barwaCiemna };
+    const t = BARWY_GLOSU[m.glos ? etykieta(m.glos).ton : 'brak'];
+    return { b: t.jasny, bc: t.ciemny };
+  };
+
+  /**
+   * Legenda: kluby albo sposoby glosowania — zaleznie od tego, co pokazuja
+   * barwy. Grupa jest zarazem filtrem: najechanie na pozycje legendy
+   * przygasza wszystkie miejsca spoza niej.
+   *
+   * Sposoby glosowania ida w kolejnosci rejestru (za, przeciw, wstrzymal,
+   * reszta), a nie po liczebnosci: „za" ma byc zawsze w tym samym miejscu,
+   * inaczej legenda przeskakuje przy kazdym glosowaniu.
+   */
+  const grupy = useMemo(() => {
     const licznik = new Map<string, { etykieta: string; barwa: string; barwaCiemna: string; ile: number }>();
     for (const m of miejsca) {
-      const k = m.klubId ?? '—';
-      const w = licznik.get(k);
+      const t = zGlosami ? BARWY_GLOSU[m.glos ? etykieta(m.glos).ton : 'brak'] : null;
+      const klucz = zGlosami ? (m.glos ?? 'NIEOBECNY_W_GLOSOWANIU') : (m.klubId ?? '—');
+      const podpis = zGlosami
+        ? (m.glos ? etykieta(m.glos).krotka : 'nie ma w tym głosowaniu')
+        : m.klubEtykieta;
+      const w = licznik.get(klucz);
       if (w) w.ile += 1;
-      else licznik.set(k, { etykieta: m.klubEtykieta, barwa: m.barwa, barwaCiemna: m.barwaCiemna, ile: 1 });
+      else {
+        licznik.set(klucz, {
+          etykieta: podpis,
+          barwa: t?.jasny ?? m.barwa,
+          barwaCiemna: t?.ciemny ?? m.barwaCiemna,
+          ile: 1,
+        });
+      }
     }
-    return [...licznik.entries()].sort((a, b) => b[1].ile - a[1].ile);
-  }, [miejsca]);
+    const kolejnosc = ['YES', 'NO', 'ABSTAIN', 'PRESENT', 'VOTE_VALID', 'VOTE_INVALID', 'ABSENT', 'NIEOBECNY_W_GLOSOWANIU'];
+    return [...licznik.entries()].sort((a, b) => (zGlosami
+      ? (kolejnosc.indexOf(a[0]) + 1 || 99) - (kolejnosc.indexOf(b[0]) + 1 || 99)
+      : b[1].ile - a[1].ile));
+  }, [miejsca, zGlosami]);
 
   // Szukanie po nazwisku i po numerze miejsca: „Kowal" i „217" maja dzialac
   // tak samo, bo z sali czyta sie jedno i drugie.
@@ -72,12 +109,22 @@ export function PlanSali({
   const przygaszony = (m: MiejscePosla) => {
     if (wyroznionyId !== undefined) return m.id !== wyroznionyId;
     if (pasuje) return !pasuje.has(m.id);
-    if (klubPodSpodem) return m.klubId !== klubPodSpodem;
+    if (grupaPodSpodem) {
+      return (zGlosami ? (m.glos ?? 'NIEOBECNY_W_GLOSOWANIU') : (m.klubId ?? '—')) !== grupaPodSpodem;
+    }
     return false;
   };
 
   const opis = (m: MiejscePosla) =>
-    [m.klubEtykieta, m.okreg, m.numer === null ? null : `miejsce nr ${m.numer}`]
+    [
+      // Przy glosowaniu najpierw to, po co czytelnik tu jest. Posel, ktorego
+      // w tym glosowaniu NIE MA, dostaje zdanie wprost — inaczej szara kropka
+      // wygladalaby jak nieobecnosc, a to dwie rozne rzeczy.
+      zGlosami ? (m.glos ? etykieta(m.glos).pelna : 'nie ma go w tym głosowaniu') : null,
+      m.klubEtykieta,
+      m.okreg,
+      m.numer === null ? null : `miejsce nr ${m.numer}`,
+    ]
       .filter(Boolean)
       .join(' · ');
 
@@ -153,8 +200,8 @@ export function PlanSali({
               className="miejsce cursor-pointer"
               style={
                 {
-                  '--b': m.barwa,
-                  '--bc': m.barwaCiemna,
+                  '--b': barwyMiejsca(m).b,
+                  '--bc': barwyMiejsca(m).bc,
                   opacity: przygaszony(m) ? 0.16 : 1,
                   stroke: m.id === wybrany ? 'var(--atrament)' : undefined,
                   strokeWidth: m.id === wybrany ? 1.8 : undefined,
@@ -235,16 +282,16 @@ export function PlanSali({
           </div>
 
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-            {kluby.map(([id, k]) => (
+            {grupy.map(([id, k]) => (
               <button
                 key={id}
                 type="button"
-                onMouseEnter={() => ustawKlubPodSpodem(id === '—' ? null : id)}
-                onMouseLeave={() => ustawKlubPodSpodem(null)}
-                onFocus={() => ustawKlubPodSpodem(id === '—' ? null : id)}
-                onBlur={() => ustawKlubPodSpodem(null)}
+                onMouseEnter={() => ustawGrupePodSpodem(id)}
+                onMouseLeave={() => ustawGrupePodSpodem(null)}
+                onFocus={() => ustawGrupePodSpodem(id)}
+                onBlur={() => ustawGrupePodSpodem(null)}
                 className="flex items-center gap-2 rounded-md px-1.5 py-0.5 transition-opacity hover:bg-papier-3"
-                style={{ opacity: klubPodSpodem && klubPodSpodem !== id ? 0.45 : 1 }}
+                style={{ opacity: grupaPodSpodem && grupaPodSpodem !== id ? 0.45 : 1 }}
               >
                 <span
                   className="miejsce-probka h-2.5 w-2.5 shrink-0 rounded-full"

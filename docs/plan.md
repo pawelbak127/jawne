@@ -50,6 +50,43 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 | Poziomy suwak na `/stan` — „do uwalenia” | tabela zamieniona na karty; strona szersza (`max-w-5xl`), nic nie przewija się w bok |
 | „Tylko środkowa część ekranu jest wykorzystana” | `/stan` poszerzone; strony tekstowe (`/o-serwisie`, `/prywatnosc`) zostają wąskie, bo tam wąska kolumna jest zaletą |
 
+### Zgłoszenia Pawła z 29.09.2026 — mapa i sala, zrobione 30.09.2026
+
+| Co zgłosił | Co zrobione |
+|---|---|
+| „Do mapy może dodać też podział na województwa” | granice z własnej warstwy PRG (A01) rysowane nad gminami; nazwa województwa w chmurce i w karcie |
+| „Wybór województwa jak najbardziej na plus” | lista szesnastu nad mapą; wybór przybliża widok do prostokąta obejmującego obrys i przygasza resztę kraju do 22% |
+| „Powiaty zamiast gmin na plus” | chipsy **Gminy / Powiaty** (`?poziom=powiaty`), 380 powiatów z warstwy A02; kliknięcie powiatu wraca na poziom gmin przybliżony na niego (`?powiat=3027`) |
+| „Kropki są mocno rozjechane” (sala) | współrzędne z **numeru miejsca**, nie z podpisu nazwiskiem — rysownik przesuwa nazwiska w pionie, żeby dłuższe się nie nachodziły |
+| „Zdjęcia posła w chmurce” | portret w chmurce i w karcie dotykowej |
+| „Na stronie głównej poprawić tę mapę sali, żeby była interaktywna” | półkole zastąpione prawdziwym planem sali (bez drugiego pola szukania — strona główna ma własne) |
+| „Głosowania na planie sali — możesz zrobić jakiś pokaz” | `/sala?glosowanie=64-44`: barwy mówią o głosie, nie o klubie; wybór z listy ostatnich głosowań nad całością |
+
+**Powiat to suma, nie średnia.** Wartość powiatu liczymy jako sumę kwot jego
+gmin przez sumę ich mieszkańców. Średnia z gmin dałaby gminie z tysiącem
+mieszkańców tę samą wagę, co stolicy powiatu ze stoma tysiącami — test
+w `mapa.test.ts` pokazuje różnicę: 200 zł ważone wobec 550 zł ze średniej.
+
+**Kontury w dwóch plikach.** `gminy.json` (1 020 kB) i `powiaty.json`
+(448 kB); każdy poziom pobiera dokładnie jeden. Dołożenie powiatów do
+pliku gmin podniosło go do 1 401 kB i płaciliby za to także ci, którzy
+zostają na gminach.
+
+**Głosowanie na planie — co tu jest uczciwe.** Plan jest ze stanu na jeden
+dzień (21.09.2026), a głosy sięgają początku kadencji, więc strona pisze
+wprost, ile z głosów rejestru widać na planie i ile miejsc należy do posłów,
+których w tym głosowaniu nie ma (szara kropka ≠ nieobecność). Głosowanie bez
+głosów imiennych **nie maluje sali na szaro** — mówi, że rejestr ich jeszcze
+nie podał, i zostaje przy barwach klubów; do wyboru trafiają tylko te, które
+głosy imienne mają. Sprawdzone drugą drogą: rozkład kolorów na planie zgadza
+się co do jednej kropki z nagłówkiem rejestru (64-44: 417/21/0/22;
+64-43: 380/2/53/25).
+
+`/sala` jest przez to **trasą dynamiczną** (czyta `searchParams`). Zmierzone
+lokalnie: 84 ms bez głosowania, 90 ms z głosowaniem — sprawdzenie, które
+z 24 ostatnich głosowań ma głosy imienne, idzie po kluczu głównym tabeli
+`glosy` i kosztuje 0 ms.
+
 ### Plan sali posiedzeń — zrobione 24.09.2026
 
 Paweł znalazł rysunek sali wydawany przez Kancelarię Sejmu i poprosił, żeby

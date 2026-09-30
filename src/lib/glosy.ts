@@ -27,3 +27,17 @@ export const ETYKIETY: Record<string, Etykieta> = {
 export function etykieta(glos: string): Etykieta {
   return ETYKIETY[glos] ?? { krotka: glos, pelna: `rejestr podaje: ${glos}`, ton: 'inne' };
 }
+
+/**
+ * Adres glosowania („65-12") na posiedzenie i numer.
+ *
+ * Jeden parser dla strony glosowania i dla planu sali: dwie kopie tego
+ * wyrazenia rozjechalyby sie przy pierwszej zmianie formatu adresu.
+ * Wartosc spoza wzorca daje `null` — parametr z adresu nie moze decydowac
+ * o niczym wiecej niz o tym, ktore glosowanie pokazac.
+ */
+export function rozbijAdresGlosowania(id: string): { posiedzenie: number; numer: number } | null {
+  const m = /^(\d+)-(\d+)$/.exec(id);
+  if (!m) return null;
+  return { posiedzenie: Number(m[1]), numer: Number(m[2]) };
+}

@@ -16,6 +16,14 @@ export type MiejscePosla = {
   barwaCiemna: string;
   /** 1/0/null jak w bazie: `null` znaczy „nie sprawdzalismy", nie „nie ma". */
   maZdjecie: number | null;
+  /**
+   * Jak ten posel zaglosowal w POKAZYWANYM glosowaniu — kod rejestru
+   * (`YES`, `NO`, `ABSTAIN`, `ABSENT`, …). `null` znaczy „tego posla nie ma
+   * w tym glosowaniu", co przy planie z innego dnia niz glosowanie jest
+   * stanem normalnym, a nie brakiem danych. `undefined` — nie pokazujemy
+   * zadnego glosowania.
+   */
+  glos?: string | null;
 };
 
 /** Posel w zakresie potrzebnym planowi sali — tyle, ile daje `listaPoslow()`. */
