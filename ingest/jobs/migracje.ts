@@ -11,6 +11,8 @@
 import { existsSync } from 'node:fs';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
+import { sprawdzSumy } from '../lib/sumy-pomocy.js';
+import { TERYT_WARSZAWY } from '../lib/fe.js';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
 
@@ -29,6 +31,24 @@ function main(): void {
     const start = Date.now();
     const w = policzAgregaty(db, process.argv.includes('--agregaty-od-nowa'));
     log(`   ${w.opis} (${Math.round((Date.now() - start) / 1000)} s)`);
+
+    /*
+     * Kontrola druga droga: te same liczby policzone SQL-em po calej tabeli.
+     * Drogie (kilka przebiegow po pomoc_publiczna), wiec na zadanie, a nie
+     * przy kazdym imporcie — ale bez tej drogi sumy przyrostowe bylyby
+     * liczbami, ktorych nikt nie umie sprawdzic.
+     */
+    if (process.argv.includes('--sprawdz')) {
+      const t = Date.now();
+      const rozjazdy = sprawdzSumy(db, TERYT_WARSZAWY);
+      if (rozjazdy.length) {
+        log(`   ROZJAZD (${rozjazdy.length}) — sumy przyrostowe nie zgadzaja sie ze zrodlem:`);
+        for (const r of rozjazdy.slice(0, 20)) log(`      ${r}`);
+      } else {
+        log(`   kontrola druga droga: zero rozjazdow (${Math.round((Date.now() - t) / 1000)} s)`);
+      }
+      if (rozjazdy.length) process.exitCode = 1;
+    }
   } finally {
     db.close();
   }

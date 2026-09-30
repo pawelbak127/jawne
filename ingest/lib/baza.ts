@@ -323,6 +323,62 @@ create table if not exists pomoc_publiczna_dni (
   wierszy        integer not null
 );
 
+/*
+ * Indeks po dniu. Do filtra „dni ustalone" jest bezuzyteczny (obejmuje 97%
+ * wierszy — pulapka 52), ale sumy przyrostowe czytaja tabele DZIEN PO DNIU
+ * i wtedy jest tym, co odroznia odczyt zakresu od przebiegu po calosci.
+ */
+create index if not exists pomoc_dzien on pomoc_publiczna(dzien);
+
+/*
+ * Sumy pomocy publicznej liczone raz na dzien danych — patrz
+ * ingest/lib/sumy-pomocy.ts. Kolumna z_kwota mowi, ILE przypadkow mialo
+ * kwote: bez niej suma z samych NULL-i wygladalaby na zmierzone zero
+ * (regula 4). UWAGA: w tym szablonie NIE WOLNO uzywac odwrotnych apostrofow
+ * — konczy go pierwszy z nich i TypeScript przestaje sie kompilowac.
+ */
+create table if not exists pomoc_sumy_dni (
+  dzien       text primary key,
+  pobrano     text not null,          -- zmiana = dzien pobrano od nowa, stan do przeliczenia
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null
+);
+create table if not exists pomoc_sumy_gmin (
+  teryt       text primary key,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null
+);
+create table if not exists pomoc_sumy_firm (
+  nip         text primary key,
+  nazwa       text,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null
+);
+create table if not exists pomoc_sumy_wymiar (
+  wymiar      text not null,          -- udzielajacy | przeznaczenie | forma | wielkosc
+  klucz       text not null,
+  nazwa       text,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  primary key (wymiar, klucz)
+);
+/* Czolowka najwiekszych przypadkow — po kazdym dniu przycinana do 50. */
+create table if not exists pomoc_sumy_naj (
+  id            integer primary key,
+  dzien         text not null,
+  teryt         text not null,
+  nip           text,
+  nazwa         text,
+  brutto        real,
+  max_eur       real,
+  przeznaczenie text,
+  udzielajacy   text
+);
+
 /* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */
 create table if not exists ludnosc (
   teryt  text primary key,               -- 6 cyfr

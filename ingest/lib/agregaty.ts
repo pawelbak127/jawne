@@ -1,17 +1,20 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { nazwaPodmiotuJawna } from '../../src/lib/prywatnosc.js';
 import {
-  KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, MAKS_ADRESOW_MAPY, podpisDni,
-  policzFirmyDoMapy, policzMapePomocy, policzPrzeglad, type Czytnik,
+  KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, MAKS_ADRESOW_MAPY, podpisDni, type Czytnik,
 } from '../../src/lib/przeglad.js';
+import { nazwaPodmiotuJawna } from '../../src/lib/prywatnosc.js';
 import { TERYT_WARSZAWY } from './fe.js';
+import { delta, mapaZeSum, odswiezSumy, przegladZeSum, sumyFirm } from './sumy-pomocy.js';
 
 /**
- * Liczy gotowe wyniki, ktorych strona nie zdazylaby policzyc przy odbudowie.
+ * Liczy gotowe wyniki, ktorych strona nie zdazylaby policzyc przy odbudowie:
+ * przeglad krajowy pomocy publicznej, mape gmin i liste beneficjentow
+ * do mapy strony.
  *
- * Dzis jest to jeden agregat: przeglad krajowy pomocy publicznej. SQL siedzi
- * w `src/lib/przeglad.ts`, wspolny dla importu i dla strony — inaczej dwie
- * kopie tych samych zapytan rozjechalyby sie przy pierwszej zmianie regul.
+ * Od 30.09.2026 nie liczy ich od zera. Sumy zbieraja sie DZIEN PO DNIU
+ * w `sumy-pomocy.ts`, bo koszt liczenia od zera rosl razem z historia:
+ * 11 minut przy 2,5 mln wierszy, 29 minut przy 3,78 mln, a pelne okno
+ * rejestru to ~30 mln. Teraz koszt zalezy od liczby NOWYCH dni.
  */
 export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: boolean; opis: string } {
   const czytnik: Czytnik = {
@@ -19,27 +22,9 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
     jeden: <T>(sql: string, ...p: unknown[]) => (db.prepare(sql).get(...(p as never[])) as unknown as T) ?? null,
   };
 
+  const sumy = odswiezSumy(db, wymus);
+  const d = delta(db);
   const podpis = podpisDni(czytnik);
-
-  /*
-   * Przeliczamy tylko wtedy, gdy zmienil sie zbior dni ustalonych.
-   * ZMIERZONE 28.09.2026 na serwerze: pelne policzenie zajelo 676 sekund
-   * (2,5 mln wierszy, maszyna 2 GB). Bez tego warunku KAZDE wdrozenie
-   * dokladaloby jedenascie minut przestoju strony — a dane sie w tym czasie
-   * nie zmienily. `--wymus` jest na wypadek zmiany samego SQL-a.
-   */
-  const WSZYSTKIE_KLUCZE = [KLUCZ_PRZEGLADU, KLUCZ_MAPY_POMOCY, KLUCZ_FIRM_DO_MAPY];
-  const maja = db.prepare(
-    `select count(*) as ile from agregaty
-      where podpis = ? and klucz in (${WSZYSTKIE_KLUCZE.map(() => '?').join(',')})`,
-  ).get(podpis, ...WSZYSTKIE_KLUCZE) as { ile: number };
-  // Warunkiem jest KOMPLET, nie sam podpis. ZMIERZONE 28.09.2026 na serwerze:
-  // dolozony klucz `mapa-firmy` nie policzyl sie ani razu, bo dane sie nie
-  // zmienily — a mapa strony wyszla przez to bez firm (9 483 adresy zamiast
-  // ponad 20 tysiecy). Nowy agregat musi sie policzyc od razu.
-  if (!wymus && maja.ile === WSZYSTKIE_KLUCZE.length) {
-    return { policzono: false, opis: `bez zmian (${podpis}) — nie licze od nowa` };
-  }
 
   const zapisz = (klucz: string, wartosc: unknown) => db.prepare(
     `insert into agregaty (klucz, podpis, wartosc, policzono) values (?, ?, ?, ?)
@@ -50,28 +35,35 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
 
   // Mapa liczy sie z WSZYSTKICH dni pobranych dla kraju, nie tylko ustalonych,
   // wiec ma sens takze wtedy, gdy zaden dzien jeszcze sie nie ustalil.
-  const mapa = policzMapePomocy(czytnik, TERYT_WARSZAWY);
+  const mapa = mapaZeSum(db, TERYT_WARSZAWY, d);
   zapisz(KLUCZ_MAPY_POMOCY, mapa);
 
   /*
    * Firmy do mapy strony. Regule jawnosci sprawdzamy TUTAJ, a nie przy
-   * renderowaniu: przy 230 tysiacach beneficjentow `nazwaPodmiotuJawna()`
-   * liczyla sie ponad 300 sekund i wywracala `next build` (28.09.2026).
-   * Bierzemy z zapasem, bo czesc odpadnie na regule, i tniemy do limitu.
+   * renderowaniu strony — ale nie dlatego, ze jest droga: ZMIERZONE
+   * 30.09.2026 to 1,2 mikrosekundy na nazwe, czyli okolo 0,3 s na wszystkich
+   * beneficjentow kraju. Tu jest, bo tu jest reszta liczenia.
+   *
+   * Filtrujemy PRZED przycieciem do limitu, a nie po nim: inaczej limit
+   * zjadaly nazwy, ktorych i tak nie wolno pokazac, i mapa strony byla
+   * krotsza, niz mogla byc.
    */
-  const firmy = policzFirmyDoMapy(czytnik, MAKS_ADRESOW_MAPY * 2)
-    .filter((f) => nazwaPodmiotuJawna(f.nazwa))
+  const wszystkieFirmy = sumyFirm(db, d);
+  const firmy = [...wszystkieFirmy]
+    .filter(([, f]) => nazwaPodmiotuJawna(f.nazwa))
+    .sort((a, b) => b[1].brutto - a[1].brutto)
     .slice(0, MAKS_ADRESOW_MAPY)
-    .map((f) => f.nip);
+    .map(([nip]) => nip);
   zapisz(KLUCZ_FIRM_DO_MAPY, firmy);
 
-  const przeglad = policzPrzeglad(czytnik, TERYT_WARSZAWY);
+  const przeglad = przegladZeSum(db, TERYT_WARSZAWY);
   if (!przeglad) {
     // Zaden dzien sie jeszcze nie ustalil — nie ma czego liczyc i nie jest
     // to blad. Stary agregat zostawiamy: mowi prawde o tym, co bylo.
     return {
       policzono: false,
-      opis: `mapa: ${mapa.length} gmin, ${firmy.length} firm; brak dni ustalonych — przegladu nie licze`,
+      opis: `${sumy.opis}; mapa: ${mapa.length} gmin, ${firmy.length} firm;`
+        + ' brak dni ustalonych — przegladu nie licze',
     };
   }
 
@@ -79,7 +71,7 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
 
   return {
     policzono: true,
-    opis: `przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
-      + `mapa: ${mapa.length} gmin, ${firmy.length} firm`,
+    opis: `${sumy.opis}; przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
+      + `mapa: ${mapa.length} gmin, ${firmy.length} firm (delta: ${d.dni} dni, ${d.wierszy} wierszy)`,
   };
 }

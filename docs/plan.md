@@ -156,7 +156,7 @@ jest już tym, co trzyma build przy życiu.
 się z indeksu po `teryt`, więc na razie są tanie. Gdy baza urośnie do pełnej
 historii, sprawdzić je tą samą metodą (`explain query plan` + pomiar).
 
-### Agregaty przyrostowe — zanim baza urośnie trzykrotnie (do zrobienia)
+### Agregaty przyrostowe — ZROBIONE 30.09.2026
 
 **Zmierzone 29.09.2026 na serwerze.** Pełne przeliczenie agregatów przy
 3,78 mln wierszy zajęło **29 minut** (16:49 → 17:18: mapa, potem lista firm,
@@ -169,10 +169,40 @@ mniej więcej raz na dobę. Dziś to akceptowalne. Przy pełnej historii
 (~30 mln wierszy, czyli 8× więcej) będzie to **kilka godzin na przeliczenie**
 — na maszynie z jednym rdzeniem, który w tym czasie obsługuje też stronę.
 
-**Do zrobienia:** liczyć przyrostowo zamiast od zera. Sumy per dzień w osobnej
-tabeli (`pomoc_dzienne`: dzień → przypadków, brutto, per teryt, per forma…),
-uzupełniane przy zapisie dnia, a przegląd krajowy i mapa składane z tych sum.
-Koszt przestaje wtedy zależeć od rozmiaru historii, tylko od liczby nowych dni.
+**Zrobione 30.09.2026** — `ingest/lib/sumy-pomocy.ts`. Stan zbiera się dzień
+po dniu w pięciu tabelach (`pomoc_sumy_dni`, `_gmin`, `_firm`, `_wymiar`,
+`_naj`), a przegląd, mapa i lista firm czytają gotowe sumy.
+
+Całość stoi na jednym zdaniu: **dzień ustalony już się nie zmienia**, więc do
+stanu tylko się dopisuje i nigdy nie odejmuje. Odejmowanie byłoby pułapką —
+jeden przerwany zapis i suma rozjeżdża się ze źródłem po cichu. Czego stan nie
+obejmuje (dni jeszcze nieustalone i 10-letnia historia gmin pokazowych),
+liczymy na żywo: oba zbiory są **stałe**, nie rosną razem z historią.
+
+Zmierzone lokalnie (168 tys. wierszy, 16 dni ustalonych, 2 628 dni pokazowych):
+
+| | dawniej | teraz |
+|---|---|---|
+| pełny przebieg agregatów | 2 070 ms | 898 ms |
+| kolejny przebieg bez nowych dni | 2 070 ms | 652 ms |
+| z tego sama „żywa reszta” | — | 559 ms (stała) |
+| `select distinct dzien` | brak indeksu | 7 ms (indeks pokrywający) |
+
+Na serwerze liczy się to, co rośnie: dawniej **cała** tabela przy każdym
+przebiegu (29 min przy 3,78 mln), teraz tylko nowe dni — jeden dzień to
+ok. 6 tys. wierszy.
+
+**Kontrola drugą drogą:** `npx tsx ingest/jobs/migracje.ts --sprawdz` liczy
+to samo SQL-em po całej tabeli i porównuje pole po polu — przegląd,
+2 439 gmin mapy i 93 489 sum na NIP (z nazwami, bo od nazwy zależy reguła
+jawności). Na prawdziwej bazie **zero rozjazdów**. To samo porównanie robi
+`ingest/lib/sumy-pomocy.test.ts` na danych syntetycznych, razem z dniem
+pobranym po raz drugi i z kwotą `null`.
+
+**Przy okazji sprostowanie:** „ponad 300 sekund na regule jawności" z pułapki
+55 było zgadywaniem. Zmierzone na 93 489 prawdziwych nazwach: **1,2 µs na
+nazwę**, czyli ok. 0,3 s na cały kraj. Cały koszt leżał w `group by` po
+tabeli pomocy.
 
 Trudny kawałek: `count(distinct nip_beneficjenta)` i lista największych
 beneficjentów nie sumują się po dniach. Dla nich trzeba albo osobnej tabeli

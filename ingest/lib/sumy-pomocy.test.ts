@@ -1,0 +1,137 @@
+import { DatabaseSync } from 'node:sqlite';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { zalozSchemat } from './baza.js';
+import { mapaZeSum, odswiezSumy, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
+import { policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
+
+/**
+ * Kontrola, ze suma liczona dzien po dniu daje dokladnie to samo, co jedno
+ * zapytanie po calej tabeli. To jest cala umowa tego modulu — bez niej sumy
+ * przyrostowe byłyby liczbami, ktorych nikt nie sprawdza (wzorzec 7).
+ */
+const WARSZAWA = '146501';
+
+let db: DatabaseSync;
+
+const czytnik = () => ({
+  wszystkie: <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as never[])) as unknown as T[],
+  jeden: <T>(sql: string, ...p: unknown[]) => (db.prepare(sql).get(...(p as never[])) as unknown as T) ?? null,
+});
+
+/** `pobrano` 14 dni po dniu = dzien ustalony; mniej = dzien swiezy. */
+function dodajDzien(dzien: string, poIlu: number, wiersze: Partial<Record<string, unknown>>[]): void {
+  const pobrano = new Date(`${dzien}T12:00:00Z`);
+  pobrano.setUTCDate(pobrano.getUTCDate() + poIlu);
+  const iso = pobrano.toISOString();
+  db.prepare('insert or replace into pomoc_publiczna_dni (dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)')
+    .run(dzien, iso, iso.slice(0, 10), wiersze.length);
+  wstawWiersze(dzien, wiersze);
+}
+
+function wstawWiersze(dzien: string, wiersze: Partial<Record<string, unknown>>[]): void {
+  const w = db.prepare(
+    `insert into pomoc_publiczna
+      (teryt, dzien, nip_beneficjenta, nazwa_beneficjenta, wielkosc_kod, wielkosc, udzielajacy,
+       przeznaczenie, forma, wartosc_brutto, wartosc_brutto_eur, klucz)
+     values (?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+  for (const [i, r] of wiersze.entries()) {
+    w.run(
+      (r.teryt as string) ?? '020101', dzien, (r.nip as string) ?? null, (r.nazwa as string) ?? null,
+      (r.wielkosc_kod as string) ?? '1', (r.wielkosc as string) ?? 'mikro', (r.udzielajacy as string) ?? 'Urząd A',
+      (r.przeznaczenie as string) ?? 'regionalna', (r.forma as string) ?? 'dotacja',
+      r.brutto === undefined ? 100 : (r.brutto as number | null), 25, `${dzien}-${i}-${Math.random()}`,
+    );
+  }
+}
+
+beforeEach(() => {
+  db = new DatabaseSync(':memory:');
+  zalozSchemat(db);
+  db.prepare('insert into okregi (nr, nazwa, wojewodztwo) values (?,?,?)').run(1, 'okręg', 'dolnośląskie');
+  for (const [teryt, nazwa, woj, osob] of [
+    ['020101', 'Bolesławiec', 'dolnośląskie', 1000],
+    ['020102', 'Nowa', 'dolnośląskie', 500],
+    ['140101', 'Inna', 'mazowieckie', 2000],
+  ] as [string, string, string, number][]) {
+    db.prepare(
+      'insert or replace into gminy (teryt, nazwa, rodzaj, powiat, wojewodztwo, okreg_nr, szukaj) values (?,?,?,?,?,?,?)',
+    ).run(teryt, nazwa, 'gmina', 'powiat', woj, 1, nazwa.toLowerCase());
+    db.prepare('insert into ludnosc (teryt, rok, osob) values (?,?,?)').run(teryt, 2024, osob);
+  }
+});
+
+describe('sumy przyrostowe', () => {
+  it('daje to samo, co liczenie od zera — pole po polu', () => {
+    dodajDzien('2026-01-01', 20, [
+      { nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 1000 },
+      { nip: '2222222222', nazwa: 'Beta S.A.', teryt: '140101', brutto: 250.5, udzielajacy: 'Urząd B' },
+    ]);
+    dodajDzien('2026-01-02', 20, [
+      { nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 7 },
+      { nip: '3333333333', nazwa: 'Gamma', teryt: '020102', brutto: 3, forma: 'pożyczka' },
+    ]);
+    expect(odswiezSumy(db).dodanych).toBe(2);
+
+    const zZera = policzPrzeglad(czytnik(), WARSZAWA)!;
+    const zeStanu = przegladZeSum(db, WARSZAWA)!;
+    expect(zeStanu.przypadkow).toBe(zZera.przypadkow);
+    expect(zeStanu.beneficjentow).toBe(zZera.beneficjentow);
+    expect(zeStanu.gmin).toBe(zZera.gmin);
+    expect(zeStanu.brutto).toBeCloseTo(zZera.brutto!, 9);
+    expect(zeStanu.udzielajacy).toEqual(zZera.udzielajacy);
+    expect(zeStanu.formy).toEqual(zZera.formy);
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+  });
+
+  it('nie wlicza dni jeszcze nieustalonych do przegladu, ale wlicza je do mapy', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 1000 }]);
+    dodajDzien('2026-02-01', 1, [{ nip: '2222222222', nazwa: 'Beta', brutto: 500 }]);
+    odswiezSumy(db);
+
+    expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(1);
+    expect(przegladZeSum(db, WARSZAWA)!.swiezych).toBe(1);
+    // 1000 + 500 na 1000 mieszkancow — dzien swiezy wchodzi na mape.
+    expect(mapaZeSum(db, WARSZAWA)).toEqual(policzMapePomocy(czytnik(), WARSZAWA));
+    expect(mapaZeSum(db, WARSZAWA)[0]!.wartosc).toBeCloseTo(1.5, 9);
+  });
+
+  it('liczy firmy z calej tabeli — takze z gmin pokazowych, ktorych dnia nie ma w rejestrze dni', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 1000 }]);
+    wstawWiersze('2019-05-05', [{ nip: '9999999999', nazwa: 'Pokazowa', brutto: 42 }]);
+    odswiezSumy(db);
+
+    expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(1);
+    expect(sumyFirm(db).get('9999999999')?.brutto).toBe(42);
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+  });
+
+  it('buduje od zera, gdy policzony dzien zostal pobrany jeszcze raz', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 1000 }]);
+    // Pierwsze policzenie to nie „odbudowa": nie bylo czego unieważniać.
+    expect(odswiezSumy(db)).toMatchObject({ dodanych: 1, odBudowy: false });
+    expect(odswiezSumy(db)).toMatchObject({ dodanych: 0, odBudowy: false });
+
+    // Dzien pobrany od nowa: inny znacznik i inna tresc.
+    db.prepare('delete from pomoc_publiczna where dzien = ?').run('2026-01-01');
+    dodajDzien('2026-01-01', 30, [
+      { nip: '1111111111', nazwa: 'Alfa', brutto: 1000 },
+      { nip: '2222222222', nazwa: 'Beta', brutto: 5 },
+    ]);
+    const w = odswiezSumy(db);
+    expect(w.odBudowy).toBe(true);
+    expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(2);
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+  });
+
+  it('brak kwoty to nie zero (regula 4)', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: null }]);
+    odswiezSumy(db);
+    const p = przegladZeSum(db, WARSZAWA)!;
+    expect(p.przypadkow).toBe(1);
+    expect(p.brutto).toBeNull();
+    expect(policzPrzeglad(czytnik(), WARSZAWA)!.brutto).toBeNull();
+    // Gmina bez zadnej kwoty nie trafia na mape jako zero.
+    expect(mapaZeSum(db, WARSZAWA)).toEqual([]);
+  });
+});

@@ -509,9 +509,15 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     w zupełności starczyło i teoria o swapie była błędna. Powód: `sitemap.ts`
     robił `group by nip_beneficjenta` po całej tabeli pomocy (2,5 mln wierszy
     → ~230 tys. firm), a potem przepuszczał **każdą** nazwę przez
-    `nazwaPodmiotuJawna()` — heurystykę z listą imion PESEL. Przy okazji mapa
+    `nazwaPodmiotuJawna()`. Przy okazji mapa
     łamała własny limit: deklarowała „poniżej 50 tys. adresów", a generowała
-    240 tysięcy. Teraz listę liczy import (`agregaty`, klucz `mapa-firmy`),
+    240 tysięcy.
+    **SPROSTOWANIE z 30.09.2026:** winą za te 300 sekund obarczyliśmy tutaj
+    także `nazwaPodmiotuJawna()` — i to było zgadywanie, nie pomiar. Zmierzone
+    na 93 489 prawdziwych nazwach: **1,2 µs na nazwę**, czyli ok. 0,3 s na
+    wszystkich beneficjentów kraju. Cały koszt leżał w `group by` po tabeli
+    pomocy. 300 s to był LIMIT, na którym build padł, a nie czas tej funkcji;
+    przypisaliśmy go pierwszej rzeczy, która wyglądała na kosztowną. Teraz listę liczy import (`agregaty`, klucz `mapa-firmy`),
     już po regule jawności i przycięta do `MAKS_ADRESOW_MAPY`, a strona tylko
     ją czyta: **22 ms i 21 026 adresów**. Zasada ta sama co w pułapce 52 —
     tyle że tu ofiarą była trasa, o której nikt nie myśli jak o „stronie".
@@ -530,6 +536,31 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     pisze **jedną transakcją przez szesnaście minut**. Limit podniesiony
     do 30 minut — czekanie jest tańsze niż porzucony zakres, bo oba zadania
     i tak chodzą w tle.
+
+57. **Suma przyrostowa jest bezpieczna tylko wtedy, gdy nigdy się nie
+    odejmuje.** Przegląd krajowy, mapa i lista firm liczyły się od zera przy
+    każdym przebiegu SUDOP: 11 min przy 2,5 mln wierszy, **29 min przy
+    3,78 mln** — gorzej niż liniowo, bo maszyna ma 2 GB i baza przestaje się
+    mieścić w pamięci podręcznej. Przy pełnym oknie rejestru (~30 mln) to
+    kilka godzin na jednym rdzeniu, który obsługuje też stronę.
+    Rozwiązanie stoi na tym, co rejestr już gwarantuje: **dzień ustala się
+    14 dni po dacie i od tej chwili się nie zmienia** (pułapka 37), a za
+    ustalony uznajemy go dopiero wtedy, gdy został POBRANY co najmniej 14 dni
+    po sobie. Do sum wchodzi więc wyłącznie materiał, który się już nie rusza
+    — stan jest DOPISYWANY, nigdy odejmowany. Odejmowanie byłoby tu pułapką:
+    wystarczy jeden przerwany zapis i suma rozjeżdża się ze źródłem po cichu,
+    a nikt tego nie zauważy.
+    Czego stan nie obejmuje, to liczymy na żywo przy każdym użyciu: dni
+    pobrane, ale jeszcze nieustalone (najwyżej kilkanaście) i pełna
+    10-letnia historia gmin pokazowych (pułapka 35). Oba zbiory są **stałe**
+    — nie rosną razem z historią.
+    Kontrola: `pomoc_sumy_dni` pamięta znacznik pobrania każdego policzonego
+    dnia; gdy się zmieni, stan liczy się od zera bez pytania.
+    `npx tsx ingest/jobs/migracje.ts --sprawdz` liczy to samo drugą drogą
+    (SQL po całej tabeli) i porównuje pole po polu — na prawdziwej bazie
+    **zero rozjazdów**. Indeks `pomoc_dzien` jest do tego konieczny:
+    `select distinct dzien` idzie wtedy indeksem pokrywającym (7 ms przy
+    168 tys. wierszy), a nie przebiegiem po tabeli.
 
 ---
 
