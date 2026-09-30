@@ -21,6 +21,32 @@ import { uprosc } from '@/lib/tekst';
  * Kropka NIE MA elementu `<title>`: przegladarka pokazywalaby wtedy druga,
  * systemowa chmurke obok naszej (blad zgloszony przez Pawla na mapie gmin).
  */
+/**
+ * Rozmiar chmurki. Szerokosc jest pewna (`w-[19rem]`), wysokosc zalezy od
+ * dlugosci opisu — ZMIERZONE 78 px przy trzech wierszach. Bierzemy 100 px
+ * z zapasem: przeszacowanie tylko odwraca chmurke troche wczesniej,
+ * niedoszacowanie wypuszcza ja pod krawedz.
+ */
+const CHMURKA_SZER = 304;
+const CHMURKA_WYS = 100;
+const ODSTEP = 14;
+
+/**
+ * Gdzie postawic chmurke, zeby nie wyjechala poza plan.
+ *
+ * Przy prawej krawedzi idzie w LEWO od kursora, przy dolnej — NAD niego.
+ * Liczby to rozmiar chmurki: nie da sie go zmierzyc przed narysowaniem,
+ * a zmierzony po narysowaniu dawalby przeskok.
+ */
+function chmurkaStyl(pod: { x: number; y: number; w: number; h: number }): React.CSSProperties {
+  const wLewo = pod.x + ODSTEP + CHMURKA_SZER > pod.w;
+  const doGory = pod.y + ODSTEP + CHMURKA_WYS > pod.h;
+  return {
+    left: Math.max(4, wLewo ? pod.x - ODSTEP - CHMURKA_SZER : pod.x + ODSTEP),
+    top: Math.max(4, doGory ? pod.y - ODSTEP - CHMURKA_WYS : pod.y + ODSTEP),
+  };
+}
+
 export function PlanSali({
   miejsca,
   szerokosc,
@@ -40,7 +66,9 @@ export function PlanSali({
 }) {
   const router = useRouter();
   const ramka = useRef<SVGSVGElement>(null);
-  const [pod, ustawPod] = useState<{ id: number; x: number; y: number } | null>(null);
+  /** Pudelko, wzgledem ktorego pozycjonujemy chmurke — nie przycina niczego. */
+  const pudelko = useRef<HTMLDivElement>(null);
+  const [pod, ustawPod] = useState<{ id: number; x: number; y: number; w: number; h: number } | null>(null);
   const [wybrany, ustawWybranego] = useState<number | null>(wyroznionyId ?? null);
   const [dotykiem, ustawDotykiem] = useState(false);
   const [szukane, ustawSzukane] = useState('');
@@ -158,7 +186,16 @@ export function PlanSali({
         i przewija sie w poziomie WEWNATRZ ramki. Strona nadal nie ma
         poziomego paska przewijania.
       */}
-      <div className="relative overflow-x-auto rounded-2xl border border-kreska bg-papier-2">
+      {/*
+        DWIE ramki, nie jedna. Chmurka nie moze wisiec w tym samym pudelku,
+        ktore przewija plan: `overflow-x: auto` NIE DA SIE polaczyc
+        z widocznym `overflow-y` — przegladarka przycina wtedy takze w pionie
+        i chmurka przy dolnej krawedzi jest ucieta w polowie zdania
+        (zgloszenie Pawla 30.09.2026). Wewnetrzne pudelko przewija, zewnetrzne
+        tylko pozycjonuje i niczego nie tnie.
+      */}
+      <div ref={pudelko} className="relative">
+      <div className="overflow-x-auto rounded-2xl border border-kreska bg-papier-2">
         <svg
           ref={ramka}
           viewBox={`0 0 ${szerokosc} ${wysokosc}`}
@@ -208,8 +245,11 @@ export function PlanSali({
                 } as React.CSSProperties
               }
               onMouseMove={(e) => {
-                const r = ramka.current?.getBoundingClientRect();
-                if (r) ustawPod({ id: m.id, x: e.clientX - r.left, y: e.clientY - r.top });
+                // Wzgledem pudelka, w ktorym chmurka NAPRAWDE wisi. Liczenie
+                // wzgledem `svg` mijalo sie z celem po przewinieciu planu
+                // w bok: svg jest wtedy przesuniety wzgledem pudelka.
+                const r = pudelko.current?.getBoundingClientRect();
+                if (r) ustawPod({ id: m.id, x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height });
               }}
               onClick={() => {
                 // Na dotyku pierwsze dotkniecie tylko ZAZNACZA: kropki sa
@@ -223,26 +263,31 @@ export function PlanSali({
             />
           ))}
         </svg>
+      </div>
 
-        {/* Na waskim ekranie nic nie widac po tym, ze ramka sie przewija —
-            trzeba to napisac. Na szerokim plan miesci sie caly. */}
-        {podKursorem && !dotykiem ? (
-          <div
-            className="pointer-events-none absolute z-10 flex max-w-[20rem] items-center gap-3 rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
-            style={{ left: Math.min(pod!.x + 14, 620), top: pod!.y + 14 }}
-          >
-            <Portret
-              slug={podKursorem.slug}
-              imieNazwisko={podKursorem.nazwa}
-              maZdjecie={podKursorem.maZdjecie}
-              rozmiar="maly"
-            />
-            <span className="min-w-0">
-              <span className="block font-medium">{podKursorem.nazwa}</span>
-              <span className="liczby block text-atrament-2">{opis(podKursorem)}</span>
-            </span>
-          </div>
-        ) : null}
+      {/*
+        Chmurka ODBIJA SIE od krawedzi zamiast za nia wyjechac. Przy prawym
+        skraju idzie w lewo od kursora, przy dolnym — nad niego. Wczesniej
+        stala tu jedna liczba (620 px) i przy szerszym ekranie nie robila nic,
+        a przy dolnej krawedzi i tak nie pomagala.
+      */}
+      {podKursorem && !dotykiem && pod ? (
+        <div
+          className="pointer-events-none absolute z-10 flex w-[19rem] max-w-[calc(100%-1rem)] items-center gap-3 rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
+          style={chmurkaStyl(pod)}
+        >
+          <Portret
+            slug={podKursorem.slug}
+            imieNazwisko={podKursorem.nazwa}
+            maZdjecie={podKursorem.maZdjecie}
+            rozmiar="maly"
+          />
+          <span className="min-w-0">
+            <span className="block font-medium">{podKursorem.nazwa}</span>
+            <span className="liczby block text-atrament-2">{opis(podKursorem)}</span>
+          </span>
+        </div>
+      ) : null}
       </div>
 
       <p className="mt-2 text-xs text-atrament-3 sm:hidden">
