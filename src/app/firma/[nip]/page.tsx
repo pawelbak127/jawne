@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type ZamowieniaFirmy } from '@/lib/dane';
+import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type Firma, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna } from '@/lib/prywatnosc';
@@ -18,6 +18,34 @@ import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
  * dokladnie to profilowanie, przed ktorym chroni nasza regula o nazwiskach,
  * nawet gdyby nazwa byla na nim ukryta.
  */
+
+/*
+ * Co NAPRAWDE obejmuja liczby na tej stronie.
+ *
+ * B6 z przegladu 01.10.2026: stalo tu „rejestr obejmuje ostatnie dziesiec
+ * lat". To prawda o REJESTRZE, nie o naszych danych — pelne dziesiec lat
+ * pobralismy dla trzech gmin pokazowych, a dla reszty kraju mamy kilkanascie
+ * pojedynczych dni. Strona gminy mowila o tym wprost dwoma zdaniami, strona
+ * firmy nie mowila nic i jeszcze zapewniala o dziesieciu latach.
+ *
+ * Trzy liczby z `firma()` sa rozlaczne i sumuja sie do `przypadkow`, wiec
+ * zdanie ponizej zawsze ma mianownik (regula 3). Dni nieustalone wymieniamy
+ * osobno, bo sa NIEPELNE: urzedy maja 7 dni na zgloszenie pomocy.
+ */
+function zakresDanych(f: Firma): string {
+  const zDni = f.z_dni_ustalonych + f.z_dni_swiezych;
+  const okres = f.dni_od && f.dni_do ? ` (${dataKrotko(f.dni_od)} – ${dataKrotko(f.dni_do)})` : '';
+  const dni = `${zOdmiana(f.dni_kraju, 'dnia', 'dni', 'dni')} pobranych dla całego kraju${okres}`;
+  const swieze = f.z_dni_swiezych
+    ? ` W tym ${liczba(f.z_dni_swiezych)} z dni, dla których nie minął jeszcze termin zgłoszenia pomocy — te są niepełne.`
+    : '';
+
+  if (f.z_historii_gminy && !zDni) return `Pełna historia gminy z rejestru: wszystkie przypadki, jakie podał SUDOP.`;
+  if (f.z_historii_gminy) {
+    return `${liczba(f.z_historii_gminy)} z pełnej historii gminy i ${liczba(zDni)} z ${dni}.${swieze}`;
+  }
+  return `Tylko z ${dni} — nie z pełnych dziesięciu lat rejestru.${swieze}`;
+}
 
 function widok(nip: string) {
   if (!/^\d{10}$/.test(nip) || !bazaDostepna()) return null;
@@ -101,7 +129,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
         <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
           <p className="szryft text-xl font-semibold">{`${dataKrotko(f.pierwszy)} – ${dataKrotko(f.ostatni)}`}</p>
           <p className="mt-1 text-sm font-medium">zakres dat w naszych danych</p>
-          <p className="mt-0.5 text-xs text-atrament-2">rejestr obejmuje ostatnie dziesięć lat</p>
+          <p className="mt-0.5 text-xs text-atrament-2">{zakresDanych(f)}</p>
         </div>
       </section>
 

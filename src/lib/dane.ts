@@ -1617,6 +1617,24 @@ export type Firma = {
   brutto: number | null;
   pierwszy: string;
   ostatni: string;
+  /*
+   * Z JAKIEGO ZBIORU sa te liczby. B6 z przegladu 01.10.2026: strona firmy
+   * mieszala pod jedna etykieta pelna dziesiecioletnia historie trzech gmin
+   * pokazowych i kilkanascie dni reszty kraju, a pod zakresem dat pisala
+   * „rejestr obejmuje ostatnie dziesiec lat" — co dla wiekszosci firm bylo
+   * wprost nieprawda. Trzy liczby ponizej sa rozlaczne i sumuja sie do
+   * `przypadkow`, wiec czytelnik widzi mianownik (regula 3).
+   */
+  /** Przypadki z PELNEGO pobrania gminy — dzien poza rejestrem dni kraju. */
+  z_historii_gminy: number;
+  /** Przypadki z dni pobranych dla kraju, ktore juz sie ustalily. */
+  z_dni_ustalonych: number;
+  /** Przypadki z dni pobranych, ale jeszcze nieustalonych (niepelne). */
+  z_dni_swiezych: number;
+  /** Ile dni kraju jest ustalonych i od kiedy do kiedy — mianownik dla powyzszych. */
+  dni_kraju: number;
+  dni_od: string | null;
+  dni_do: string | null;
 };
 
 export type PrzypadekFirmy = {
@@ -1645,7 +1663,14 @@ export function firma(nip: string): Firma | null {
               o.wielkosc as wielkosc, o.wielkosc_kod as wielkosc_kod, o.pkd as pkd, o.pkd_nazwa as pkd_nazwa,
               o.teryt as teryt, g.nazwa as gmina, g.rodzaj as gmina_rodzaj,
               count(*) as przypadkow, sum(p.wartosc_brutto) as brutto,
-              min(p.dzien) as pierwszy, max(p.dzien) as ostatni
+              min(p.dzien) as pierwszy, max(p.dzien) as ostatni,
+              sum(case when p.dzien not in (select dzien from pomoc_publiczna_dni) then 1 else 0 end) as z_historii_gminy,
+              sum(case when p.dzien in ${DNI_USTALONE} then 1 else 0 end) as z_dni_ustalonych,
+              sum(case when p.dzien in (select dzien from pomoc_publiczna_dni)
+                        and p.dzien not in ${DNI_USTALONE} then 1 else 0 end) as z_dni_swiezych,
+              (select count(*) from ${DNI_USTALONE}) as dni_kraju,
+              (select min(dzien) from ${DNI_USTALONE}) as dni_od,
+              (select max(dzien) from ${DNI_USTALONE}) as dni_do
          from pomoc_publiczna p
          join ostatni o
          left join gminy g on g.teryt = o.teryt
