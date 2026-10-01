@@ -232,8 +232,8 @@ Kolejność po tym, **ilu czytelników widzi złą liczbę**.
 | B8 | `/mapa?miara=unia`: 133 gminy pokazane jako „brak danych", choć to **zmierzone zero**. Przez wypadnięcie z kwantyli **cała skala legendy jest o 28 procent za wysoko** | 133 gminy źle pokolorowane, legenda zła dla 2 477 | **zrobione 01.10** - dolny prog 359,78 zl na 284,78 zl |
 | B9 | Mediana SMUP w mazowieckiem liczona **bez Warszawy** — „mediana w województwie (313 gmin)" zamiast 314 | 331 stron | **zrobione 01.10** |
 | B10 | Interpelacje: licznik z kadencji posła, mianownik z całej kadencji | 39 posłów z wygasłym mandatem | do zrobienia |
-| B11 | `/firma`: mianownik „z N ogłoszeń" większy niż zbiór, z którego policzono sumę | 12 i 286 stron | do zrobienia |
-| B12 | `/gmina`: ten sam mechanizm co B11 | 7 gmin, 9 ogłoszeń | do zrobienia |
+| B11 | `/firma`: mianownik „z N ogłoszeń" większy niż zbiór, z którego policzono sumę | 12 i 286 stron | **zrobione 01.10** - `ogloszenWSumie` liczy dokladnie zbior zsumowany. Zmierzone po naprawie B1/B4: **295 firm**, razem 497 ogloszen liczonych w mianowniku, a wylaczonych z sumy |
+| B12 | `/gmina`: ten sam mechanizm co B11 | 7 gmin, 9 ogłoszeń | **zrobione 01.10** - `wSumie` zamiast `ogloszen - bezKwoty`, bo to drugie wciaz obejmowalo kwoty odrzucone jako bledne. Teraz **11 gmin**, nie 7: naprawa B1/B4 dolaczyla do gmin znacznie wiecej ogloszen, wiec powiekszyla tez powierzchnie tego bledu |
 
 **Reszta po B5 — 11 nazw z 93 287, i to juz inna przyczyna.** Strona firmy
 bierze nazwe z **najnowszego** przypadku (`order by dzien desc, id desc`, i jest
