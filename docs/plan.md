@@ -209,6 +209,88 @@ beneficjentów nie sumują się po dniach. Dla nich trzeba albo osobnej tabeli
 per NIP (aktualizowanej przyrostowo), albo przeliczenia rzadziej niż raz
 na dobę — do rozstrzygnięcia pomiarem, nie z góry.
 
+## Przegląd w chmurze 30.09/01.10.2026 — co z niego wyszło
+
+Paweł kupił cztery równoległe przeglądy (brief: [brief-kierunki.md](brief-kierunki.md)).
+Wróciły wszystkie. Najcenniejszy okazał się ten, którego nie było w planie:
+**dwa pierwsze przeglądy, szukając czego innego, znalazły po drodze ciche błędy
+w liczbach** — więc piąty dostał zadanie wyłącznie takie i znalazł ich dwanaście.
+
+### Ciche błędy w liczbach — zweryfikowane na bazie
+
+Kolejność po tym, **ilu czytelników widzi złą liczbę**.
+
+| | Co | Skala | Stan |
+|---|---|---|---|
+| B1 | **Kraków, Łódź, Wrocław i Poznań nie mają ani jednego zamówienia.** REGON podaje gminę jako „Kraków-Podgórze", `terytZNazw()` tego nie zna, `teryt` zostaje `null`, a sekcja na stronie gminy w ogóle się nie renderuje — bez słowa wyjaśnienia. To **pułapka 31 naprawiona w SUDOP, a nie w REGON** | 12 957 z 78 566 wpisów REGON bez TERYT-u, z tego 5 534 to „Miasto-Dzielnica"; ok. 10 100 ogłoszeń przepada | do zrobienia |
+| B2 | **Mapa i strona gminy liczą pomoc z innych zbiorów.** Mapa bierze wszystkie 22 pobrane dni, strona gminy tylko 16 ustalonych. Czytelnik klika gminę z mapy i dostaje mniej | **1 604 z 2 439 gmin**, do 81 razy; Gdańsk 21,26 zł wobec 18,90 zł | decyzja Pawła |
+| B3 | **Mapa strony nie zawiera ani jednej strony głosowania.** `sitemap.ts` stawia firmy przed głosowaniami i docina całość tym samym limitem 50 000, którym ograniczona jest sama lista firm | 45 247 stron firm, **0 stron głosowań** z 4 641 | do zrobienia |
+| B4 | `ted_ogloszenia.nabywca_id` zapisywane surowo („NIP 9570730409", „954-22-69-625"), a złączenie z REGON idzie wprost. To pułapka 45 po stronie zamawiającego | 57 679 do **86 399** ogłoszeń przypisanych do gmin | do zrobienia |
+| B5 | **Decyzja z 24.09 („rozstrzyga REGON") działa na dwóch stronach z sześciu.** `typRegon` nie trafia do strony gminy, `/pomoc-publiczna`, eksportu CSV ani do agregatu `mapa-firmy` | **48 nazw** pokazywanych na stronach gmin, choć własna reguła je chowa; 57 adresów w mapie strony oddaje 404 | do zrobienia |
+| B6 | `/firma/[nip]` miesza pod jedną etykietą dziesięć lat (gminy pokazowe) i 22 dni (reszta kraju). Strona gminy ma na to dwa ostrzeżenia, strona firmy — żadnego | 8 598 firm widocznych, o których ich własna gmina nie wie | do zrobienia |
+| B7 | „2 494 gminy" na stronie głównej, w `/gminy` i na 16 stronach województw. Polska ma **2 477** — 18 dzielnic Warszawy liczy się jako 18 gmin | 18 stron i strona główna | do zrobienia |
+| B8 | `/mapa?miara=unia`: 133 gminy pokazane jako „brak danych", choć to **zmierzone zero**. Przez wypadnięcie z kwantyli **cała skala legendy jest o 28 procent za wysoko** | 133 gminy źle pokolorowane, legenda zła dla 2 477 | do zrobienia |
+| B9 | Mediana SMUP w mazowieckiem liczona **bez Warszawy** — „mediana w województwie (313 gmin)" zamiast 314 | 331 stron | do zrobienia |
+| B10 | Interpelacje: licznik z kadencji posła, mianownik z całej kadencji | 39 posłów z wygasłym mandatem | do zrobienia |
+| B11 | `/firma`: mianownik „z N ogłoszeń" większy niż zbiór, z którego policzono sumę | 12 i 286 stron | do zrobienia |
+| B12 | `/gmina`: ten sam mechanizm co B11 | 7 gmin, 9 ogłoszeń | do zrobienia |
+
+**Najważniejsze zdanie całego przeglądu:** cztery z siedmiu najpoważniejszych
+znalezisk to nie błąd rachunku, tylko **dwie strony liczące to samo z dwóch
+różnych zbiorów**. Stąd jeden test, który złapałby sześć z nich naraz:
+dla próbki bytów wyrenderuj każdą liczbę razem z mianownikiem i zakresem czasu
+i wymagaj, żeby ta sama wielkość pokazana na dwóch stronach miała identyczny
+mianownik i identyczny zakres. To pilnuje klasy błędów, a nie przypadków.
+
+**Co przegląd sprawdził i jest czyste** (żeby następny tam nie wracał):
+`ted_wykonawcy.nip` jest znormalizowany; `pomoc_publiczna.teryt` ma pułapkę 31
+naprawioną (3 300 wierszy z kodem delegatury trafia do gminy macierzystej);
+146501 to **jedyny** brakujący TERYT w całej bazie i wszystkie jego konsumenty
+poza B7 i B9 obsługują to świadomie; pułapka 30 czysta wszędzie; Interreg w euro
+dziś nie wpływa na żadną gminę; wszystkie `?? 0` poza B8 są zmierzonym zerem
+albo licznikiem; sumy `glosy_klubow` zgadzają się z nagłówkiem rejestru
+w **0 rozjazdach na 4 641 głosowaniach**.
+
+### Kierunki po przeglądzie
+
+- **Poglądy posłów.** Pomiar, który zmienia postać zadania: w przekroju „zdrowie"
+  jest 313 różnych wzorców głosowania wśród 499 posłów, ale **tylko 32 wśród 161
+  obecnych przy wszystkich** — największy blok to 99 osób głosujących identycznie.
+  Siatka „poseł razy sprawa" pokazuje więc przede wszystkim, **kto był na sali**.
+  Klucz do pogrupowania głosowań istnieje w rejestrze: komisja, do której
+  Marszałek skierował druk (669 z 698 głosowań nad całością) — klasyfikacja cudza
+  i sprawdzalna, więc nie łamie reguły 6. Rekomendacja: zacząć od „kto był za tą
+  ustawą" na stronie ustawy (1–2 dni, zero nowych źródeł).
+  Wniosek z przeglądu konkurencji: **każdy serwis, który zaczął grupować głosy
+  w „stanowiska", skończył z rankingiem.** Te, które nie skończyły
+  (HowTheyVote.eu), po prostu nie agregują wcale.
+- **Majątki — odpowiedź brzmi nie.** Zmierzone: **17 z 17 oświadczeń to czyste
+  skany** JBIG2, 1 bit, 300 dpi, zero operatorów tekstu. Nie ma podzbioru
+  tekstowego, na który liczyliśmy. Stabilny indeks `osw9.nsf/web/<id>` działa dla
+  IX kadencji i **404-uje dla X** — maszynowo nie da się pobrać nawet samej listy.
+  Pełna baza to ~660 h raz i ~166 h co roku, a JBIG2 w trybie stratnym potrafi
+  po cichu podmienić cyfrę, czego podwójny odczyt nie wykryje. Jedyne, co ma sens:
+  **indeks bez ani jednej kwoty** — i nawet to jest zablokowane, dopóki nie da się
+  pobrać panelu XPages ze strony posła.
+- **Połączenia danych.** Najciekawsza propozycja: „ile twoja gmina sama
+  odpuściła" — pomoc udzielona **przez organ gminy** (ulgi, umorzenia, raty).
+  Zmierzone: 208 organów gminnych, 54,6 mln zł z 22 dni. Tego nie pokazuje nikt.
+  Wymaga dołożenia `nip_udzielajacego` do etapu `regon` (~35 wywołań BIR).
+- **Krytyka.** Werdykt: „to nie jest serwis obywatelski, to bardzo dobrze
+  zbudowana hurtownia danych z warstwą prezentacji, która konsekwentnie odmawia
+  powiedzenia czytelnikowi, co znaczy liczba". Sprawdzone osobno i potwierdzone:
+  **istnieje z-dykty.pl**, prowadzony przez jedną osobę, z 2 479 gminami,
+  budżetami, długiem, przetargami, mapą, głosowaniami, posłami, partiami,
+  Senatem, europosłami **i oświadczeniami majątkowymi** — zaindeksowany w Google.
+  Czyli dwa filary pierwotnego zamysłu konkurencja ma od dawna, a my mamy
+  `noindex` z powodu braku adresu e-mail i domeny.
+  Trzy rzeczy do przestania: pobieranie historii SUDOP do czasu wysłania
+  sprostowania; budowanie `/firma/[nip]` w obecnej skali; planowanie autopilota.
+  Jedna do zaczęcia: **zdjąć `noindex` w tym tygodniu** — cztery zadania na
+  łącznie sześć godzin, z których najdłuższe jest wpisaniem adresu e-mail.
+
+---
+
 ## Usterki — zgłoszone, niepilne
 
 | | Co | Zgłoszone |

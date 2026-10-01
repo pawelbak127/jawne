@@ -44,6 +44,8 @@ export type PrzegladPomocy = {
   najwieksze: {
     nip: string | null; nazwa: string; max_eur: number | null; dzien: string; brutto: number | null;
     przeznaczenie: string | null; udzielajacy: string | null; teryt: string; gmina: string | null;
+    /** Typ z REGON — rozstrzyga o jawnosci nazwy (decyzja z 24.09.2026). */
+    typ_regon: string | null;
   }[];
 };
 
@@ -127,7 +129,8 @@ export function policzPrzeglad(cz: Czytnik, terytWarszawy: string): PrzegladPomo
     `select z.nip_beneficjenta as nip, z.nazwa_beneficjenta as nazwa, z.wartosc_brutto_eur as max_eur,
             z.dzien as dzien, z.wartosc_brutto as brutto, z.przeznaczenie as przeznaczenie,
             z.udzielajacy as udzielajacy, z.teryt as teryt,
-            case when z.teryt = '${terytWarszawy}' then 'Warszawa' else g.nazwa end as gmina
+            case when z.teryt = '${terytWarszawy}' then 'Warszawa' else g.nazwa end as gmina,
+            (select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon
        from ${Z} z left join gminy g on g.teryt = z.teryt
       order by z.wartosc_brutto desc nulls last limit 15`,
   );

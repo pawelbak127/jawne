@@ -777,11 +777,24 @@ export function wartosciMapy(miara: MiaraMapy): WartoscNaMapie[] {
       );
     }
     if (miara === 'unia') {
+      /*
+       * `coalesce(..., 0)`, bo tu zero jest ZMIERZONE, a nie brakujace.
+       * Sprawdzone 01.10.2026: ze 133 gmin bez wartosci ANI JEDNA nie ma
+       * projektu tylko u siebie — 128 ma wiersz z zerem, 4 nie maja wiersza,
+       * bo nie maja projektow. Legenda mowila o nich „brak danych", a one
+       * wypadaly z kwantyli i przez to CALA skala byla o 28 % za wysoko
+       * (dolny prog 359,78 zl zamiast 281,01 zl). Mediana liczyla je jako
+       * zero od poczatku (`medianaUeNaMieszkanca`) — mapa i mediana mowily
+       * wiec o innej populacji tego samego zjawiska.
+       *
+       * UWAGA: w tym szablonie nie wolno uzywac odwrotnych apostrofow —
+       * koncza go i TypeScript przestaje sie kompilowac.
+       */
       return wszystkie<WartoscNaMapie>(
         `with ${ludnoscCTE}
-         select f.teryt as teryt, f.tylko_tu_ue * 1.0 / l.osob as wartosc
+         select f.teryt as teryt, coalesce(f.tylko_tu_ue, 0) * 1.0 / l.osob as wartosc
            from fe_gminy f join ludzie l on l.teryt = f.teryt
-          where f.okres = '2021-2027' and f.tylko_tu_ue is not null and l.osob > 0`,
+          where f.okres = '2021-2027' and l.osob > 0`,
       );
     }
     // Pomoc publiczna: gotowy wynik z importu. `/mapa` jest trasa DYNAMICZNA,
@@ -1245,7 +1258,18 @@ export type WojewodztwoZeSpisem = { wojewodztwo: string; gmin: number; osob: num
 export function wojewodztwaGmin(): WojewodztwoZeSpisem[] {
   return bezTabeli(
     () => wszystkie<WojewodztwoZeSpisem>(
-      `select g.wojewodztwo as wojewodztwo, count(*) as gmin, sum(l.osob) as osob, max(l.rok) as rok
+      /*
+       * Dzielnice Warszawy liczone JAKO JEDNA gmina. Bez tego serwis pisal
+       * „2 494 gminy" na stronie glownej i „331 gmin" w mazowieckiem —
+       * Polska ma 2 477, a mazowieckie 314 (zmierzone 01.10.2026; tyle samo
+       * maja `budzety_gmin`, `budzety_dzialy` i `smup_dane`). Ludnosc sumuje
+       * sie poprawnie i tak, bo dzielnice maja wlasne wiersze w `ludnosc`.
+       */
+      `select g.wojewodztwo as wojewodztwo,
+              count(*) - sum(case when g.rodzaj = 'dzielnica Warszawy' then 1 else 0 end)
+                + (case when sum(case when g.rodzaj = 'dzielnica Warszawy' then 1 else 0 end) > 0 then 1 else 0 end)
+                as gmin,
+              sum(l.osob) as osob, max(l.rok) as rok
          from gminy g left join ludnosc l on l.teryt = g.teryt
         group by g.wojewodztwo order by g.wojewodztwo collate nocase`,
     ),
@@ -1530,10 +1554,18 @@ export function smupGminy(teryt: string, wojewodztwo: string): WartoscSmup[] {
 
     const odRoku = Math.min(...wiersze.map((w) => w.rok));
     const wWojewodztwie = wszystkie<{ klucz: string; rok: number; wartosc: number }>(
+      /*
+       * Warszawy NIE MA w tabeli `gminy` jako jednej jednostki (sa 18
+       * dzielnic), a `smup_dane` ma ja pod 146501. Zwykle zlaczenie
+       * wycinalo ja z grupy porownawczej: „mediana w wojewodztwie (313 gmin)"
+       * zamiast 314, i to na stronach dzielnic Warszawy, ktore porownywaly
+       * sie do mediany bez siebie samych (zmierzone 01.10.2026).
+       */
       `select d.klucz, d.rok, d.wartosc from smup_dane d
-         join gminy g on g.teryt = d.teryt
+         join (select teryt, wojewodztwo from gminy
+               union all select ?, 'mazowieckie') g on g.teryt = d.teryt
         where g.wojewodztwo = ? and d.rok >= ? and d.wartosc is not null`,
-      wojewodztwo, odRoku,
+      TERYT_WARSZAWY, wojewodztwo, odRoku,
     );
     const poKluczu = new Map<string, number[]>();
     for (const w of wWojewodztwie) {
@@ -1751,6 +1783,8 @@ export type PomocDoEksportu = {
   dzien: string; nip_beneficjenta: string | null; nazwa_beneficjenta: string | null;
   /** najwieksza POJEDYNCZA pomoc tego beneficjenta w euro — do progu jawnosci */
   max_eur_beneficjenta: number | null;
+  /** Typ z REGON — rozstrzyga o jawnosci nazwy tak samo jak na stronie. */
+  typ_regon: string | null;
   wielkosc: string | null; pkd: string | null; udzielajacy: string | null; przeznaczenie: string | null;
   forma: string | null; wartosc_nominalna: number | null; wartosc_brutto: number | null; wartosc_brutto_eur: number | null;
 };
@@ -1766,6 +1800,7 @@ export function pomocDoEksportu(teryt: string): PomocDoEksportu[] {
     return wszystkie<PomocDoEksportu>(
       `select z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta,
               (select max(x.wartosc_brutto_eur) from ${P} x where x.teryt = z.teryt and x.nip_beneficjenta = z.nip_beneficjenta) as max_eur_beneficjenta,
+              (select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon,
               z.wielkosc, z.pkd, z.udzielajacy, z.przeznaczenie, z.forma,
               z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur
          from ${P} z where z.teryt = ?
@@ -1838,12 +1873,17 @@ export type PomocGminy = {
   pobranie: { od: string; pobrano: string; wierszy: number } | null;
   razem: { przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string } | null;
   /** WSZYSCY beneficjenci (nazwa + najwieksza pojedyncza pomoc) — do policzenia, ilu nie pokazujemy z nazwy. */
-  nazwyBeneficjentow: { nazwa: string; max_eur: number | null }[];
+  nazwyBeneficjentow: { nazwa: string; max_eur: number | null; typ_regon: string | null }[];
   lata: { rok: string; przypadkow: number; brutto: number | null }[];
   przeznaczenia: { nazwa: string; przypadkow: number; brutto: number | null }[];
   udzielajacy: { nazwa: string; przypadkow: number; brutto: number | null }[];
   /** `max_eur` to NAJWIEKSZA POJEDYNCZA pomoc — do progu jawnosci nazwiska. */
-  beneficjenci: { nazwa: string; nip: string | null; przypadkow: number; brutto: number | null; max_eur: number | null }[];
+  beneficjenci: {
+    nazwa: string; nip: string | null; przypadkow: number; brutto: number | null;
+    max_eur: number | null;
+    /** Typ z REGON — od 24.09.2026 to ON rozstrzyga o jawnosci nazwy, nie heurystyka. */
+    typ_regon: string | null;
+  }[];
 };
 
 /** Pomoc publiczna z SUDOP dla beneficjentow z siedziba w gminie. */
@@ -1878,10 +1918,12 @@ export function pomocGminy(teryt: string): PomocGminy {
               min(dzien) as pierwszy, max(dzien) as ostatni
          from ${P} where teryt = ?`, teryt,
     );
-    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null }>(
-      `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur
-         from ${P} where teryt = ? group by nip_beneficjenta`, teryt,
-    ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur }));
+    // Ta sama regula co przy `beneficjenci` — rejestr, nie heurystyka.
+    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null; typ_regon: string | null }>(
+      `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur,
+              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
+         from ${P} p where teryt = ? group by nip_beneficjenta`, teryt,
+    ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur, typ_regon: r.typ_regon }));
     const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
       `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
          from ${P} where teryt = ? group by rok order by rok`, teryt,
@@ -1892,10 +1934,22 @@ export function pomocGminy(teryt: string): PomocGminy {
     );
     // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
     // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
-    const beneficjenci = wszystkie<{ nazwa: string; nip: string | null; przypadkow: number; brutto: number | null; max_eur: number | null }>(
+    /*
+     * `typ_regon` jest tu OBOWIAZKOWY, nie ozdobny. Od 24.09.2026 o jawnosci
+     * nazwy rozstrzyga rejestr, nie heurystyka — ale decyzja weszla tylko
+     * na strone firmy i do wyszukiwarki. ZMIERZONE 01.10.2026 na 93 287
+     * nazwach: bez tego strona gminy pokazywala 48 nazw, ktore `/firma`
+     * chowa, i chowala 350, ktore `/firma` pokazuje. Dwie strony tego samego
+     * serwisu odpowiadaly inaczej na to samo pytanie o te sama firme.
+     */
+    const beneficjenci = wszystkie<{
+      nazwa: string; nip: string | null; przypadkow: number; brutto: number | null;
+      max_eur: number | null; typ_regon: string | null;
+    }>(
       `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto,
-              max(wartosc_brutto_eur) as max_eur
-         from ${P} where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
+              max(wartosc_brutto_eur) as max_eur,
+              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
+         from ${P} p where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
     );
     return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
   }, pusto);

@@ -142,7 +142,8 @@ export default function StronaPomocy() {
         <h2 className="szryft text-2xl font-semibold">Największe pojedyncze przypadki</h2>
         <ul className="mt-4 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
           {p.najwieksze.map((n, i) => {
-            const nazwa = nazwaDoPokazania(n.nazwa, { pomocEur: n.max_eur, progAktywny });
+            // Rejestr, nie heurystyka — ta sama regula, co na stronie firmy.
+            const nazwa = nazwaDoPokazania(n.nazwa, { pomocEur: n.max_eur, progAktywny, typRegon: n.typ_regon });
             return (
               <li key={`${n.nip}-${n.dzien}-${i}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
                 <div className="min-w-0 flex-1">

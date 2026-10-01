@@ -23,6 +23,7 @@ import { nipZTekstu } from '../../src/lib/nip.js';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
+import { slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -932,6 +933,7 @@ async function importRegon(db: DatabaseSync): Promise<void> {
 
   const zrodla = [
     "select distinct nabywca_id as nip from ted_ogloszenia where nabywca_id is not null",
+    'select distinct nip_udzielajacego as nip from pomoc_publiczna where nip_udzielajacego is not null',
     'select distinct nip from ted_wykonawcy',
     ...(wszyscy ? ['select distinct nip from firmy_szukaj'] : []),
   ];
@@ -948,21 +950,9 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   log(`-> REGON (BIR): ${lista.length} NIP-ow do sprawdzenia${wszyscy ? ' (z beneficjentami pomocy)' : ''}`);
   if (!lista.length) return;
 
-  // Slownik nazw -> TERYT. BIR oddaje nazwy, my mamy kody; porownujemy
-  // po uprosc(), bo BIR pisze wojewodztwa wielkimi literami.
-  const gminy = db.prepare('select teryt, nazwa, rodzaj, powiat, wojewodztwo from gminy').all() as unknown as
-    { teryt: string; nazwa: string; rodzaj: string; powiat: string; wojewodztwo: string }[];
-  const wgNazw = new Map<string, string>();
-  for (const g of gminy) {
-    wgNazw.set(`${uprosc(g.nazwa)}|${uprosc(g.powiat)}|${uprosc(g.wojewodztwo)}`, g.teryt);
-  }
-  const terytZNazw = (gmina: string | null, powiat: string | null, woj: string | null): string | null => {
-    if (!gmina || !powiat || !woj) return null;
-    // Warszawa: BIR podaje dzielnice jako gmine, a caly serwis liczy Warszawe
-    // jako jedna jednostke 146501 (pulapka 24).
-    if (uprosc(powiat) === 'warszawa') return TERYT_WARSZAWY;
-    return wgNazw.get(`${uprosc(gmina)}|${uprosc(powiat)}|${uprosc(woj)}`) ?? null;
-  };
+  // Slownik nazw -> TERYT i samo dopasowanie zyja w `teryt-regon.ts`, bo tej
+  // samej funkcji uzywa migracja przeliczajaca stare wiersze bez sieci.
+  const slownik = slownikGmin(db);
 
   const wstaw = db.prepare(
     `insert into regon(nip, regon, nazwa, typ, silos, wojewodztwo, powiat, gmina, miejscowosc,
@@ -1015,7 +1005,7 @@ async function importRegon(db: DatabaseSync): Promise<void> {
       wTransakcji(db, () => {
         for (const [nip, wpisy] of wgNipu) {
           const p = wpisy[0]!;
-          const teryt = terytZNazw(p.gmina, p.powiat, p.wojewodztwo);
+          const teryt = terytZNazw(slownik, p.gmina, p.powiat, p.wojewodztwo);
           if (teryt) zTerytem++;
           typy.set(p.typ ?? '(brak)', (typy.get(p.typ ?? '(brak)') ?? 0) + 1);
           if (wpisy.length > 1) wielokrotnych++;
@@ -1124,7 +1114,15 @@ async function importZamowien(db: DatabaseSync): Promise<void> {
           wstawOgl.run(
             o['publication-number'], (o['publication-date'] ?? '').slice(0, 10),
             poPolsku(o['notice-title']), poPolsku(o['organisation-name-buyer']),
-            o['organisation-identifier-buyer']?.[0] ?? null,
+            // NIP zamawiajacego przez ten sam filtr, co NIP wykonawcy.
+            // ZMIERZONE 01.10.2026: pole jest WOLNYM TEKSTEM tak samo jak
+            // `winner-identifier` (pulapka 45) — ze 130 034 ogloszen tylko
+            // 59 012 mialo same dziesiec cyfr, reszta „NIP 9570730409",
+            // „954-22-69-625", „NIP: 525-000-80-57". Zlaczenie z REGON szlo
+            // po surowym polu, wiec do gmin trafialo 57 679 ogloszen zamiast
+            // 86 399. Pulapke naprawiono raz, po stronie wykonawcy, i nikt
+            // nie sprawdzil drugiej strony tego samego ogloszenia.
+            nipZTekstu(o['organisation-identifier-buyer']?.[0] ?? null),
             o['total-value'] ?? null, o['total-value-cur']?.[0] ?? null,
             o['classification-cpv']?.[0] ?? null, nipy.length,
           );

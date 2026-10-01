@@ -47,10 +47,14 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
    * Filtrujemy PRZED przycieciem do limitu, a nie po nim: inaczej limit
    * zjadaly nazwy, ktorych i tak nie wolno pokazac, i mapa strony byla
    * krotsza, niz mogla byc.
+   *
+   * `typRegon` jest OBOWIAZKOWY: od 24.09.2026 o jawnosci rozstrzyga rejestr.
+   * Bez niego ta lista powstawala sama heurystyka i polecala wyszukiwarkom
+   * 57 adresow, pod ktorymi `/firma/[nip]` oddaje 404 (zmierzone 01.10.2026).
    */
   const wszystkieFirmy = sumyFirm(db, d);
   const firmy = [...wszystkieFirmy]
-    .filter(([, f]) => nazwaPodmiotuJawna(f.nazwa))
+    .filter(([, f]) => nazwaPodmiotuJawna(f.nazwa, f.typRegon))
     .sort((a, b) => b[1].brutto - a[1].brutto)
     .slice(0, MAKS_ADRESOW_MAPY)
     .map(([nip]) => nip);

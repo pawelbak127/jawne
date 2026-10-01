@@ -12,6 +12,9 @@ import { existsSync } from 'node:fs';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
 import { sprawdzSumy } from '../lib/sumy-pomocy.js';
+import { przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
+import { nipZTekstu } from '../../src/lib/nip.js';
+import { wTransakcji } from '../lib/baza.js';
 import { TERYT_WARSZAWY } from '../lib/fe.js';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
@@ -28,6 +31,23 @@ function main(): void {
     // Agregaty tuz przed budowa strony: bez nich `/pomoc-publiczna` liczy
     // osiem przebiegow po calej tabeli i przekracza limit czasu budowy
     // (zmierzone 27.09.2026 na serwerze: ponad 3 minuty przy 2,5 mln wierszy).
+    /*
+     * Dwie naprawy na danych, ktore juz sa w bazie — BEZ SIECI.
+     * Obie znalezione przegladem 01.10.2026 i obie tego samego rodzaju:
+     * zlaczenie szlo po polu, ktore nie bylo tym, czym wygladalo.
+     * Idempotentne: po pierwszym przebiegu nie maja co robic.
+     */
+    const nab = wTransakcji(db, () => znormalizujNabywcow(db, nipZTekstu));
+    if (nab.sprawdzono) {
+      log(`   TED: znormalizowano NIP nabywcy w ${nab.sprawdzono} ogloszeniach `
+        + `(rozpoznano ${nab.poprawione}, wyzerowano ${nab.wyzerowane})`);
+    }
+    const ter = wTransakcji(db, () => przeliczTerytRegon(db));
+    if (ter.doszlo) {
+      log(`   REGON: TERYT doszedl ${ter.doszlo} podmiotom z ${ter.sprawdzono} bez kodu `
+        + `(bez kodu zostaje ${ter.nadal} — wpisy bez adresu)`);
+    }
+
     const start = Date.now();
     const w = policzAgregaty(db, process.argv.includes('--agregaty-od-nowa'));
     log(`   ${w.opis} (${Math.round((Date.now() - start) / 1000)} s)`);

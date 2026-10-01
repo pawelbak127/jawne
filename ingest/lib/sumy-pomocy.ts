@@ -364,7 +364,8 @@ export function przegladZeSum(db: DatabaseSync, terytWarszawy: string): Przeglad
   const najwieksze = db.prepare(
     `select n.nip as nip, n.nazwa as nazwa, n.max_eur as max_eur, n.dzien as dzien, n.brutto as brutto,
             n.przeznaczenie as przeznaczenie, n.udzielajacy as udzielajacy, n.teryt as teryt,
-            case when n.teryt = ? then 'Warszawa' else g.nazwa end as gmina
+            case when n.teryt = ? then 'Warszawa' else g.nazwa end as gmina,
+            (select typ from regon where regon.nip = n.nip) as typ_regon
        from pomoc_sumy_naj n left join gminy g on g.teryt = n.teryt
       order by n.brutto desc nulls last limit 15`,
   ).all(terytWarszawy) as unknown as PrzegladPomocy['najwieksze'];
@@ -437,16 +438,27 @@ export function mapaZeSum(db: DatabaseSync, terytWarszawy: string, delta = polic
 export function sumyFirm(
   db: DatabaseSync,
   delta = policzDelte(db),
-): Map<string, { nazwa: string | null; brutto: number }> {
-  const sumy = new Map<string, { nazwa: string | null; brutto: number }>();
+): Map<string, { nazwa: string | null; brutto: number; typRegon: string | null }> {
+  const sumy = new Map<string, { nazwa: string | null; brutto: number; typRegon: string | null }>();
   for (const r of db.prepare('select nip, nazwa, brutto from pomoc_sumy_firm').all() as unknown as
     { nip: string; nazwa: string | null; brutto: number }[]) {
-    sumy.set(r.nip, { nazwa: r.nazwa, brutto: r.brutto });
+    sumy.set(r.nip, { nazwa: r.nazwa, brutto: r.brutto, typRegon: null });
   }
   for (const [nip, d] of delta.firmy) {
     const s = sumy.get(nip);
     if (s) { s.brutto += d.brutto; s.nazwa = wieksza(s.nazwa, d.nazwa); }
-    else sumy.set(nip, { nazwa: d.nazwa, brutto: d.brutto });
+    else sumy.set(nip, { nazwa: d.nazwa, brutto: d.brutto, typRegon: null });
+  }
+  /*
+   * Typ z REGON dociagamy JEDNYM przebiegiem po tabeli, nie zapytaniem na NIP.
+   * Bez niego lista do mapy strony powstawala sama heurystyka, a `/firma/[nip]`
+   * rozstrzygal rejestrem — ZMIERZONE 01.10.2026: 57 adresow w mapie strony
+   * prowadzilo do stron oddajacych 404, bo tam decydowal rejestr i je chowal.
+   */
+  for (const r of db.prepare('select nip, typ from regon where typ is not null').all() as unknown as
+    { nip: string; typ: string }[]) {
+    const s = sumy.get(r.nip);
+    if (s) s.typRegon = r.typ;
   }
   return sumy;
 }

@@ -47,7 +47,11 @@ export async function GET(_req: Request, ctx: RouteContext<'/gmina/[teryt]/csv/[
     csv = doCsv(
       ['dzien_udzielenia', 'nip_beneficjenta', 'beneficjent', 'wielkosc', 'pkd', 'udzielajacy', 'przeznaczenie', 'forma', 'wartosc_nominalna_zl', 'wartosc_brutto_zl', 'wartosc_brutto_eur'],
       pomocDoEksportu(zrodlo).map((w): Komorka[] => {
-        const nazwa = nazwaDoPokazania(w.nazwa_beneficjenta, { pomocEur: w.max_eur_beneficjenta, progAktywny });
+        // Eksport musi chowac i odslaniac DOKLADNIE to samo, co strona —
+        // inaczej plik CSV omija regule, ktorej strona pilnuje.
+        const nazwa = nazwaDoPokazania(w.nazwa_beneficjenta, {
+          pomocEur: w.max_eur_beneficjenta, progAktywny, typRegon: w.typ_regon,
+        });
         const udzielajacy = nazwaDoPokazania(w.udzielajacy);
         return [
           w.dzien, nazwa.pominieta ? null : w.nip_beneficjenta, nazwa.tekst, w.wielkosc, w.pkd,

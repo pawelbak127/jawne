@@ -28,15 +28,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...terytyGmin().map((t) => ({ url: adres(`/gmina/${t}`) })),
     // Druki z nazwiskiem osoby prywatnej w tytule maja noindex — jak glosowania.
     ...procesyDoMapy().filter((p) => !pominietoNazwiska(p.tytul)).map((p) => ({ url: adres(`/ustawa/${p.numer}`) })),
-    // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
-    // bylaby sprzecznoscia. Regule sprawdza IMPORT — patrz `firmyDoMapy`.
-    ...firmyDoMapy().map((nip) => ({ url: adres(`/firma/${nip}`) })),
     ...glosowaniaDoMapy()
       .filter((g) => !pominietoNazwiska(g.tytul) && !pominietoNazwiska(g.temat) && !pominietoNazwiska(g.opis))
       .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data })),
   ];
-  // Limit protokolu jest twardy: plik z 240 tysiacami adresow jest nie tylko
-  // niezgodny, ale i tak nie zostanie w calosci wczytany. Docinamy na koncu,
-  // zeby zadna nowa sekcja nie przekroczyla go po cichu.
-  return wszystko.slice(0, MAKS_ADRESOW_MAPY);
+  /*
+   * FIRMY NA KOŃCU, i tylko tyle, ile zostanie miejsca.
+   *
+   * ZMIERZONE NA SERWERZE 01.10.2026: lista firm ma dokładnie 50 000 pozycji
+   * (tyle wynosi jej własny limit), a całość była docinana TYM SAMYM limitem.
+   * Firmy stały przed głosowaniami, więc zjadały cały przydział: w mapie było
+   * 45 247 stron firm i **ani jednej z 4 641 stron głosowań** — czyli rdzeń
+   * serwisu był dla wyszukiwarek niewidzialny. Błąd powstał 28.09.2026 przy
+   * naprawie innej cichej straty: ten sam `MAKS_ADRESOW_MAPY` nałożono dwa
+   * razy, raz na listę firm i raz na sumę.
+   *
+   * Kolejność nie jest tu kosmetyką, tylko decyzją o tym, co serwis uważa
+   * za swoją treść. Strony gmin, posłów, ustaw i głosowań wchodzą ZAWSZE;
+   * firmy dostają resztę miejsca, bo typowa strona firmy to kilka wierszy
+   * pomocy de minimis.
+   */
+  const miejsca = Math.max(0, MAKS_ADRESOW_MAPY - wszystko.length);
+  // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
+  // bylaby sprzecznoscia. Regule sprawdza IMPORT — patrz `firmyDoMapy`.
+  const firmy = firmyDoMapy().slice(0, miejsca).map((nip) => ({ url: adres(`/firma/${nip}`) }));
+  return [...wszystko, ...firmy];
 }
