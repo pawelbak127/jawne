@@ -886,8 +886,13 @@ export type InterpelacjePosla = {
   ile: number;
   /** Ile z nich nie ma jeszcze odpowiedzi w rejestrze. */
   bezOdpowiedzi: number;
-  /** Ile jest w calej kadencji — mianownik (regula 3). */
+  /** Ile zlozono w CZASIE JEGO MANDATU — mianownik (regula 3). */
   wKadencji: number;
+  /** Okno mandatu, z ktorego policzono mianownik — do pokazania przy liczbie. */
+  od: string | null;
+  do: string | null;
+  /** Czy okno jest wezsze niz cala kadencja (zastepca albo wygasly mandat). */
+  wezszeNizKadencja: boolean;
   ostatnie: Interpelacja[];
 };
 
@@ -908,7 +913,34 @@ export function interpelacjePosla(id: number, ile = 5): InterpelacjePosla {
         where a.posel_id = ?`,
       id,
     );
-    const wKadencji = jeden<{ c: number }>('select count(*) as c from interpelacje')?.c ?? 0;
+    /*
+     * MIANOWNIK Z OKNA MANDATU, nie z calej kadencji. B10 z przegladu
+     * 01.10.2026: licznik obejmowal czas poslowania, a mianownik cala
+     * kadencje — wiec posel, ktory wszedl na ostatnie poltora roku, byl
+     * porownywany z czteroletnim dorobkiem izby.
+     *
+     * Okno bierzemy Z REJESTRU, nie z domyslu. `obecnosc` to dni poselskie
+     * z `/MP/{id}/votings/stats`: kto nie byl jeszcze poslem, nie ma tam
+     * wiersza. ZMIERZONE 01.10.2026: wszystkich 499 poslow ma wiersze,
+     * a pierwszy dzien obrad siega od 2023-11-13 (poczatek kadencji) az do
+     * 2026-05-15 — czyli rejestr sam pokazuje, kto doszedl w trakcie.
+     * Gorna granice bierzemy z `data_wygasniecia`, gdy jest; inaczej okno
+     * jest otwarte do dzis.
+     */
+    const okno = jeden<{ od: string | null; wygaslo: string | null }>(
+      `select (select min(dzien) from obecnosc where posel_id = p.id) as od,
+              p.data_wygasniecia as wygaslo
+         from poslowie p where p.id = ?`,
+      id,
+    );
+    const od = okno?.od ?? null;
+    const doKiedy = okno?.wygaslo ?? null;
+    const wKadencji = jeden<{ c: number }>(
+      `select count(*) as c from interpelacje
+        where (? is null or data_wplywu >= ?) and (? is null or data_wplywu <= ?)`,
+      od, od, doKiedy, doKiedy,
+    )?.c ?? 0;
+    const wszystkich = jeden<{ c: number }>('select count(*) as c from interpelacje')?.c ?? 0;
     const ostatnie = wszystkie<Interpelacja>(
       `select i.numer as numer, i.tytul as tytul, i.data_wplywu as data_wplywu,
               i.adresaci as adresaci, i.odpowiedzi as odpowiedzi, i.adres as adres,
@@ -918,8 +950,16 @@ export function interpelacjePosla(id: number, ile = 5): InterpelacjePosla {
         order by i.data_wplywu desc, i.numer desc limit ?`,
       id, ile,
     );
-    return { ile: licznik?.ile ?? 0, bezOdpowiedzi: licznik?.bez ?? 0, wKadencji, ostatnie };
-  }, { ile: 0, bezOdpowiedzi: 0, wKadencji: 0, ostatnie: [] });
+    return {
+      ile: licznik?.ile ?? 0,
+      bezOdpowiedzi: licznik?.bez ?? 0,
+      wKadencji,
+      od,
+      do: doKiedy,
+      wezszeNizKadencja: wKadencji < wszystkich,
+      ostatnie,
+    };
+  }, { ile: 0, bezOdpowiedzi: 0, wKadencji: 0, od: null, do: null, wezszeNizKadencja: false, ostatnie: [] });
 }
 
 // ---------------------------------------------------------------------------

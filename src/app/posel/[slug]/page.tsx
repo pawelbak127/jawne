@@ -341,7 +341,9 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 <span className="liczby">
                   {`Podpisane interpelacje: ${liczba(interpelacje.ile)} z ${liczba(interpelacje.wKadencji)}`}
                 </span>
-                {' złożonych w tej kadencji. '}
+                {interpelacje.wezszeNizKadencja && interpelacje.od
+                  ? `${' złożonych od '}${dataSlownie(interpelacje.od)}${interpelacje.do ? ` do ${dataSlownie(interpelacje.do)}` : ''}, w czasie trwania tego mandatu. `
+                  : ' złożonych w tej kadencji. '}
                 {interpelacje.ile === 0
                   ? 'Rejestr nie odnotowuje żadnej.'
                   : interpelacje.bezOdpowiedzi > 0
