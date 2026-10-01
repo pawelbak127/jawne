@@ -5,6 +5,7 @@ import {
   DNI_USTALONE, policzMapePomocy as mapaOdZera, policzPrzeglad as przegladOdZera,
 } from '../../src/lib/przeglad.js';
 import type { WartoscNaMapie } from '../../src/lib/mapa.js';
+import { formaZnana, kategoriaFormy, type KategoriaPomocy } from '../../src/lib/formy-pomocy.js';
 
 /**
  * Sumy pomocy publicznej liczone PRZYROSTOWO — dzien po dniu, raz na zawsze.
@@ -61,6 +62,8 @@ type WierszPomocy = {
   dzien: string;
   nip_beneficjenta: string | null;
   nazwa_beneficjenta: string | null;
+  nip_udzielajacego: string | null;
+  forma_kod: string | null;
   wielkosc_kod: string | null;
   wielkosc: string | null;
   udzielajacy: string | null;
@@ -80,6 +83,8 @@ type Wklad = {
   gminy: Map<string, Kubelek>;
   firmy: Map<string, Kubelek & { nazwa: string | null }>;
   wymiary: Map<string, Kubelek & { wymiar: Wymiar; klucz: string; nazwa: string | null }>;
+  /** Kto podjal decyzje: klucz `teryt|nip organu|kategoria formy`. */
+  organy: Map<string, Kubelek & { teryt: string; nip: string; kategoria: KategoriaPomocy; nazwa: string | null }>;
   naj: WierszPomocy[];
 };
 
@@ -90,10 +95,47 @@ const pustyWklad = (): Wklad => ({
   gminy: new Map(),
   firmy: new Map(),
   wymiary: new Map(),
+  organy: new Map(),
   naj: [],
 });
 
+/** Kody form, ktorych nie znamy — zbierane, zeby import mogl je ZGLOSIC. */
+export const nieznaneFormy = new Set<string>();
+
+/*
+ * Kto PODJAL decyzje. Klucz to NIP organu, nie nazwa: ZMIERZONE 01.10.2026 —
+ * 33 NIP-y maja po 2-3 warianty nazwy w rejestrze („MARSZALEK LODZKI",
+ * „Marszalek Lodzki", „Marszalek Wojewodztwa Lodzkiego"), wiec grupowanie po
+ * nazwie rozsypaloby jeden organ na trzy wiersze.
+ *
+ * Kategoria formy wchodzi do klucza, bo dotacji NIE WOLNO zsumowac
+ * z umorzeniem: jedno jest wydatkiem budzetu, drugie dochodem, ktorego nie
+ * pobrano, a trzecie (raty) to tylko korzysc z odsetek. Patrz
+ * `src/lib/formy-pomocy.ts`.
+ */
+function dolozOrgan(w: Wklad, r: WierszPomocy): void {
+  if (!r.nip_udzielajacego) return;
+  if (r.forma_kod && !formaZnana(r.forma_kod)) nieznaneFormy.add(r.forma_kod);
+  const kategoria = kategoriaFormy(r.forma_kod);
+  const klucz = `${r.teryt}|${r.nip_udzielajacego}|${kategoria}`;
+  const ma = r.wartosc_brutto === null ? 0 : 1;
+  const ile = r.wartosc_brutto ?? 0;
+  const o = w.organy.get(klucz);
+  if (o) {
+    o.przypadkow += 1;
+    o.zKwota += ma;
+    o.brutto += ile;
+    o.nazwa = wieksza(o.nazwa, r.udzielajacy);
+  } else {
+    w.organy.set(klucz, {
+      teryt: r.teryt, nip: r.nip_udzielajacego, kategoria, nazwa: r.udzielajacy,
+      przypadkow: 1, zKwota: ma, brutto: ile,
+    });
+  }
+}
+
 function dolozWiersz(w: Wklad, r: WierszPomocy): void {
+  dolozOrgan(w, r);
   // `null` to nie zero (regula 4): kwoty NIE ma, wiec nie dokladamy jej
   // do sumy, ale liczymy przypadek. `zKwota` mowi potem, czy suma w ogole
   // z czegos powstala.
@@ -141,8 +183,9 @@ function przytnijNaj(wiersze: WierszPomocy[]): WierszPomocy[] {
     .slice(0, NAJWIEKSZYCH);
 }
 
-const KOLUMNY = `teryt, dzien, nip_beneficjenta, nazwa_beneficjenta, wielkosc_kod, wielkosc,
-  udzielajacy, przeznaczenie, forma, wartosc_brutto, wartosc_brutto_eur`;
+const KOLUMNY = `teryt, dzien, nip_beneficjenta, nazwa_beneficjenta, nip_udzielajacego,
+  forma_kod, wielkosc_kod, wielkosc, udzielajacy, przeznaczenie, forma,
+  wartosc_brutto, wartosc_brutto_eur`;
 
 function wkladDnia(db: DatabaseSync, dzien: string): Wklad {
   const w = pustyWklad();
@@ -177,6 +220,15 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
                                                 z_kwota = z_kwota + excluded.z_kwota,
                                                 brutto = brutto + excluded.brutto`,
   );
+  const organ = db.prepare(
+    `insert into pomoc_sumy_organy (teryt, nip_organu, kategoria, nazwa, przypadkow, z_kwota, brutto)
+     values (?, ?, ?, ?, ?, ?, ?)
+       on conflict(teryt, nip_organu, kategoria) do update set
+         nazwa = max(pomoc_sumy_organy.nazwa, excluded.nazwa),
+         przypadkow = przypadkow + excluded.przypadkow,
+         z_kwota = z_kwota + excluded.z_kwota,
+         brutto = brutto + excluded.brutto`,
+  );
   const naj = db.prepare(
     `insert into pomoc_sumy_naj (dzien, teryt, nip, nazwa, brutto, max_eur, przeznaczenie, udzielajacy)
      values (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -186,6 +238,7 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
     for (const [teryt, s] of w.gminy) gmina.run(teryt, s.przypadkow, s.zKwota, s.brutto);
     for (const [nip, s] of w.firmy) firma.run(nip, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
     for (const s of w.wymiary.values()) wymiar.run(s.wymiar, s.klucz, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
+    for (const o of w.organy.values()) organ.run(o.teryt, o.nip, o.kategoria, o.nazwa, o.przypadkow, o.zKwota, o.brutto);
     for (const r of w.naj) {
       naj.run(r.dzien, r.teryt, r.nip_beneficjenta, r.nazwa_beneficjenta, r.wartosc_brutto,
         r.wartosc_brutto_eur, r.przeznaczenie, r.udzielajacy);
@@ -203,7 +256,8 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
 
 function wyczyscStan(db: DatabaseSync): void {
   wTransakcji(db, () => {
-    for (const t of ['pomoc_sumy_dni', 'pomoc_sumy_gmin', 'pomoc_sumy_firm', 'pomoc_sumy_wymiar', 'pomoc_sumy_naj']) {
+    for (const t of ['pomoc_sumy_dni', 'pomoc_sumy_gmin', 'pomoc_sumy_firm', 'pomoc_sumy_wymiar',
+      'pomoc_sumy_organy', 'pomoc_sumy_naj']) {
       db.prepare(`delete from ${t}`).run();
     }
   });
@@ -571,6 +625,45 @@ export function sprawdzSumy(
   for (const [teryt, w] of mapaA) {
     if (!ROWNE(w, mapaB.get(teryt) ?? null)) dopisz(`mapa/${teryt}: ${w} vs ${mapaB.get(teryt)}`);
   }
+  koniec();
+
+  /*
+   * 2b. Kto podjal decyzje — druga droga po (teryt, NIP organu, kategoria).
+   * STRUMIENIEM, z tego samego powodu co nizej: wynik to kilka tysiecy
+   * wierszy dzis i setki tysiecy przy pelnej historii.
+   */
+  mow('   licze organy od zera…');
+  koniec = etap('organy');
+  const organyB = new Map<string, { przypadkow: number; brutto: number }>();
+  for (const r of db.prepare(
+    'select teryt, nip_organu, kategoria, przypadkow, brutto from pomoc_sumy_organy',
+  ).iterate() as unknown as Iterable<
+    { teryt: string; nip_organu: string; kategoria: string; przypadkow: number; brutto: number }>) {
+    organyB.set(`${r.teryt}|${r.nip_organu}|${r.kategoria}`, { przypadkow: r.przypadkow, brutto: r.brutto });
+  }
+  const organyA = new Map<string, { przypadkow: number; brutto: number }>();
+  let organowA = 0;
+  for (const r of db.prepare(
+    `select teryt, nip_udzielajacego as nip, forma_kod, count(*) as przypadkow,
+            coalesce(sum(wartosc_brutto), 0) as brutto
+       from pomoc_publiczna where dzien in ${DNI_USTALONE} and nip_udzielajacego is not null
+      group by teryt, nip_udzielajacego, forma_kod`,
+  ).iterate() as unknown as Iterable<
+    { teryt: string; nip: string; forma_kod: string | null; przypadkow: number; brutto: number }>) {
+    // Grupujemy po KODZIE formy, a potem skladamy w kategorie — inaczej SQL
+    // musialby znac nasza funkcje kategorii, a to nie byloby druga droga.
+    const klucz = `${r.teryt}|${r.nip}|${kategoriaFormy(r.forma_kod)}`;
+    const biez = organyA.get(klucz) ?? { przypadkow: 0, brutto: 0 };
+    organyA.set(klucz, { przypadkow: biez.przypadkow + r.przypadkow, brutto: biez.brutto + r.brutto });
+  }
+  for (const [klucz, a] of organyA) {
+    organowA += 1;
+    const b = organyB.get(klucz);
+    if (!b) { dopisz(`organy/${klucz}: brak w stanie`); continue; }
+    if (a.przypadkow !== b.przypadkow) dopisz(`organy/${klucz}: ${a.przypadkow} vs ${b.przypadkow} przypadkow`);
+    if (!ROWNE(a.brutto, b.brutto)) dopisz(`organy/${klucz}: ${a.brutto} vs ${b.brutto}`);
+  }
+  if (organowA !== organyB.size) dopisz(`organy: ${organowA} vs ${organyB.size} kubelkow`);
   koniec();
 
   /*

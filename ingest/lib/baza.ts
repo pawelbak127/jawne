@@ -357,6 +357,26 @@ create table if not exists pomoc_sumy_firm (
   z_kwota     integer not null,
   brutto      real not null
 );
+/*
+  Kto PODJAL decyzje o pomocy, w rozbiciu na gminy i kategorie form.
+  Klucz to NIP organu, nie nazwa: ZMIERZONE 01.10.2026 — 33 NIP-y maja po
+  2-3 warianty nazwy w rejestrze („MARSZALEK LODZKI", „Marszalek Lodzki",
+  „Marszalek Wojewodztwa Lodzkiego"), wiec grupowanie po nazwie rozsypaloby
+  jeden organ na trzy wiersze.
+  Kategoria formy jest w kluczu, bo sumowanie dotacji z umorzeniami w jedna
+  liczbe byloby bledem merytorycznym — patrz src/lib/formy-pomocy.ts.
+*/
+create table if not exists pomoc_sumy_organy (
+  teryt       text not null,
+  nip_organu  text not null,
+  kategoria   text not null,
+  nazwa       text,                     -- z rejestru; strona nie ma jej szukac w tabeli pomocy
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  primary key (teryt, nip_organu, kategoria)
+);
+create index if not exists pomoc_sumy_organy_teryt on pomoc_sumy_organy(teryt);
 create table if not exists pomoc_sumy_wymiar (
   wymiar      text not null,          -- udzielajacy | przeznaczenie | forma | wielkosc
   klucz       text not null,

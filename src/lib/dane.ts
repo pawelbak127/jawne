@@ -5,7 +5,9 @@ import { resolve } from 'node:path';
 import { KLUBY, type Klub } from './kluby';
 import { uprosc, zapytanieFts } from './tekst';
 import { porownajZKlubem, type GlosZKlubem, type PorownanieZKlubem } from './niezaleznosc';
-import { nazwaDoPokazania } from './prywatnosc';
+import { nazwaDoPokazania, nazwaPodmiotuJawna } from './prywatnosc';
+import { kategoriaFormy, type KategoriaPomocy } from './formy-pomocy';
+import { nazwaOrganu, organWykonawczyGminy } from './organy';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { KONTAKT } from './adres';
@@ -1980,6 +1982,162 @@ export type PomocGminy = {
 };
 
 /** Pomoc publiczna z SUDOP dla beneficjentow z siedziba w gminie. */
+export type KategoriaOrganu = {
+  kategoria: KategoriaPomocy;
+  przypadkow: number;
+  /** `null` znaczy „rejestr nie podal kwoty", nie zero (regula 4). */
+  brutto: number | null;
+};
+
+export type OrganPomocy = {
+  nip: string;
+  nazwa: string;
+  /** Czy to organ TEJ gminy — wojt, burmistrz, prezydent albo jej jednostka. */
+  wlasny: boolean;
+  przypadkow: number;
+  kategorie: KategoriaOrganu[];
+};
+
+export type OrganyPomocy = {
+  organy: OrganPomocy[];
+  /** Ilu organow nie wolno nam nazwac (osoby fizyczne) — liczba zostaje. */
+  bezNazwy: number;
+  przypadkowBezNazwy: number;
+  /** Czy liczone z PELNEGO pobrania gminy, czy tylko z dni ustalonych kraju. */
+  pelna: boolean;
+};
+
+/**
+ * KTO PODJAL DECYZJE o pomocy dla firm z tej gminy.
+ *
+ * Najbogatszy i dotad **zupelnie nieuzywany** wymiar rejestru: pole
+ * `nip_udzielajacego` jest wypelnione w 100% wierszy (0 brakow na 168 456),
+ * a roznych organow jest 1 149. Serwis pokazywal, ile pomocy dostaly firmy
+ * w gminie — nigdy, kto o tym postanowil.
+ *
+ * Czyta GOTOWY stan z `pomoc_sumy_organy`, liczony przyrostowo przy imporcie
+ * z dni USTALONYCH (te same, co reszta strony gminy — lekcja B2). Strona nie
+ * grupuje niczego po tabeli pomocy, bo przy pelnej historii to kilka minut
+ * (pulapki 52 i 57).
+ *
+ * TRZY RZECZY, ktore musza byc tutaj, a nie w szablonie:
+ *
+ *  1. **Klucz to NIP, nie nazwa.** 33 NIP-y maja po 2-3 warianty nazwy
+ *     w rejestrze; grupowanie po nazwie rozsypaloby jeden organ na trzy.
+ *  2. **Kategorie sie NIE SUMUJA.** Dotacja jest wydatkiem budzetu,
+ *     zwolnienie — dochodem, ktorego nie pobrano, a rata — tylko korzyscia
+ *     z odsetek. Jedna liczba „pomoc organu" byłaby bledem merytorycznym,
+ *     wiec oddajemy rozbicie i strona pokazuje je osobno.
+ *  3. **Organem bywa osoba fizyczna** (pulapka 34; firmy szkoleniowe przy
+ *     projektach UE). Nazwa przechodzi przez ta sama regule jawnosci co
+ *     beneficjenci, a kogo nie wolno nazwac — liczymy, nie pomijamy
+ *     (zasada 7).
+ */
+export function organyPomocy(teryt: string): OrganyPomocy {
+  const pusto: OrganyPomocy = { organy: [], bezNazwy: 0, przypadkowBezNazwy: 0, pelna: false };
+  return bezTabeli(() => {
+    /*
+     * TEN SAM ZBIOR, co sekcja pomocy wyzej na tej stronie — inaczej mielibysmy
+     * blad B2 w nowym miejscu. `pomocGminy()` dla gminy z PELNYM pobraniem
+     * liczy z calej jej historii, a dla reszty kraju z dni ustalonych.
+     * ZMIERZONE 01.10.2026 na Zakopanem (gmina pokazowa): z dni ustalonych
+     * wychodzily 4 organy z drobnymi kwotami, a z pelnej historii „Burmistrz
+     * Miasta Zakopane" ma **904 decyzje na 15,93 mln zl**. Dwie sekcje na tej
+     * samej stronie mowilyby o innym swiecie.
+     *
+     * Liczenie na zywo jest tu tanie i NIE lamie pulapki 52: idzie indeksem
+     * pokrywajacym `pomoc_teryt` dla JEDNEJ gminy (sprawdzone planem
+     * zapytania: SEARCH USING COVERING INDEX), a nie przebiegiem po tabeli.
+     * Takich gmin jest tyle, ile pelnych pobran — dzis trzy.
+     */
+    const pelna = (jeden<{ c: number }>(
+      'select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt,
+    )?.c ?? 0) > 0;
+
+    const wiersze = pelna
+      ? wszystkie<{
+        nip: string; kategoria: string; przypadkow: number; z_kwota: number; brutto: number;
+        nazwa_sudop: string | null; nazwa_regon: string | null;
+        typ_regon: string | null; teryt_organu: string | null;
+      }>(
+        `select p.nip_udzielajacego as nip, p.forma_kod as kategoria, count(*) as przypadkow,
+                sum(case when p.wartosc_brutto is null then 0 else 1 end) as z_kwota,
+                coalesce(sum(p.wartosc_brutto), 0) as brutto,
+                max(p.udzielajacy) as nazwa_sudop, r.nazwa as nazwa_regon,
+                r.typ as typ_regon, r.teryt as teryt_organu
+           from pomoc_publiczna p
+           left join regon r on r.nip = p.nip_udzielajacego
+          where p.teryt = ? and p.nip_udzielajacego is not null
+          group by p.nip_udzielajacego, p.forma_kod`,
+        teryt,
+      ).map((r) => ({ ...r, kategoria: kategoriaFormy(r.kategoria) }))
+      : wszystkie<{
+        nip: string; kategoria: string; przypadkow: number; z_kwota: number; brutto: number;
+        nazwa_sudop: string | null; nazwa_regon: string | null;
+        typ_regon: string | null; teryt_organu: string | null;
+      }>(
+        `select o.nip_organu as nip, o.kategoria as kategoria, o.przypadkow as przypadkow,
+                o.z_kwota as z_kwota, o.brutto as brutto,
+                o.nazwa as nazwa_sudop, r.nazwa as nazwa_regon, r.typ as typ_regon, r.teryt as teryt_organu
+           from pomoc_sumy_organy o
+           left join regon r on r.nip = o.nip_organu
+          where o.teryt = ?
+          order by o.brutto desc`,
+        teryt,
+      );
+    if (!wiersze.length) return pusto;
+
+    const wg = new Map<string, OrganPomocy>();
+    const ukryte = new Set<string>();
+    let przypadkowBezNazwy = 0;
+    for (const r of wiersze) {
+      const nazwa = nazwaOrganu(r.nazwa_sudop, r.nazwa_regon);
+      // Prog kwotowy nie ma tu zastosowania: on sluzy beneficjentom pomocy,
+      // a nie podmiotom, ktore ja udzielaja.
+      if (!nazwaPodmiotuJawna(nazwa, r.typ_regon)) {
+        // Jeden organ ma do pieciu kubelkow (po jednym na kategorie), wiec
+        // liczymy ORGANY przez zbior NIP-ow, a przypadki sumujemy.
+        ukryte.add(r.nip);
+        przypadkowBezNazwy += r.przypadkow;
+        continue;
+      }
+      let o = wg.get(r.nip);
+      if (!o) {
+        o = {
+          nip: r.nip,
+          nazwa,
+          // NIE samo porownanie TERYT-u: ZUS, PFRON i BGK maja siedzibe
+          // w Warszawie, wiec wychodzily jako „organ tej gminy". Patrz organy.ts.
+          wlasny: organWykonawczyGminy(nazwa, r.teryt_organu, teryt),
+          przypadkow: 0,
+          kategorie: [],
+        };
+        wg.set(r.nip, o);
+      }
+      o.przypadkow += r.przypadkow;
+      // W trybie pelnym jeden organ ma po wierszu na KOD formy, a kodow
+      // w jednej kategorii jest kilkanascie — wiec kubelki skladamy.
+      const juz = o.kategorie.find((k) => k.kategoria === r.kategoria);
+      if (juz) {
+        juz.przypadkow += r.przypadkow;
+        if (r.z_kwota > 0) juz.brutto = (juz.brutto ?? 0) + r.brutto;
+      } else {
+        o.kategorie.push({
+          kategoria: r.kategoria as KategoriaPomocy,
+          przypadkow: r.przypadkow,
+          brutto: r.z_kwota > 0 ? r.brutto : null,
+        });
+      }
+    }
+    const organy = [...wg.values()].sort((a, b) => {
+      if (a.wlasny !== b.wlasny) return a.wlasny ? -1 : 1;
+      return b.przypadkow - a.przypadkow;
+    });
+    for (const o of organy) o.kategorie.sort((a, b) => b.przypadkow - a.przypadkow);
+    return { organy, bezNazwy: ukryte.size, przypadkowBezNazwy, pelna };
+  }, pusto);
+}
+
 export function pomocGminy(teryt: string): PomocGminy {
   const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
   return bezTabeli(() => {

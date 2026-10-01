@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
-  medianaUeNaMieszkanca, najwiekszeProjektyGminy, pomocGminy, porownanieBudzetu,
+  medianaUeNaMieszkanca, najwiekszeProjektyGminy, organyPomocy, pomocGminy, porownanieBudzetu,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type ZamowieniaGminy,
@@ -19,6 +19,7 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
+import { OPIS_KATEGORII } from '@/lib/formy-pomocy';
 import { SlupkiLat } from '@/components/SlupkiLat';
 import { Zestawienie } from '@/components/Zestawienie';
 
@@ -74,6 +75,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   // Warszawa jest w SUDOP jednym miastem (146501), a jej dzielnice maja wlasne
   // kody — wszystkie trzymamy pod miastem, tak jak fundusze UE i budzet.
   const pomoc = pomocGminy(terytFunduszy);
+  const organy = organyPomocy(terytFunduszy);
   // Warszawa ma w BDL jeden budzet, nie 18 dzielnicowych — jak przy funduszach.
   const budzet = budzetGminy(terytFunduszy);
   // Warszawa ma w SMUP jedna jednostke (146501) — dzielnica dostaje miasto.
@@ -109,6 +111,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         {smup.length ? <a href="#finanse" className="hover:text-akcent hover:underline">Finanse i podatki</a> : null}
         <a href="#fundusze" className="hover:text-akcent hover:underline">Fundusze UE</a>
         <a href="#pomoc" className="hover:text-akcent hover:underline">Pomoc publiczna</a>
+        <a href="#kto" className="hover:text-akcent hover:underline">Kto to postanowił</a>
         {zamowienia.ogloszen ? <a href="#zamowienia" className="hover:text-akcent hover:underline">Zamówienia</a> : null}
         <a href="#dane" className="hover:text-akcent hover:underline">Dane do pobrania</a>
       </nav>
@@ -223,6 +226,24 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         </p>
         {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
       </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {organy.organy.length || organy.bezNazwy ? (
+        <section id="kto" className="mt-14 scroll-mt-20">
+          <h2 className="szryft text-3xl font-semibold">Kto to postanowił</h2>
+          <p className="mt-2 max-w-3xl text-atrament-2">
+            Każda pomoc z rejestru ma organ, który ją przyznał. Poniżej organy, które
+            podjęły decyzje wobec firm z tej gminy — z liczbą decyzji i kwotą, osobno dla
+            każdego rodzaju pomocy, bo te rodzaje znaczą dla budżetu różne rzeczy.
+          </p>
+          <p className="mt-2 max-w-3xl text-sm text-atrament-2">
+            {organy.pelna
+              ? 'Liczone z pełnej historii tej gminy w rejestrze — z tego samego zbioru, co sekcja wyżej.'
+              : 'Liczone z tych samych dni, co sekcja wyżej, czyli z dni już ustalonych.'}
+          </p>
+          <OrganyDecyzji organy={organy} />
+        </section>
+      ) : null}
 
       {zamowienia.ogloszen ? (
         <ZamowieniaWGminie
@@ -753,6 +774,72 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   );
 }
 
+
+/**
+ * Kto podjal decyzje o pomocy dla firm z tej gminy.
+ *
+ * TRZY RZECZY, ktorych ten blok CELOWO nie robi:
+ *
+ *  1. **Nie sumuje kategorii w jedna liczbe.** Dotacja jest wydatkiem budzetu,
+ *     zwolnienie — dochodem, ktorego nie pobrano, a rata — tylko korzyscia
+ *     z odsetek (ok. 2 tys. zl na sprawe). Jedna suma „pomoc organu" bylaby
+ *     bledem rzedu wielkosci, nie uproszczeniem.
+ *  2. **Nie mowi „gmina wydala".** Mowi „organ podjal decyzje" — i to jest
+ *     rozroznienie konieczne: prezydent miasta na prawach powiatu jest TAKZE
+ *     starosta, wiec pod jego nazwa leza refundacje z Funduszu Pracy, czyli
+ *     pieniadze panstwa. Rejestr tego nie rozdziela, wiec my tez nie udajemy,
+ *     ze wiemy, czyja to kasa. Mowimy o decyzji, bo decyzja jest faktem.
+ *  3. **Nie ocenia i nie szereguje organow miedzy gminami.** Kolejnosc jest
+ *     tylko w obrebie tej gminy i tylko po liczbie decyzji (zasada 6).
+ */
+function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) {
+  return (
+    <>
+      <ul className="mt-6 space-y-3">
+        {organy.organy.map((o) => (
+          <li
+            key={o.nip}
+            className={`rounded-2xl border bg-papier-2 p-5 shadow-karta ${
+              o.wlasny ? 'border-akcent' : 'border-kreska'
+            }`}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <p className="leading-snug font-medium">{o.nazwa}</p>
+              {o.wlasny ? (
+                <p className="shrink-0 text-xs font-medium text-akcent">organ tej gminy</p>
+              ) : null}
+            </div>
+            <p className="liczby mt-1 text-sm text-atrament-2">
+              {zOdmiana(o.przypadkow, 'decyzja', 'decyzje', 'decyzji')}
+            </p>
+            <ul className="mt-3 space-y-2 border-t border-kreska pt-3">
+              {o.kategorie.map((k) => (
+                <li key={k.kategoria}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                    <p className="text-sm font-medium">{OPIS_KATEGORII[k.kategoria].etykieta}</p>
+                    <p className="liczby text-sm">
+                      {`${zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${
+                        k.brutto === null ? 'bez kwoty w rejestrze' : zlote(k.brutto)
+                      }`}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 text-xs leading-relaxed text-atrament-3">
+                    {OPIS_KATEGORII[k.kategoria].wyjasnienie}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      {organy.bezNazwy ? (
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-atrament-2">
+          {`Do tego ${zOdmiana(organy.bezNazwy, 'organ', 'organy', 'organów')}, których nazwy nie pokazujemy, bo rejestr wskazuje osoby fizyczne — razem ${zOdmiana(organy.przypadkowBezNazwy, 'decyzja', 'decyzje', 'decyzji')}. Liczby zostają, nazwiska nie.`}
+        </p>
+      ) : null}
+    </>
+  );
+}
 
 function BrakPomocy() {
   return (
