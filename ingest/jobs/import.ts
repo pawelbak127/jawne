@@ -1274,9 +1274,22 @@ for (const [kod] of DZIALY_BUDZETU) {
  * konczy sie kodem 412), czyli ok. 600 zapytan. Bez klucza GUS to ok. 1,5 h,
  * z kluczem ok. 20 minut. Rok juz kompletny w bazie jest pomijany
  * (`--od-nowa` pobiera ponownie, `--lata=N` bierze wiecej lat).
+ *
+ * ILE LAT ZALEZY OD KLUCZA, i to nie jest ostroznosc, tylko arytmetyka:
+ * bez klucza limit 12-godzinny BDL wynosi 1 000 zapytan, a jeden rok to 600
+ * — drugi rok tej samej nocy dostalby 429. Z kluczem limit to 5 000, wiec
+ * piec lat (ok. 2 400 zapytan po odjeciu lat juz kompletnych) mieszci sie
+ * w jednym przebiegu. Dzieki temu zadanie nocne nie potrzebuje zadnej flagi
+ * i samo nadrobi historie, gdy klucz sie pojawi.
+ *
+ * Domyslna wartosc, a nie `--lata=5` w `deploy/zadanie.sh`, bo **`--lata`
+ * czytaja TRZY etapy z TRZEMA roznymi domyslnymi**: `budzety` 5, `dzialy`
+ * tyle co tutaj, `smup` 10. Flaga w wierszu polecen obowiazuje wszystkie
+ * naraz, wiec `--lata=5` przy nocnym `gus` scielo by po cichu SMUP
+ * z dziesieciu lat do pieciu.
  */
 async function importDzialow(db: DatabaseSync): Promise<void> {
-  const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? 1);
+  const ileLat = Number(process.argv.find((a) => a.startsWith('--lata='))?.split('=')[1] ?? (kluczBdl() ? 5 : 1));
   const odNowa = process.argv.includes('--od-nowa');
   log(`-> wydatki gmin wg dzialow (GUS BDL, ${DZIALY_BUDZETU.length} zmiennych x ${ileLat} lat; ${kluczBdl() ? 'z kluczem' : 'bez klucza — ok. 1,5 h na rok'})`);
 

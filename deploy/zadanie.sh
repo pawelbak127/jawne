@@ -50,9 +50,14 @@ case "${1:-}" in
     exec "$TSX" ingest/jobs/import.ts $etapy wyliczenia
     ;;
   gus)
-    # `dzialy` (wydatki wg dzialow) to ok. 600 zapytan = 1,5 h bez klucza GUS,
-    # ale rok juz kompletny w bazie jest pomijany, wiec kolejne miesiace sa
-    # krotkie. Z kluczem (sudo jawne ustaw GUS_BDL_KLUCZ) to ok. 20 minut.
+    # `dzialy` (wydatki wg dzialow) to ok. 600 zapytan na rok = 1,5 h bez
+    # klucza GUS, z kluczem ok. 20 minut. Rok juz kompletny w bazie jest
+    # pomijany, wiec kolejne noce sa krotkie.
+    #
+    # ILE LAT nadrabia, decyduje SAM ETAP po tym, czy jest GUS_BDL_KLUCZ
+    # (bez klucza 1 rok, z kluczem 5). Nie dopisuj tu `--lata=N`: te flage
+    # czytaja takze `budzety` i `smup`, kazdy z inna wartoscia domyslna,
+    # wiec `--lata=5` scieloby SMUP z dziesieciu lat do pieciu.
     exec "$TSX" ingest/jobs/import.ts ludnosc budzety dzialy smup wyliczenia
     ;;
   fundusze)
