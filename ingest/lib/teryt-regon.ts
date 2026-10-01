@@ -26,15 +26,67 @@ import { TERYT_WARSZAWY } from './fe.js';
  * od nazwy powiatu z mysnikiem. Samo ciecie po pierwszym mysniku byloby
  * zgadywaniem: gminy miewaja mysniki w prawdziwych nazwach.
  */
-export type SlownikGmin = Map<string, string>;
+export type Kandydat = { teryt: string; rodzaj: string };
+export type SlownikGmin = Map<string, Kandydat[]>;
 
+/**
+ * TRZECIA PULAPKA, znaleziona 01.10.2026 — i powazniejsza od dwoch
+ * poprzednich, bo **slownik cicho gubil klucze**.
+ *
+ * Pierwsza wersja trzymala `Map<string, string>` i robila `m.set(klucz, teryt)`.
+ * Tymczasem **143 pary gmin maja TE SAMA nazwe w TYM SAMYM powiecie**: miasto
+ * i okalajaca je gmina wiejska (Belchatow 100101/100102, Augustow, Bochnia,
+ * Boleslawiec, Brodnica…). Klucz `nazwa|powiat|wojewodztwo` pasowal do obu,
+ * wiec drugie `set` nadpisywalo pierwsze i **wygrywala gmina wiejska**.
+ *
+ * ZMIERZONE: 8 512 wpisow REGON po stronie gminy wiejskiej i **ZERO** po
+ * stronie miasta, w 286 gminach. „MIASTO BELCHATOW" (NIP 7692166386) mialo
+ * kod gminy WIEJSKIEJ, a „MIEJSKI ZAKLAD GOSPODARKI MIESZKANIOWEJ
+ * W BOLESLAWCU" siedzial na wsi. Na tym zlaczeniu wisi 7 092 ogloszen TED
+ * (zamawiajacy) i 12 600 wierszy wykonawcow.
+ *
+ * Rozstrzyga `miejscowosc` z BIR i nie jest to heurystyka, tylko wniosek
+ * z samego rejestru: **miasto X jest dokladnie jedna miejscowoscia X**,
+ * a wsie okalajacej gminy nazywaja sie inaczej. Gdy miejscowosc rowna sie
+ * nazwie gminy, podmiot stoi w miescie.
+ *
+ * JEDEN WYJATEK, ktory rejestr sam nazywa: wlasne organy gminy wiejskiej maja
+ * siedzibe w miescie, ale naleza do gminy. Poznajemy je po nazwie — `GMINA `,
+ * `GMINN…`, `URZAD GMINY` (147 wpisow). Wzorzec musi byc WASKI: wsrod nazw
+ * zawierajacych „GMIN" sa **„GMINA-MIASTO TOMASZOW MAZOWIECKI",
+ * „GMINA-MIASTO DZIALDOWO" i „GMINA-MIASTO STARGARD"** — czyli same miasta —
+ * oraz 20 ZWIAZKOW GMIN, ktore gmina wiejska nie sa. Dlatego `GMINA ` ze
+ * spacja, a nie „zawiera GMIN".
+ *
+ * Gdy po tym nadal nie wiadomo, oddajemy `null`: „nie wiemy, ktora z dwoch"
+ * jest prawda, a przypisanie szpitala miejskiego do wsi obok nia nie jest.
+ */
 export function slownikGmin(db: DatabaseSync): SlownikGmin {
   const m: SlownikGmin = new Map();
-  for (const g of db.prepare('select teryt, nazwa, powiat, wojewodztwo from gminy').all() as unknown as
-    { teryt: string; nazwa: string; powiat: string; wojewodztwo: string }[]) {
-    m.set(`${uprosc(g.nazwa)}|${uprosc(g.powiat)}|${uprosc(g.wojewodztwo)}`, g.teryt);
+  for (const g of db.prepare('select teryt, nazwa, rodzaj, powiat, wojewodztwo from gminy').all() as unknown as
+    { teryt: string; nazwa: string; rodzaj: string; powiat: string; wojewodztwo: string }[]) {
+    const klucz = `${uprosc(g.nazwa)}|${uprosc(g.powiat)}|${uprosc(g.wojewodztwo)}`;
+    m.set(klucz, [...(m.get(klucz) ?? []), { teryt: g.teryt, rodzaj: g.rodzaj }]);
   }
   return m;
+}
+
+/** Czy nazwa podmiotu mowi, ze to wlasny organ gminy, a nie miasta. */
+const ORGAN_GMINY = /^(gmina |gminn|urzad gminy)/;
+
+function rozstrzygnij(
+  kandydaci: Kandydat[],
+  gmina: string,
+  miejscowosc: string | null,
+  nazwa: string | null,
+): string | null {
+  if (kandydaci.length === 1) return kandydaci[0]!.teryt;
+  const miasto = kandydaci.find((k) => k.rodzaj === 'miasto');
+  const poza = kandydaci.find((k) => k.rodzaj !== 'miasto');
+  if (!miasto || !poza || kandydaci.length > 2) return null;
+  if (nazwa && ORGAN_GMINY.test(uprosc(nazwa))) return poza.teryt;
+  if (miejscowosc && uprosc(miejscowosc) === gmina) return miasto.teryt;
+  return poza.teryt;
 }
 
 export function terytZNazw(
@@ -42,6 +94,8 @@ export function terytZNazw(
   gmina: string | null,
   powiat: string | null,
   woj: string | null,
+  miejscowosc: string | null = null,
+  nazwa: string | null = null,
 ): string | null {
   if (!gmina || !powiat || !woj) return null;
   if (uprosc(powiat) === 'warszawa') return TERYT_WARSZAWY;
@@ -50,10 +104,13 @@ export function terytZNazw(
   const p = uprosc(powiat);
   const w = uprosc(woj);
   const wprost = slownik.get(`${g}|${p}|${w}`);
-  if (wprost) return wprost;
+  if (wprost) return rozstrzygnij(wprost, g, miejscowosc, nazwa);
 
   // Delegatura miasta na prawach powiatu — patrz pulapka 2 w naglowku.
-  if (g.startsWith(`${p}-`)) return slownik.get(`${p}|${p}|${w}`) ?? null;
+  if (g.startsWith(`${p}-`)) {
+    const m = slownik.get(`${p}|${p}|${w}`);
+    return m ? rozstrzygnij(m, p, miejscowosc, nazwa) : null;
+  }
   return null;
 }
 
@@ -62,21 +119,48 @@ export function terytZNazw(
  * jest pytany jeszcze raz, bo `gmina`, `powiat` i `wojewodztwo` lezą w tabeli
  * od pierwszego importu. Zwraca, ilu wierszom TERYT doszedl.
  */
-export function przeliczTerytRegon(db: DatabaseSync): { sprawdzono: number; doszlo: number; nadal: number } {
+export function przeliczTerytRegon(db: DatabaseSync): {
+  sprawdzono: number; doszlo: number; poprawione: number; nadal: number;
+} {
   const slownik = slownikGmin(db);
+  /*
+   * Bierzemy DWA zbiory: wiersze bez kodu i wiersze, ktorych kod nalezy do
+   * pary KOLIZYJNEJ. Te drugie maja kod, ale moze byc zly — pierwsza wersja
+   * slownika cicho wybierala gmine wiejska we wszystkich 143 parach (patrz
+   * naglowek). Samo `where teryt is null` nigdy by ich nie tknelo, wiec blad
+   * przezylby kazda migracje.
+   */
+  const wKolizji = new Set((db.prepare(
+    "select group_concat(teryt) as t from gminy where rodzaj <> 'dzielnica Warszawy'"
+    + ' group by lower(nazwa), powiat, wojewodztwo having count(*) > 1',
+  ).all() as unknown as { t: string }[]).flatMap((r) => r.t.split(',')));
+
   const wiersze = db.prepare(
-    'select nip, gmina, powiat, wojewodztwo from regon where teryt is null',
-  ).all() as unknown as { nip: string; gmina: string | null; powiat: string | null; wojewodztwo: string | null }[];
+    'select nip, nazwa, gmina, powiat, wojewodztwo, miejscowosc, teryt from regon',
+  ).all() as unknown as {
+    nip: string; nazwa: string | null; gmina: string | null; powiat: string | null;
+    wojewodztwo: string | null; miejscowosc: string | null; teryt: string | null;
+  }[];
   const ustaw = db.prepare('update regon set teryt = ? where nip = ?');
+  let sprawdzono = 0;
   let doszlo = 0;
+  let poprawione = 0;
+  let nadal = 0;
   for (const r of wiersze) {
-    const t = terytZNazw(slownik, r.gmina, r.powiat, r.wojewodztwo);
-    if (t) {
-      ustaw.run(t, r.nip);
-      doszlo += 1;
+    const bezKodu = r.teryt === null;
+    if (!bezKodu && !wKolizji.has(r.teryt!)) continue;
+    sprawdzono += 1;
+    const t = terytZNazw(slownik, r.gmina, r.powiat, r.wojewodztwo, r.miejscowosc, r.nazwa);
+    if (t === r.teryt) {
+      if (bezKodu) nadal += 1;
+      continue;
     }
+    ustaw.run(t, r.nip);
+    if (!t) nadal += 1;
+    else if (bezKodu) doszlo += 1;
+    else poprawione += 1;
   }
-  return { sprawdzono: wiersze.length, doszlo, nadal: wiersze.length - doszlo };
+  return { sprawdzono, doszlo, poprawione, nadal };
 }
 
 /**

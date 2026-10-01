@@ -19,6 +19,10 @@ beforeEach(() => {
   g.run('120101', 'Sucha Beskidzka', 'miasto', 'suski', 'małopolskie', 1, 'sucha');
   // Gmina z mysnikiem w PRAWDZIWEJ nazwie — nie wolno jej potraktowac jak delegatury.
   g.run('041001', 'Brodnica-Wieś', 'gmina', 'brodnicki', 'kujawsko-pomorskie', 1, 'brodnica');
+  // PARA KOLIZYJNA: miasto i okalajaca je gmina wiejska o TEJ SAMEJ nazwie
+  // w TYM SAMYM powiecie. W kraju takich par jest 143.
+  g.run('100101', 'Bełchatów', 'miasto', 'bełchatowski', 'łódzkie', 1, 'belchatow');
+  g.run('100102', 'Bełchatów', 'gmina', 'bełchatowski', 'łódzkie', 1, 'belchatow');
 });
 
 describe('terytZNazw — nazwy z REGON na nasz kod', () => {
@@ -49,6 +53,39 @@ describe('terytZNazw — nazwy z REGON na nasz kod', () => {
     expect(terytZNazw(s, 'Brodnica-Coś', 'brodnicki', 'KUJAWSKO-POMORSKIE')).toBeNull();
   });
 
+  it('PARA KOLIZYJNA: miejscowość rozstrzyga między miastem a gminą wiejską', () => {
+    const s = slownikGmin(db);
+    // Miasto: miejscowosc rowna sie nazwie gminy, bo miasto X jest jedna
+    // miejscowoscia X. Zmierzone: bez tego 8 512 wpisow REGON wisialo po
+    // stronie gminy wiejskiej, a po stronie miasta ZERO.
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Bełchatów', 'MIASTO BEŁCHATÓW')).toBe('100101');
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Bełchatów', 'SZPITAL W BEŁCHATOWIE')).toBe('100101');
+    // Wies okalajacej gminy nazywa sie inaczej — zostaje gmina wiejska.
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Zdzieszulice Dolne', 'FIRMA')).toBe('100102');
+  });
+
+  it('wyjątek: własny organ gminy wiejskiej z siedzibą w mieście zostaje przy gminie', () => {
+    const s = slownikGmin(db);
+    for (const nazwa of ['GMINA BEŁCHATÓW', 'URZĄD GMINY BEŁCHATÓW', 'GMINNY OŚRODEK KULTURY']) {
+      expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Bełchatów', nazwa)).toBe('100102');
+    }
+  });
+
+  it('wzorzec organu gminy jest WĄSKI — „GMINA-MIASTO" i „ZWIĄZEK GMIN" to nie gmina wiejska', () => {
+    const s = slownikGmin(db);
+    // Zmierzone w rejestrze: „GMINA-MIASTO TOMASZOW MAZOWIECKI", „GMINA-MIASTO
+    // DZIALDOWO", „GMINA-MIASTO STARGARD" to SAME MIASTA, a 20 nazw ze
+    // „ZWIAZEK GMIN" to zwiazki miedzygminne. Reguła „zawiera GMIN" wyrzuciłaby
+    // je w złą stronę — stąd „GMINA " ze spacją.
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Bełchatów', 'GMINA-MIASTO BEŁCHATÓW')).toBe('100101');
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE', 'Bełchatów', 'ZWIĄZEK GMIN KWISA')).toBe('100101');
+  });
+
+  it('bez miejscowości przy parze kolizyjnej wybiera gminę, nie zgaduje miasta', () => {
+    const s = slownikGmin(db);
+    expect(terytZNazw(s, 'Bełchatów', 'bełchatowski', 'ŁÓDZKIE')).toBe('100102');
+  });
+
   it('brak którejkolwiek nazwy to brak kodu, nie zgadywanie', () => {
     const s = slownikGmin(db);
     expect(terytZNazw(s, null, 'Kraków', 'MAŁOPOLSKIE')).toBeNull();
@@ -67,10 +104,33 @@ describe('przeliczTerytRegon — naprawa bez sieci', () => {
     w.run('2222222222', '2', 'Beta', 'P', 'MAŁOPOLSKIE', 'suski', 'Sucha Beskidzka', '120101', 'teraz');
     w.run('3333333333', '3', 'Gamma', 'P', null, null, null, null, 'teraz');
 
-    expect(przeliczTerytRegon(db)).toEqual({ sprawdzono: 2, doszlo: 1, nadal: 1 });
+    expect(przeliczTerytRegon(db)).toEqual({ sprawdzono: 2, doszlo: 1, poprawione: 0, nadal: 1 });
     expect(db.prepare('select teryt from regon where nip = ?').get('1111111111')).toEqual({ teryt: '126101' });
     // Wiersz bez adresu zostaje bez kodu — brak danych to stan, nie zero.
     expect(db.prepare('select teryt from regon where nip = ?').get('3333333333')).toEqual({ teryt: null });
+  });
+});
+
+describe('przeliczTerytRegon — naprawa zlego kodu z pary kolizyjnej', () => {
+  it('poprawia wiersz, ktory MA kod, ale zly — bo pochodzi z kolizji nazw', () => {
+    const w = db.prepare(
+      'insert into regon (nip, regon, nazwa, typ, wojewodztwo, powiat, gmina, miejscowosc, teryt, rekordow, pobrano)'
+      + ' values (?,?,?,?,?,?,?,?,?,1,?)',
+    );
+    // Tak to naprawde wygladalo w bazie: miasto przypisane do gminy wiejskiej.
+    w.run('7692166386', '1', 'MIASTO BEŁCHATÓW', 'P', 'ŁÓDZKIE', 'bełchatowski', 'Bełchatów', 'Bełchatów', '100102', 'teraz');
+    // Organ gminy wiejskiej z siedziba w miescie — ma zostac tam, gdzie jest.
+    w.run('1111111111', '2', 'GMINA BEŁCHATÓW', 'P', 'ŁÓDZKIE', 'bełchatowski', 'Bełchatów', 'Bełchatów', '100102', 'teraz');
+    // Wiersz poza kolizja nie jest nawet sprawdzany.
+    w.run('2222222222', '3', 'Beta', 'P', 'MAŁOPOLSKIE', 'suski', 'Sucha Beskidzka', 'Sucha Beskidzka', '120101', 'teraz');
+
+    const wynik = przeliczTerytRegon(db);
+    expect(wynik.poprawione).toBe(1);
+    expect(wynik.sprawdzono).toBe(2);
+    const kod = (nip: string) => (db.prepare('select teryt as t from regon where nip = ?').get(nip) as { t: string | null }).t;
+    expect(kod('7692166386')).toBe('100101');
+    expect(kod('1111111111')).toBe('100102');
+    expect(kod('2222222222')).toBe('120101');
   });
 });
 

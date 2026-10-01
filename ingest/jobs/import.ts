@@ -1113,7 +1113,7 @@ async function importRegon(db: DatabaseSync): Promise<void> {
       wTransakcji(db, () => {
         for (const [nip, wpisy] of wgNipu) {
           const p = wpisy[0]!;
-          const teryt = terytZNazw(slownik, p.gmina, p.powiat, p.wojewodztwo);
+          const teryt = terytZNazw(slownik, p.gmina, p.powiat, p.wojewodztwo, p.miejscowosc, p.nazwa);
           if (teryt) zTerytem++;
           typy.set(p.typ ?? '(brak)', (typy.get(p.typ ?? '(brak)') ?? 0) + 1);
           if (wpisy.length > 1) wielokrotnych++;

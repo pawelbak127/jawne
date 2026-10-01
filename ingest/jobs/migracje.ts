@@ -43,9 +43,9 @@ function main(): void {
         + `(rozpoznano ${nab.poprawione}, wyzerowano ${nab.wyzerowane})`);
     }
     const ter = wTransakcji(db, () => przeliczTerytRegon(db));
-    if (ter.doszlo) {
-      log(`   REGON: TERYT doszedl ${ter.doszlo} podmiotom z ${ter.sprawdzono} bez kodu `
-        + `(bez kodu zostaje ${ter.nadal} — wpisy bez adresu)`);
+    if (ter.doszlo || ter.poprawione) {
+      log(`   REGON: sprawdzono ${ter.sprawdzono} wierszy (bez kodu albo z kodem z pary kolizyjnej); `
+        + `TERYT doszedl ${ter.doszlo}, POPRAWIONO ${ter.poprawione}, bez kodu zostaje ${ter.nadal}`);
     }
 
     const start = Date.now();

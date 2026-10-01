@@ -644,6 +644,31 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     identyfikuje wskaznik liczba, pytaj go takze o to, jakie LATA ta liczba
     obejmuje.** Brak wiersza i brak zmiennej wygladaja z zewnatrz identycznie.
 
+
+60. **`Map.set` na kluczu, ktory nie jest jednoznaczny, gubi dane bez slowa.**
+    ZMIERZONE 01.10.2026: `slownikGmin()` mapowal
+    `nazwa|powiat|wojewodztwo` → TERYT, a **143 pary gmin maja te sama nazwe
+    w tym samym powiecie** — miasto i okalajaca je gmina wiejska (Belchatow
+    100101/100102, Augustow, Bochnia, Boleslawiec, Brodnica…). Drugie `set`
+    nadpisywalo pierwsze i zawsze wygrywala gmina wiejska: **8 512 wpisow
+    REGON po jej stronie i ZERO po stronie miasta**, w 286 gminach.
+    „MIASTO BELCHATOW" mialo kod gminy wiejskiej, a „MIEJSKI ZAKLAD
+    GOSPODARKI MIESZKANIOWEJ W BOLESLAWCU" siedzial na wsi. Wisialo na tym
+    7 092 ogloszen TED i 12 600 wierszy wykonawcow.
+    Rozstrzyga `miejscowosc` z BIR — nie heurystyka, a wniosek z rejestru:
+    **miasto X jest dokladnie jedna miejscowoscia X**, wsie okalajacej gminy
+    nazywaja sie inaczej. Wyjatek: wlasne organy gminy wiejskiej maja siedzibe
+    w miescie, ale rejestr sam je nazywa (`GMINA `, `GMINN…`, `URZAD GMINY` —
+    147 wpisow). **Wzorzec musi byc WASKI**: wsrod nazw z „GMIN" sa
+    „GMINA-MIASTO TOMASZOW MAZOWIECKI", „GMINA-MIASTO DZIALDOWO"
+    i „GMINA-MIASTO STARGARD" (same miasta) oraz 20 zwiazkow gmin — reguła
+    „zawiera GMIN" wyrzucilaby je w zla strone.
+    Po naprawie: 6 181 wpisow przeszlo do miast, 2 331 zostalo. Dwie lekcje
+    ogolniejsze: (1) **migracja, ktora patrzy tylko na `where teryt is null`,
+    nie naprawi wiersza, ktory ma wartosc BLEDNA** — trzeba przeliczac takze
+    kody z par kolizyjnych; (2) gdy klucz moze pasowac do kilku wierszy,
+    slownik ma trzymac **liste kandydatow**, a nie ostatniego, ktory wygral.
+
 ---
 
 ## Bezpieczeństwo
