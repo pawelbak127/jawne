@@ -222,18 +222,26 @@ Kolejność po tym, **ilu czytelników widzi złą liczbę**.
 
 | | Co | Skala | Stan |
 |---|---|---|---|
-| B1 | **Kraków, Łódź, Wrocław i Poznań nie mają ani jednego zamówienia.** REGON podaje gminę jako „Kraków-Podgórze", `terytZNazw()` tego nie zna, `teryt` zostaje `null`, a sekcja na stronie gminy w ogóle się nie renderuje — bez słowa wyjaśnienia. To **pułapka 31 naprawiona w SUDOP, a nie w REGON** | 12 957 z 78 566 wpisów REGON bez TERYT-u, z tego 5 534 to „Miasto-Dzielnica"; ok. 10 100 ogłoszeń przepada | do zrobienia |
+| B1 | **Kraków, Łódź, Wrocław i Poznań nie mają ani jednego zamówienia.** REGON podaje gminę jako „Kraków-Podgórze", `terytZNazw()` tego nie zna, `teryt` zostaje `null`, a sekcja na stronie gminy w ogóle się nie renderuje — bez słowa wyjaśnienia. To **pułapka 31 naprawiona w SUDOP, a nie w REGON** | 12 957 z 78 566 wpisów REGON bez TERYT-u, z tego 5 534 to „Miasto-Dzielnica"; ok. 10 100 ogłoszeń przepada | **zrobione 01.10** |
 | B2 | **Mapa i strona gminy liczą pomoc z innych zbiorów.** Mapa bierze wszystkie 22 pobrane dni, strona gminy tylko 16 ustalonych. Czytelnik klika gminę z mapy i dostaje mniej | **1 604 z 2 439 gmin**, do 81 razy; Gdańsk 21,26 zł wobec 18,90 zł | decyzja Pawła |
-| B3 | **Mapa strony nie zawiera ani jednej strony głosowania.** `sitemap.ts` stawia firmy przed głosowaniami i docina całość tym samym limitem 50 000, którym ograniczona jest sama lista firm | 45 247 stron firm, **0 stron głosowań** z 4 641 | do zrobienia |
-| B4 | `ted_ogloszenia.nabywca_id` zapisywane surowo („NIP 9570730409", „954-22-69-625"), a złączenie z REGON idzie wprost. To pułapka 45 po stronie zamawiającego | 57 679 do **86 399** ogłoszeń przypisanych do gmin | do zrobienia |
-| B5 | **Decyzja z 24.09 („rozstrzyga REGON") działa na dwóch stronach z sześciu.** `typRegon` nie trafia do strony gminy, `/pomoc-publiczna`, eksportu CSV ani do agregatu `mapa-firmy` | **48 nazw** pokazywanych na stronach gmin, choć własna reguła je chowa; 57 adresów w mapie strony oddaje 404 | do zrobienia |
+| B3 | **Mapa strony nie zawiera ani jednej strony głosowania.** `sitemap.ts` stawia firmy przed głosowaniami i docina całość tym samym limitem 50 000, którym ograniczona jest sama lista firm | 45 247 stron firm, **0 stron głosowań** z 4 641 | **zrobione 01.10** - po poprawce 4 616 glosowan w mapie |
+| B4 | `ted_ogloszenia.nabywca_id` zapisywane surowo („NIP 9570730409", „954-22-69-625"), a złączenie z REGON idzie wprost. To pułapka 45 po stronie zamawiającego | 57 679 do **86 399** ogłoszeń przypisanych do gmin | **zrobione 01.10** |
+| B5 | **Decyzja z 24.09 („rozstrzyga REGON") działa na dwóch stronach z sześciu.** `typRegon` nie trafia do strony gminy, `/pomoc-publiczna`, eksportu CSV ani do agregatu `mapa-firmy` | **48 nazw** pokazywanych na stronach gmin, choć własna reguła je chowa; 57 adresów w mapie strony oddaje 404 | **zrobione 01.10** - zostaje 11, patrz nizej |
 | B6 | `/firma/[nip]` miesza pod jedną etykietą dziesięć lat (gminy pokazowe) i 22 dni (reszta kraju). Strona gminy ma na to dwa ostrzeżenia, strona firmy — żadnego | 8 598 firm widocznych, o których ich własna gmina nie wie | do zrobienia |
-| B7 | „2 494 gminy" na stronie głównej, w `/gminy` i na 16 stronach województw. Polska ma **2 477** — 18 dzielnic Warszawy liczy się jako 18 gmin | 18 stron i strona główna | do zrobienia |
-| B8 | `/mapa?miara=unia`: 133 gminy pokazane jako „brak danych", choć to **zmierzone zero**. Przez wypadnięcie z kwantyli **cała skala legendy jest o 28 procent za wysoko** | 133 gminy źle pokolorowane, legenda zła dla 2 477 | do zrobienia |
-| B9 | Mediana SMUP w mazowieckiem liczona **bez Warszawy** — „mediana w województwie (313 gmin)" zamiast 314 | 331 stron | do zrobienia |
+| B7 | „2 494 gminy" na stronie głównej, w `/gminy` i na 16 stronach województw. Polska ma **2 477** — 18 dzielnic Warszawy liczy się jako 18 gmin | 18 stron i strona główna | **zrobione 01.10** |
+| B8 | `/mapa?miara=unia`: 133 gminy pokazane jako „brak danych", choć to **zmierzone zero**. Przez wypadnięcie z kwantyli **cała skala legendy jest o 28 procent za wysoko** | 133 gminy źle pokolorowane, legenda zła dla 2 477 | **zrobione 01.10** - dolny prog 359,78 zl na 284,78 zl |
+| B9 | Mediana SMUP w mazowieckiem liczona **bez Warszawy** — „mediana w województwie (313 gmin)" zamiast 314 | 331 stron | **zrobione 01.10** |
 | B10 | Interpelacje: licznik z kadencji posła, mianownik z całej kadencji | 39 posłów z wygasłym mandatem | do zrobienia |
 | B11 | `/firma`: mianownik „z N ogłoszeń" większy niż zbiór, z którego policzono sumę | 12 i 286 stron | do zrobienia |
 | B12 | `/gmina`: ten sam mechanizm co B11 | 7 gmin, 9 ogłoszeń | do zrobienia |
+
+**Reszta po B5 — 11 nazw z 93 287, i to juz inna przyczyna.** Strona firmy
+bierze nazwe z **najnowszego** przypadku (`order by dzien desc, id desc`, i jest
+to swiadoma decyzja — stare dane bywaja nieaktualne), a lista do mapy strony
+sklada ja przez `max()`. Dla 11 NIP-ow te dwie nazwy sie roznia, wiec regula
+jawnosci rozstrzyga je inaczej. Naprawienie tego wymagaloby przebiegu po calej
+tabeli pomocy z funkcja okna — czyli dokladnie tego, od czego uciekalismy
+przy sumach przyrostowych. Zapisane jako znana, zmierzona i ograniczona niespojnosc.
 
 **Najważniejsze zdanie całego przeglądu:** cztery z siedmiu najpoważniejszych
 znalezisk to nie błąd rachunku, tylko **dwie strony liczące to samo z dwóch
