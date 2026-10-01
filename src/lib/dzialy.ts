@@ -23,7 +23,10 @@ export const NAZWY_DZIALOW: Record<string, string> = {
   '855': 'Rodzina',
   '900': 'Gospodarka komunalna i ochrona środowiska',
   '921': 'Kultura i ochrona dziedzictwa narodowego',
-  '926': 'Kultura fizyczna i sport',
+  // GUS przemianowal ten dzial w 2011 r.; nasza etykieta byla o pietnascie lat
+  // spozniona. Patrz pulapka 59 — przy okazji wyszlo, ze pytalismy tez
+  // o wycofana zmienna BDL i dostawalismy pustke.
+  '926': 'Kultura fizyczna',
 };
 
 /** Nazwa dzialu; nieznany kod zostaje kodem — nie zgadujemy, czym jest. */
