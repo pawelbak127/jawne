@@ -373,6 +373,114 @@ async function importOkregow(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Uzgodnienie wykazu gmin z rejestrami GUS — czyli to, czego PKW nie wie.
+ *
+ * ZMIERZONE 01.10.2026: w tabeli bylo 2 477 gmin, a w kraju jest 2 479.
+ * Brakowalo `120713` Szczawa (powiat limanowski) i `200216` Grabowka (powiat
+ * bialostocki) — gmin utworzonych PO wyborach 2023, z ktorych pochodzi nasz
+ * wykaz. Nie bylo ich NIGDZIE: ani strony, ani nazwy, ani pozycji w spisie,
+ * ani w liczbie „2 477 gmin"; na mapie byly szarymi plamami bez nazwy.
+ * PKW jest zamrozona na dniu wyborow, wiec ten rozjazd bedzie rosl z kazda
+ * zmiana administracyjna — dlatego wykaz UZGADNIAMY, a nie przepisujemy raz.
+ *
+ * TRZY ZRODLA, kazde do tego, co naprawde wie:
+ *
+ *  1. **Co ISTNIEJE** — granice PRG (`public/mapa/gminy.json`, plik w repo):
+ *     2 479 kodow, stan biezacy.
+ *  2. **Jak sie nazywa** — wykaz jednostek GUS BDL. UWAGA: **BDL trzyma takze
+ *     jednostki WYCOFANE.** Rodzaje 1-3 daja 2 705 wpisow, ale tylko 2 535
+ *     roznych kodow: 170 kodow wystepuje dwukrotnie, bo gmina po zmianie
+ *     rodzaju zostaje w wykazie takze pod starym (np. Swiatniki Gorne jako
+ *     rodzaj 2 i 3). To ten sam mechanizm, co wycofana zmienna z pulapki 59.
+ *     Dlatego BRAMKA jest PRG, nie BDL: samo BDL dodaloby 56 gmin, ktore nie
+ *     istnieja. Przeciecie daje dokladnie 2 479, bez ani jednego braku.
+ *  3. **Powiat, wojewodztwo i okreg** — nasza tabela, po czterech pierwszych
+ *     cyfrach kodu. Okregi Kodeks wyborczy buduje z CALYCH powiatow i to jest
+ *     zmierzone: **0 z 379 powiatow jest rozdzielonych miedzy okregi**. Okreg
+ *     nowej gminy nie jest wiec zgadywaniem, tylko konsekwencja jej powiatu.
+ *
+ * `uprawnionych` zostaje `null` (regula 4): PKW nie zna tych gmin, a liczby
+ * uprawnionych do glosowania nie wolno zmyslic.
+ *
+ * Rodzaj: PKW rozroznia tylko „miasto" i „gmina" (236 wobec 2 175), wiec
+ * rodzaj BDL 1 to „miasto", a 2 i 3 to „gmina" — i dzieki temu dwuznacznosc
+ * tych 170 kodow znika sama, bez wybierania miedzy nimi.
+ *
+ * Etap jest bezpieczny do powtarzania: dopisuje wylacznie to, czego nie ma,
+ * i nie rusza zadnego istniejacego wiersza. Pytamy GUS dopiero wtedy, gdy
+ * wiemy, ze jest po co — przy zgodnym wykazie nie idzie ani jedno zapytanie.
+ */
+async function importWykazuGmin(db: DatabaseSync): Promise<void> {
+  log('-> uzgodnienie wykazu gmin (PRG + wykaz jednostek GUS)');
+  const plik = join(process.cwd(), 'public', 'mapa', 'gminy.json');
+  if (!existsSync(plik)) {
+    log('   brak public/mapa/gminy.json — pomijam. Odtworz: node --experimental-strip-types scripts/granice-gmin.mjs');
+    return;
+  }
+  const prg = new Set(Object.keys(
+    (JSON.parse(readFileSync(plik, 'utf8')) as { gminy: Record<string, unknown> }).gminy,
+  ));
+  const maja = new Set((db.prepare('select teryt from gminy').all() as unknown as
+    { teryt: string }[]).map((r) => r.teryt));
+  // Warszawa jest w PRG jedna jednostka, a u nas 18 dzielnicami (pulapka 24) —
+  // nie jest „brakujaca gmina" i nie wolno jej dopisac jako dwudziestej.
+  const brakujace = [...prg].filter((t) => !maja.has(t) && t !== TERYT_WARSZAWY);
+  if (!brakujace.length) {
+    log(`   wykaz zgodny: PRG ma ${prg.size} gmin i wszystkie sa w bazie — nie pytam GUS`);
+    return;
+  }
+  log(`   PRG ma ${prg.size} gmin, w bazie ${maja.size}; do uzgodnienia ${brakujace.length}: ${brakujace.join(', ')}`);
+
+  const nazwy = new Map<string, { nazwa: string; rodzaje: Set<string> }>();
+  let adres: string | null = 'https://bdl.stat.gov.pl/api/v1/units?level=6&page-size=100&format=json';
+  while (adres) {
+    const j: { results: { id: string; name: string; kind: string }[]; links?: { next?: string } } = await pobierzJson(adres);
+    for (const u of j.results) {
+      if (!['1', '2', '3'].includes(u.kind)) continue;
+      const t = `${u.id.slice(2, 4)}${u.id.slice(7, 11)}`;
+      const w = nazwy.get(t);
+      if (w) w.rodzaje.add(u.kind);
+      else nazwy.set(t, { nazwa: u.name, rodzaje: new Set([u.kind]) });
+    }
+    adres = j.links?.next ?? null;
+    if (adres) await new Promise((ok) => setTimeout(ok, przerwaBdlMs()));
+  }
+
+  const powiaty = new Map<string, { powiat: string; wojewodztwo: string; okreg: number }>();
+  for (const r of db.prepare(
+    "select substr(teryt,1,4) as p4, powiat, wojewodztwo, okreg_nr from gminy where rodzaj <> 'dzielnica Warszawy'",
+  ).all() as unknown as { p4: string; powiat: string; wojewodztwo: string; okreg_nr: number }[]) {
+    if (!powiaty.has(r.p4)) powiaty.set(r.p4, { powiat: r.powiat, wojewodztwo: r.wojewodztwo, okreg: r.okreg_nr });
+  }
+
+  const wstaw = db.prepare(
+    'insert into gminy(teryt, nazwa, rodzaj, powiat, wojewodztwo, okreg_nr, uprawnionych, szukaj)'
+    + ' values (?,?,?,?,?,?,null,?) on conflict(teryt) do nothing',
+  );
+  const dodane: string[] = [];
+  const pominiete: string[] = [];
+  wTransakcji(db, () => {
+    for (const teryt of brakujace) {
+      const g = nazwy.get(teryt);
+      const p = powiaty.get(teryt.slice(0, 4));
+      // Bez nazwy albo bez powiatu NIE zgadujemy — raportujemy (wzorzec 2).
+      if (!g || !p) {
+        pominiete.push(`${teryt} (${g ? 'nieznany powiat' : 'brak nazwy w wykazie GUS'})`);
+        continue;
+      }
+      const rodzaj = g.rodzaje.has('2') || g.rodzaje.has('3') ? 'gmina' : 'miasto';
+      wstaw.run(teryt, g.nazwa, rodzaj, p.powiat, p.wojewodztwo, p.okreg, uprosc(g.nazwa));
+      dodane.push(`${teryt} ${g.nazwa} (${rodzaj}, pow. ${p.powiat}, okreg ${p.okreg}, rodzaje BDL ${[...g.rodzaje].join('/')})`);
+    }
+  });
+  for (const d of dodane) log(`   + ${d}`);
+  for (const x of pominiete) log(`   UWAGA pominieta: ${x}`);
+  log(`   dopisano ${dodane.length}, pominieto ${pominiete.length}; gmin w bazie: ${maja.size + dodane.length}`);
+  odnotujImport(db, 'wykaz-gmin', dodane.length,
+    `PRG ${prg.size} gmin + wykaz jednostek GUS; dopisane: ${dodane.join('; ') || 'brak'}`);
+}
+
+/**
  * Wyliczenia na zaimportowanych danych: sumy glosow klubow i indeks
  * wyszukiwania. Zadnej sieci, wiec mozna je powtarzac dowolnie czesto.
  */
@@ -1699,6 +1807,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   zdjecia: importZdjec,
   obecnosc: importObecnosci,
   okregi: importOkregow,
+  wykaz: importWykazuGmin,
   ludnosc: importLudnosci,
   budzety: importBudzetow,
   dzialy: importDzialow,

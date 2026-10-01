@@ -58,7 +58,10 @@ case "${1:-}" in
     # (bez klucza 1 rok, z kluczem 5). Nie dopisuj tu `--lata=N`: te flage
     # czytaja takze `budzety` i `smup`, kazdy z inna wartoscia domyslna,
     # wiec `--lata=5` scieloby SMUP z dziesieciu lat do pieciu.
-    exec "$TSX" ingest/jobs/import.ts ludnosc budzety dzialy smup wyliczenia
+    # `wykaz` uzgadnia liste gmin z PRG i wykazem jednostek GUS. Gdy wykaz
+    # sie zgadza, nie wysyla ani jednego zapytania — pyta tylko wtedy, gdy
+    # w PRG jest gmina, ktorej nie mamy (PKW jest zamrozona na dniu wyborow).
+    exec "$TSX" ingest/jobs/import.ts wykaz ludnosc budzety dzialy smup wyliczenia
     ;;
   fundusze)
     exec "$TSX" ingest/jobs/import.ts fundusze wyliczenia

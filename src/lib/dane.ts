@@ -1325,10 +1325,13 @@ export function wojewodztwaGmin(): WojewodztwoZeSpisem[] {
     () => wszystkie<WojewodztwoZeSpisem>(
       /*
        * Dzielnice Warszawy liczone JAKO JEDNA gmina. Bez tego serwis pisal
-       * „2 494 gminy" na stronie glownej i „331 gmin" w mazowieckiem —
-       * Polska ma 2 477, a mazowieckie 314 (zmierzone 01.10.2026; tyle samo
-       * maja `budzety_gmin`, `budzety_dzialy` i `smup_dane`). Ludnosc sumuje
-       * sie poprawnie i tak, bo dzielnice maja wlasne wiersze w `ludnosc`.
+       * „2 494 gminy" na stronie glownej i „331 gmin" w mazowieckiem.
+       * Ta liczba nie jest tu wpisana i to jest celowe: 01.10.2026 wynosila
+       * 2 477, a po uzgodnieniu wykazu z PRG i GUS (etap `wykaz`, doszly
+       * Szczawa i Grabowka) wynosi **2 479** — i zmieni sie znowu przy
+       * kazdej zmianie administracyjnej, bo PKW jest zamrozona na dniu
+       * wyborow. Ludnosc sumuje sie poprawnie i tak, bo dzielnice maja
+       * wlasne wiersze w `ludnosc`.
        */
       `select g.wojewodztwo as wojewodztwo,
               count(*) - sum(case when g.rodzaj = 'dzielnica Warszawy' then 1 else 0 end)

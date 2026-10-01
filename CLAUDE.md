@@ -82,6 +82,7 @@ npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KL
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
+npm run import wykaz                       # uzgodnienie wykazu gmin z PRG i GUS, ~80 s
 npm run import glosy -- --od-nowa          # powtórka po zmianie SPOSOBU zapisu
 npm run import ludnosc                     # GUS BDL, ~10 s
 npm run import budzety                     # budzety gmin z GUS BDL, ~3,5 min
