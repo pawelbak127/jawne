@@ -43,7 +43,7 @@ const MIARY: { klucz: MiaraMapy; etykieta: string; opis: string; zrodlo: string;
   {
     klucz: 'pomoc',
     etykieta: 'Pomoc publiczna dla firm',
-    opis: 'Pomoc publiczna dla firm z siedzibą w gminie, na mieszkańca — tylko z dni pobranych dla całego kraju.',
+    opis: 'Pomoc publiczna dla firm z siedzibą w gminie, na mieszkańca — tylko z dni ustalonych, czyli tych, w których minął już termin zgłoszenia pomocy. Te same dni liczy strona gminy.',
     zrodlo: 'SUDOP (UOKiK)',
     adres: 'https://sudop.uokik.gov.pl',
   },

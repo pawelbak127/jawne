@@ -393,21 +393,29 @@ export function przegladZeSum(db: DatabaseSync, terytWarszawy: string): Przeglad
 /**
  * Mapa pomocy: zlote na mieszkanca w gminie.
  *
- * Liczy sie z dni POBRANYCH DLA KRAJU — ustalonych (stan) i jeszcze
- * nieustalonych (delta) — a nie z pelnej historii gmin pokazowych: inaczej
- * trzy gminy swiecilyby kwota z dziesieciu lat obok kraju z kilkuset dni
- * (pulapka 35).
+ * Liczy sie WYLACZNIE z dni USTALONYCH — tak samo jak strona gminy — a nie
+ * z pelnej historii gmin pokazowych: inaczej trzy gminy swiecilyby kwota
+ * z dziesieciu lat obok kraju z kilkuset dni (pulapka 35).
+ *
+ * DO 01.10.2026 mapa doliczala tez dni pobrane, ale jeszcze NIEUSTALONE
+ * (delte), zeby miala sens, zanim ustali sie pierwszy dzien. Blad B2
+ * z przegladu: strona gminy liczy tylko z ustalonych, wiec czytelnik klikal
+ * gmine na mapie i dostawal mniejsza liczbe — **1 604 z 2 439 gmin, do 81
+ * razy** (Gdansk 21,26 zl na mapie wobec 18,90 zl na stronie).
+ *
+ * Wybralismy dni ustalone, bo liczba z dnia nieustalonego nie ma uczciwego
+ * mianownika. Urzedy maja 7 dni na zgloszenie pomocy (pulapka 37): dzien
+ * pobrany nazajutrz mial 200 przypadkow zamiast ~6 tys. Suma „16 dni
+ * kompletnych + 6 czesciowych" nie odpowiada wiec ZADNEMU okresowi —
+ * nie da sie pod nia podpisac zakresu dat, a regula 3 wymaga mianownika.
+ * Gdy zaden dzien nie jest jeszcze ustalony, mapa jest pusta i strona ma
+ * to powiedziec wprost (regula 4: brak danych to stan, nie zero).
  */
-export function mapaZeSum(db: DatabaseSync, terytWarszawy: string, delta = policzDelte(db)): WartoscNaMapie[] {
+export function mapaZeSum(db: DatabaseSync, terytWarszawy: string): WartoscNaMapie[] {
   const sumy = new Map<string, Kubelek>();
   for (const r of db.prepare('select teryt, przypadkow, z_kwota, brutto from pomoc_sumy_gmin').all() as unknown as
     { teryt: string; przypadkow: number; z_kwota: number; brutto: number }[]) {
     sumy.set(r.teryt, { przypadkow: r.przypadkow, zKwota: r.z_kwota, brutto: r.brutto });
-  }
-  for (const [teryt, d] of delta.gminy) {
-    const s = sumy.get(teryt);
-    if (s) { s.przypadkow += d.przypadkow; s.zKwota += d.zKwota; s.brutto += d.brutto; }
-    else sumy.set(teryt, { ...d });
   }
 
   const warszawa = (db.prepare(
@@ -558,7 +566,7 @@ export function sprawdzSumy(
   koniec = etap('mapa');
   const d = policzDelte(db);
   const mapaA = new Map(mapaOdZera(cz, terytWarszawy).map((w) => [w.teryt, w.wartosc]));
-  const mapaB = new Map(mapaZeSum(db, terytWarszawy, d).map((w) => [w.teryt, w.wartosc]));
+  const mapaB = new Map(mapaZeSum(db, terytWarszawy).map((w) => [w.teryt, w.wartosc]));
   if (mapaA.size !== mapaB.size) dopisz(`mapa: ${mapaA.size} vs ${mapaB.size} gmin`);
   for (const [teryt, w] of mapaA) {
     if (!ROWNE(w, mapaB.get(teryt) ?? null)) dopisz(`mapa/${teryt}: ${w} vs ${mapaB.get(teryt)}`);

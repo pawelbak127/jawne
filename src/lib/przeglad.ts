@@ -176,8 +176,7 @@ export function policzMapePomocy(cz: Czytnik, terytWarszawy: string): WartoscNaM
      select p.teryt as teryt, sum(p.wartosc_brutto) * 1.0 / l.osob as wartosc
        from pomoc_publiczna p
        join ludzie l on l.teryt = p.teryt
-       join pomoc_publiczna_dni d on d.dzien = p.dzien
-      where l.osob > 0
+      where l.osob > 0 and p.dzien in ${DNI_USTALONE}
       group by p.teryt, l.osob`,
   );
 }

@@ -84,16 +84,29 @@ describe('sumy przyrostowe', () => {
     expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
   });
 
-  it('nie wlicza dni jeszcze nieustalonych do przegladu, ale wlicza je do mapy', () => {
+  it('dnia jeszcze nieustalonego nie wlicza ANI do przegladu, ANI do mapy (B2)', () => {
     dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 1000 }]);
     dodajDzien('2026-02-01', 1, [{ nip: '2222222222', nazwa: 'Beta', brutto: 500 }]);
     odswiezSumy(db);
 
     expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(1);
     expect(przegladZeSum(db, WARSZAWA)!.swiezych).toBe(1);
-    // 1000 + 500 na 1000 mieszkancow — dzien swiezy wchodzi na mape.
+    /*
+     * Do 01.10.2026 mapa dawala tu 1,5 (1000 + 500 na 1000 mieszkancow),
+     * a strona gminy 1,0 — ta sama wielkosc z dwoch roznych zbiorow (B2).
+     * Teraz oba licza z dni ustalonych: 1000 / 1000 = 1,0.
+     */
     expect(mapaZeSum(db, WARSZAWA)).toEqual(policzMapePomocy(czytnik(), WARSZAWA));
-    expect(mapaZeSum(db, WARSZAWA)[0]!.wartosc).toBeCloseTo(1.5, 9);
+    expect(mapaZeSum(db, WARSZAWA)[0]!.wartosc).toBeCloseTo(1.0, 9);
+  });
+
+  it('bez ani jednego dnia ustalonego mapa jest PUSTA, a nie zerowa (regula 4)', () => {
+    dodajDzien('2026-02-01', 1, [{ nip: '2222222222', nazwa: 'Beta', brutto: 500 }]);
+    odswiezSumy(db);
+
+    expect(przegladZeSum(db, WARSZAWA)).toBeNull();
+    expect(mapaZeSum(db, WARSZAWA)).toEqual([]);
+    expect(policzMapePomocy(czytnik(), WARSZAWA)).toEqual([]);
   });
 
   it('liczy firmy z calej tabeli — takze z gmin pokazowych, ktorych dnia nie ma w rejestrze dni', () => {

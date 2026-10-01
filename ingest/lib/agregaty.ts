@@ -33,9 +33,9 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
                                         policzono = excluded.policzono`,
   ).run(klucz, podpis, JSON.stringify(wartosc), new Date().toISOString());
 
-  // Mapa liczy sie z WSZYSTKICH dni pobranych dla kraju, nie tylko ustalonych,
-  // wiec ma sens takze wtedy, gdy zaden dzien jeszcze sie nie ustalil.
-  const mapa = mapaZeSum(db, TERYT_WARSZAWY, d);
+  // Mapa liczy sie z dni USTALONYCH — tak samo jak strona gminy. Patrz
+  // naglowek `mapaZeSum`: blad B2 z przegladu 01.10.2026.
+  const mapa = mapaZeSum(db, TERYT_WARSZAWY);
   zapisz(KLUCZ_MAPY_POMOCY, mapa);
 
   /*
