@@ -297,6 +297,27 @@ w **0 rozjazdach na 4 641 głosowaniach**.
   Jedna do zaczęcia: **zdjąć `noindex` w tym tygodniu** — cztery zadania na
   łącznie sześć godzin, z których najdłuższe jest wpisaniem adresu e-mail.
 
+**Cichy brak znaleziony przy okazji 01.10.2026: dział 926 „Kultura fizyczna
+i sport" nie ma ani jednego wiersza w żadnym roku.** `DZIALY_BUDZETU` ma
+15 pozycji, w bazie jest 14 — 34 678 wierszy to dokładnie 14 × 2 477. Zmienna
+BDL 202304 oddaje **0 gmin**, i to powtarzalnie: tak samo w 2024 i w 2023,
+podczas gdy czternaście pozostałych zmiennych w tych samych przebiegach oddaje
+po 2 477. Awaria przejściowa nie trafiałaby dwa razy w tę samą zmienną,
+omijając czternaście innych — więc identyfikator jest zły albo ta zmienna nie
+jest publikowana na poziomie gminy.
+
+Dlaczego nikt tego nie zauważył: sprawdzane było tylko „ogolem", a kontrola
+druga drogą porównuje **sumę** wydatków z `budzety_gmin` — która z podziałem
+na działy nie ma nic wspólnego. Przy brakującym dziale pokazywała 0,00%
+różnicy. Strona po prostu nie wypisuje działu, którego nie ma w tabeli, więc
+czytelnik widzi trzynaście kategorii i nie ma jak się dowiedzieć, że czternasta
+istnieje. **Naprawione w kodzie:** każdy dział bez kompletu gmin jest teraz
+raportowany (`<-- UWAGA` przy wierszu i osobne ostrzeżenie na koniec roku),
+a log roku podaje „N z 15 działów". **Zostaje:** znaleźć właściwy identyfikator
+zmiennej — 01.10 nie dało się, bo BDL oddawał trzy różne błędy 500
+(„baza bdl_i73 jest w trakcie przywracania", „serwer bdlap73 nie jest w stanie
+uzyskać dostępu do bazy", „Value cannot be null (Parameter 'source')").
+
 ---
 
 ## Usterki — zgłoszone, niepilne

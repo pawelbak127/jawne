@@ -1316,12 +1316,28 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
     }
 
     const kwoty = new Map<string, Map<string, number>>();
+    const chude: string[] = [];
     for (const [kod, id] of DZIALY_BUDZETU) {
       const m = await bdlZmiennaGmin(id, rok);
       kwoty.set(kod, m);
       const nazwa = kod === 'ogolem' ? 'wydatki ogółem' : nazwaDzialu(kod);
-      log(`   ${rok} ${kod.padEnd(6)} ${nazwa.slice(0, 40).padEnd(40)} ${m.size} gmin`);
-      if (kod === 'ogolem' && m.size < oczekiwane.size * 0.95) break;
+      const brak = m.size < oczekiwane.size * 0.95;
+      log(`   ${rok} ${kod.padEnd(6)} ${nazwa.slice(0, 40).padEnd(40)} ${m.size} gmin${brak ? '   <-- UWAGA' : ''}`);
+      /*
+       * Dzial, ktory oddaje mniej gmin, niz powinien, BYL DOTAD PRZEMILCZANY:
+       * sprawdzane bylo tylko „ogolem". ZMIERZONE 01.10.2026: zmienna 202304
+       * (dzial 926, kultura fizyczna i sport) oddaje **0 gmin** w kazdym roku,
+       * wiec w bazie bylo 14 dzialow z 15 — 34 678 wierszy to 14 x 2 477.
+       * Serwis nigdy nie pokazal wydatkow gminy na sport i nic tego nie
+       * zglosilo, bo kontrola „ogolem wobec budzety_gmin" porownuje SUME,
+       * ktora z podzialem na dzialy nie ma nic wspolnego (0,00% roznicy
+       * przy brakujacym dziale).
+       *
+       * Nie przerywamy importu (wzorzec 2) — rok z czternastoma dzialami
+       * jest wart wiecej niz brak roku. Ale musi byc GLOSNO.
+       */
+      if (brak && kod !== 'ogolem') chude.push(`${kod} (${nazwaDzialu(kod)}): ${m.size}`);
+      if (kod === 'ogolem' && brak) break;
     }
     const ogolem = kwoty.get('ogolem')!;
     if (ogolem.size < oczekiwane.size * 0.95) {
@@ -1351,7 +1367,15 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
         where d.rok = ? and d.dzial = 'ogolem' and b.wydatki is not null`,
     ).get(rok) as { gmin: number; srednia_roznica: number | null };
     const proc = kontrola.srednia_roznica === null ? '—' : `${(kontrola.srednia_roznica * 100).toFixed(2)}%`;
-    log(`   rok ${rok}: ${wierszy} wierszy; kontrola wobec budzety_gmin na ${kontrola.gmin} gminach: srednia roznica ${proc}`);
+    const ileDzialow = (db.prepare(
+      'select count(distinct dzial) as c from budzety_dzialy where rok = ?',
+    ).get(rok) as { c: number }).c;
+    log(`   rok ${rok}: ${wierszy} wierszy, ${ileDzialow} z ${DZIALY_BUDZETU.length} dzialow; `
+      + `kontrola wobec budzety_gmin na ${kontrola.gmin} gminach: srednia roznica ${proc}`);
+    if (chude.length) {
+      log(`   UWAGA rok ${rok}: ${chude.length} dzialow bez kompletu gmin — ${chude.join('; ')}`);
+      log('   Strona po prostu ich nie pokaze. Sprawdz identyfikator zmiennej w DZIALY_BUDZETU.');
+    }
     zapisane.push(rok);
   }
 
