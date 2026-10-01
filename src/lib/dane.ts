@@ -943,6 +943,8 @@ export type ZamowieniaGminy = {
   suma: number | null;
   /** Ile ogloszen nie ma kwoty w zlotych — mianownik dla sumy. */
   bezKwoty: number;
+  /** Ile ogloszen NAPRAWDE weszlo do `suma` — mianownik dla tej kwoty (B12). */
+  wSumie: number;
   /** Ogloszenia z kwota ponad progiem — pokazywane osobno, nie w sumie. */
   podejrzane: ZamowienieTed[];
   najwieksze: ZamowienieTed[];
@@ -962,10 +964,20 @@ export type ZamowieniaGminy = {
 export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
   return bezTabeli(() => {
     // Kwoty ponad progiem nie wchodza do sumy — patrz src/lib/zamowienia.ts.
-    const sumy = jeden<{ ogloszen: number; suma: number | null; bezKwoty: number }>(
+    /*
+     * `wSumie` liczy DOKLADNIE te ogloszenia, ktore weszly do `suma`.
+     * B12 z przegladu 01.10.2026: strona pisala „z N ogloszen", gdzie
+     * N = ogloszen - bezKwoty, a to wciaz obejmuje ogloszenia z kwota
+     * odrzucona jako bledna (powyzej PROG_PODEJRZANEJ_KWOTY), ktorych
+     * w sumie nie ma. Mianownik musi byc licznoscia tego samego zbioru,
+     * z ktorego policzono licznik (regula 3).
+     */
+    const sumy = jeden<{ ogloszen: number; suma: number | null; bezKwoty: number; wSumie: number }>(
       `select count(*) as ogloszen,
               sum(case when o.waluta = 'PLN' and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then o.wartosc end) as suma,
-              sum(case when o.wartosc is null or o.waluta <> 'PLN' then 1 else 0 end) as bezKwoty
+              sum(case when o.wartosc is null or o.waluta <> 'PLN' then 1 else 0 end) as bezKwoty,
+              sum(case when o.waluta = 'PLN' and o.wartosc is not null
+                        and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then 1 else 0 end) as wSumie
          from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
         where r.teryt = ?`,
       teryt,
@@ -988,10 +1000,11 @@ export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
       ogloszen: sumy?.ogloszen ?? 0,
       suma: sumy?.suma ?? null,
       bezKwoty: sumy?.bezKwoty ?? 0,
+      wSumie: sumy?.wSumie ?? 0,
       podejrzane,
       najwieksze,
     };
-  }, { ogloszen: 0, suma: null, bezKwoty: 0, podejrzane: [], najwieksze: [] });
+  }, { ogloszen: 0, suma: null, bezKwoty: 0, wSumie: 0, podejrzane: [], najwieksze: [] });
 }
 
 export type ZamowieniaFirmy = {
@@ -999,6 +1012,8 @@ export type ZamowieniaFirmy = {
   /** Suma wartosci ogloszen w PLN, w ktorych firma byla JEDYNYM wykonawca. */
   sumaSama: number | null;
   ogloszenSama: number;
+  /** Ile z nich NAPRAWDE weszlo do `sumaSama` — mianownik dla tej kwoty. */
+  ogloszenWSumie: number;
   /** Ogloszen, w ktorych wykonawcow bylo wiecej — kwoty nie da sie przypisac. */
   ogloszenZInnymi: number;
   lista: ZamowienieTed[];
@@ -1020,11 +1035,20 @@ export function zamowieniaFirmy(nip: string, ile = 12): ZamowieniaFirmy {
         where w.nip = ? order by o.data desc limit ?`,
       nip, ile,
     );
-    const sumy = jeden<{ ogloszen: number; sama: number; suma: number | null; zinnymi: number }>(
+    /*
+     * `wsumie` to licznosc zbioru, z ktorego policzono `suma` — nie to samo
+     * co `sama`. B11 z przegladu 01.10.2026: etykieta mowila „z N ogloszen
+     * z jednym wykonawca", a `suma` pomija z nich te bez kwoty, w innej
+     * walucie i z kwota odrzucona jako bledna (pulapka 47). Mianownik byl
+     * wiec wiekszy od zbioru, ktory zsumowano.
+     */
+    const sumy = jeden<{ ogloszen: number; sama: number; suma: number | null; zinnymi: number; wsumie: number }>(
       `select count(*) as ogloszen,
               sum(case when o.wykonawcow = 1 then 1 else 0 end) as sama,
               sum(case when o.wykonawcow = 1 and o.waluta = 'PLN'
                         and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then o.wartosc end) as suma,
+              sum(case when o.wykonawcow = 1 and o.waluta = 'PLN' and o.wartosc is not null
+                        and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then 1 else 0 end) as wsumie,
               sum(case when o.wykonawcow > 1 then 1 else 0 end) as zinnymi
          from ted_wykonawcy w join ted_ogloszenia o on o.numer = w.numer
         where w.nip = ?`,
@@ -1034,10 +1058,11 @@ export function zamowieniaFirmy(nip: string, ile = 12): ZamowieniaFirmy {
       ogloszen: sumy?.ogloszen ?? 0,
       sumaSama: sumy?.suma ?? null,
       ogloszenSama: sumy?.sama ?? 0,
+      ogloszenWSumie: sumy?.wsumie ?? 0,
       ogloszenZInnymi: sumy?.zinnymi ?? 0,
       lista,
     };
-  }, { ogloszen: 0, sumaSama: null, ogloszenSama: 0, ogloszenZInnymi: 0, lista: [] });
+  }, { ogloszen: 0, sumaSama: null, ogloszenSama: 0, ogloszenWSumie: 0, ogloszenZInnymi: 0, lista: [] });
 }
 
 // ---------------------------------------------------------------------------

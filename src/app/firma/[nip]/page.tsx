@@ -219,9 +219,13 @@ function Zamowienia({ z }: { z: ZamowieniaFirmy }) {
         <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
           <p className="liczby szryft text-3xl font-semibold">{z.sumaSama === null ? '—' : zlote(z.sumaSama)}</p>
           <p className="mt-1 text-sm font-medium">
-            {`z ${zOdmiana(z.ogloszenSama, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z jednym wykonawcą`}
+            {`z ${zOdmiana(z.ogloszenWSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z jednym wykonawcą`}
           </p>
-          <p className="mt-0.5 text-xs text-atrament-2">tylko kwoty w złotych</p>
+          <p className="mt-0.5 text-xs text-atrament-2">
+            {z.ogloszenSama > z.ogloszenWSumie
+              ? `${zOdmiana(z.ogloszenSama - z.ogloszenWSumie, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z jednym wykonawcą zostało poza sumą: bez kwoty w złotych albo z kwotą odrzuconą jako błędna`
+              : 'tylko kwoty w złotych'}
+          </p>
         </div>
         <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
           <p className="liczby szryft text-3xl font-semibold">{liczba(z.ogloszenZInnymi)}</p>

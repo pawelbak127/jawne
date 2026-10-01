@@ -803,7 +803,7 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
           <p className="liczby szryft text-4xl font-semibold">{z.suma === null ? '—' : zlote(z.suma)}</p>
           <p className="mt-1 text-sm font-medium">wartość ogłoszeń w złotych</p>
           <p className="mt-0.5 text-xs text-atrament-2">
-            {`z ${zOdmiana(z.ogloszen - z.bezKwoty, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')}`}
+            {`z ${zOdmiana(z.wSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')}`}
           </p>
           {/*
             Uwaga z przegladu 24.09.2026: „8,43 mld zl" przy rocznym budzecie
