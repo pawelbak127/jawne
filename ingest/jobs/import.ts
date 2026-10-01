@@ -1251,7 +1251,9 @@ const DZIALY_BUDZETU: [kod: string, zmienna: number][] = [
   ['900', 202295],
   ['750', 202236],
   ['921', 202298],
-  ['926', 202304],
+  // 273898, nie 202304: GUS przemianowal dzial w 2011 r. i zalozyl NOWA zmienna.
+  // Stara zyje dalej z latami 2008-2010 — patrz pulapka 59 w CLAUDE.md.
+  ['926', 273898],
   ['700', 202242],
   ['754', 202262],
   ['851', 202283],
@@ -1293,8 +1295,30 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
   const odNowa = process.argv.includes('--od-nowa');
   log(`-> wydatki gmin wg dzialow (GUS BDL, ${DZIALY_BUDZETU.length} zmiennych x ${ileLat} lat; ${kluczBdl() ? 'z kluczem' : 'bez klucza — ok. 1,5 h na rok'})`);
 
-  const zmienna = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${DZIALY_BUDZETU[1]![1]}?format=json`);
-  const lata = [...zmienna.years].sort((a, b) => b - a);
+  /*
+   * LATA KAZDEJ ZMIENNEJ OSOBNO, nie jednej wzorcowej — i to jest sedno
+   * naprawy z 01.10.2026. BDL nie usuwa zmiennej, ktora przestal zasilac:
+   * dzial 926 zmienil w 2011 r. nazwe („Kultura fizyczna i sport" ->
+   * „Kultura fizyczna") i dostal NOWY identyfikator, a stary odpowiada dalej
+   * HTTP 200 z latami 2008-2010. Pytany o rok 2024 oddaje wiec pusty wynik
+   * bez cienia bledu. Przez to w bazie bylo 14 dzialow z 15 i nikt tego nie
+   * zauwazyl (patrz `chude` nizej).
+   *
+   * Majac ten katalog, wiemy DLA KAZDEGO ROKU, ilu dzialow mamy prawo
+   * oczekiwac. Dzieki temu: (1) nie pytamy o zmienna, ktora danego roku nie
+   * obejmuje — to oszczedza ok. 40 zapytan na kazda taka pare, (2) rok
+   * uznajemy za kompletny tylko wtedy, gdy ma wszystkie dzialy, jakie GUS
+   * dla niego publikuje, (3) „brak danych u GUS" przestaje byc nieodrozninalny
+   * od „nie udalo sie pobrac".
+   */
+  const lataZmiennej = new Map<string, Set<number>>();
+  for (const [kod, id] of DZIALY_BUDZETU) {
+    const z = await pobierzJson<{ years: number[] }>(`https://bdl.stat.gov.pl/api/v1/variables/${id}?format=json`);
+    lataZmiennej.set(kod, new Set(z.years));
+  }
+  const dzialowNaRok = (rok: number): number => DZIALY_BUDZETU
+    .filter(([kod]) => lataZmiennej.get(kod)!.has(rok)).length;
+  const lata = [...lataZmiennej.get('ogolem')!].sort((a, b) => b - a);
   const oczekiwane = new Set(
     (db.prepare("select teryt from gminy where rodzaj <> 'dzielnica Warszawy'").all() as unknown as { teryt: string }[]).map((r) => r.teryt),
   );
@@ -1309,15 +1333,31 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
   for (const rok of lata.slice(0, ileLat + 2)) {
     if (zapisane.length >= ileLat) break;
     const juzJest = (db.prepare("select count(*) as c from budzety_dzialy where rok = ? and dzial = 'ogolem'").get(rok) as { c: number }).c;
-    if (!odNowa && juzJest >= oczekiwane.size * 0.95) {
-      log(`   rok ${rok}: juz w bazie (${juzJest} gmin) — pomijam; --od-nowa pobiera ponownie`);
+    const maDzialow = (db.prepare('select count(distinct dzial) as c from budzety_dzialy where rok = ?').get(rok) as { c: number }).c;
+    const trzeba = dzialowNaRok(rok);
+    // Rok jest kompletny, gdy ma GMINY **i** wszystkie dzialy, jakie GUS dla
+    // niego publikuje. Sam warunek na gminy przepuszczal rok z 14 dzialami
+    // z 15 i zadne nocne uruchomienie juz go nie uzupelnialo.
+    if (!odNowa && juzJest >= oczekiwane.size * 0.95 && maDzialow >= trzeba) {
+      log(`   rok ${rok}: juz w bazie (${juzJest} gmin, ${maDzialow} dzialow) — pomijam; --od-nowa pobiera ponownie`);
       zapisane.push(rok);
       continue;
+    }
+    if (!odNowa && juzJest >= oczekiwane.size * 0.95) {
+      log(`   rok ${rok}: w bazie jest, ale ma ${maDzialow} dzialow z ${trzeba} — pobieram ponownie`);
     }
 
     const kwoty = new Map<string, Map<string, number>>();
     const chude: string[] = [];
     for (const [kod, id] of DZIALY_BUDZETU) {
+      if (!lataZmiennej.get(kod)!.has(rok)) {
+        // GUS nie publikuje tego dzialu za ten rok. To nie usterka i nie
+        // zuzywamy na to zapytania — ale mowimy o tym, zeby „czego nie ma"
+        // bylo widoczne w dzienniku.
+        log(`   ${rok} ${kod.padEnd(6)} ${'(GUS nie publikuje za ten rok)'.padEnd(40)} -`);
+        kwoty.set(kod, new Map());
+        continue;
+      }
       const m = await bdlZmiennaGmin(id, rok);
       kwoty.set(kod, m);
       const nazwa = kod === 'ogolem' ? 'wydatki ogółem' : nazwaDzialu(kod);
@@ -1370,7 +1410,7 @@ async function importDzialow(db: DatabaseSync): Promise<void> {
     const ileDzialow = (db.prepare(
       'select count(distinct dzial) as c from budzety_dzialy where rok = ?',
     ).get(rok) as { c: number }).c;
-    log(`   rok ${rok}: ${wierszy} wierszy, ${ileDzialow} z ${DZIALY_BUDZETU.length} dzialow; `
+    log(`   rok ${rok}: ${wierszy} wierszy, ${ileDzialow} z ${dzialowNaRok(rok)} dzialow; `
       + `kontrola wobec budzety_gmin na ${kontrola.gmin} gminach: srednia roznica ${proc}`);
     if (chude.length) {
       log(`   UWAGA rok ${rok}: ${chude.length} dzialow bez kompletu gmin — ${chude.join('; ')}`);

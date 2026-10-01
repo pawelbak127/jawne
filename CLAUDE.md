@@ -622,6 +622,27 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
    --dump-dom` (niezgodności hydracji). Osobny `--user-data-dir` na każdy
    zrzut, inaczej Chrome oddaje kod 0 i nic nie zapisuje.
 
+
+59. **BDL nie usuwa zmiennej, ktorej przestal zasilac — i to jest cicha
+    strata.** Dzial 926 zmienil w 2011 r. nazwe („Kultura fizyczna i sport"
+    → „Kultura fizyczna") i dostal **nowy identyfikator**: stary `202304` ma
+    lata **2008–2010**, nowy `273898` ma **2011–2025**. Nasz import pytal
+    o stary, a BDL odpowiadal **HTTP 200 z pustym wynikiem** — bez bledu,
+    bez ostrzezenia. Efekt: w `budzety_dzialy` bylo 14 dzialow z 15 (34 678
+    wierszy to dokladnie 14 × 2 477), strona nie wypisywala wydatkow gminy na
+    sport, a czytelnik nie mial jak sie dowiedziec, ze taka kategoria istnieje.
+    **Dwa zabezpieczenia minely sie z problemem**: sprawdzany byl tylko dzial
+    `ogolem`, a kontrola druga droga porownuje **sume** wydatkow z `budzety_gmin`
+    — ktora z podzialem na dzialy nie ma nic wspolnego, wiec przy brakujacym
+    dziale pokazywala **0,00% roznicy** i wygladala jak dowod poprawnosci.
+    Od 01.10.2026 import pobiera **lata kazdej zmiennej osobno**
+    (`/variables/{id}` dla wszystkich 15, nie dla jednej wzorcowej) i z tego
+    wie, ilu dzialow ma prawo oczekiwac w danym roku. Rok jest kompletny
+    dopiero wtedy, gdy ma **wszystkie** nalezne dzialy — inaczej zaden nocny
+    przebieg juz by go nie uzupelnil. Zasada ogolniejsza: **gdy rejestr
+    identyfikuje wskaznik liczba, pytaj go takze o to, jakie LATA ta liczba
+    obejmuje.** Brak wiersza i brak zmiennej wygladaja z zewnatrz identycznie.
+
 ---
 
 ## Bezpieczeństwo
