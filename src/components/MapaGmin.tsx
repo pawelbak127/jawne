@@ -418,7 +418,7 @@ export function MapaGmin({
               type="button"
               aria-label="Powiększ"
               onClick={() => ustawWidok({ ...biezacy, z: Math.min(powiekszenie * KROK_POWIEKSZENIA, MAKS_POWIEKSZENIE) })}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
+              className="grid h-11 w-11 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
             >
               +
             </button>
@@ -426,7 +426,7 @@ export function MapaGmin({
               type="button"
               aria-label="Pomniejsz"
               onClick={() => ustawWidok({ ...biezacy, z: Math.max(powiekszenie / KROK_POWIEKSZENIA, 1) })}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
+              className="grid h-11 w-11 place-items-center rounded-lg border border-kreska bg-papier text-lg leading-none shadow-karta"
             >
               −
             </button>
@@ -437,13 +437,13 @@ export function MapaGmin({
           {powiekszenie > 1 ? (
             <div className="absolute bottom-3 left-3 grid grid-cols-3 gap-1">
               <span />
-              <button type="button" aria-label="W górę" onClick={() => przesun(0, -0.12)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">↑</button>
+              <button type="button" aria-label="W górę" onClick={() => przesun(0, -0.12)} className="h-11 w-11 rounded-lg border border-kreska bg-papier shadow-karta">↑</button>
               <span />
-              <button type="button" aria-label="W lewo" onClick={() => przesun(-0.12, 0)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">←</button>
-              <button type="button" aria-label="Wyśrodkuj" onClick={() => pokazWojewodztwo(null)} className="h-8 w-8 rounded-lg border border-kreska bg-papier text-xs shadow-karta">∘</button>
-              <button type="button" aria-label="W prawo" onClick={() => przesun(0.12, 0)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">→</button>
+              <button type="button" aria-label="W lewo" onClick={() => przesun(-0.12, 0)} className="h-11 w-11 rounded-lg border border-kreska bg-papier shadow-karta">←</button>
+              <button type="button" aria-label="Wyśrodkuj" onClick={() => pokazWojewodztwo(null)} className="h-11 w-11 rounded-lg border border-kreska bg-papier text-xs shadow-karta">∘</button>
+              <button type="button" aria-label="W prawo" onClick={() => przesun(0.12, 0)} className="h-11 w-11 rounded-lg border border-kreska bg-papier shadow-karta">→</button>
               <span />
-              <button type="button" aria-label="W dół" onClick={() => przesun(0, 0.12)} className="h-8 w-8 rounded-lg border border-kreska bg-papier shadow-karta">↓</button>
+              <button type="button" aria-label="W dół" onClick={() => przesun(0, 0.12)} className="h-11 w-11 rounded-lg border border-kreska bg-papier shadow-karta">↓</button>
               <span />
             </div>
           ) : null}

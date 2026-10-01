@@ -121,7 +121,7 @@ export function Nawigacja() {
       <Link
         href="/szukaj"
         aria-label="Szukaj"
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
@@ -132,7 +132,7 @@ export function Nawigacja() {
       <PrzelacznikMotywu />
 
       <details className="sm:hidden">
-        <summary className={`${SUMMARY} h-9 w-9 justify-center`} aria-label="Menu">
+        <summary className={`${SUMMARY} h-11 w-11 justify-center`} aria-label="Menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
             <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
           </svg>

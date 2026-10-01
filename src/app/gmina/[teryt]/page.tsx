@@ -30,6 +30,9 @@ const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
 const ZRODLO_SMUP = 'https://smup.gov.pl';
 const ZRODLO_GUS_INFLACJA = 'https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/';
 
+// py-3, nie py-2: przy tekscie `text-sm` py-2 daje 36 px, a potrzebne 44.
+const KOTWICA = 'rounded px-1 py-3 hover:text-akcent hover:underline';
+
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
   const { teryt } = await params;
   const g = /^\d{6}$/.test(teryt) && bazaDostepna() ? gminaPelna(teryt) : null;
@@ -106,14 +109,19 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
         na telefonie to kilkanaście ekranów, a linku do konkretnej liczby nie
         dało się wysłać. Zwykłe odnośniki — działają bez JavaScriptu.
       */}
-      <nav aria-label="Sekcje tej strony" className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-atrament-2">
-        {budzet ? <a href="#budzet" className="hover:text-akcent hover:underline">Budżet</a> : null}
-        {smup.length ? <a href="#finanse" className="hover:text-akcent hover:underline">Finanse i podatki</a> : null}
-        <a href="#fundusze" className="hover:text-akcent hover:underline">Fundusze UE</a>
-        <a href="#pomoc" className="hover:text-akcent hover:underline">Pomoc publiczna</a>
-        <a href="#kto" className="hover:text-akcent hover:underline">Kto to postanowił</a>
-        {zamowienia.ogloszen ? <a href="#zamowienia" className="hover:text-akcent hover:underline">Zamówienia</a> : null}
-        <a href="#dane" className="hover:text-akcent hover:underline">Dane do pobrania</a>
+      {/*
+        Kotwice sa narzedziem ZROBIONYM POD TELEFON (strona Zakopanego ma
+        44 tys. px wysokosci), a mialy 20 px wysokosci — czyli byly na telefonie
+        trudne do trafienia. `py-2` daje 44 px przy zachowanym wygladzie.
+      */}
+      <nav aria-label="Sekcje tej strony" className="-mx-1 mt-4 flex flex-wrap gap-x-3 text-sm text-atrament-2">
+        {budzet ? <a href="#budzet" className={KOTWICA}>Budżet</a> : null}
+        {smup.length ? <a href="#finanse" className={KOTWICA}>Finanse i podatki</a> : null}
+        <a href="#fundusze" className={KOTWICA}>Fundusze UE</a>
+        <a href="#pomoc" className={KOTWICA}>Pomoc publiczna</a>
+        <a href="#kto" className={KOTWICA}>Kto to postanowił</a>
+        {zamowienia.ogloszen ? <a href="#zamowienia" className={KOTWICA}>Zamówienia</a> : null}
+        <a href="#dane" className={KOTWICA}>Dane do pobrania</a>
       </nav>
 
       <section className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -976,7 +984,17 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
                   {o.numer}
                 </a>
                 <span className="liczby text-xs text-atrament-2">{zlote(o.wartosc)}</span>
-                <span className="min-w-0 flex-1 truncate text-xs text-atrament-3">{skroc(o.tytul ?? '', 70)}</span>
+                {/*
+                  `flex-1` to `flex: 1 1 0%`, czyli baza ZERO — w kontenerze
+                  `flex-wrap` taki element nigdy nie przechodzi do wlasnego
+                  wiersza, tylko bierze resztke po numerze i kwocie. ZMIERZONE
+                  na 390 px: tytul dostawal 120 px z potrzebnych 409, czyli
+                  widac bylo 20 znakow z 68 („Polska – Uslugi w z…"). A to jest
+                  blok, ktorego caly sens polega na pokazaniu, czego dotyczylo
+                  bledne ogloszenie. Na telefonie wiec wlasny wiersz i bez
+                  obcinania; `skroc(..., 70)` i tak trzyma dlugosc.
+                */}
+                <span className="min-w-0 basis-full text-xs text-atrament-3 sm:basis-0 sm:flex-1 sm:truncate">{skroc(o.tytul ?? '', 70)}</span>
               </li>
             ))}
           </ul>

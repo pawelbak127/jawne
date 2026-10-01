@@ -89,7 +89,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <header className="sticky top-0 z-40 border-b border-kreska bg-papier/85 backdrop-blur-md">
           <div className="obszar flex h-16 items-center gap-3 sm:gap-6">
-            <Link href="/" className="flex items-baseline gap-2 shrink-0">
+            {/* py-3: sam tekst daje 32 px, a to odnosnik „do strony glownej"
+                w nagłówku kazdej strony. Naglowek ma h-16 i items-center,
+                wiec 56 px nadal jest wysrodkowane i nic sie nie przesuwa. */}
+            <Link href="/" className="flex shrink-0 items-baseline gap-2 py-3">
               <span className="szryft text-2xl font-semibold tracking-tight">jawne</span>
               <span className="hidden text-[11px] uppercase tracking-[0.18em] text-atrament-3 sm:inline">
                 Sejm X kadencji
@@ -119,7 +122,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ul className="mt-2 space-y-1.5 text-atrament-2">
                 {ZRODLA_STOPKI.map(([adres, nazwa]) => (
                   <li key={adres}>
-                    <a className="hover:text-akcent hover:underline" href={adres} target="_blank" rel="noreferrer">
+                    {/* min-h-6: 17 px nie spelnialo nawet progu 24 px (WCAG 2.5.8),
+                        a to osiem odnosnikow w stopce KAZDEJ strony. */}
+                    <a className="inline-flex min-h-6 items-center hover:text-akcent hover:underline" href={adres} target="_blank" rel="noreferrer">
                       {nazwa}
                     </a>
                   </li>

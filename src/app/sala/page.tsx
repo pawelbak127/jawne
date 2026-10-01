@@ -94,7 +94,7 @@ export default async function StronaSali({
               glosowanie zostaje w adresie i da sie go komus wyslac. */}
           <button
             type="submit"
-            className="rounded-xl bg-atrament px-4 py-2 text-sm font-medium text-papier transition-opacity hover:opacity-90"
+            className="rounded-xl bg-atrament px-4 py-3 text-sm font-medium text-papier transition-opacity hover:opacity-90"
           >
             Pokaż
           </button>

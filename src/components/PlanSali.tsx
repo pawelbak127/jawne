@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Portret } from '@/components/Portret';
 import { BARWY_GLOSU } from '@/lib/barwy-glosu';
 import { etykieta } from '@/lib/glosy';
@@ -68,6 +68,32 @@ export function PlanSali({
   const ramka = useRef<SVGSVGElement>(null);
   /** Pudelko, wzgledem ktorego pozycjonujemy chmurke — nie przycina niczego. */
   const pudelko = useRef<HTMLDivElement>(null);
+  const przewijanie = useRef<HTMLDivElement>(null);
+
+  /*
+   * ZGLOSZENIE PAWLA 01.10.2026: „obrazek mownicy sie rozjezdza".
+   *
+   * Rysunek ma wymuszona szerokosc `min-w-[46rem]` (736 px), bo przy 390 px
+   * kropki zlalyby sie w plame. Pudelko przewija sie w bok i tak ma byc —
+   * ale ZACZYNALO na lewej krawedzi, a podpisy orientacyjne („Mownica",
+   * „Stenografowie") stoja w POZIOMYM SRODKU rysunku: mownica ma x = 381,1
+   * przy szerokosci 776,7, czyli 49%.
+   *
+   * ZMIERZONE na 390 px: na stronie glownej pudelko ma 306 px, czyli widac
+   * 42% rysunku i **mownicy nie widac wcale** (jej lewa krawedz jest na 381,
+   * a pudelko konczy sie na 349); na `/sala` pudelko ma 356 px i zostaje
+   * z niej „Mo". Czytelnik widzial pole 183 z 460 kropek, bez ksztaltu
+   * polkola i bez przodu izby — czyli sekcja „Uklad izby" nie pokazywala
+   * ukladu izby.
+   *
+   * Dlatego startujemy POSRODKU. Raz, przy montazu: dalsze przewijanie
+   * nalezy do czytelnika i nie wolno mu go odbierac.
+   */
+  useEffect(() => {
+    const el = przewijanie.current;
+    if (!el) return;
+    el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2);
+  }, []);
   const [pod, ustawPod] = useState<{ id: number; x: number; y: number; w: number; h: number } | null>(null);
   const [wybrany, ustawWybranego] = useState<number | null>(wyroznionyId ?? null);
   const [dotykiem, ustawDotykiem] = useState(false);
@@ -195,7 +221,7 @@ export function PlanSali({
         tylko pozycjonuje i niczego nie tnie.
       */}
       <div ref={pudelko} className="relative">
-      <div className="overflow-x-auto rounded-2xl border border-kreska bg-papier-2">
+      <div ref={przewijanie} className="overflow-x-auto rounded-2xl border border-kreska bg-papier-2">
         <svg
           ref={ramka}
           viewBox={`0 0 ${szerokosc} ${wysokosc}`}
@@ -335,7 +361,7 @@ export function PlanSali({
                 onMouseLeave={() => ustawGrupePodSpodem(null)}
                 onFocus={() => ustawGrupePodSpodem(id)}
                 onBlur={() => ustawGrupePodSpodem(null)}
-                className="flex items-center gap-2 rounded-md px-1.5 py-0.5 transition-opacity hover:bg-papier-3"
+                className="flex items-center gap-2 rounded-md px-1.5 py-3 transition-opacity hover:bg-papier-3"
                 style={{ opacity: grupaPodSpodem && grupaPodSpodem !== id ? 0.45 : 1 }}
               >
                 <span

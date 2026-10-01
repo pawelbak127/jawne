@@ -118,7 +118,9 @@ export default function StronaGlowna() {
       </section>
 
       <section className="obszar py-8">
-        <div className="rounded-3xl border border-kreska bg-papier-2 p-6 shadow-karta sm:p-10">
+        {/* p-4 na telefonie, nie p-6: kazde 16 px to ok. 2% rysunku sali, ktory
+            i tak miesci sie tylko w 42% (zmierzone na 390 px). */}
+        <div className="rounded-3xl border border-kreska bg-papier-2 p-4 shadow-karta sm:p-10">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="szryft text-2xl font-semibold">Układ izby</h2>
             <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/clubs" etykieta="rejestr klubów" />

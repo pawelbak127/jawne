@@ -135,7 +135,7 @@ export default async function StronaMapy({
           <Link
             key={m.klucz}
             href={adres(m.klucz, poziom)}
-            className={`rounded-full border px-3 py-1.5 transition-colors ${
+            className={`rounded-full border px-3 py-3 transition-colors ${
               m.klucz === miara.klucz
                 ? 'border-akcent bg-akcent-slaby text-akcent'
                 : 'border-kreska text-atrament-2 hover:border-kreska-2'
@@ -151,7 +151,7 @@ export default async function StronaMapy({
           <Link
             key={p}
             href={adres(miara.klucz, p)}
-            className={`rounded-full border px-3 py-1.5 transition-colors ${
+            className={`rounded-full border px-3 py-3 transition-colors ${
               p === poziom
                 ? 'border-atrament bg-atrament text-papier'
                 : 'border-kreska text-atrament-2 hover:border-kreska-2'

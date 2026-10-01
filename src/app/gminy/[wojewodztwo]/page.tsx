@@ -84,7 +84,7 @@ export default async function StronaGminWojewodztwa({ params }: { params: Promis
               <p className="mt-2">
                 <Link
                   href="/gmina/146501"
-                  className="block rounded-lg border border-akcent bg-akcent-slaby px-3 py-2 text-sm font-medium text-akcent"
+                  className="block rounded-lg border border-akcent bg-akcent-slaby px-3 py-3 text-sm font-medium text-akcent"
                 >
                   Warszawa — całe miasto →
                 </Link>
@@ -95,7 +95,7 @@ export default async function StronaGminWojewodztwa({ params }: { params: Promis
                 <li key={g.teryt} className="min-w-0">
                   <Link
                     href={`/gmina/${g.teryt}`}
-                    className="group flex items-baseline gap-3 rounded-lg border border-kreska bg-papier-2 px-3 py-2 transition-colors hover:border-kreska-2"
+                    className="group flex items-baseline gap-3 rounded-lg border border-kreska bg-papier-2 px-3 py-3 transition-colors hover:border-kreska-2"
                   >
                     <span className="min-w-0 flex-1 text-sm group-hover:text-akcent">{nazwaWlasna(g)}</span>
                     {/* Gmina bez pomiaru dostaje polpauze, nie zero. */}
