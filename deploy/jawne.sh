@@ -7,6 +7,7 @@
 #   sudo jawne uruchom zad   uruchom zadanie teraz i poczekaj na koniec (np. sejm)
 #   sudo jawne sprawdz       czy strona odpowiada: lokalnie i pod adresem publicznym
 #   sudo jawne sumy          kontrola sum pomocy druga droga (kilkadziesiat minut)
+#   sudo jawne agregaty      przelicz stan sum OD ZERA (po dodaniu nowego kubelka)
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
 #   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT, JAWNE_HOST
@@ -253,6 +254,17 @@ case "${1:-stan}" in
     # sumy sa liczbami, ktorych nikt nie sprawdza.
     # Zero rozjazdow = wynik oczekiwany.
     jako node_modules/.bin/tsx ingest/jobs/migracje.ts --sprawdz 2>&1 | bez_szumu
+    ;;
+  agregaty)
+    # Przelicza stan sum pomocy OD ZERA. Potrzebne raz, gdy dochodzi nowy
+    # KUBELEK (np. tabela `pomoc_sumy_organy` z 01.10.2026): sumy sa
+    # przyrostowe, wiec dni juz policzone nie licza sie powtornie i nowy
+    # kubelek zostalby PUSTY — a sekcja, ktora nie ma danych, po prostu sie
+    # nie renderuje (ta sama cicha strata co blad B1).
+    # ZMIERZONE: przy 3,78 mln wierszy pelne przeliczenie to ok. 29 minut
+    # (pulapka 57), wiec przy obecnej bazie licz kilkadziesiat minut.
+    # Nie pyta zadnego urzedu — liczy z tego, co juz jest w bazie.
+    jako node_modules/.bin/tsx ingest/jobs/migracje.ts --agregaty-od-nowa 2>&1 | bez_szumu
     ;;
   aktualizuj)
     # ZMIERZONE 20.09.2026 na serwerze: "git pull" wykonany jako ubuntu konczy
