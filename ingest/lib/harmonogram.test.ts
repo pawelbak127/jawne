@@ -123,6 +123,29 @@ describe('planHistorii', () => {
     expect(trzy.at(-1)).toMatchObject({ od: '2025-10-05', do: '2025-10-07', powod: 'historia' });
   });
 
+  it('ZAKRES W PRZERWIE PO PORAZKACH wypada z kroku „przerwane" i wraca krotszy', () => {
+    /*
+     * ZGLOSZENIE PAWLA 02.10.2026: dziennik serwera pokazal DZIESIEC RAZY ten
+     * sam wiersz „przerwane: 2024-12-17..2024-12-19". Timer historii chodzi
+     * co godzine, a pamiec o porazkach zyla tylko w procesie — wiec kazdy
+     * przebieg bral ten sam zakres. Teraz plan przyjmuje zbior do pominiecia.
+     */
+    const wejscie = {
+      dni: dni('2024-12-20', '2024-12-31', '2026-10-02T05:00:00.000Z'),
+      zakresyPlikow: ['2024-12-17..2024-12-19'],
+      dzis: '2026-10-02',
+      poczatekOkna: OKNO,
+      dlugosc: 1,
+    };
+    const bez = planHistorii(wejscie);
+    expect(bez[0]).toMatchObject({ od: '2024-12-17', do: '2024-12-19', powod: 'przerwane' });
+
+    const z = planHistorii({ ...wejscie, pomijaj: new Set(['2024-12-17..2024-12-19']) });
+    expect(z.some((x) => x.powod === 'przerwane')).toBe(false);
+    // Dni NIE znikaja z planu — wracaja krokiem „historia", po jednym.
+    expect(z.some((x) => x.powod === 'historia' && x.od === '2024-12-19')).toBe(true);
+  });
+
   it('stan bazy z 19.09.2026: najpierw przerwany zakres, potem dziura, potem historia', () => {
     const plan = planHistorii({
       dni: [

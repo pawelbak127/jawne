@@ -669,6 +669,42 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     kody z par kolizyjnych; (2) gdy klucz moze pasowac do kilku wierszy,
     slownik ma trzymac **liste kandydatow**, a nie ostatniego, ktory wygral.
 
+
+61. **Zabezpieczenie w PAMIECI PROCESU nie dziala, gdy zadanie startuje co
+    godzine.** ZGLOSZENIE PAWLA 02.10.2026: `sudo jawne stan` pokazal
+    w dzienniku **dziesiec razy ten sam wiersz** „przerwane:
+    2024-12-17..2024-12-19". `sudop.ts` ma zbior `zBledem` i po bledzie pomija
+    zakres, zeby nie dobijac urzedu — ale ten zbior zyje **tylko w pamieci
+    procesu**, a `jawne-sudop-historia.timer` tyka **co godzine**. Kazdy
+    przebieg startowal z czysta karta, a `planHistorii` stawia przerwany zakres
+    na pierwszym miejscu (jego strony leza na dysku, wiec wznowienie jest
+    najtansze). Efekt: jeden zakres, ktorego kolejka nie oddaje, zjadal
+    **cala dobe prob** — a pulapka 26 opisuje zakres, ktory nie wrocil ani raz
+    w czterech probach po 57 minut.
+    Zabezpieczenie dzialalo w obrebie „nocy", tylko ze timer sprawil, ze noc
+    trwa godzine. **Pisząc ochrone przed powtarzaniem, sprawdz, czy jej pamiec
+    zyje tak dlugo jak zjawisko, przed ktorym chroni.**
+    Od 02.10.2026 porazki ida na dysk (`dane/zrodla/sudop/.nieudane.json`)
+    z **przerwa rosnaca wykladniczo**: 1 h, 2 h, 4 h … najwyzej 24 h. Zakresu
+    NIGDY nie porzucamy na zawsze — urzad bywa przeciazony chwilowo, a tempo
+    jego odpowiedzi zmienilo sie dwukrotnie w ciagu dwoch dni. Sukces wymazuje
+    pamiec, wiec przerwa nie rosnie bez konca. Ta zmiana **zmniejsza** liczbe
+    zapytan do urzedu; zatwierdzone tempo zostaje nietkniete.
+
+62. **„Co mamy" liczone z dziennika importu to nie stan, a dorobek przebiegu.**
+    ZGLOSZENIE PAWLA 02.10.2026: serwer pokazal „glosy imienne **65 780**",
+    choc w kadencji jest ich 2,1 mln. Liczba nie byla zla — zly byl naglowek.
+    `stan-danych.mjs` bral `select ile from import`, a etap `glosy` zapisuje
+    tam `zapisanych`, czyli ile glosow dopisal TEN przebieg. Lokalnie przebieg
+    jest pelny i wychodzi 2 128 618; na serwerze nocne zadanie dopisuje tylko
+    nowe glosowania, wiec wychodzi 65 780.
+    Najgorsze bylo **pomieszanie w jednej tabeli**: `glosowania` zapisuje do
+    dziennika SUME (czyta wszystkie za kazdym razem), a `glosy` PRZYROST —
+    dwie kolumny o tej samej nazwie znaczyly dwie rozne rzeczy, w sekcji, ktora
+    nazywa sie „Co mamy". Teraz liczymy wiersze w TABELI, a z dziennika bierzemy
+    tylko date. Przy okazji: `stan` liczy teraz Warszawe jako jedna gmine
+    (pulapka 24), bo pokazywal 2 478 tam, gdzie strona glowna mowi 2 479.
+
 ---
 
 ## Bezpieczeństwo

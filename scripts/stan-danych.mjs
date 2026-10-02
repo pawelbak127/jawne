@@ -46,22 +46,50 @@ const wszystkie = (sql, ...p) => {
   }
 };
 
+/*
+ * CO MAMY — liczba z TABELI, nie z dziennika importu.
+ *
+ * ZGLOSZENIE PAWLA 02.10.2026: serwer pokazywal „glosy imienne 65 780",
+ * podczas gdy w kadencji jest ich 2,1 mln. Liczba nie byla zla — zly byl
+ * naglowek. Brala sie z `select ile from import`, a etap `glosy` zapisuje
+ * tam `zapisanych`, czyli **ile glosow dopisal TEN przebieg**. Lokalnie
+ * przebieg jest pelny i wychodzi 2 128 618; na serwerze nocne zadanie
+ * dopisuje tylko nowe glosowania, wiec wychodzi 65 780.
+ *
+ * Najgorsze bylo pomieszanie w jednej tabeli: `glosowania` zapisuje do
+ * dziennika SUME (czyta wszystkie za kazdym razem), a `glosy` PRZYROST.
+ * Dwie kolumny o tej samej nazwie znaczyly dwie rozne rzeczy, a sekcja
+ * nazywa sie „Co mamy" — czyli obiecuje stan, nie dorobek przebiegu.
+ *
+ * Dlatego liczymy wiersze w tabeli, a z dziennika bierzemy TYLKO date.
+ * Gdy tabeli nie ma, mowimy „nie importowano" — brak danych to stan
+ * (regula 4), a nie zero.
+ */
 nl('== Co mamy');
-for (const [co, opis] of [
-  ['poslowie', 'posłowie'],
-  ['glosowania', 'głosowania'],
-  ['glosy', 'głosy imienne'],
-  ['okregi', 'okręgi i gminy'],
-  ['ludnosc', 'ludność gmin'],
-  ['budzety', 'budżety gmin'],
-  ['fundusze-2021-2027', 'projekty UE 2021–2027'],
-  ['fundusze-2014-2020', 'projekty UE 2014–2020'],
+for (const [co, opis, licznik] of [
+  ['poslowie', 'posłowie', 'select count(*) as c from poslowie'],
+  ['glosowania', 'głosowania', 'select count(*) as c from glosowania'],
+  ['glosy', 'głosy imienne', 'select count(*) as c from glosy'],
+  ['okregi', 'okręgi', 'select count(*) as c from okregi'],
+  // Warszawa jest w tabeli TYLKO 18 dzielnicami (pulapka 24), wiec liczymy ja
+  // jako jedna gmine — dokladnie tak, jak robi to serwis. Bez tego `stan`
+  // pokazywalby 2 478 tam, gdzie strona glowna mowi 2 479.
+  ['okregi', 'gminy', `select count(*) - sum(case when rodzaj = 'dzielnica Warszawy' then 1 else 0 end)
+       + (case when sum(case when rodzaj = 'dzielnica Warszawy' then 1 else 0 end) > 0 then 1 else 0 end)
+       as c from gminy`],
+  ['ludnosc', 'ludność gmin', 'select count(*) as c from ludnosc'],
+  ['budzety', 'budżety gmin', 'select count(distinct teryt) as c from budzety_gmin'],
+  ['fundusze-2021-2027', 'projekty UE 2021–2027', "select count(*) as c from fe_projekty where okres = '2021-2027'"],
+  ['fundusze-2014-2020', 'projekty UE 2014–2020', "select count(*) as c from fe_projekty where okres = '2014-2020'"],
 ]) {
-  const w = jeden('select ile, kiedy from import where co = ?', co);
+  const w = jeden('select kiedy from import where co = ?', co);
+  const ile = jeden(licznik)?.c ?? null;
   const kiedy = w ? new Date(w.kiedy) : null;
-  const ile = kiedy ? Math.round((DZIS - kiedy) / 86_400_000) : null;
-  const kiedyTekst = ile === 0 ? 'dzisiaj' : ile === 1 ? 'wczoraj' : `${ile} dni temu`;
-  nl(w ? `   ${opis.padEnd(22)} ${String(liczba(w.ile)).padStart(9)}   ${kiedyTekst}` : `   ${opis.padEnd(22)}         —   nie importowano`);
+  const dni = kiedy ? Math.round((DZIS - kiedy) / 86_400_000) : null;
+  const kiedyTekst = dni === null ? 'bez daty importu' : dni === 0 ? 'dzisiaj' : dni === 1 ? 'wczoraj' : `${dni} dni temu`;
+  nl(ile === null
+    ? `   ${opis.padEnd(22)}         —   nie importowano`
+    : `   ${opis.padEnd(22)} ${String(liczba(ile)).padStart(9)}   ${kiedyTekst}`);
 }
 
 // Dni brakujace w srodku pobranego zakresu — zwykle przerwane pobieranie.

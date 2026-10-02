@@ -137,6 +137,13 @@ export function planHistorii(p: {
   dzis: string;
   poczatekOkna: string;
   dlugosc?: number;
+  /**
+   * Zakresy, ktorych TERAZ nie probujemy — ich kolejka nie oddala wyniku,
+   * a przerwa jeszcze nie minela (patrz `nieudane-zakresy.ts`). Pominiety
+   * zakres NIE znika z planu na zawsze: ustepuje miejsca krokowi „historia",
+   * ktory te same dni poda w mniejszych kawalkach.
+   */
+  pomijaj?: ReadonlySet<string>;
 }): ZakresDoPobrania[] {
   const dlugosc = p.dlugosc ?? DNI_W_ZAKRESIE;
   const wczoraj = dodajDni(p.dzis, -1);
@@ -152,6 +159,9 @@ export function planHistorii(p: {
     if (doDnia > wczoraj) continue;
     const dni = dniZakresu(od, doDnia);
     if (dni.every((d) => mamy.has(d))) continue;
+    // Zakres w przerwie po porazkach pomijamy — ale NIE oznaczamy jego dni
+    // jako pokrytych, zeby krok „historia" mogl je wziac mniejszymi porcjami.
+    if (p.pomijaj?.has(z)) continue;
     plan.push({ od, do: doDnia, odswiez: false, powod: 'przerwane' });
     for (const d of dni) pokryte.add(d);
   }

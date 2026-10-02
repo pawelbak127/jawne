@@ -29,6 +29,9 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { policzAgregaty } from '../lib/agregaty.js';
+import {
+  doPominiecia, dopiszPorazke, opisPominietych, wczytajNieudane, zapiszNieudane, zapomnij,
+} from '../lib/nieudane-zakresy.js';
 import { odnotujImport, otworz, wTransakcji, zalozSchemat } from '../lib/baza.js';
 import {
   dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
@@ -415,8 +418,15 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
    * Dlatego po bledzie tniemy zakres na pol, a po sukcesie wracamy do siedmiu.
    */
   let dlugosc = DNI_W_ZAKRESIE;
+  /*
+   * Pamiec o porazkach czytana Z DYSKU, nie z pamieci procesu. ZGLOSZENIE
+   * PAWLA 02.10.2026: dziennik pokazal DZIESIEC RAZY ten sam przerwany zakres,
+   * bo timer historii chodzi CO GODZINE, a zbior `zBledem` ginal razem
+   * z procesem. Patrz naglowek `nieudane-zakresy.ts`.
+   */
   const plan = () => planHistorii({
     dlugosc,
+    pomijaj: doPominiecia(wczytajNieudane(KATALOG), new Date()),
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
     dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
@@ -447,6 +457,9 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   const zBledem = new Map<string, string>();
   const MAKS_BLEDOW_POD_RZAD = 4;
   let bledowPodRzad = 0;
+  for (const o of opisPominietych(wczytajNieudane(KATALOG), new Date())) {
+    log(`   odlozony: ${o}`);
+  }
   let poprzedni = '';
   try {
     for (;;) {
@@ -470,6 +483,9 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
       try {
         await przyrost(db, zakres, znane, z.odswiez, budzet);
         bledowPodRzad = 0;
+        // Udalo sie — zapominamy porazki tego zakresu, zeby przerwa nie rosla
+        // na zawsze. Urzad bywa przeciazony chwilowo (pulapka 26).
+        zapiszNieudane(KATALOG, zapomnij(wczytajNieudane(KATALOG), zakres));
         if (dlugosc < DNI_W_ZAKRESIE) {
           dlugosc = Math.min(DNI_W_ZAKRESIE, dlugosc * 2);
           log(`   wracam do zakresow po ${dlugosc} dni`);
@@ -480,6 +496,9 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
         log(`   BLAD na ${zakres}: ${tresc}`);
         log('   Pobrane strony tego zakresu zostaja na dysku — nastepna noc je wznowi. Biore nastepny zakres.');
         zBledem.set(zakres, tresc);
+        // NA DYSK, nie tylko do pamieci: inaczej nastepne tykniecie timera
+        // (godzina pozniej) wezmie ten sam zakres jeszcze raz.
+        zapiszNieudane(KATALOG, dopiszPorazke(wczytajNieudane(KATALOG), zakres, new Date()));
         bledowPodRzad++;
         poprzedni = '';
         // Zakres z bledem musi trafic do zBledem, INACZEJ plan poda go znowu:
