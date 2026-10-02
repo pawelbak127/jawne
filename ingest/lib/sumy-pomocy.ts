@@ -497,6 +497,59 @@ export function mapaZeSum(db: DatabaseSync, terytWarszawy: string): WartoscNaMap
  * pokazowych: strona firmy istnieje niezaleznie od tego, ktorym trybem
  * pobrano jej pomoc.
  */
+/**
+ * Lista firm do mapy strony — STRUMIENIEM Z SQL, nie z mapy w pamieci.
+ *
+ * ZMIERZONE 02.10.2026: `sudo jawne aktualizuj` przewrocil sie w kroku
+ * „Migracje bazy" z „Ineffective mark-compacts near heap limit" przy 910 MB.
+ * Stara droga budowala mape WSZYSTKICH firm w kraju (`sumyFirm`), a potem
+ * rozwijala ja w tablice, filtrowala i sortowala — czyli trzymala dwie kopie
+ * naraz. Po dociagnieciu zakresu z 853 tys. wierszy przestalo sie miescic,
+ * a skutek byl powazniejszy niz sam blad: **nie dalo sie wdrozyc niczego**,
+ * bo migracje ida przed budowa.
+ *
+ * Tu grupowanie i sortowanie robi SQLite — na swoim magazynie tymczasowym,
+ * nie na stercie V8 — a JavaScript trzyma najwyzej `limit` napisow. Pamiec
+ * przestaje zalezec od wielkosci rejestru.
+ *
+ * DELTY NIE WOLNO POMINAC, choc kusi: ZMIERZONE — **18 655 firm (co piata)
+ * jest znanych TYLKO** z gmin pokazowych i dni jeszcze nieustalonych, bo ich
+ * dni nie weszly do stanu przyrostowego. Sama `pomoc_sumy_firm` pominelaby
+ * je w mapie strony po cichu. Dlatego zapytanie sklada jedno z drugim.
+ *
+ * `wolno` to regula jawnosci — przekazana z zewnatrz, zeby ten plik nie
+ * zalezal od `src/lib/prywatnosc.ts`.
+ */
+export function firmyDoMapy(
+  db: DatabaseSync,
+  limit: number,
+  wolno: (nazwa: string | null, typRegon: string | null) => boolean,
+): string[] {
+  const zapytanie = db.prepare(
+    `with laczne as (
+       select nip as nip, nazwa as nazwa, brutto as brutto from pomoc_sumy_firm
+       union all
+       select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa,
+              coalesce(sum(wartosc_brutto), 0) as brutto
+         from pomoc_publiczna
+        where nip_beneficjenta is not null
+          and dzien not in (select dzien from pomoc_sumy_dni)
+        group by nip_beneficjenta
+     )
+     select l.nip as nip, max(l.nazwa) as nazwa, sum(l.brutto) as brutto,
+            (select typ from regon r where r.nip = l.nip) as typ
+       from laczne l group by l.nip order by brutto desc`,
+  );
+  const nipy: string[] = [];
+  for (const r of zapytanie.iterate() as unknown as Iterable<
+    { nip: string; nazwa: string | null; typ: string | null }>) {
+    if (!wolno(r.nazwa, r.typ)) continue;
+    nipy.push(r.nip);
+    if (nipy.length >= limit) break;
+  }
+  return nipy;
+}
+
 export function sumyFirm(
   db: DatabaseSync,
   delta = policzDelte(db),

@@ -4,7 +4,7 @@ import {
 } from '../../src/lib/przeglad.js';
 import { nazwaPodmiotuJawna } from '../../src/lib/prywatnosc.js';
 import { TERYT_WARSZAWY } from './fe.js';
-import { delta, mapaZeSum, odswiezSumy, przegladZeSum, sumyFirm } from './sumy-pomocy.js';
+import { firmyDoMapy, mapaZeSum, odswiezSumy, przegladZeSum } from './sumy-pomocy.js';
 
 /**
  * Liczy gotowe wyniki, ktorych strona nie zdazylaby policzyc przy odbudowie:
@@ -23,7 +23,12 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
   };
 
   const sumy = odswiezSumy(db, wymus);
-  const d = delta(db);
+  /*
+   * `delta(db)` juz tu nie ma, i to jest polowa naprawy OOM z 02.10.2026:
+   * budowala w pamieci mapy firm i gmin z calej historii gmin pokazowych,
+   * a sluzyla potem tylko do wiersza w dzienniku. Liczby do dziennika biora
+   * sie teraz z dwoch tanich zapytan.
+   */
   const podpis = podpisDni(czytnik);
 
   const zapisz = (klucz: string, wartosc: unknown) => db.prepare(
@@ -52,12 +57,7 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
    * Bez niego ta lista powstawala sama heurystyka i polecala wyszukiwarkom
    * 57 adresow, pod ktorymi `/firma/[nip]` oddaje 404 (zmierzone 01.10.2026).
    */
-  const wszystkieFirmy = sumyFirm(db, d);
-  const firmy = [...wszystkieFirmy]
-    .filter(([, f]) => nazwaPodmiotuJawna(f.nazwa, f.typRegon))
-    .sort((a, b) => b[1].brutto - a[1].brutto)
-    .slice(0, MAKS_ADRESOW_MAPY)
-    .map(([nip]) => nip);
+  const firmy = firmyDoMapy(db, MAKS_ADRESOW_MAPY, nazwaPodmiotuJawna);
   zapisz(KLUCZ_FIRM_DO_MAPY, firmy);
 
   const przeglad = przegladZeSum(db, TERYT_WARSZAWY);
@@ -76,6 +76,6 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
   return {
     policzono: true,
     opis: `${sumy.opis}; przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
-      + `mapa: ${mapa.length} gmin, ${firmy.length} firm (delta: ${d.dni} dni, ${d.wierszy} wierszy)`,
+      + `mapa: ${mapa.length} gmin, ${firmy.length} firm`,
   };
 }
