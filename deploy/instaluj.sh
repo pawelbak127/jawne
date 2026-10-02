@@ -152,7 +152,16 @@ EOF
   krok "Migracje bazy"
   # Przed budowa, nie po: strona czyta kolumny wprost, a brakujaca kolumna
   # nie jest lapana jak brakujaca tabela — wywrocilaby strone gminy.
-  jako node_modules/.bin/tsx ingest/jobs/migracje.ts
+# ZMIERZONE 02.10.2026: `migracje.ts` przewrocilo wdrozenie z „Ineffective
+# mark-compacts near heap limit" przy 910 MB. Domyslna sterta Node na maszynie
+# z 2 GB RAM to ok. 920 MB, a `policzAgregaty` buduje w pamieci mape WSZYSTKICH
+# firm w kraju — po dociagnieciu zakresu z 853 tys. wierszy przestala sie
+# miescic. Maszyna ma 1,8 GB RAM i 2 GB swapu, a ten krok chodzi SAM (budowa
+# jest pozniej), wiec 1 400 MB jest bezpieczne.
+# To ZATRZYMANIE KRWAWIENIA, nie naprawa: mapa rosnie razem z rejestrem, wiec
+# predzej czy pozniej przebije i ten limit. Wlasciwa naprawa to liczenie listy
+# firm strumieniem z SQL — patrz docs/plan.md.
+  jako node --max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts
 
   # Budowa NIE dzieli maszyny z zadaniami danych.
   #
