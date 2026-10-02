@@ -253,7 +253,8 @@ case "${1:-stan}" in
     # wiec trwa KILKADZIESIAT MINUT — na zadanie, nigdy co noc. Bez niej
     # sumy sa liczbami, ktorych nikt nie sprawdza.
     # Zero rozjazdow = wynik oczekiwany.
-    jako node --max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts --sprawdz 2>&1 | bez_szumu
+    # NODE_OPTIONS, nie flaga przy `node` — tsx odpala proces potomny.
+    jako env NODE_OPTIONS=--max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts --sprawdz 2>&1 | bez_szumu
     ;;
   agregaty)
     # Przelicza stan sum pomocy OD ZERA. Potrzebne raz, gdy dochodzi nowy
@@ -264,7 +265,8 @@ case "${1:-stan}" in
     # ZMIERZONE: przy 3,78 mln wierszy pelne przeliczenie to ok. 29 minut
     # (pulapka 57), wiec przy obecnej bazie licz kilkadziesiat minut.
     # Nie pyta zadnego urzedu — liczy z tego, co juz jest w bazie.
-    jako node --max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts --agregaty-od-nowa 2>&1 | bez_szumu
+    # NODE_OPTIONS, nie flaga przy `node` — tsx odpala proces potomny.
+    jako env NODE_OPTIONS=--max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts --agregaty-od-nowa 2>&1 | bez_szumu
     ;;
   aktualizuj)
     # ZMIERZONE 20.09.2026 na serwerze: "git pull" wykonany jako ubuntu konczy

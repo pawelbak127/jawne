@@ -161,7 +161,13 @@ EOF
 # To ZATRZYMANIE KRWAWIENIA, nie naprawa: mapa rosnie razem z rejestrem, wiec
 # predzej czy pozniej przebije i ten limit. Wlasciwa naprawa to liczenie listy
 # firm strumieniem z SQL — patrz docs/plan.md.
-  jako node --max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts
+# NODE_OPTIONS, a nie flaga przy `node` — i to jest roznica, ktora kosztowala
+# jedno nieudane wdrozenie. `node_modules/.bin/tsx` to skrypt powloki, a tsx
+# odpala PROCES POTOMNY, ktory robi cala robote. Flaga podana przy `node`
+# dotyczy rodzica; dziecko dziedziczy tylko zmienne srodowiska. ZMIERZONE:
+# po dodaniu flagi przy `node` proces nadal padal przy 914 MB, czyli dokladnie
+# na domyslnym limicie.
+  jako env NODE_OPTIONS=--max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts
 
   # Budowa NIE dzieli maszyny z zadaniami danych.
   #
