@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useMemo, useRef, useState } from 'react';
 import { przydzielBloki, ulozPolkole } from '@/lib/polkole';
+import { chmurkaPozycja } from '@/lib/chmurka';
 
 export type MiejsceWBloku = {
   barwa: string;
@@ -30,6 +31,14 @@ export type Blok = {
  * tego, ze z wykresu nie dalo by sie juz policzyc wiekszosci, a po to on jest.
  * Granice blokow niesie kolor i podswietlenie przy najechaniu.
  */
+/*
+ * Rozmiar chmurki w pikselach. `max-w-[18rem]` to 288 px; wysokosc to dwa
+ * wiersze tekstu `text-sm` z `py-2`. Liczba jest tu PO TO, zeby dala sie
+ * porownac z pudelkiem — chmurka nie zna swoich wymiarow, zanim sie
+ * nie pokaze, a wtedy jest juz za pozno na decyzje, gdzie ma stanac.
+ */
+const CHMURKA = { szer: 288, wys: 64 };
+
 export function Polkole({
   bloki,
   srodek,
@@ -51,7 +60,7 @@ export function Polkole({
   const router = useRouter();
   const ramka = useRef<HTMLDivElement>(null);
   const [podswietlony, ustawPodswietlony] = useState<string | null>(null);
-  const [pod, ustawPod] = useState<{ nr: number; x: number; y: number } | null>(null);
+  const [pod, ustawPod] = useState<{ nr: number; x: number; y: number; w: number; h: number } | null>(null);
   const [wybrane, ustawWybrane] = useState<number | null>(null);
   const [dotykiem, ustawDotykiem] = useState(false);
 
@@ -108,7 +117,9 @@ export function Polkole({
                 }
                 onMouseMove={(e) => {
                   const r = ramka.current?.getBoundingClientRect();
-                  if (r) ustawPod({ nr: i, x: e.clientX - r.left, y: e.clientY - r.top });
+                  // Wymiary pudelka BIERZEMY Z POMIARU, nie zakladamy —
+                  // patrz naglowek src/lib/chmurka.ts.
+                  if (r) ustawPod({ nr: i, x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height });
                 }}
                 onPointerDown={(e) => {
                   if ((e.pointerType !== 'mouse') !== dotykiem) ustawDotykiem(e.pointerType !== 'mouse');
@@ -139,7 +150,7 @@ export function Polkole({
         {pod && !dotykiem ? (
           <div
             className="pointer-events-none absolute z-10 max-w-[18rem] rounded-xl border border-kreska bg-papier px-3 py-2 text-sm shadow-karta-2"
-            style={{ left: Math.min(pod.x + 14, 420), top: pod.y + 14 }}
+            style={chmurkaPozycja(pod, CHMURKA)}
           >
             {plaskie[pod.nr]?.opis}
           </div>
@@ -155,7 +166,7 @@ export function Polkole({
               {plaskie[wybrane]!.adres ? (
                 <Link
                   href={plaskie[wybrane]!.adres!}
-                  className="rounded-xl bg-atrament px-3 py-1.5 text-sm font-medium text-papier"
+                  className="rounded-xl bg-atrament px-3 py-3 text-sm font-medium text-papier"
                 >
                   Zobacz posła →
                 </Link>
@@ -177,7 +188,7 @@ export function Polkole({
             onFocus={() => ustawPodswietlony(b.id)}
             onBlur={() => ustawPodswietlony(null)}
             title={b.pelnaNazwa ?? b.etykieta}
-            className="flex items-center gap-2 rounded-md px-1.5 py-0.5 transition-opacity hover:bg-papier-3"
+            className="flex items-center gap-2 rounded-md px-1.5 py-3 transition-opacity hover:bg-papier-3"
             style={{ opacity: podswietlony && podswietlony !== b.id ? 0.45 : 1 }}
           >
             {probkiBlokow ? (

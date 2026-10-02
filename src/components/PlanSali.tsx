@@ -9,6 +9,7 @@ import { etykieta } from '@/lib/glosy';
 import { PUNKTY_SALI } from '@/lib/plan-sali';
 import type { MiejscePosla } from '@/lib/sala';
 import { uprosc } from '@/lib/tekst';
+import { chmurkaPozycja } from '@/lib/chmurka';
 
 /**
  * Plan sali posiedzen: kazde miejsce w tym samym punkcie, w ktorym rysuje je
@@ -38,14 +39,14 @@ const ODSTEP = 14;
  * Liczby to rozmiar chmurki: nie da sie go zmierzyc przed narysowaniem,
  * a zmierzony po narysowaniu dawalby przeskok.
  */
-function chmurkaStyl(pod: { x: number; y: number; w: number; h: number }): React.CSSProperties {
-  const wLewo = pod.x + ODSTEP + CHMURKA_SZER > pod.w;
-  const doGory = pod.y + ODSTEP + CHMURKA_WYS > pod.h;
-  return {
-    left: Math.max(4, wLewo ? pod.x - ODSTEP - CHMURKA_SZER : pod.x + ODSTEP),
-    top: Math.max(4, doGory ? pod.y - ODSTEP - CHMURKA_WYS : pod.y + ODSTEP),
-  };
-}
+/*
+ * Liczenie pozycji przenioslo sie do `src/lib/chmurka.ts`, bo ta sama
+ * poprawka byla potrzebna w `Polkole` i tam nie dotarla — przez trzy dni
+ * chmurka na stronie glosowania wychodzila 42-46 px za krawedz dokumentu.
+ * Jedna funkcja, jedne testy, dwa wykresy.
+ */
+const chmurkaStyl = (pod: { x: number; y: number; w: number; h: number }): React.CSSProperties =>
+  chmurkaPozycja(pod, { szer: CHMURKA_SZER, wys: CHMURKA_WYS }, ODSTEP);
 
 export function PlanSali({
   miejsca,
@@ -339,7 +340,7 @@ export function PlanSali({
                 </div>
                 <Link
                   href={`/posel/${karta.slug}`}
-                  className="rounded-xl bg-atrament px-4 py-2 text-sm font-medium text-papier transition-opacity hover:opacity-90"
+                  className="rounded-xl bg-atrament px-4 py-3 text-sm font-medium text-papier transition-opacity hover:opacity-90"
                 >
                   Zobacz posła →
                 </Link>

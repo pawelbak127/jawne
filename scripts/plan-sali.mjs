@@ -345,6 +345,142 @@ function przypiszNumery(podpisy, numery) {
 
 /* ------------------------------------------------------------------ main */
 
+/**
+ * Wyrownuje do luku swojego rzedu miejsca, ktorych pozycja pochodzi
+ * z NAZWISKA, a nie z numeru.
+ *
+ * DLACZEGO TO NIE JEST ZGADYWANIE. Rysownik przesuwa nazwiska w pionie, zeby
+ * dluzsze sie nie nachodzily (zmierzone: sredni rozrzut 13,8 jednostki przy
+ * odstepie sasiadow ok. 19) — dlatego pozycje bierzemy z etykiety numeru.
+ * Trzem podpisom numeru nie udalo sie sparowac i one niosa pozycje nazwiska,
+ * czyli te przesunieta. ZMIERZONE 01.10.2026: odchylenie od luku swojego
+ * rzedu wynosi dla nich 9,9-12,5 jednostki przy **odstepie miedzy rzedami
+ * 30,6** — rzad jest wiec jednoznaczny i nie ma czego zgadywac.
+ *
+ * Zgadnieciem byloby dopisanie komus NUMERU miejsca; tego nie robimy.
+ * Poprawienie wspolrzednej w obrebie rzedu, ktory wynika z danych, jest
+ * naprawa bledu odczytu — tego samego, ktory 30.09.2026 naprawilismy dla
+ * pozostalych 457 miejsc.
+ *
+ * Srodek lukow dopasowujemy do miejsc Z NUMEREM (one sa pewne): siatka plus
+ * doszlifowanie. Zmierzony sredni blad promienia po dopasowaniu: ok. 1
+ * jednostka, czyli 3% odstepu miedzy rzedami.
+ */
+/** Minimalny odstep do sasiada po przesunieciu; mediana w sali to 17,85. */
+const PROG_SASIADA = 9;
+
+function wyrownajDoLuku(miejsca, log) {
+  const pewne = miejsca.filter((m) => m.numer !== null);
+  const doPoprawy = miejsca.filter((m) => m.numer === null);
+  if (!doPoprawy.length || pewne.length < 50) return;
+
+  /*
+   * Miara dopasowania srodka: sumaryczny ROZRZUT promieni WEWNATRZ rzedow.
+   * Dobry srodek sprawia, ze promienie ukladaja sie w wyrazne prazki —
+   * wiele promieni blisko siebie, a miedzy prazkami duza przerwa.
+   * (Pierwsza wersja nagradzala male odstepy w ogole, co jest maksymalizowane
+   * przez srodek robiacy wszystkie promienie podobnymi — czyli bez sensu.
+   * Zabezpieczenie „nie rozpoznalem rzedow" to zlapalo i nic nie zepsulo.)
+   */
+  const pogrupuj = (cx, cy) => {
+    const r = pewne.map((m) => Math.hypot(m.x - cx, m.y - cy)).sort((a, b) => a - b);
+    const grupy = [];
+    let g = [r[0]];
+    for (let i = 1; i < r.length; i++) {
+      if (r[i] - r[i - 1] > 12) { grupy.push(g); g = []; }
+      g.push(r[i]);
+    }
+    grupy.push(g);
+    return grupy;
+  };
+  const blad = (cx, cy) => {
+    const grupy = pogrupuj(cx, cy).filter((g) => g.length >= 8);
+    if (grupy.length < 8) return Infinity;
+    let suma = 0;
+    let ile = 0;
+    for (const g of grupy) {
+      const sr = g.reduce((a, b) => a + b, 0) / g.length;
+      for (const v of g) suma += (v - sr) ** 2;
+      ile += g.length;
+    }
+    return suma / ile;
+  };
+
+  const xs0 = pewne.map((m) => m.x);
+  const ys0 = pewne.map((m) => m.y);
+  const sx = (Math.min(...xs0) + Math.max(...xs0)) / 2;
+  let naj = { cx: sx, cy: Math.min(...ys0), w: Infinity };
+  // Zgrubnie po szerokim obszarze, potem coraz drobniej wokol najlepszego.
+  for (const [zakres, krok] of [[260, 20], [40, 5], [10, 1], [2, 0.25]]) {
+    const bx = naj.cx;
+    const by = naj.cy;
+    for (let dx = -zakres; dx <= zakres; dx += krok) {
+      for (let dy = -zakres; dy <= zakres; dy += krok) {
+        const cx = bx + dx;
+        const cy = by + dy;
+        const w = blad(cx, cy);
+        if (w < naj.w) naj = { cx, cy, w };
+      }
+    }
+  }
+  if (naj.w === Infinity) { log('UWAGA: nie dopasowalem srodka lukow — nie wyrownuje'); return; }
+  log(`srednie odchylenie promienia w rzedzie: ${Math.sqrt(naj.w).toFixed(2)}`);
+
+  // Rzedy: skupiska promieni miejsc pewnych.
+  const promienie = pewne.map((m) => Math.hypot(m.x - naj.cx, m.y - naj.cy)).sort((a, b) => a - b);
+  const rzedy = [];
+  let grupa = [promienie[0]];
+  for (let i = 1; i < promienie.length; i++) {
+    if (promienie[i] - promienie[i - 1] > 12) { rzedy.push(grupa); grupa = []; }
+    grupa.push(promienie[i]);
+  }
+  rzedy.push(grupa);
+  const srodkiRzedow = rzedy
+    .filter((g) => g.length >= 8)
+    .map((g) => g.reduce((a, b) => a + b, 0) / g.length);
+  if (srodkiRzedow.length < 5) {
+    log(`UWAGA: nie rozpoznalem rzedow (${srodkiRzedow.length}) — nie wyrownuje`);
+    return;
+  }
+  log(`srodek lukow: (${naj.cx.toFixed(2)}, ${naj.cy.toFixed(2)}), rzedow: ${srodkiRzedow.length}`);
+
+  for (const m of doPoprawy) {
+    const r0 = Math.hypot(m.x - naj.cx, m.y - naj.cy);
+    const r = srodkiRzedow.reduce((a, b) => (Math.abs(b - r0) < Math.abs(a - r0) ? b : a));
+    const dx = m.x - naj.cx;
+    const pod = r * r - dx * dx;
+    if (pod <= 0) { log(`UWAGA: ${m.nazwa} poza lukiem rzedu — zostawiam`); continue; }
+    const znak = m.y >= naj.cy ? 1 : -1;
+    const y = naj.cy + znak * Math.sqrt(pod);
+
+    /*
+     * ZABEZPIECZENIE, bez ktorego ta naprawa SZKODZI — zmierzone 01.10.2026.
+     * Te trzy miejsca odpowiadaja za trzymiejscowy niedobor po lewej stronie
+     * w rzedach 346,6 i 377,5. Zrzutowanie na luk poprawia promien, ale KAT
+     * zostaje — i miejsce lezy wtedy na istniejacym sasiedzie. Pierwsza wersja
+     * tej funkcji zbila najmniejszy odstep w calej sali z **12,38 na 1,14**
+     * i zrobila 4 miejsca nachodzace, czyli wymienila odchylenie 12 jednostek
+     * na dwoch poslow narysowanych jeden na drugim. To gorsze.
+     *
+     * Dlatego ruszamy miejsce TYLKO wtedy, gdy po przesunieciu nadal ma
+     * sasiada nie blizej niz polowa mediany odstepu. Jesli nie — zostawiamy
+     * tam, gdzie jest, i mowimy o tym. Lepsze miejsce lekko poza lukiem niz
+     * dwa nazwiska w jednym punkcie.
+     */
+    const dystans = (yy) => Math.min(...miejsca
+      .filter((o) => o !== m)
+      .map((o) => Math.hypot(o.x - m.x, o.y - yy)));
+    const przed = dystans(m.y);
+    const po = dystans(y);
+    if (po < PROG_SASIADA) {
+      log(`NIE wyrownuje: ${m.nazwa} — na luku mialby sasiada w ${po.toFixed(2)} (teraz ${przed.toFixed(2)})`);
+      continue;
+    }
+    log(`wyrownane do luku: ${m.nazwa} — promien ${r0.toFixed(1)} -> ${r.toFixed(1)}, y ${m.y.toFixed(1)} -> ${y.toFixed(1)}, sasiad ${przed.toFixed(1)} -> ${po.toFixed(1)}`);
+    m.y = y;
+  }
+}
+
 function main() {
   const pdf = otworzPdf(PDF);
   log(`plan: ${PDF}`);
@@ -410,6 +546,10 @@ function main() {
       y: numerMiejsca.get(i)?.y ?? n.y,
     });
   });
+
+  // Trzy miejsca bez numeru niosa pozycje NAZWISKA, ktora rysownik przesuwa
+  // w pionie — wyrownujemy je do luku ich wlasnego rzedu.
+  wyrownajDoLuku(miejsca, log);
 
   const poId = new Map();
   for (const m of miejsca) {

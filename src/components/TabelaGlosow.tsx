@@ -68,7 +68,7 @@ export function TabelaGlosow({ glosy }: { glosy: WierszGlosu[] }) {
         <button
           type="button"
           onClick={() => ustawTon(null)}
-          className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+          className={`rounded-full border px-3 py-3 text-xs transition-colors ${
             ton === null ? 'border-atrament bg-atrament text-papier' : 'border-kreska-2 text-atrament-2 hover:border-atrament-3'
           }`}
         >
@@ -79,7 +79,7 @@ export function TabelaGlosow({ glosy }: { glosy: WierszGlosu[] }) {
             key={t}
             type="button"
             onClick={() => ustawTon(ton === t ? null : t)}
-            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+            className={`rounded-full border px-3 py-3 text-xs transition-colors ${
               ton === t ? 'border-atrament bg-atrament text-papier' : 'border-kreska-2 text-atrament-2 hover:border-atrament-3'
             }`}
           >

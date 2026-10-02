@@ -67,7 +67,7 @@ export default function StronaOkregow() {
                 <li key={o.nr}>
                   <Link
                     href={`/okreg/${o.nr}`}
-                    className="group flex items-baseline gap-3 rounded-lg border border-kreska bg-papier-2 px-3 py-2 transition-colors hover:border-kreska-2"
+                    className="group flex items-baseline gap-3 rounded-lg border border-kreska bg-papier-2 px-3 py-3 transition-colors hover:border-kreska-2"
                   >
                     <span className="liczby w-6 shrink-0 text-right text-sm text-atrament-3">{o.nr}</span>
                     <span className="flex-1 font-medium group-hover:text-akcent">{o.nazwa ?? `Okręg nr ${o.nr}`}</span>
