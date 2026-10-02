@@ -5,9 +5,19 @@ Dokument wewnętrzny, spisany **przed** publikacją serwisu. Udostępniany na
 
 | | |
 |---|---|
-| Administrator | **[do uzupełnienia: imię i nazwisko albo podmiot]**, **[adres]** |
-| Kontakt | **[do uzupełnienia: JAWNE_KONTAKT]** |
-| Serwis | **[do uzupełnienia: domena]** |
+| Administrator | **Paweł Bąk**, osoba fizyczna. Adres korespondencyjny nieujawniony — decyzja z 02.10.2026, patrz uwaga pod tabelą |
+| Kontakt | **kontakt@zrejestru.pl** (zmienna `JAWNE_KONTAKT`) |
+| Serwis | **zrejestru.pl** |
+
+> **Luka, której nie ukrywamy.** Art. 13 ust. 1 lit. a) RODO wymaga
+> „tożsamości i danych kontaktowych" administratora — adres e-mail te drugie
+> spełnia. Ale **art. 5 ust. 2 ustawy z 18 lipca 2002 r. o świadczeniu usług
+> drogą elektroniczną** wymaga od usługodawcy będącego osobą fizyczną także
+> **miejsca zamieszkania i adresu**. Tego adresu świadomie nie podajemy
+> (decyzja z 02.10.2026), więc wobec tej ustawy dane są niepełne. Luka
+> zamyka się sama w chwili, gdy administratorem zostanie fundacja —
+> wtedy publikujemy nazwę i adres siedziby, a nie mieszkanie osoby
+> prywatnej. Do tego czasu jest to znany, świadomy brak, a nie przeoczenie.
 | Data sporządzenia | 23.09.2026 |
 | Przegląd | przy każdej zmianie zakresu danych, nie rzadziej niż raz w roku |
 

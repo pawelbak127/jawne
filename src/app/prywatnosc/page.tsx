@@ -45,9 +45,22 @@ export default function StronaPrywatnosci() {
       </div>
 
       <Sekcja tytul="Kto jest administratorem">
+        <p className="font-medium">Paweł Bąk</p>
         <p>
-          <Uzupelnij>imię i nazwisko albo nazwa podmiotu prowadzącego serwis</Uzupelnij>,{' '}
-          <Uzupelnij>adres korespondencyjny</Uzupelnij>.
+          {/*
+            Adresu korespondencyjnego TU NIE MA i jest to swiadoma decyzja
+            Pawla z 02.10.2026. Art. 13 ust. 1 lit. a) RODO wymaga „tozsamosci
+            i danych kontaktowych" — adres e-mail jest danymi kontaktowymi.
+            Ale art. 5 ust. 2 ustawy o swiadczeniu uslug droga elektroniczna
+            wymaga od osoby fizycznej takze miejsca zamieszkania i adresu,
+            wiec TO MIEJSCE JEST NIEKOMPLETNE wobec uside i zostanie domkniete
+            adresem siedziby, gdy administratorem bedzie fundacja.
+            Nie udajemy, ze problemu nie ma — mowimy o nim czytelnikowi.
+          */}
+          Serwis prowadzi osoba fizyczna. Adres korespondencyjny nie jest tu
+          podany; wszystkie sprawy dotyczące danych osobowych załatwiamy
+          adresem e-mail poniżej, a na pismo papierowe odpowiemy po wskazaniu
+          adresu zwrotnego.
         </p>
         <p>
           Serwis prowadzi jedna osoba prywatnie. Nie jesteśmy powiązani z żadną

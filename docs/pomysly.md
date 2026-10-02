@@ -140,6 +140,56 @@ pobranych ręcznie wystarczy, żeby **zmierzyć** odczyt przed decyzją.
 
 ---
 
+## 3a. Statystyki odwiedzin — do przeanalizowania (Paweł, 02.10.2026)
+
+Dziś serwis **nie wie nic o ruchu** i to była decyzja, nie przeoczenie —
+`deploy/Caddyfile` mówi wprost: *„Celowo BEZ dziennika wejść: adres IP
+czytelnika to dana osobowa, a nam do niczego niepotrzebna."* Przy wyjściu
+z `noindex` to przestaje być wygodne: nie da się ocenić, czy promocja działa.
+
+**Pytania do rozstrzygnięcia PRZED wyborem narzędzia** — bo one decydują,
+a nie cennik:
+
+1. **Co chcesz wiedzieć?** „Ile osób" jest tanie i prawie bezpieczne. „Które
+   gminy ludzie czytają" jest dużo cenniejsze dla decyzji o treści, ale to
+   już profil zachowania. Te dwa pytania mają różne odpowiedzi techniczne.
+2. **Czy akceptujesz pośrednika?** Każdy zewnętrzny licznik, nawet bez
+   ciasteczek, widzi adres IP czytelnika, zanim zdecyduje go nie zapisać.
+   Własny dziennik z wyciętym IP nie ma tej wady, ale jest kodem do napisania
+   i utrzymania.
+3. **Czy liczymy boty?** Przy serwisie, który dopiero wychodzi z `noindex`,
+   większość pierwszego ruchu to roboty wyszukiwarek. Licznik, który tego nie
+   oddziela, powie Ci nieprawdę akurat wtedy, gdy najbardziej będziesz chciał
+   wiedzieć.
+4. **Co to robi z `/prywatnosc`?** Cokolwiek wejdzie, musi tam być opisane —
+   a to znaczy, że późniejsza zmiana licznika jest zmianą polityki
+   prywatności, nie ustawienia.
+
+**Zadania, gdy decyzja zapadnie:**
+
+- [ ] Z1. Wybrać wariant: (a) GoatCounter albo podobny, (b) własny dziennik
+      Caddy bez IP plus skrypt liczący, (c) nic i mierzymy pośrednio
+      (odsłony w Search Console, która i tak będzie potrzebna).
+- [ ] Z2. Sprawdzić **zmierzone** warunki wybranego narzędzia: limity
+      darmowego progu, gdzie trzyma dane, czy zapisuje IP, czy ma umowę
+      powierzenia. Dziś **nie sprawdziłem żadnego** z nich.
+- [ ] Z3. Wpiąć w `layout.tsx` za zgodą, bez ciasteczek, bez blokowania
+      renderowania.
+- [ ] Z4. Dopisać akapit do `/prywatnosc` i do `test-rownowagi.md` —
+      narzędzie, zakres danych, podstawa, czas przechowywania.
+- [ ] Z5. Odfiltrować własny ruch (nasze wejścia przez SSH i sprawdzanie
+      `sudo jawne sprawdz` nie są czytelnikami).
+- [ ] Z6. Zmierzyć koszt: ile kilobajtów dokłada do strony. Serwis, który
+      chwali się lekkością, nie może dołożyć 40 kB licznika.
+
+**Rozważyć też wariant (c) na początek.** Google Search Console pokaże wyświetlenia
+i zapytania bez dokładania czegokolwiek do strony i bez przetwarzania danych
+czytelników przez nas. Na pierwsze tygodnie po zdjęciu `noindex` to może
+wystarczyć, a decyzję o prawdziwym liczniku odkłada do chwili, gdy będzie
+co liczyć.
+
+---
+
 ## 4. Monetyzacja — skrót z osobnego przeglądu
 
 Pełny raport powstał 01.10. Najważniejsze:
