@@ -182,8 +182,16 @@ export function kluczPrzypadku(w: PrzypadekPomocy): string {
  * dla kraju) zawsze daje te same klucze, wiec powtorzony import niczego
  * nie dubluje.
  */
-export function kluczePorcji(wyniki: readonly PrzypadekPomocy[]): string[] {
-  const licznik = new Map<string, number>();
+export function kluczePorcji(
+  wyniki: readonly PrzypadekPomocy[],
+  /*
+   * Licznik powtorzen MOZE przyjsc z zewnatrz — i musi, gdy porcja jest
+   * czytana strona po stronie. Grupa identycznych wierszy potrafi lezec na
+   * granicy stron; wlasny licznik w kazdym wywolaniu nadalby obu wierszom
+   * numer #0 i jeden z nich przepadlby na kluczu jednoznacznym.
+   */
+  licznik: Map<string, number> = new Map(),
+): string[] {
   return wyniki.map((w) => {
     const skrot = kluczPrzypadku(w);
     const n = licznik.get(skrot) ?? 0;

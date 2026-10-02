@@ -176,7 +176,13 @@ async function wyszukaj(url: string, opis: string, horyzontMs = HORYZONT_MS): Pr
  * Wstawia porcje. Klucz z numerem powtorzenia — zrodlo ma prawdziwe wiersze
  * identyczne na wszystkich polach (osobne transze tej samej pomocy).
  */
-function wstawWiersze(db: DatabaseSync, wyniki: readonly PrzypadekPomocy[], terytZWiersza: (w: PrzypadekPomocy) => string): void {
+function wstawWiersze(
+  db: DatabaseSync,
+  wyniki: readonly PrzypadekPomocy[],
+  terytZWiersza: (w: PrzypadekPomocy) => string,
+  // Wspolny dla CALEJ porcji, nawet gdy idzie stronami — patrz `kluczePorcji`.
+  licznik: Map<string, number> = new Map(),
+): void {
   const wstaw = db.prepare(
     `insert into pomoc_publiczna(teryt, kod_gminy_sudop, dzien, nip_beneficjenta, nazwa_beneficjenta,
        wielkosc_kod, wielkosc, pkd, pkd_nazwa, nip_udzielajacego, udzielajacy, srodek_numer,
@@ -184,7 +190,7 @@ function wstawWiersze(db: DatabaseSync, wyniki: readonly PrzypadekPomocy[], tery
        wartosc_nominalna, wartosc_brutto, wartosc_brutto_eur, klucz)
      values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   );
-  const klucze = kluczePorcji(wyniki);
+  const klucze = kluczePorcji(wyniki, licznik);
   wyniki.forEach((w, i) => {
     const podstawa = [w['podstawa-prawna-2a-nazwa'], w['podstawa-prawna-2b'], w['podstawa-prawna-2c']]
       .filter((x) => x && x.trim()).join(' — ') || null;
@@ -223,32 +229,68 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
  * z zakresu i wstawiamy od nowa, wiec korekta po stronie urzedu zastepuje
  * nasza wersje zamiast dokladac sie do niej.
  */
+/**
+ * Zapis porcji krajowej — STRONA PO STRONIE z dysku, nie z jednej tablicy.
+ *
+ * ZGLOSZENIE PAWLA 02.10.2026, z dziennika serwera: zakres
+ * 2024-12-17..2024-12-19 ma **853 247 wynikow**. Wszystkie 86 stron lezalo
+ * juz na dysku („strona N: z pliku"), a wznowienie wczytywalo je do jednej
+ * tablicy — przy ~1,4 kB na przypadek to ok. 1,2 GB obiektow JS przy stercie
+ * 920 MB. Proces padal na stronie 66 z „Reached heap limit", **co godzine**,
+ * bo timer historii tyka co godzine. Nie zawiodla kolejka urzedu: przewracalismy
+ * sie na wlasnych, juz pobranych danych.
+ *
+ * To ta sama lekcja co pulapka 57 (`.all()` wobec `.iterate()`), tylko po
+ * stronie pobierania: **jesli liczba wierszy rosnie z zakresem, nie wolno
+ * trzymac ich wszystkich naraz** — ani w SQL, ani w JSON-ie.
+ *
+ * Co zostaje nienaruszone:
+ *  - **calosc albo nic**: wszystko idzie w JEDNEJ transakcji, wiec blad
+ *    kontroli na stronie 60 wycofuje tez strony 1-59 (pulapka 56);
+ *  - **kontrola dziedziny przed zapisem** (wzorzec 1) — dla kazdej strony;
+ *  - **licznik powtorzen wspolny dla calej porcji** (pulapka 32): grupa
+ *    identycznych wierszy potrafi lezec na granicy stron, a osobny licznik
+ *    na strone nadalby obu numer #0 i jeden przepadlby na kluczu.
+ */
 function zapiszPrzyrost(
-  db: DatabaseSync, od: string, doDnia: string, wyniki: PrzypadekPomocy[], znane: ReadonlySet<string>, pobrano: string | null,
-): { zapisanych: number; obce: number; nasze: PrzypadekPomocy[] } {
-  const problemy = sprawdzPorcjePrzyrostu(wyniki, od, doDnia);
-  if (problemy.length) {
-    throw new Error(`Porcja ${od}..${doDnia} nie przeszla kontroli: ${problemy.slice(0, 10).join('; ')}`);
-  }
-  // Gminy spoza naszej listy (np. kod "NZ" albo jednostka, ktorej nie ma
-  // w danych PKW) sa RAPORTOWANE, nie przerywaja importu.
-  const nasze = wyniki.filter((w) => {
-    const t = terytGminyZKodu(w['gmina-siedziby-kod']);
-    return t !== null && znane.has(t);
-  });
+  db: DatabaseSync, od: string, doDnia: string, stron: number, znane: ReadonlySet<string>, pobrano: string | null,
+): { zapisanych: number; obce: number; gmin: number } {
+  const naDzien = new Map<string, number>();
+  const gminy = new Set<string>();
+  const licznik = new Map<string, number>();
+  let zapisanych = 0;
+  let obce = 0;
+
   wTransakcji(db, () => {
     db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
-    wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!);
+    for (let strona = 1; strona <= stron; strona++) {
+      const odp = zapisanaOdpowiedz(join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`));
+      if (!odp) throw new Error(`${od}..${doDnia}: brak strony ${strona} na dysku przy zapisie`);
+      const wyniki = odp.wyniki ?? [];
+      const problemy = sprawdzPorcjePrzyrostu(wyniki, od, doDnia);
+      if (problemy.length) {
+        throw new Error(`Porcja ${od}..${doDnia} strona ${strona} nie przeszla kontroli: ${problemy.slice(0, 10).join('; ')}`);
+      }
+      // Gminy spoza naszej listy (np. kod "NZ" albo jednostka, ktorej nie ma
+      // w danych PKW) sa RAPORTOWANE, nie przerywaja importu.
+      const nasze = wyniki.filter((w) => {
+        const t = terytGminyZKodu(w['gmina-siedziby-kod']);
+        return t !== null && znane.has(t);
+      });
+      obce += wyniki.length - nasze.length;
+      zapisanych += nasze.length;
+      for (const w of nasze) {
+        const d = w['dzien-udzielenia-pomocy']!;
+        naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
+        gminy.add(terytGminyZKodu(w['gmina-siedziby-kod'])!);
+      }
+      wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!, licznik);
+    }
     const wstawDzien = db.prepare(
       `insert into pomoc_publiczna_dni(dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)
        on conflict(dzien) do update set pobrano=excluded.pobrano, pobrano_dzien=excluded.pobrano_dzien,
          wierszy=excluded.wierszy`,
     );
-    const naDzien = new Map<string, number>();
-    for (const w of nasze) {
-      const d = w['dzien-udzielenia-pomocy']!;
-      naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
-    }
     // Dni bez ani jednego przypadku tez odnotowujemy — inaczej nie odroznimy
     // "nie pytalismy" od "pytalismy i nic nie bylo".
     for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
@@ -264,7 +306,7 @@ function zapiszPrzyrost(
       wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
     }
   });
-  return { zapisanych: nasze.length, obce: wyniki.length - nasze.length, nasze };
+  return { zapisanych, obce, gmin: gminy.size };
 }
 
 /**
@@ -274,12 +316,14 @@ function zapiszPrzyrost(
  */
 async function pobierzPrzyrost(
   od: string, doDnia: string, odswiez = false, budzet: Budzet | null = null,
-): Promise<{ wyniki: PrzypadekPomocy[]; zapytan: number; sekund: number; pobrano: string | null }> {
+): Promise<{ stron: number; wierszy: number; zapytan: number; sekund: number; pobrano: string | null }> {
   const formy = (await slownik('forma-pomocy')).map((f) => String(f.number));
   log(`-> przyrost dla calego kraju, ${od}..${doDnia} (${formy.length} form pomocy)${odswiez ? ' — odswiezenie' : ''}`);
   const start = Date.now();
   const dzis = dzienWarszawa(new Date());
-  let wyniki: PrzypadekPomocy[] = [];
+  // LICZYMY wiersze, nie zbieramy ich. Zakres 2024-12-17..2024-12-19 ma
+  // 853 247 wynikow — tablica z nimi to ok. 1,2 GB przy stercie 920 MB.
+  let wierszy = 0;
   let pobrano: string | null = null;
   let liczba: number | null = null;
   // Po wykryciu stron z roznych chwil: strony starsze niz ta data nie ida z dysku.
@@ -324,7 +368,7 @@ async function pobierzPrzyrost(
       }
       log(`   strona ${strona}: ${odp['liczba-wynikow']} wynikow, a strona 1 miala ${liczba} — strony z roznych chwil, starsze pobieram ponownie`);
       swiezeOd = odp.pobrano ?? new Date().toISOString();
-      wyniki = [];
+      wierszy = 0;
       pobrano = null;
       liczba = null;
       strona = 1;
@@ -332,12 +376,12 @@ async function pobierzPrzyrost(
     }
     // Dzien jest tak swiezy jak jego NAJSTARSZA strona.
     if (odp.pobrano && (!pobrano || odp.pobrano < pobrano)) pobrano = odp.pobrano;
-    wyniki.push(...(odp.wyniki ?? []));
+    wierszy += odp.wyniki?.length ?? 0;
     log(`   strona ${strona}: ${odp.wyniki?.length ?? 0} z ${odp['liczba-wynikow']}`);
-    if (wyniki.length >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
+    if (wierszy >= odp['liczba-wynikow'] || (odp.wyniki?.length ?? 0) < NA_STRONE) break;
     strona++;
   }
-  return { wyniki, zapytan, sekund: Math.round((Date.now() - start) / 1000), pobrano };
+  return { stron: strona, wierszy, zapytan, sekund: Math.round((Date.now() - start) / 1000), pobrano };
 }
 
 /**
@@ -357,10 +401,10 @@ function spakujStrony(od: string, doDnia: string): void {
 async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<string>, odswiez: boolean, budzet: Budzet | null = null): Promise<void> {
   const [od, doDnia] = zakres.split('..');
   if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
-  const { wyniki, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez, budzet);
-  const { zapisanych, obce, nasze } = zapiszPrzyrost(db, od, doDnia, wyniki, znane, pobrano);
+  const { stron, wierszy, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez, budzet);
+  const { zapisanych, obce, gmin } = zapiszPrzyrost(db, od, doDnia, stron, znane, pobrano);
   spakujStrony(od, doDnia);
-  log(`   zapisano ${zapisanych} przypadkow z ${new Set(nasze.map((w) => terytGminyZKodu(w['gmina-siedziby-kod']))).size} gmin (${zapytan} zapytan, ${sekund} s)`);
+  log(`   zapisano ${zapisanych} z ${wierszy} przypadkow z ${gmin} gmin (${stron} stron, ${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
   // ZGLOSZENIE Z PRZEGLADU 24.09.2026: /stan pokazywal „dni pobrane dla calego
   // kraju: 0", bo zapisywalismy tu wynik OSTATNIEJ porcji. Strona, ktorej
@@ -623,8 +667,8 @@ async function main(): Promise<void> {
   if (zakres && process.argv.includes('--tylko-pobierz')) {
     const [od, doDnia] = zakres.split('..');
     if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
-    const { wyniki, zapytan, sekund } = await pobierzPrzyrost(od, doDnia, process.argv.includes('--odswiez'));
-    log(`   pobrano ${wyniki.length} przypadkow w ${zapytan} zapytaniach (${sekund} s); pliki w ${KATALOG}`);
+    const { wierszy, stron, zapytan, sekund } = await pobierzPrzyrost(od, doDnia, process.argv.includes('--odswiez'));
+    log(`   pobrano ${wierszy} przypadkow na ${stron} stronach w ${zapytan} zapytaniach (${sekund} s); pliki w ${KATALOG}`);
     return;
   }
 

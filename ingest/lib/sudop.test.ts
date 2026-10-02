@@ -177,6 +177,30 @@ describe('kluczePorcji', () => {
     expect(k.map((x) => x.split('#')[1])).toEqual(['0', '1', '2']);
   });
 
+  it('LICZNIK Z ZEWNATRZ: grupa na granicy stron nie dostaje dwa razy #0', () => {
+    /*
+     * ZGLOSZENIE PAWLA 02.10.2026: zakres 853 247 wynikow przewracal proces
+     * („Reached heap limit"), bo wszystkie 86 stron szlo do jednej tablicy.
+     * Zapis idzie teraz STRONA PO STRONIE — i wtedy licznik powtorzen MUSI
+     * byc wspolny. Bez tego dwa identyczne wiersze po dwoch stronach kazdy
+     * dostalby #0, a klucz jednoznaczny zjadlby jeden z nich po cichu.
+     */
+    const licznik = new Map<string, number>();
+    const strona1 = kluczePorcji([w('1550'), w('1550')], licznik);
+    const strona2 = kluczePorcji([w('1550'), w('200')], licznik);
+    const wszystkie = [...strona1, ...strona2];
+    expect(new Set(wszystkie).size).toBe(4);
+    // Trzeci wiersz 1550 to #2, a nie znowu #0.
+    expect(strona2[0]!.split('#')[1]).toBe('2');
+    // I wychodzi dokladnie to samo, co przy jednej porcji.
+    expect(wszystkie).toEqual(kluczePorcji([w('1550'), w('1550'), w('1550'), w('200')]));
+  });
+
+  it('BEZ wspolnego licznika klucze by sie powtorzyly — to jest ten blad', () => {
+    const osobno = [...kluczePorcji([w('1550')]), ...kluczePorcji([w('1550')])];
+    expect(new Set(osobno).size).toBe(1);
+  });
+
   it('ta sama porcja daje te same klucze przy powtorzonym imporcie', () => {
     const porcja = [w('1550'), w('200'), w('1550')];
     expect(kluczePorcji(porcja)).toEqual(kluczePorcji([...porcja]));

@@ -670,26 +670,43 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     slownik ma trzymac **liste kandydatow**, a nie ostatniego, ktory wygral.
 
 
-61. **Zabezpieczenie w PAMIECI PROCESU nie dziala, gdy zadanie startuje co
-    godzine.** ZGLOSZENIE PAWLA 02.10.2026: `sudo jawne stan` pokazal
-    w dzienniku **dziesiec razy ten sam wiersz** „przerwane:
-    2024-12-17..2024-12-19". `sudop.ts` ma zbior `zBledem` i po bledzie pomija
-    zakres, zeby nie dobijac urzedu — ale ten zbior zyje **tylko w pamieci
-    procesu**, a `jawne-sudop-historia.timer` tyka **co godzine**. Kazdy
-    przebieg startowal z czysta karta, a `planHistorii` stawia przerwany zakres
-    na pierwszym miejscu (jego strony leza na dysku, wiec wznowienie jest
-    najtansze). Efekt: jeden zakres, ktorego kolejka nie oddaje, zjadal
-    **cala dobe prob** — a pulapka 26 opisuje zakres, ktory nie wrocil ani raz
-    w czterech probach po 57 minut.
-    Zabezpieczenie dzialalo w obrebie „nocy", tylko ze timer sprawil, ze noc
-    trwa godzine. **Pisząc ochrone przed powtarzaniem, sprawdz, czy jej pamiec
-    zyje tak dlugo jak zjawisko, przed ktorym chroni.**
-    Od 02.10.2026 porazki ida na dysk (`dane/zrodla/sudop/.nieudane.json`)
-    z **przerwa rosnaca wykladniczo**: 1 h, 2 h, 4 h … najwyzej 24 h. Zakresu
-    NIGDY nie porzucamy na zawsze — urzad bywa przeciazony chwilowo, a tempo
-    jego odpowiedzi zmienilo sie dwukrotnie w ciagu dwoch dni. Sukces wymazuje
-    pamiec, wiec przerwa nie rosnie bez konca. Ta zmiana **zmniejsza** liczbe
-    zapytan do urzedu; zatwierdzone tempo zostaje nietkniete.
+61. **Wznowienie zakresu przewracalo sie na WLASNYCH, juz pobranych danych.**
+    ZGLOSZENIE PAWLA 02.10.2026: `sudo jawne stan` pokazal **dziesiec razy ten
+    sam wiersz** „przerwane: 2024-12-17..2024-12-19", a zadanie konczylo sie
+    `exit-code` po 14 sekundach.
+    **SPROSTOWANIE MOJEJ PIERWSZEJ DIAGNOZY:** obstawialem kolejke urzedu
+    i zostawiona blokade. Oba bledne. Dziennik podal prawde dopiero po tym, jak
+    Pawel go przyslal:
+    ```
+    strona 66: 10000 z 853247
+    FATAL ERROR: Reached heap limit — JavaScript heap out of memory   (917 MB)
+    ```
+    Zakres trzech dni ma **853 247 wynikow** na 86 stronach. Wszystkie lezaly
+    JUZ NA DYSKU („strona N: z pliku"), a `pobierzPrzyrost` sklejal je w jedna
+    tablice: przy ~1,4 kB na przypadek to ok. 1,2 GB obiektow JS przy stercie
+    920 MB. Padalo na stronie 66 — **co godzine**, bo tyle wynosi okres timera.
+    Kolejka urzedu nie zawiodla ani razu; zero zapytan poszlo w prozne.
+    To ta sama lekcja co pulapka 57 (`.all()` wobec `.iterate()`), tylko po
+    stronie pobierania: **jesli liczba wierszy rosnie z zakresem, nie wolno
+    trzymac ich wszystkich naraz — ani w SQL, ani w JSON-ie.**
+    Zapis idzie teraz STRONA PO STRONIE z dysku, w jednej transakcji (wiec
+    „calosc albo nic" zostaje), z kontrola dziedziny dla kazdej strony.
+    **Licznik powtorzen musi byc WSPOLNY dla calej porcji** (pulapka 32): grupa
+    identycznych wierszy potrafi lezec na granicy stron, a osobny licznik na
+    strone nadalby obu numer #0 i jeden przepadlby po cichu na kluczu
+    jednoznacznym. Jest na to test, ktory pokazuje tez blad bez wspolnego
+    licznika.
+    Zweryfikowane na prawdziwych plikach: zakres 2026-08-19..2026-08-25,
+    4 strony z dysku, **0 zapytan do urzedu**, 33 403 przypadki, liczba roznych
+    kluczy rowna liczbie wierszy.
+    **Osobno, i to NIE bylo przyczyna:** zbior `zBledem` zyje tylko w pamieci
+    procesu, wiec przy godzinnym timerze nie chronil przed niczym. Porazki ida
+    teraz na dysk (`.nieudane.json`) z przerwa 1 h, 2 h, 4 h … najwyzej 24 h.
+    Ale **sama ta zmiana byla by szkodliwa**: odlozylaby zakres, ktorego dane
+    sa w CALOSCI pobrane, czyli ukrylaby cicha strate zamiast ja naprawic.
+    Wniosek: **zanim wyciszysz powtarzajacy sie blad, przeczytaj, na czym
+    konkretnie padl.** Mialem dziennik dopiero w drugim podejsciu i to on
+    rozstrzygnal, a nie moja hipoteza.
 
 62. **„Co mamy" liczone z dziennika importu to nie stan, a dorobek przebiegu.**
     ZGLOSZENIE PAWLA 02.10.2026: serwer pokazal „glosy imienne **65 780**",
