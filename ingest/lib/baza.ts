@@ -377,6 +377,9 @@ create table if not exists pomoc_sumy_organy (
   primary key (teryt, nip_organu, kategoria)
 );
 create index if not exists pomoc_sumy_organy_teryt on pomoc_sumy_organy(teryt);
+-- Strona organu pyta o JEDEN nip po wszystkich gminach; klucz glowny
+-- zaczyna sie od teryt, wiec bez tego indeksu byl przebieg po tabeli.
+create index if not exists pomoc_sumy_organy_nip on pomoc_sumy_organy(nip_organu);
 create table if not exists pomoc_sumy_wymiar (
   wymiar      text not null,          -- udzielajacy | przeznaczenie | forma | wielkosc
   klucz       text not null,

@@ -2138,6 +2138,118 @@ export function organyPomocy(teryt: string): OrganyPomocy {
   }, pusto);
 }
 
+export type GminaOrganu = {
+  teryt: string;
+  nazwa: string;
+  powiat: string;
+  przypadkow: number;
+  brutto: number | null;
+};
+
+export type OrganKrajowy = {
+  nip: string;
+  nazwa: string;
+  /** Gmina siedziby z REGON — gdy rejestr ja zna. */
+  siedziba: { teryt: string; nazwa: string; powiat: string } | null;
+  przypadkow: number;
+  /** W ilu gminach ten organ podjal decyzje — mianownik dla liczb nizej. */
+  gmin: number;
+  kategorie: KategoriaOrganu[];
+  gminy: GminaOrganu[];
+};
+
+/**
+ * CO TEN ORGAN ZROBIL W CALYM KRAJU.
+ *
+ * Dokonczenie sekcji „Kto to postanowil" z 01.10.2026: tam organy byly
+ * zwyklym tekstem, wiec czytelnik widzial „Prezes Zarzadu PFRON, 1 005
+ * decyzji" i nie mial gdzie klikna. Teraz ma — a pytanie „co ten organ robi
+ * w innych gminach" jest naturalnym nastepnym pytaniem i nikt w Polsce na nie
+ * nie odpowiada, bo nikt nie ma SUDOP.
+ *
+ * ZMIERZONE 02.10.2026: 910 organow w stanie sum, a PFRON to **28 907
+ * decyzji w 2 066 gminach na 211,8 mln zl**.
+ *
+ * Czyta GOTOWY stan `pomoc_sumy_organy` indeksem po NIP-ie (bez indeksu byl
+ * przebieg po tabeli — klucz glowny zaczyna sie od `teryt`). Zero grupowania
+ * po tabeli pomocy, wiec pulapka 52 nie ma tu zastosowania.
+ *
+ * `null` oznacza „nie pokazujemy tej strony": organ nieznany ALBO organ,
+ * ktorego nazwy nie wolno pokazac (pulapka 34 — udzielajacym bywa osoba
+ * fizyczna; zmierzone: 13 z 1 148 ma w REGON typ F). Strona oddaje wtedy 404,
+ * tak samo jak `/firma/[nip]` dla mozliwej osoby fizycznej.
+ */
+export function organ(nip: string): OrganKrajowy | null {
+  return bezTabeli(() => {
+    const kategorie = wszystkie<{ kategoria: string; przypadkow: number; z_kwota: number; brutto: number }>(
+      `select kategoria, sum(przypadkow) as przypadkow, sum(z_kwota) as z_kwota, sum(brutto) as brutto
+         from pomoc_sumy_organy where nip_organu = ? group by kategoria order by przypadkow desc`,
+      nip,
+    );
+    if (!kategorie.length) return null;
+
+    const meta = jeden<{ nazwa_sudop: string | null; nazwa_regon: string | null; typ_regon: string | null; teryt_organu: string | null }>(
+      `select (select nazwa from pomoc_sumy_organy where nip_organu = ? limit 1) as nazwa_sudop,
+              r.nazwa as nazwa_regon, r.typ as typ_regon, r.teryt as teryt_organu
+         from regon r where r.nip = ?`,
+      nip, nip,
+    ) ?? { nazwa_sudop: null, nazwa_regon: null, typ_regon: null, teryt_organu: null };
+    // Gdy REGON nie zna NIP-u, zostaje zapis z SUDOP — tak samo jak w sekcji gminy.
+    const zSudop = meta.nazwa_sudop
+      ?? jeden<{ n: string | null }>('select nazwa as n from pomoc_sumy_organy where nip_organu = ? limit 1', nip)?.n
+      ?? null;
+    const nazwa = nazwaOrganu(zSudop, meta.nazwa_regon);
+    if (!nazwa || !nazwaPodmiotuJawna(nazwa, meta.typ_regon)) return null;
+
+    const razem = jeden<{ przypadkow: number; gmin: number }>(
+      'select sum(przypadkow) as przypadkow, count(distinct teryt) as gmin from pomoc_sumy_organy where nip_organu = ?',
+      nip,
+    )!;
+    const gminy = wszystkie<GminaOrganu>(
+      `select o.teryt as teryt, g.nazwa as nazwa, g.powiat as powiat,
+              sum(o.przypadkow) as przypadkow,
+              case when sum(o.z_kwota) > 0 then sum(o.brutto) else null end as brutto
+         from pomoc_sumy_organy o join gminy g on g.teryt = o.teryt
+        where o.nip_organu = ?
+        group by o.teryt, g.nazwa, g.powiat
+        order by brutto desc nulls last, przypadkow desc
+        limit 12`,
+      nip,
+    );
+    const siedziba = meta.teryt_organu
+      ? jeden<{ teryt: string; nazwa: string; powiat: string }>(
+        'select teryt, nazwa, powiat from gminy where teryt = ?', meta.teryt_organu,
+      )
+      : null;
+
+    return {
+      nip,
+      nazwa,
+      siedziba,
+      przypadkow: razem.przypadkow,
+      gmin: razem.gmin,
+      kategorie: kategorie.map((k) => ({
+        kategoria: k.kategoria as KategoriaPomocy,
+        przypadkow: k.przypadkow,
+        brutto: k.z_kwota > 0 ? k.brutto : null,
+      })),
+      gminy,
+    };
+  }, null);
+}
+
+/** NIP-y organow do mapy strony — tylko te, ktorych nazwe wolno pokazac. */
+export function organyDoMapy(): string[] {
+  return bezTabeli(() => wszystkie<{ nip: string; nazwa_sudop: string | null; nazwa_regon: string | null; typ: string | null }>(
+    `select o.nip_organu as nip, max(o.nazwa) as nazwa_sudop, r.nazwa as nazwa_regon, r.typ as typ
+       from pomoc_sumy_organy o left join regon r on r.nip = o.nip_organu
+      group by o.nip_organu`,
+  ).filter((r) => {
+    const n = nazwaOrganu(r.nazwa_sudop, r.nazwa_regon);
+    return n !== '' && nazwaPodmiotuJawna(n, r.typ);
+  }).map((r) => r.nip), []);
+}
+
 export function pomocGminy(teryt: string): PomocGminy {
   const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
   return bezTabeli(() => {

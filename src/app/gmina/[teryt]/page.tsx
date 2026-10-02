@@ -812,7 +812,15 @@ function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) 
             }`}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p className="leading-snug font-medium">{o.nazwa}</p>
+              {/* Nazwa byla do 02.10.2026 zwyklym tekstem, czyli slepa uliczka:
+                  „a co ten organ robi w innych gminach" to pierwsze pytanie,
+                  jakie sie ciśnie. Teraz prowadzi na strone organu. */}
+              <Link
+                href={`/organ/${o.nip}`}
+                className="leading-snug font-medium text-akcent underline underline-offset-4 hover:no-underline"
+              >
+                {o.nazwa}
+              </Link>
               {o.wlasny ? (
                 <p className="shrink-0 text-xs font-medium text-akcent">organ tej gminy</p>
               ) : null}

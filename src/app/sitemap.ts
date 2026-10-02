@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { ADRES_SERWISU } from '@/lib/adres';
-import { bazaDostepna, firmyDoMapy, glosowaniaDoMapy, okregi, procesyDoMapy, slugiPoslow, terytyGmin, wojewodztwaGmin } from '@/lib/dane';
+import {
+  bazaDostepna, firmyDoMapy, glosowaniaDoMapy, okregi, organyDoMapy, procesyDoMapy,
+  slugiPoslow, terytyGmin, wojewodztwaGmin,
+} from '@/lib/dane';
 import { pominietoNazwiska } from '@/lib/prywatnosc';
 import { MAKS_ADRESOW_MAPY } from '@/lib/przeglad';
 import { adresWojewodztwa } from '@/lib/tekst';
@@ -48,9 +51,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
    * firmy dostają resztę miejsca, bo typowa strona firmy to kilka wierszy
    * pomocy de minimis.
    */
-  const miejsca = Math.max(0, MAKS_ADRESOW_MAPY - wszystko.length);
+  /*
+   * Organy wchodza do TRZONU, nie do resztki: jest ich 910, a kazda taka
+   * strona odpowiada na pytanie, ktorego nie zadaje zaden inny polski serwis
+   * („co ten organ przyznal w calym kraju"). Lista jest juz po regule
+   * jawnosci — organem bywa osoba fizyczna (pulapka 34).
+   */
+  const organy = organyDoMapy().map((nip) => ({ url: adres(`/organ/${nip}`) }));
+  const trzon = [...wszystko, ...organy];
+  const miejsca = Math.max(0, MAKS_ADRESOW_MAPY - trzon.length);
   // Tylko osoby prawne: strona osoby fizycznej ma noindex, wiec w mapie
   // bylaby sprzecznoscia. Regule sprawdza IMPORT — patrz `firmyDoMapy`.
   const firmy = firmyDoMapy().slice(0, miejsca).map((nip) => ({ url: adres(`/firma/${nip}`) }));
-  return [...wszystko, ...firmy];
+  return [...trzon, ...firmy];
 }
