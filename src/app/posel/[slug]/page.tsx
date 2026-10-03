@@ -56,7 +56,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="obszar py-10">
-      <Link href="/poslowie" className="text-sm text-atrament-2 hover:text-akcent">
+      <Link href="/poslowie" className="inline-flex min-h-11 items-center text-sm text-atrament-2 hover:text-akcent">
         ← wszyscy posłowie
       </Link>
 
@@ -80,7 +80,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
               <span className="text-atrament-2">bez klubu</span>
             )}
             {p.okreg_nr ? (
-              <Link href={`/okreg/${p.okreg_nr}`} className="text-atrament-2 underline-offset-4 hover:text-akcent hover:underline">
+              <Link href={`/okreg/${p.okreg_nr}`} className="inline-flex min-h-6 items-center text-atrament-2 underline-offset-4 hover:text-akcent hover:underline">
                 {`okręg nr ${p.okreg_nr}${p.okreg_nazwa ? ` · ${p.okreg_nazwa}` : ''}`}
               </Link>
             ) : null}
@@ -188,7 +188,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                     </p>
                   ) : null}
                   <details className="mt-4 border-t border-kreska pt-3 text-xs leading-relaxed text-atrament-2">
-                    <summary className="cursor-pointer font-medium text-atrament">Jak to liczymy</summary>
+                    <summary className="min-h-11 cursor-pointer py-2 font-medium text-atrament">Jak to liczymy</summary>
                     <ul className="mt-2 list-disc space-y-1 pl-4">
                       <li>Porównujemy tylko głosy „za”, „przeciw” i „wstrzymał się”. Nieobecność nie jest stanowiskiem.</li>
                       <li>Punktem odniesienia jest najczęstszy głos pozostałych członków klubu — bez samego posła.</li>

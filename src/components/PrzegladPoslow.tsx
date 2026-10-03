@@ -72,11 +72,17 @@ export function PrzegladPoslow({
             aria-label="Szukaj posła"
             className="h-11 min-w-0 flex-1 rounded-xl border border-kreska-2 bg-papier-2 px-4 text-sm outline-none focus:border-akcent"
           />
-          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-atrament-2">
+          {/* min-h-11: klikalny jest CALY <label>, ale miał 20 px wysokosci.
+              Wyrownuje sie przy okazji z polem szukania obok (h-11). */}
+          <label className="flex min-h-11 shrink-0 cursor-pointer items-center gap-2 text-sm text-atrament-2">
             <input
               type="checkbox"
               checked={tylkoAktywni}
               onChange={(e) => ustawTylkoAktywnych(e.target.checked)}
+              /* Sam kwadracik ma 16 px i tak zostaje: klikalny jest CALY
+                 <label> (min-h-11 wyzej), a WCAG 2.5.8 liczy cel, nie
+                 kontrolke. Powiekszanie pola wyboru do 24 px zmienia wyglad
+                 formularza, nie poprawiajac trafialnosci. */
               className="h-4 w-4 accent-[var(--akcent)]"
             />
             tylko sprawujący mandat

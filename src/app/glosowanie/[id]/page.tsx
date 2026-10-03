@@ -102,7 +102,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
 
   return (
     <div className="obszar py-10">
-      <Link href="/glosowania" className="inline-flex min-h-6 items-center text-sm text-atrament-2 hover:text-akcent">
+      <Link href="/glosowania" className="inline-flex min-h-11 items-center text-sm text-atrament-2 hover:text-akcent">
         ← wszystkie głosowania
       </Link>
 

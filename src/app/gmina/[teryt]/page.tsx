@@ -223,7 +223,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       <section id="pomoc" className="mt-14 scroll-mt-20">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="szryft text-3xl font-semibold">Pomoc publiczna dla firm z tej gminy</h2>
-          <Link href="/pomoc-publiczna" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
+          <Link href="/pomoc-publiczna" className="inline-flex min-h-11 items-center text-sm text-akcent underline underline-offset-4 hover:no-underline">
             cała Polska →
           </Link>
         </div>
@@ -433,7 +433,7 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
       ) : null}
 
       <details className="mt-4 rounded-xl border border-kreska bg-papier-2 px-4 py-3 text-sm">
-        <summary className="cursor-pointer font-medium">Co wchodzi w dochody gminy?</summary>
+        <summary className="min-h-11 cursor-pointer py-2 font-medium">Co wchodzi w dochody gminy?</summary>
         <div className="mt-3 space-y-2 leading-relaxed text-atrament-2">
           <p>
             To wszystko, co w danym roku wpłynęło do budżetu gminy. GUS dzieli te
@@ -713,7 +713,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
             {`${zOdmiana(r.przypadkow, 'przypadek pomocy', 'przypadki pomocy', 'przypadków pomocy')} dla ${zOdmiana(r.beneficjentow, 'beneficjenta', 'beneficjentów', 'beneficjentów')}, udzielonych od ${dataSlownie(r.pierwszy)} do ${dataSlownie(r.ostatni)}`}
           </p>
           <details className="mt-4 border-t border-kreska pt-3 text-xs leading-relaxed text-atrament-2">
-            <summary className="cursor-pointer font-medium text-atrament">Co znaczy „wartość brutto”</summary>
+            <summary className="min-h-11 cursor-pointer py-2 font-medium text-atrament">Co znaczy „wartość brutto”</summary>
             <p className="mt-2">
               To ekwiwalent dotacji brutto, czyli tyle, ile pomoc jest warta dla firmy. Przy dotacji
               to cała kwota, ale przy pożyczce czy gwarancji tylko korzyść z lepszych warunków —
@@ -817,7 +817,13 @@ function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) 
                   jakie sie ciśnie. Teraz prowadzi na strone organu. */}
               <Link
                 href={`/organ/${o.nip}`}
-                className="leading-snug font-medium text-akcent underline underline-offset-4 hover:no-underline"
+                /* py-1 daje cel 30 px zamiast 22. Link jest dzieckiem
+                   kontenera flex, wiec jest blokowany i padding POWIEKSZA
+                   wiersz — zmierzony koszt to 8 px na organ, czyli ok. 600 px
+                   na najwyzszej stronie serwisu (Zakopane, 44 164 px).
+                   Tyle wolno: cel ponizej 24 px jest dla czesci czytelnikow
+                   nietrafialny, a dodatkowy ekran przewijania to niewygoda. */
+                className="py-1 leading-snug font-medium text-akcent underline underline-offset-4 hover:no-underline"
               >
                 {o.nazwa}
               </Link>

@@ -168,7 +168,7 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
         ustawy, ma wiedziec, ze to moze byc wina odmiany, a nie brak glosowania.
       */}
       <details className="mt-12 rounded-xl border border-kreska bg-papier-2 px-4 py-3 text-sm text-atrament-2">
-        <summary className="cursor-pointer font-medium text-atrament">Jak działa to wyszukiwanie</summary>
+        <summary className="min-h-11 cursor-pointer py-2 font-medium text-atrament">Jak działa to wyszukiwanie</summary>
         <div className="mt-3 space-y-2 leading-relaxed">
           <p>
             Szukamy w nazwach gmin (według danych PKW z wyborów w 2023 r.), w nazwiskach

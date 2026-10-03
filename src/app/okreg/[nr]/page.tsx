@@ -63,7 +63,7 @@ export default async function StronaOkregu({
 
   return (
     <div className="obszar py-10">
-      <Link href="/okregi" className="text-sm text-atrament-2 hover:text-akcent">
+      <Link href="/okregi" className="inline-flex min-h-11 items-center text-sm text-atrament-2 hover:text-akcent">
         ← wszystkie okręgi
       </Link>
 
@@ -166,7 +166,16 @@ export default async function StronaOkregu({
                   <th className="pb-2 text-left font-medium">Poseł</th>
                   {glosowania.map((g, i) => (
                     <th key={`${g.posiedzenie}-${g.numer}`} className="liczby w-8 pb-2 text-center font-medium">
-                      <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} title={opisJednaLinia(g)} className="hover:text-akcent">
+                      <Link
+                        href={`/glosowanie/${g.posiedzenie}-${g.numer}`}
+                        title={opisJednaLinia(g)}
+                        /* Gola cyfra bez paddingu dawala cel 8x15 px —
+                           najmniejszy w serwisie. inline-block, bo <a> w <th>
+                           jest inline i sam padding pionowy nie powiekszylby
+                           pola trafienia. Kolumna ma w-8 (32 px), wiec px-2
+                           miesci sie bez rozpychania macierzy. */
+                        className="inline-block px-2 py-2 hover:text-akcent"
+                      >
                         {i + 1}
                       </Link>
                     </th>
@@ -177,7 +186,7 @@ export default async function StronaOkregu({
                 {aktywni.map((p) => (
                   <tr key={p.slug} className="border-t border-kreska">
                     <td className="py-2 pr-3">
-                      <Link href={`/posel/${p.slug}`} className="hover:text-akcent">{p.imie_nazwisko}</Link>
+                      <Link href={`/posel/${p.slug}`} className="inline-block py-1.5 hover:text-akcent">{p.imie_nazwisko}</Link>
                     </td>
                     {glosowania.map((g) => {
                       const glos = glosPosla.get(`${p.id}:${g.posiedzenie}-${g.numer}`);
@@ -215,7 +224,7 @@ export default async function StronaOkregu({
             {glosowania.map((g, i) => (
               <li key={`${g.posiedzenie}-${g.numer}`} className="flex gap-3">
                 <span className="liczby w-5 shrink-0 text-right text-atrament-3">{i + 1}.</span>
-                <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="hover:text-akcent">
+                <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="inline-block py-1.5 hover:text-akcent">
                   <span className="text-atrament-3">{`${dataSlownie(g.data)} · `}</span>
                   {skroc(opisGlosowania(g).sprawa, 150)}
                 </Link>
@@ -227,7 +236,7 @@ export default async function StronaOkregu({
 
       <section className="mt-12">
         <details className="rounded-2xl border border-kreska bg-papier-2 p-5" open={Boolean(twojaGmina)}>
-          <summary className="cursor-pointer">
+          <summary className="min-h-11 cursor-pointer py-2">
             <span className="szryft text-xl font-semibold">{`Gminy w okręgu (${gminy.length})`}</span>
             <span className="ml-2 text-sm text-atrament-3">{`${zOdmiana(powiaty.size, 'powiat', 'powiaty', 'powiatów')}`}</span>
           </summary>
