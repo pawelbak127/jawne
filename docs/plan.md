@@ -48,6 +48,30 @@ Dopóki Paweł nie uruchomi `sudo jawne aktualizuj`, na żywej stronie NIE MA:
 
 Po wdrożeniu `sudo jawne stan` sam powie, gdyby coś znowu się rozjechało.
 
+### Kolejność przed zdjęciem `noindex` (ustalona 03.10.2026)
+
+1. **DNS w panelu Hostido: rekord A dla `www` → 52.29.50.167.** Dziś `www`
+   wskazuje na serwer Hostido (185.110.48.29) z jego stroną zastępczą
+   (pułapka 68). Rekordów AAAA nie ma ani dla `www`, ani dla adresu głównego,
+   więc wystarczy ten jeden. Przekierowanie po naszej stronie jest już
+   w Caddyfile i zacznie działać samo.
+2. **Sprawdzić, czy `kontakt@zrejestru.pl` odbiera pocztę.** MX wskazuje na
+   `mail.zrejestru.pl` (Hostido), a wcześniej ustaliliśmy, że plan nie ma
+   skrzynek. Próg jawności z zasady 7 stoi na tym, że droga sprzeciwu
+   DZIAŁA — adres, który odbija listy, jest tylko na papierze. Test: wysłać
+   list z innej skrzynki i zobaczyć, czy dochodzi.
+3. **Drugie `sudo jawne aktualizuj`** po tym, które trwa 03.10 od 20:13 —
+   dopiero ono przyniesie dziennik wejść, statystyki, przekierowanie www,
+   nową politykę prywatności, oś lat funduszy UE i komisje.
+4. `sudo jawne stan` — sekcja „Co jest wdrożone” bez żadnego „UWAGA”.
+5. `sudo jawne ustaw JAWNE_INDEKSOWANIE` → `tak`.
+6. Opcjonalnie: Google Search Console (weryfikacja rekordem TXT w DNS) —
+   pokaże, z jakich wyszukiwań ludzie trafiają, czego nie widać w dzienniku.
+
+Znana, świadoma luka: brak adresu korespondencyjnego (uśude art. 5 ust. 2),
+opisana w `/prywatnosc` i w `docs/test-rownowagi.md`. Zdjęcie `noindex` jej
+nie zmienia — serwis i tak jest publicznie dostępny.
+
 | | Co | Dlaczego blokuje | Stan |
 |---|---|---|---|
 | 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie | **jest 02.10.2026**: `kontakt@zrejestru.pl`, zapisany w `/etc/jawne/jawne.env`. **Na żywej stronie jeszcze nie działa** — proces wstał przed zapisem, patrz pułapka 63. Włączy się przy najbliższym `aktualizuj` |

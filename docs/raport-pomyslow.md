@@ -28,7 +28,16 @@ wypada z rankingu niezależnie od ilorazu.
 | 9 | Dokumenty po dotacje | 3 | zablokowane | — | 0 |
 | 10 | Inwestycje ze zdjęciami i ocenami od użytkowników | — | — | — | **weto** |
 
-**Pozycja 1 jest już ZROBIONA** (03.10.2026) — patrz pułapka 66 w `CLAUDE.md`.
+**Zrobione 03.10.2026:** pozycja 1 (pułapka 66), pozycja 2 (`fe_gminy_lata`,
+słupki na stronie gminy), pozycja 3 (`/komisje`, `/komisja/[kod]`, sekcja na
+stronie posła). Następne w kolejce: 4 i 7 jednym etapem GUS (urodzenia
+i wykształcenie), potem 5 (słowa kluczowe ELI).
+
+**Czeka na decyzję Pawła:** pozycja 6 wymaga progu liczebności komórki dla
+branż (PKD w gminie z trzema beneficjentami identyfikuje firmę bez nazwy) —
+to nowy parametr jawności obok `PROG_JAWNOSCI_EUR`. Pozycja 10 ma weto
+z trzech powodów opisanych niżej; jeśli Paweł chce je podważyć, to rozmowa,
+nie zadanie.
 
 ---
 
