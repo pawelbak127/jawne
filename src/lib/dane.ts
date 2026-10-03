@@ -1120,6 +1120,22 @@ export type ProcesSkrot = {
   data_zakonczenia: string | null;
   eli: string | null;
   adres_publikacji: string | null;
+  /**
+   * Streszczenie projektu NAPISANE PRZEZ REJESTR (pole `description`
+   * w /sejm/term10/processes/{nr}), nie przez nas.
+   *
+   * ZMIERZONE 03.10.2026: wypelnione dla 943 z 956 projektow ustaw (98,6%),
+   * srednio 329 znakow, 952 z 954 zaczyna sie od slow „projekt dotyczy".
+   * Lezalo w bazie od 23.09 i bylo INDEKSOWANE do wyszukiwarki (`import.ts`,
+   * `procesy_szukaj` sklada tytul + opis) — czyli po tym tekscie dalo sie
+   * u nas szukac, ale nie dalo sie go przeczytac. Nie bylo go w tej liscie
+   * kolumn, wiec nie dochodzil do zadnej strony.
+   *
+   * `null` dla 240 z 251 projektow uchwal, 138 wnioskow i 100 informacji
+   * rzadowych — tam sekcja ma sie NIE POJAWIAC, a nie pojawiac sie pusta
+   * (zasada 4).
+   */
+  opis: string | null;
   /** Nazwa etapu koncowego z rejestru: "Uchwalono", "Odrzucono", "Wycofano". */
   koniec: string | null;
   ostatni_etap: string | null;
@@ -1128,7 +1144,7 @@ export type ProcesSkrot = {
 
 const KOLUMNY_PROCESU = `p.numer as numer, p.tytul as tytul, p.rodzaj as rodzaj, p.uchwalony as uchwalony,
   p.data_wplyniecia as data_wplyniecia, p.data_zakonczenia as data_zakonczenia, p.eli as eli,
-  p.adres_publikacji as adres_publikacji,
+  p.adres_publikacji as adres_publikacji, p.opis as opis,
   (select e.nazwa from etapy_procesow e where e.proces = p.numer and e.typ = 'End' limit 1) as koniec,
   (select e.nazwa from etapy_procesow e where e.proces = p.numer
     order by e.kolejnosc desc limit 1) as ostatni_etap,

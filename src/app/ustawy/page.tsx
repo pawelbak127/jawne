@@ -92,6 +92,20 @@ export default async function StronaUstaw({
                   {bezNazwiskOsobPrywatnych(p.tytul)}
                 </span>
               </span>
+              {/*
+                Pierwsze zdanie opisu Z REJESTRU. Tytul druku ma srednio 118
+                znakow prawniczej polszczyzny („o zmianie niektorych ustaw
+                w celu..."), po ktorym nie wiadomo, o co chodzi; opis zaczyna
+                sie od „projekt dotyczy" i mowi to wprost.
+                `line-clamp-2`, a nie ciecie w kodzie: przyciete zdanie
+                wyglada na pelne, a wielokropek przegladarki mowi, ze jest
+                dalsza czesc.
+              */}
+              {p.opis ? (
+                <span className="line-clamp-2 text-sm leading-snug text-atrament-2">
+                  {bezNazwiskOsobPrywatnych(p.opis)}
+                </span>
+              ) : null}
               <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-atrament-3">
                 <span className={p.koniec === 'Uchwalono' ? 'text-akcent' : ''}>{stan(p)}</span>
                 {p.ostatnia_data ? <span className="liczby">{dataKrotko(p.ostatnia_data)}</span> : null}

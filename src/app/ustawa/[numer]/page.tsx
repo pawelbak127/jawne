@@ -71,6 +71,31 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
         </div>
       </header>
 
+      {/*
+        CZEGO DOTYCZY — cytat z rejestru, nie nasze streszczenie.
+        Naglowek musi mowic, KTO to napisal. „Streszczenie" bez autora kazaloby
+        czytelnikowi przypisac tekst nam, a przy pierwszym nieprecyzyjnym opisie
+        zaplacilaby za to nasza wiarygodnosc — przy liczbach trzymamy odnosnik
+        do rejestru wlasnie dlatego, zeby nie bylo watpliwosci, skad co jest.
+        Dlatego tez odnosnik stoi TUTAJ, przy tekscie, a nie tylko na dole
+        strony (zasada 1: ma wygladac jak element interfejsu, nie jak przypis).
+
+        Ta sama regula prywatnosci co przy tytule: nazwiska osob prywatnych
+        nie wychodza na strone (zasada 7). Import stosuje ja do tego samego
+        pola, skladajac indeks wyszukiwania.
+      */}
+      {p.opis ? (
+        <section className="mt-6 rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="szryft text-lg font-semibold">Czego dotyczy</h2>
+            <Zrodlo adres={REJESTR(p.numer)} etykieta="opis z rejestru Sejmu" />
+          </div>
+          <p className="mt-2 leading-relaxed text-atrament-2">
+            {bezNazwiskOsobPrywatnych(p.opis)}
+          </p>
+        </section>
+      ) : null}
+
       {p.adres_publikacji ? (
         <p className="mt-5 rounded-2xl border border-kreska bg-papier-2 p-5 text-sm shadow-karta">
           <span className="font-medium">{`Opublikowano: ${p.adres_publikacji}`}</span>
