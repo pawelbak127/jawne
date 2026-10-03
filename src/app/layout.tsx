@@ -4,6 +4,7 @@ import Link from 'next/link';
 import './globals.css';
 import { Nawigacja } from '@/components/Nawigacja';
 import { ADRES_SERWISU, KONTAKT } from '@/lib/adres';
+import { INDEKSOWANIE_WLACZONE } from '@/lib/premiera';
 import { trybBezFiltra } from '@/lib/prywatnosc';
 
 // latin-ext jest OBOWIAZKOWE: szablon create-next-app ma tu samo "latin",
@@ -33,8 +34,9 @@ export const metadata: Metadata = {
   // w gminach, ktore byly polowa serwisu.
   description:
     'Kto jak głosował, co się stało z ustawą i ile publicznych pieniędzy trafiło do Twojej gminy. Każda liczba z odnośnikiem do rejestru, z którego pochodzi.',
-  // Serwis przed premiera. Zdjac dopiero na wyrazne polecenie.
-  robots: { index: false, follow: false },
+  // Serwis przed premiera. Rozstrzyga JEDNA zmienna, wspolna z /robots.txt —
+  // patrz src/lib/premiera.ts. Dwa osobne miejsca moglyby sie rozjechac.
+  ...(INDEKSOWANIE_WLACZONE ? {} : { robots: { index: false, follow: false } as const }),
 };
 
 // Strony bez parametrow (/, /poslowie, /stan, 499 stron poslow) Next renderuje
