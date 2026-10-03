@@ -144,3 +144,27 @@ export type ApiInterpelacja = {
  */
 export const interpelacje = (offset: number, limit = 500) =>
   pobierzJson<ApiInterpelacja[]>(`${BAZA}/interpellations?limit=${limit}&offset=${offset}`);
+
+/**
+ * Komisja sejmowa ze skladem. ZMIERZONE 03.10.2026 na zywym API: 40 komisji
+ * (31 STANDING, 6 EXTRAORDINARY, 3 INVESTIGATIVE), 1 051 czlonkostw,
+ * 408 roznych poslow, JEDNO zapytanie na calosc (172 kB).
+ *
+ * Sklad to STAN BIEZACY — ta sama pulapka co /clubs (pulapka 3): posel,
+ * ktory odszedl z komisji, znika z listy bez sladu, a posel z wygaslym
+ * mandatem nie ma tu nic. `function` jest nieobecne u zwyklych czlonkow
+ * (836 z 1 051), `scope` nieobecne u 9 komisji.
+ */
+export type ApiKomisja = {
+  code: string;
+  name: string;
+  nameGenitive?: string;
+  type: string;
+  scope?: string | null;
+  phone?: string | null;
+  appointmentDate?: string;
+  compositionDate?: string;
+  members?: { id: number; club?: string; function?: string | null; joinDate?: string | null; lastFirstName?: string }[];
+};
+
+export const komisje = () => pobierzJson<ApiKomisja[]>(`${BAZA}/committees`);

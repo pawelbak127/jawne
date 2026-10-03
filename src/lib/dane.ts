@@ -1426,6 +1426,105 @@ export function funduszeGminy(teryt: string): FunduszeWOkresie[] {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Komisje sejmowe (od 03.10.2026)
+// ---------------------------------------------------------------------------
+
+export type KomisjaSkrot = {
+  kod: string;
+  nazwa: string;
+  typ: string;
+  zakres: string | null;
+  czlonkow: number;
+};
+
+export type CzlonkostwoPosla = KomisjaSkrot & { funkcja: string | null; od: string | null };
+
+export type CzlonekKomisji = {
+  posel_id: number;
+  slug: string;
+  imie_nazwisko: string;
+  klub: string | null;
+  funkcja: string | null;
+  od: string | null;
+};
+
+export type Komisja = KomisjaSkrot & {
+  dopelniacz: string | null;
+  telefon: string | null;
+  powolana: string | null;
+  sklad_z_dnia: string | null;
+  sklad: CzlonekKomisji[];
+};
+
+/** Kolejnosc funkcji: przewodniczacy, zastepcy, czlonkowie — jak w rejestrze. */
+const RANGA_FUNKCJI = `case when funkcja like 'przewodnicz%' then 0
+                           when funkcja like 'zast%' then 1 else 2 end`;
+
+const KOMISJA_SKROT = `k.kod as kod, k.nazwa as nazwa, k.typ as typ, k.zakres as zakres,
+  (select count(*) from komisje_sklad s where s.kod = k.kod) as czlonkow`;
+
+/**
+ * Komisje JEDNEGO posla. Tylko jego — pelny sklad zostaje na /komisja/[kod]
+ * (pulapka 54: dane wszystkich poslow na 499 stronach podniosly strone posla
+ * z 88 do 258 kB). `null`, gdy tabeli jeszcze nie ma: brak danych to stan,
+ * a nie zmierzone zero (wzorzec 6).
+ */
+export function komisjePosla(poselId: number): CzlonkostwoPosla[] | null {
+  return bezTabeli(
+    () => {
+      const ile = jeden<{ c: number }>('select count(*) as c from komisje')?.c ?? 0;
+      if (!ile) return null;
+      return wszystkie<CzlonkostwoPosla>(
+        `select ${KOMISJA_SKROT}, s.funkcja as funkcja, s.od as od
+           from komisje_sklad s join komisje k on k.kod = s.kod
+          where s.posel_id = ?
+          order by ${RANGA_FUNKCJI.replaceAll('funkcja', 's.funkcja')}, k.nazwa`,
+        poselId,
+      );
+    },
+    null,
+  );
+}
+
+export function listaKomisji(): KomisjaSkrot[] {
+  return bezTabeli(
+    () => wszystkie<KomisjaSkrot>(
+      `select ${KOMISJA_SKROT} from komisje k
+        order by case k.typ when 'STANDING' then 0 when 'EXTRAORDINARY' then 1 else 2 end, k.nazwa`,
+    ),
+    [],
+  );
+}
+
+export function komisja(kod: string): Komisja | null {
+  return bezTabeli(
+    () => {
+      const k = jeden<Omit<Komisja, 'sklad'>>(
+        `select ${KOMISJA_SKROT}, k.dopelniacz as dopelniacz, k.telefon as telefon,
+                k.powolana as powolana, k.sklad_z_dnia as sklad_z_dnia
+           from komisje k where k.kod = ?`,
+        kod,
+      );
+      if (!k) return null;
+      const sklad = wszystkie<CzlonekKomisji>(
+        `select s.posel_id as posel_id, p.slug as slug, p.imie_nazwisko as imie_nazwisko,
+                s.klub as klub, s.funkcja as funkcja, s.od as od
+           from komisje_sklad s join poslowie p on p.id = s.posel_id
+          where s.kod = ?
+          order by ${RANGA_FUNKCJI.replaceAll('funkcja', 's.funkcja')}, p.nazwisko, p.imie`,
+        kod,
+      );
+      return { ...k, sklad };
+    },
+    null,
+  );
+}
+
+export function kodyKomisji(): string[] {
+  return bezTabeli(() => wszystkie<{ kod: string }>('select kod from komisje').map((r) => r.kod), []);
+}
+
 export type FunduszeWRoku = {
   okres: string;
   rok: number;

@@ -1893,6 +1893,70 @@ async function importInterpelacji(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Komisje sejmowe i ich sklad — jedno zapytanie (ZMIERZONE 03.10.2026:
+ * 40 komisji, 1 051 czlonkostw, 408 poslow, 172 kB).
+ *
+ * Kontrola dziedziny przed zapisem (wzorzec 1): typ spoza znanej trojki
+ * i czlonek spoza naszej listy poslow sa RAPORTOWANE i nie przerywaja
+ * importu (wzorzec 2). Pusta odpowiedz przy niepustej tabeli to NIE „Sejm
+ * rozwiazal komisje", tylko awaria po drugiej stronie (pulapka 1: gałąź
+ * /sejm/* potrafi oddawac smieci przez kilkanascie minut) — wtedy nie
+ * kasujemy tego, co mamy.
+ */
+async function importKomisji(db: DatabaseSync): Promise<void> {
+  log('-> komisje sejmowe i ich sklad (Sejm)');
+  const lista = await api.komisje();
+  const mamy = (db.prepare('select count(*) as c from komisje').get() as { c: number }).c;
+  if (!lista.length) {
+    if (mamy) throw new Error(`komisje: rejestr oddal pusta liste, a w bazie jest ${mamy} — nie kasuje`);
+    log('   rejestr nie podaje komisji');
+    return;
+  }
+
+  const TYPY = new Set(['STANDING', 'EXTRAORDINARY', 'INVESTIGATIVE']);
+  const znaniPoslowie = new Set(
+    (db.prepare('select id from poslowie').all() as unknown as { id: number }[]).map((r) => r.id),
+  );
+  const wstawKomisje = db.prepare(
+    `insert into komisje(kod, nazwa, dopelniacz, typ, zakres, telefon, powolana, sklad_z_dnia)
+     values (?,?,?,?,?,?,?,?)`,
+  );
+  const wstawCzlonka = db.prepare(
+    'insert or ignore into komisje_sklad(kod, posel_id, funkcja, od, klub) values (?,?,?,?,?)',
+  );
+  const dzien = (d: string | null | undefined) => (d && /^\d{4}-\d{2}-\d{2}/.test(d) ? d.slice(0, 10) : null);
+
+  let czlonkostw = 0;
+  let obcy = 0;
+  const nieznaneTypy = new Set<string>();
+  wTransakcji(db, () => {
+    db.prepare('delete from komisje_sklad').run();
+    db.prepare('delete from komisje').run();
+    for (const k of lista) {
+      if (!TYPY.has(k.type)) nieznaneTypy.add(k.type);
+      wstawKomisje.run(
+        k.code, k.name, k.nameGenitive ?? null, k.type, k.scope?.trim() || null,
+        k.phone?.trim() || null, dzien(k.appointmentDate), dzien(k.compositionDate),
+      );
+      for (const m of k.members ?? []) {
+        if (!znaniPoslowie.has(m.id)) { obcy++; continue; }
+        wstawCzlonka.run(k.code, m.id, m.function?.trim() || null, dzien(m.joinDate), m.club ?? null);
+        czlonkostw++;
+      }
+    }
+  });
+
+  const poslow = (db.prepare('select count(distinct posel_id) as c from komisje_sklad').get() as { c: number }).c;
+  const prowadzacych = (db.prepare(
+    "select count(*) as c from komisje_sklad where funkcja like 'przewodnicz%'",
+  ).get() as { c: number }).c;
+  log(`   ${lista.length} komisji, ${czlonkostw} czlonkostw, ${poslow} roznych poslow, ${prowadzacych} przewodniczacych`);
+  if (obcy) log(`   UWAGA: ${obcy} czlonkostw z identyfikatorem posla spoza naszej listy — pominiete`);
+  if (nieznaneTypy.size) log(`   UWAGA: nieznany typ komisji: ${[...nieznaneTypy].join(', ')} — zapisany, bez etykiety`);
+  odnotujImport(db, 'komisje', lista.length, `${czlonkostw} czlonkostw, ${poslow} poslow`);
+}
+
+/**
  * Gotowe wyniki dla stron, ktore inaczej liczylyby je przy kazdej odbudowie.
  * Bez sieci — czyta wylacznie to, co juz jest w bazie.
  */
@@ -1912,6 +1976,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosy: importGlosow,
   procesy: importProcesow,
   interpelacje: importInterpelacji,
+  komisje: importKomisji,
   zamowienia: importZamowien,
   regon: importRegon,
   zdjecia: importZdjec,

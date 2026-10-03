@@ -428,6 +428,34 @@ create table if not exists interpelacje_autorzy (
 );
 create index if not exists interpelacje_autorzy_posel on interpelacje_autorzy(posel_id);
 
+/*
+ * Komisje sejmowe i ich sklad (od 03.10.2026). Odpowiedz rejestru na pytanie
+ * „na czym komu zalezy" bez naszej klasyfikacji: posel sam wybral komisje,
+ * Sejm zatwierdzil uchwala, a zakres dzialania opisal urzad (pole zakres).
+ * Sklad to STAN BIEZACY rejestru, nie historia — strona to mowi.
+ * zakres jest NULL u 9 z 40 komisji; funkcja jest NULL u zwyklego czlonka.
+ * (Bez odwrotnych apostrofow w tym komentarzu: caly SCHEMAT to szablon JS.)
+ */
+create table if not exists komisje (
+  kod          text primary key,
+  nazwa        text not null,
+  dopelniacz   text,
+  typ          text not null,          -- STANDING | EXTRAORDINARY | INVESTIGATIVE
+  zakres       text,
+  telefon      text,
+  powolana     text,
+  sklad_z_dnia text
+);
+create table if not exists komisje_sklad (
+  kod       text not null references komisje(kod),
+  posel_id  integer not null references poslowie(id),
+  funkcja   text,
+  od        text,                       -- joinDate: od kiedy w komisji
+  klub      text,                       -- klub podany przez rejestr komisji
+  primary key (kod, posel_id)
+) without rowid;
+create index if not exists komisje_sklad_posel on komisje_sklad(posel_id);
+
 /* Ludnosc gmin z GUS BDL (zmienna 72305 "ludnosc ogolem"). Mianownik kwot. */
 create table if not exists ludnosc (
   teryt  text primary key,               -- 6 cyfr

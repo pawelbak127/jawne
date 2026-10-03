@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, interpelacjePosla, kluby, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem, posel,
-  slugiPoslow, statystykiPosla,
+  bazaDostepna, interpelacjePosla, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
+  posel, slugiPoslow, statystykiPosla, zrodloImportu,
 } from '@/lib/dane';
+import { etykietaTypu } from '@/lib/komisje';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
 import { stylGlosu } from '@/lib/barwy-glosu';
@@ -52,6 +53,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const obecnosc = obecnoscPosla(p.id);
   const interpelacje = interpelacjePosla(p.id, 5);
+  const komisje = komisjePosla(p.id);
+  const komisjeZ = zrodloImportu('komisje');
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
 
   return (
@@ -318,6 +321,65 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
               </div>
             </div>
           </section>
+
+          {/*
+            KOMISJE (03.10.2026). Odpowiedz rejestru na „na czym komu zalezy"
+            bez naszej klasyfikacji: posel sam wybral komisje, a jej zakres
+            opisal urzad (to zdanie pod nazwa jest cytatem z rejestru).
+            Tylko JEGO komisje — pelny sklad jest na /komisja/[kod] (pulapka 54).
+
+            Trzy stany i kazdy mowi co innego (zasada 4):
+             - tabeli nie ma            -> sekcji nie ma (brak danych to stan),
+             - mandat wygasl            -> „nie mamy danych", NIE zero: rejestr
+                                           podaje tylko BIEZACY sklad komisji,
+             - mandat trwa, komisji 0   -> zmierzone zero, zdanie bez oceny
+                                           i bez zgadywania powodu (zasady 2, 6).
+          */}
+          {komisje !== null ? (
+            <section className="mt-12">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h2 className="szryft text-2xl font-semibold">Komisje</h2>
+                <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/committees" etykieta="skład komisji w rejestrze" />
+              </div>
+              {p.aktywny === 0 ? (
+                <p className="mt-2 max-w-2xl text-sm text-atrament-2">
+                  Rejestr podaje tylko bieżący skład komisji, więc dla posła z wygasłym
+                  mandatem nie wiemy, w których zasiadał — to brak danych, a nie zero.
+                </p>
+              ) : komisje.length === 0 ? (
+                <p className="mt-2 max-w-2xl text-sm text-atrament-2">
+                  Według rejestru Sejmu nie zasiada obecnie w żadnej komisji.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-2">
+                  {komisje.map((c) => (
+                    <li key={c.kod} className="rounded-2xl border border-kreska bg-papier-2 p-4 shadow-karta">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <Link
+                          href={`/komisja/${c.kod}`}
+                          className="py-1 leading-snug font-medium text-akcent underline underline-offset-4 hover:no-underline"
+                        >
+                          {c.nazwa}
+                        </Link>
+                        <span className="text-xs text-atrament-3">{etykietaTypu(c.typ)}</span>
+                      </div>
+                      <p className="mt-1 text-sm">
+                        <span className={c.funkcja ? 'font-medium' : 'text-atrament-2'}>{c.funkcja ?? 'członek'}</span>
+                        {c.od ? <span className="text-atrament-2">{` · od ${dataSlownie(c.od)}`}</span> : null}
+                      </p>
+                      {c.zakres ? (
+                        <p className="mt-2 text-xs leading-relaxed text-atrament-3">{c.zakres}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-xs text-atrament-3">
+                {`Skład według rejestru${komisjeZ?.kiedy ? ` z ${dataSlownie(komisjeZ.kiedy.slice(0, 10))}` : ''}. `}
+                Rejestr nie przechowuje historii: kto odszedł z komisji, znika z listy.
+              </p>
+            </section>
+          ) : null}
 
           {/*
             Sekcja jest takze przy zerze: 58 poslow nie podpisalo zadnej
