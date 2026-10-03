@@ -48,10 +48,13 @@ w przepisach rolnych — do sprawdzenia, zanim się na nią powołamy publicznie
 
 ## Wariant B — jak został wdrożony
 
-1. **Próg: 100 000 EUR na pojedynczy przypadek pomocy** (`PROG_JAWNOSCI_EUR`),
-   tyle wynosi unijny próg publikowania pomocy indywidualnej w GBER.
-   Zmierzone: odsłania **76 z 39 269** ukrytych nazw (0,2 %), łącznie
-   89,9 mln zł. Próg 500 tys. EUR odsłoniłby dwie nazwy.
+1. **Próg: 10 000 EUR na pojedynczy przypadek pomocy** (`PROG_JAWNOSCI_EUR`).
+   Do 03.10.2026 było 100 000 EUR (ogólny próg publikacji w GBER); Paweł
+   obniżył go, bo UOKiK i tak publikuje te przypadki w SUDOP. 10 tys. EUR to
+   próg z tego samego artykułu GBER dla rolnictwa i rybołówstwa.
+   Zmierzone przy zmianie, lokalna kopia bazy (93 499 podmiotów): odsłania
+   **1 422 nazwy** więcej, nie chowa żadnej; razem 216,6 mln zł.
+   Przy progu 100 tys. EUR (pomiar z 18.09): 76 z 39 269 ukrytych nazw.
    Poniżej progu zostaje kwota, gmina, przeznaczenie i udzielający — bez nazwy.
    **Spółka cywilna podlega temu samemu progowi** co nazwisko: nie ma
    osobowości prawnej, przedsiębiorcami są wspólnicy — osoby fizyczne.
@@ -81,9 +84,9 @@ nie informacja o osobie prywatnej.
 
 - **Czy UODO uzna nasz test równowagi.** Można zapytać wprost — UODO odpowiada
   na pytania, a odpowiedź jest darmowa i ma wartość dowodową. Czas: miesiące.
-- **Czy próg 100 000 EUR jest właściwy dla pomocy de minimis**, gdzie limit dla
-  jednego przedsiębiorcy wynosi 300 000 EUR w trzy lata. Do sprawdzenia
-  w rozporządzeniu, zanim ustawimy próg.
+- **Czy próg 10 000 EUR jest właściwy dla pomocy de minimis**, gdzie limit dla
+  jednego przedsiębiorcy wynosi 300 000 EUR w trzy lata — przy nowym progu
+  pojedyncza pomoc de minimis częściej go przekracza.
 
 ## Jak to wygląda w kodzie
 

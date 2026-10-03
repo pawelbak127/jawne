@@ -111,10 +111,24 @@ Każde z nich jest w kodzie i objęte testami:
    albo instytucję i nie ma w niej imienia z rejestru PESEL ani kodu pocztowego
    — `nazwaPodmiotuJawna`. Pozostałych nie wymieniamy, ale zawsze podajemy ich
    liczbę i wliczamy kwoty do sum: jawność pieniędzy nie wymaga jawności osoby.
-3. **Próg kwotowy 100 tys. EUR** (`PROG_JAWNOSCI_EUR`) odsłania nazwisko tylko
-   tam, gdzie publikacji wymagają przepisy unijne — i **tylko gdy działa adres
+3. **Próg kwotowy 10 tys. EUR** (`PROG_JAWNOSCI_EUR`; do 03.10.2026 było
+   100 tys.) odsłania nazwisko dopiero powyżej kwoty, przy której prawo UE każe
+   publikować pomoc w rolnictwie i rybołówstwie — i **tylko gdy działa adres
    do zgłoszenia sprzeciwu**. Bez adresu próg jest wyłączony w kodzie, nie
    w deklaracji.
+
+   **Zmiana z 03.10.2026 (Paweł): 100 tys. → 10 tys. EUR.** Ważenie na nowo:
+   UOKiK publikuje te same przypadki w SUDOP bez żadnego progu, więc nasza
+   publikacja nie odsłania niczego, czego rejestr publiczny już nie podaje.
+   Nasz dodatek — zestawienie po gminie i wyszukiwarka — zwiększa jednak
+   dotarcie, i dlatego dwa zabezpieczenia zostają bez zmian: strona osoby
+   fizycznej ma `noindex` i nie trafia do mapy strony (pokazujemy, ale nie
+   wzmacniamy w wyszukiwarkach), a poniżej progu nazwy nie ma wcale.
+   Zmierzone na lokalnej kopii bazy (93 499 podmiotów, nie cały kraj): zmiana
+   odsłania 1 422 nazwy, nie chowa żadnej; pojedyncza pomoc w tej grupie od
+   10 004 do 98 135 EUR, razem 216,6 mln zł. Próg niższy niż 10 tys. EUR
+   tracił by oparcie w przepisie i trafiał w najdrobniejsze wsparcie
+   jednoosobowych firm — tam ważenie wypada najsłabiej.
 
    **Sprawdzone 30.09.2026 w tekście przepisu.** Art. 9 ust. 1 lit. c)
    rozporządzenia 651/2014 w brzmieniu nadanym rozporządzeniem 2023/1315
@@ -126,13 +140,11 @@ Każde z nich jest w kodzie i objęte testami:
    opracowaniach. Źródło:
    <https://competition-policy.ec.europa.eu/system/files/2023-03/GBER_amendment_2023_EC_communication_annex_0.pdf>
 
-   Dwa miejsca, w których jesteśmy **ostrożniejsi niż przepis**: liczymy
-   pojedynczą pomoc, a nie sumę dla podmiotu (trzy razy po 50 tys. EUR progu
-   nie przekracza), i w rolnictwie oraz rybołówstwie stosujemy próg 100 tys.
-   zamiast 10 tys. EUR. Jedno, w którym jesteśmy mniej ostrożni: dla produktów
-   InvestEU przepis wymaga publikacji dopiero powyżej 500 tys. EUR, a SUDOP
-   nie oznacza tych przypadków osobno — w tym wąskim paśmie nazwa może się
-   pokazać, choć prawo tego nie wymaga.
+   Od 03.10.2026 próg jest **niższy niż ogólny próg publikacji GBER**
+   (100 tys. EUR), więc w paśmie 10–100 tys. EUR pokazujemy nazwiska, których
+   publikacji przepis UE od państwa nie wymaga — tę samą informację podaje
+   jednak SUDOP. Ostrożniejsi niż przepis zostajemy w jednym: liczymy
+   pojedynczą pomoc, a nie sumę dla podmiotu.
 4. **Strona odsłonięta progiem ma `noindex`** — informacja zostaje w serwisie,
    ale nie buduje śladu w wyszukiwarkach.
 5. **Wyszukiwarka nie znajduje osób fizycznych** — ani po nazwisku, ani po

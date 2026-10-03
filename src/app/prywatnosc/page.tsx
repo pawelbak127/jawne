@@ -184,10 +184,12 @@ export default function StronaPrywatnosci() {
           </li>
           <li>
             Wyjątkiem jest pomoc przekraczająca{' '}
-            <span className="font-medium text-atrament">{`${liczba(PROG_JAWNOSCI_EUR)} EUR`}</span> —
-            próg, od którego same przepisy unijne o pomocy publicznej nakazują publikację
-            danych beneficjenta. Powyżej niego pokazujemy nazwę także wtedy, gdy jest
-            nazwiskiem, ale tylko pod warunkiem, że działa adres do zgłoszenia sprzeciwu.
+            <span className="font-medium text-atrament">{`${liczba(PROG_JAWNOSCI_EUR)} EUR`}</span> w
+            jednym przypadku. Te same dane, bez żadnego progu, publikuje UOKiK w rejestrze
+            SUDOP; przepisy unijne nakazują ich publikację od 100 000 EUR, a w rolnictwie
+            i rybołówstwie — od 10 000 EUR. Powyżej progu pokazujemy nazwę także wtedy, gdy
+            jest nazwiskiem, ale tylko pod warunkiem, że działa adres do zgłoszenia
+            sprzeciwu. Strona takiej osoby nie jest zgłaszana wyszukiwarkom.
             {KONTAKT ? '' : ' Dziś ten adres nie jest ustawiony, więc próg nie działa i żadne takie nazwisko nie jest pokazywane.'}
           </li>
         </ul>

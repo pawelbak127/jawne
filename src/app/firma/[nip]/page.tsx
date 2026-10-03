@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type Firma, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
-import { nazwaDoPokazania, nazwaPodmiotuJawna } from '@/lib/prywatnosc';
+import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Zrodlo } from '@/components/Zrodlo';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
@@ -172,7 +172,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
 
         {!w.osobaPrawna && KONTAKT ? (
           <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-            {`Nazwę pokazujemy, bo pojedyncza pomoc przekroczyła unijny próg publikowania pomocy indywidualnej. Jeśli jesteś tą osobą i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy bez pytania o powód.`}
+            {`Nazwę pokazujemy, bo pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — te same dane publikuje UOKiK w rejestrze SUDOP. Strony nie zgłaszamy wyszukiwarkom. Jeśli jesteś tą osobą i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy bez pytania o powód.`}
           </p>
         ) : null}
       </section>

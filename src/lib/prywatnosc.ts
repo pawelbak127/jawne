@@ -213,6 +213,18 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
  *
  * Prog NIE znosi listy `NIGDY`: spolka cywilna i wspolnota mieszkaniowa
  * zostaja ukryte niezaleznie od kwoty (w pomiarze wpadla tam "U&B s.c.").
+ *
+ * ZMIANA (03.10.2026, Pawel): 100 000 -> 10 000 EUR. Uzasadnienie Pawla:
+ * UOKiK i tak publikuje te przypadki w SUDOP, bez zadnego progu.
+ * 10 tys. EUR, a nie „jeszcze mniej", bo to TEZ prog z art. 9 GBER — ten,
+ * od ktorego prawo kaze publikowac pomoc w rolnictwie i rybolowstwie —
+ * wiec dalej nie jest liczba wymyslona przez nas, a o roznicowaniu
+ * progiem jako warunku proporcjonalnosci mowi Schecke (wyzej).
+ * Dwie rzeczy, ktore sie NIE zmieniaja i to one niosa ochrone:
+ *  - strona osoby fizycznej ma `noindex` i nie trafia do mapy strony
+ *    niezaleznie od progu: pokazujemy, ale nie wzmacniamy w wyszukiwarkach,
+ *  - prog dziala tylko przy dzialajacej drodze sprzeciwu (JAWNE_KONTAKT).
+ * Pomiar przed i po zmianie: docs/nazwiska.md.
  */
 /*
  * SPRAWDZONE 30.09.2026 — kwota sie zgadza. EUR-Lex nadal oddaje pusta
@@ -241,7 +253,7 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
  * Liczymy POJEDYNCZA pomoc, nie sume dla podmiotu — to takze strona
  * ostrozniejsza: trzy razy po 50 tys. EUR progu nie przekracza.
  */
-export const PROG_JAWNOSCI_EUR = 100_000;
+export const PROG_JAWNOSCI_EUR = 10_000;
 
 export type OpcjeNazwy = {
   /** Najwieksza POJEDYNCZA pomoc dla tego podmiotu, w euro. */

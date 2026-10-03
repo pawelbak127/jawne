@@ -787,7 +787,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
             lokalnym bez filtra "0 beneficjentow nie wymieniamy" byloby szumem. */}
         {ukrytych ? (
           <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-            {`Pokazujemy podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje)${progAktywny ? `, oraz te, których pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — tyle wynosi unijny próg publikowania pomocy indywidualnej` : ''}. ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
+            {`Pokazujemy podmioty, po których nazwie widać, że nie są osobą fizyczną (spółki, instytucje, organizacje)${progAktywny ? `, oraz te, których pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — te same dane publikuje UOKiK w rejestrze SUDOP` : ''}. ${zOdmiana(ukrytych, 'beneficjenta', 'beneficjentów', 'beneficjentów')} z ${liczba(r.beneficjentow)} nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko.`}
           </p>
         ) : null}
         {progAktywny ? (

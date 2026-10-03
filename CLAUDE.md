@@ -133,7 +133,8 @@ npm run paczka-na-serwer                                    # baza + odpowiedzi 
    zatwierdzony przez Pawła 18.09.2026): nazwę pokazujemy, gdy widać w niej
    formę prawną albo instytucję i nie ma w niej imienia z rejestru PESEL ani
    kodu pocztowego — **albo** gdy pojedyncza pomoc przekroczyła
-   `PROG_JAWNOSCI_EUR` (100 tys. EUR, próg GBER) i ustawiony jest
+   `PROG_JAWNOSCI_EUR` (10 tys. EUR od 03.10.2026, wcześniej 100 tys.; oba to
+   progi z art. 9 GBER) i ustawiony jest
    `JAWNE_KONTAKT` (`nazwaDoPokazania`). Bez adresu do sprzeciwu próg nie
    działa — to warunek techniczny, nie deklaracja. Pozostałych nie wymieniamy, ale zawsze podajemy ich
    liczbę i wliczamy do sum. Spółki jawne i s.k. pokazujemy mimo nazwisk
