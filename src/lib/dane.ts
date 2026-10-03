@@ -1426,6 +1426,55 @@ export function funduszeGminy(teryt: string): FunduszeWOkresie[] {
   );
 }
 
+export type FunduszeWRoku = {
+  okres: string;
+  rok: number;
+  tylko_tu: number;
+  tylko_tu_wartosc: number | null;
+  tylko_tu_ue: number | null;
+  wspolnych: number;
+};
+
+/**
+ * Fundusze UE w gminie po ROKU ROZPOCZECIA projektu — tabela liczona
+ * w imporcie (fe_gminy_lata). Lata bez projektu sa UZUPELNIANE zerem:
+ * miedzy pierwszym a ostatnim rokiem brak wiersza znaczy „zaden projekt
+ * tu nie ruszyl", czyli zmierzone zero, a nie brak danych (zasada 4).
+ * Bez uzupelnienia oś „2023, 2025" chowalaby rok 2024 i czytelnik moglby
+ * tego nie zauwazyc.
+ */
+export function funduszeGminyLata(teryt: string): FunduszeWRoku[] {
+  const wiersze = bezTabeli(
+    () => wszystkie<FunduszeWRoku>(
+      `select okres, rok, tylko_tu, tylko_tu_wartosc, tylko_tu_ue, wspolnych
+         from fe_gminy_lata where teryt = ? order by okres, rok`,
+      teryt,
+    ),
+    [],
+  );
+  const wynik: FunduszeWRoku[] = [];
+  for (const okres of [...new Set(wiersze.map((w) => w.okres))]) {
+    /*
+     * NULL ≠ ZERO (zasada 4). ZMIERZONE NA ZRZUCIE 03.10.2026, Krakow,
+     * 2021-2027: lata 2014 i 2019 pokazywaly „—", a 2015-2017 „0 zl" — choc
+     * znaczyly to samo. W 2014 i 2019 ruszyly TYLKO projekty wspolne z innymi
+     * gminami, wiec projektow „tylko tutaj" bylo zero, a SQL-owe sum() po
+     * pustym zbiorze daje NULL. Kontrola sum tego nie widziala, bo NULL
+     * i 0 sumuja sie tak samo.
+     * Polpauza zostaje tylko tam, gdzie projekty SA, ale kwoty w zlotych nie
+     * ma (Interreg 2014-2020 podaje euro — pulapka 23).
+     */
+    const tego = wiersze.filter((w) => w.okres === okres).map((w) => (w.tylko_tu === 0
+      ? { ...w, tylko_tu_wartosc: 0, tylko_tu_ue: 0 }
+      : w));
+    const lata = new Map(tego.map((w) => [w.rok, w]));
+    for (let rok = tego[0]!.rok; rok <= tego[tego.length - 1]!.rok; rok++) {
+      wynik.push(lata.get(rok) ?? { okres, rok, tylko_tu: 0, tylko_tu_wartosc: 0, tylko_tu_ue: 0, wspolnych: 0 });
+    }
+  }
+  return wynik;
+}
+
 export const TERYT_WARSZAWY = '146501';
 
 // Warszawa jest w liscie UE jedna gmina (146501), a w PKW i GUS — 18 dzielnic.

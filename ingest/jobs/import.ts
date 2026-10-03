@@ -696,6 +696,46 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
                  where m.teryt is not null)
          group by teryt, okres;
 
+        /*
+         * TO SAMO, ROZPISANE NA ROK ROZPOCZECIA PROJEKTU (od 03.10.2026).
+         *
+         * Pomysl Pawla: „filtr zakresu czasu w dotacjach". Pomoc publiczna
+         * miala juz slupki po roku udzielenia, fundusze UE — tylko perspektywe
+         * (2014-2020 / 2021-2027), bo fe_gminy nie mialo roku. A dane sa:
+         * fe_projekty.poczatek wypelnione w 100% (138 172 z 138 172).
+         *
+         * ROK ROZPOCZECIA, nie „rok wydatku": rejestr podaje JEDNA kwote na
+         * caly projekt, ktory trwa latami. Rozlozenie jej na lata trwania
+         * byloby naszym wymyslem (zasady 2 i 4), wiec tego nie robimy,
+         * a strona to mowi.
+         *
+         * Liczone tu, w imporcie, a nie na zadanie czytelnika (pulapki 52, 55):
+         * ok. 70 tys. wierszy, strona tylko czyta.
+         */
+        drop table if exists fe_gminy_lata;
+        create table fe_gminy_lata (
+          teryt            text not null,
+          okres            text not null,
+          rok              integer not null,
+          tylko_tu         integer not null,
+          tylko_tu_wartosc real,
+          tylko_tu_ue      real,
+          wspolnych        integer not null,
+          primary key (teryt, okres, rok)
+        ) without rowid;
+        insert into fe_gminy_lata
+        select teryt, okres, rok, sum(miejsc = 1),
+               sum(case when miejsc = 1 and waluta = 'PLN' then wartosc end),
+               sum(case when miejsc = 1 and waluta = 'PLN' then dofinansowanie_ue end),
+               sum(miejsc > 1)
+          from (select distinct m.teryt as teryt, p.id, p.okres as okres,
+                       cast(substr(p.poczatek, 1, 4) as integer) as rok,
+                       p.miejsc as miejsc, p.waluta as waluta, p.wartosc as wartosc,
+                       p.dofinansowanie_ue as dofinansowanie_ue
+                  from fe_miejsca m join fe_projekty p on p.id = m.projekt_id
+                 where m.teryt is not null and p.poczatek is not null)
+         group by teryt, okres, rok;
+
         drop table if exists fe_powiaty;
         create table fe_powiaty (
           teryt_powiatu text not null,
@@ -712,6 +752,23 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     });
     const g = db.prepare('select count(*) as c, sum(tylko_tu) as p from fe_gminy').get() as { c: number; p: number };
     log(`   ${g.c} wierszy gmina x okres, ${g.p} projektow przypisanych do jednej gminy`);
+    /*
+     * Kontrola druga droga (wzorzec 7): suma lat musi dac DOKLADNIE okres.
+     * Rozjazd znaczylby, ze projekt bez daty albo z data spoza wzorca
+     * wypadl z osi lat po cichu — a slupki wygladalyby na komplet.
+     */
+    const rozjazd = db.prepare(
+      `select count(*) as c from fe_gminy g
+         left join (select teryt, okres, sum(tylko_tu) as t, sum(wspolnych) as w,
+                           sum(coalesce(tylko_tu_ue, 0)) as ue
+                      from fe_gminy_lata group by teryt, okres) l
+           on l.teryt = g.teryt and l.okres = g.okres
+        where coalesce(l.t, 0) <> g.tylko_tu or coalesce(l.w, 0) <> g.wspolnych
+           or abs(coalesce(l.ue, 0) - coalesce(g.tylko_tu_ue, 0)) > 0.5`,
+    ).get() as { c: number };
+    const lat = db.prepare('select count(*) as c from fe_gminy_lata').get() as { c: number };
+    log(`   ${lat.c} wierszy gmina x okres x rok rozpoczecia; rozjazd z suma okresu: ${rozjazd.c}`);
+    if (rozjazd.c) log('   UWAGA: os lat nie sumuje sie do okresu — slupki na stronie gminy beda niepelne');
   } else {
     log('   brak tabel funduszy — uruchom etap "fundusze"');
   }

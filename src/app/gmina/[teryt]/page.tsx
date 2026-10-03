@@ -3,10 +3,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, budzetGminy, funduszeGminy, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
+  bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaUeNaMieszkanca, najwiekszeProjektyGminy, organyPomocy, pomocGminy, porownanieBudzetu,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
-  type BudzetGminy, type FunduszeWOkresie, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
+  type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type ZamowieniaGminy,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
@@ -74,6 +74,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   // Lista UE nie rozpisuje Warszawy na dzielnice — dzielnica pokazuje cale miasto.
   const terytFunduszy = dzielnica ? TERYT_WARSZAWY : teryt;
   const fundusze = funduszeGminy(terytFunduszy);
+  const funduszeLata = funduszeGminyLata(terytFunduszy);
   const projekty = najwiekszeProjektyGminy(terytFunduszy, 8);
   // Warszawa jest w SUDOP jednym miastem (146501), a jej dzielnice maja wlasne
   // kody — wszystkie trzymamy pod miastem, tak jak fundusze UE i budzet.
@@ -179,6 +180,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             <KartaOkresu
               key={f.okres}
               f={f}
+              lata={funduszeLata.filter((l) => l.okres === f.okres)}
               ludnosc={ludnoscDoPrzeliczen}
               wojewodztwo={g.wojewodztwo}
               tylkoPowiat={f.okres === '2014-2020' && !miastoPowiat && !dzielnica}
@@ -602,8 +604,9 @@ function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: num
   );
 }
 
-function KartaOkresu({ f, ludnosc, wojewodztwo, tylkoPowiat }: {
+function KartaOkresu({ f, lata, ludnosc, wojewodztwo, tylkoPowiat }: {
   f: FunduszeWOkresie;
+  lata: FunduszeWRoku[];
   ludnosc: number | null;
   wojewodztwo: string;
   tylkoPowiat: boolean;
@@ -645,6 +648,23 @@ function KartaOkresu({ f, ludnosc, wojewodztwo, tylkoPowiat }: {
             {f.w_powiecie ? ` oraz ${zOdmiana(f.w_powiecie, 'projekt wskazany', 'projekty wskazane', 'projektów wskazanych')} tylko dla całego powiatu` : ''}
             {' — tych kwot nie przypisujemy gminie.'}
           </p>
+          {/*
+            Os lat (03.10.2026). Tylko gdy lat jest co najmniej dwa — jeden
+            slupek niczego nie porownuje. ROK ROZPOCZECIA, nie rok wydatku:
+            rejestr podaje jedna kwote na caly projekt, wiec rozlozenie jej
+            na lata trwania byloby naszym wymyslem — i podpis to mowi.
+          */}
+          {lata.length >= 2 ? (
+            <div className="mt-5 border-t border-kreska pt-4">
+              <SlupkiLat
+                tytul="Dofinansowanie według roku rozpoczęcia projektu"
+                wiersze={lata.map((l) => ({ rok: l.rok, wartosc: l.tylko_tu_ue }))}
+              />
+              <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+                {`Rok, w którym projekt ruszył, a nie rok wydatku: rejestr podaje jedną kwotę na cały projekt. Te same ${zOdmiana(f.tylko_tu, 'projekt', 'projekty', 'projektów')} co wyżej, bez wspólnych z innymi gminami.`}
+              </p>
+            </div>
+          ) : null}
         </>
       )}
     </div>
