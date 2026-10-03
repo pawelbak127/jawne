@@ -907,11 +907,21 @@ export type InterpelacjePosla = {
  *
  * `odpowiedzi = 0` to fakt o ADRESACIE, nie o posle — nie komentujemy go.
  */
-export function interpelacjePosla(id: number, ile = 5): InterpelacjePosla {
+export type RodzajPytan = 'interpelacje' | 'zapytania';
+
+/** Interpelacje jednego posla — zachowane dla dotychczasowych wywolan. */
+export const interpelacjePosla = (id: number, ile = 5) => pytaniaPosla('interpelacje', id, ile);
+
+/**
+ * Interpelacje albo zapytania poselskie jednego posla. Obie maja w rejestrze
+ * te sama budowe (zmierzone 03.10.2026), wiec jedna funkcja; nazwa tabeli
+ * pochodzi z typu `RodzajPytan`, nigdy z wejscia czytelnika.
+ */
+export function pytaniaPosla(t: RodzajPytan, id: number, ile = 5): InterpelacjePosla {
   return bezTabeli(() => {
     const licznik = jeden<{ ile: number; bez: number }>(
       `select count(*) as ile, sum(case when i.odpowiedzi = 0 then 1 else 0 end) as bez
-         from interpelacje_autorzy a join interpelacje i on i.numer = a.numer
+         from ${t}_autorzy a join ${t} i on i.numer = a.numer
         where a.posel_id = ?`,
       id,
     );
@@ -938,16 +948,16 @@ export function interpelacjePosla(id: number, ile = 5): InterpelacjePosla {
     const od = okno?.od ?? null;
     const doKiedy = okno?.wygaslo ?? null;
     const wKadencji = jeden<{ c: number }>(
-      `select count(*) as c from interpelacje
+      `select count(*) as c from ${t}
         where (? is null or data_wplywu >= ?) and (? is null or data_wplywu <= ?)`,
       od, od, doKiedy, doKiedy,
     )?.c ?? 0;
-    const wszystkich = jeden<{ c: number }>('select count(*) as c from interpelacje')?.c ?? 0;
+    const wszystkich = jeden<{ c: number }>(`select count(*) as c from ${t}`)?.c ?? 0;
     const ostatnie = wszystkie<Interpelacja>(
       `select i.numer as numer, i.tytul as tytul, i.data_wplywu as data_wplywu,
               i.adresaci as adresaci, i.odpowiedzi as odpowiedzi, i.adres as adres,
-              (select count(*) from interpelacje_autorzy b where b.numer = i.numer) as autorow
-         from interpelacje_autorzy a join interpelacje i on i.numer = a.numer
+              (select count(*) from ${t}_autorzy b where b.numer = i.numer) as autorow
+         from ${t}_autorzy a join ${t} i on i.numer = a.numer
         where a.posel_id = ?
         order by i.data_wplywu desc, i.numer desc limit ?`,
       id, ile,

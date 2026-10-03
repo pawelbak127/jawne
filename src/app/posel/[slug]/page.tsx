@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, interpelacjePosla, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
-  posel, slugiPoslow, statystykiPosla, zrodloImportu,
+  bazaDostepna, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
+  posel, pytaniaPosla, slugiPoslow, statystykiPosla, zrodloImportu,
+  type InterpelacjePosla, type RodzajPytan,
 } from '@/lib/dane';
 import { etykietaTypu } from '@/lib/komisje';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
@@ -52,7 +53,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const miejsce = miejscePosla(MIEJSCA, p.id);
   const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
   const obecnosc = obecnoscPosla(p.id);
-  const interpelacje = interpelacjePosla(p.id, 5);
+  const interpelacje = pytaniaPosla('interpelacje', p.id, 5);
+  const zapytania = pytaniaPosla('zapytania', p.id, 5);
   const komisje = komisjePosla(p.id);
   const komisjeZ = zrodloImportu('komisje');
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
@@ -391,77 +393,13 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
             przy pustej tabeli byloby zdaniem o danych, ktorych nie mamy;
             brak danych to stan, nie zmierzone zero (wzorzec 6).
           */}
-          {interpelacje.wKadencji > 0 ? (
-          <section className="mt-12">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 className="szryft text-2xl font-semibold">Interpelacje</h2>
-                <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="rejestr interpelacji" />
-              </div>
-              {/* Bez form osobowych: „podpisał/podpisała" wymagaloby rodzaju,
-                  ktorego nie zapisujemy, a rejestr go nie podaje. */}
-              <p className="mt-2 max-w-2xl text-sm text-atrament-2">
-                <span className="liczby">
-                  {`Podpisane interpelacje: ${liczba(interpelacje.ile)} z ${liczba(interpelacje.wKadencji)}`}
-                </span>
-                {interpelacje.wezszeNizKadencja && interpelacje.od
-                  ? `${' złożonych od '}${dataSlownie(interpelacje.od)}${interpelacje.do ? ` do ${dataSlownie(interpelacje.do)}` : ''}, w czasie trwania tego mandatu. `
-                  : ' złożonych w tej kadencji. '}
-                {interpelacje.ile === 0
-                  ? 'Rejestr nie odnotowuje żadnej.'
-                  : interpelacje.bezOdpowiedzi > 0
-                    ? `Bez odpowiedzi w rejestrze: ${liczba(interpelacje.bezOdpowiedzi)} — to informacja o adresacie, nie o pośle.`
-                    : 'Wszystkie mają w rejestrze odpowiedź.'}
-              </p>
-              <ul className="mt-5 space-y-2">
-                {interpelacje.ostatnie.map((i) => (
-                  <li
-                    key={i.numer}
-                    className="rounded-2xl border border-kreska bg-papier-2 p-4 transition-colors hover:border-kreska-2"
-                  >
-                    <p className="liczby text-xs text-atrament-3">
-                      {`nr ${i.numer} · ${dataSlownie(i.data_wplywu)}`}
-                      {i.autorow > 1 ? ` · ${zOdmiana(i.autorow, 'autor', 'autorów', 'autorów')}` : ''}
-                      {i.odpowiedzi === 0 ? ' · bez odpowiedzi' : ''}
-                    </p>
-                    {/*
-                      Tytul przechodzi przez te sama regule, co tytul
-                      glosowania — jedna regula dla wszystkich (regula 7).
-                      ZMIERZONE 30.09.2026 na 20 145 tytulach: dzis nie zmienia
-                      ani jednego, bo tytuly interpelacji sa tematami polityki,
-                      nie sprawami jednostkowymi. Sprawdzone tez osobno:
-                      „Pan/Pani + nazwisko" 0 trafien, inicjaly 2 (oba falszywe:
-                      patron szpitala, numer uchwaly), jedyne nazwisko w tytule
-                      nalezy do WICEMINISTER w jej roli publicznej. Zostawiamy
-                      filtr, bo tytuly pisza poslowie i jutro moze byc inaczej.
-                    */}
-                    <p className="mt-1">
-                      {i.adres ? (
-                        <a
-                          href={i.adres}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="hover:text-akcent"
-                        >
-                          {skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)}
-                        </a>
-                      ) : (
-                        skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)
-                      )}
-                    </p>
-                    {i.adresaci ? (
-                      <p className="mt-1 text-sm text-atrament-2">{`do: ${i.adresaci}`}</p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-              {interpelacje.ile > 0 ? (
-                <p className="mt-3 text-xs text-atrament-3">
-                  Pokazujemy metryczkę, nie treść: pełny tekst interpelacji i odpowiedzi jest
-                  w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.
-                </p>
-              ) : null}
-            </section>
-          ) : null}
+          <PytaniaPosla dane={interpelacje} rodzaj="interpelacje" />
+          {/*
+            Zapytania poselskie (03.10.2026): ta sama budowa w rejestrze i te
+            same zasady — zero jest zmierzone, brak tabeli to brak sekcji,
+            a brak odpowiedzi to fakt o adresacie, nie o posle.
+          */}
+          <PytaniaPosla dane={zapytania} rodzaj="zapytania" />
 
           <section className="mt-12">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -487,5 +425,98 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
         </>
       )}
     </div>
+  );
+}
+
+const NAPISY_PYTAN: Record<RodzajPytan, {
+  tytul: string; rejestr: string; podpisane: string; zadnej: string; dopelniacz: string;
+}> = {
+  interpelacje: {
+    tytul: 'Interpelacje', rejestr: 'rejestr interpelacji', podpisane: 'Podpisane interpelacje',
+    zadnej: 'Rejestr nie odnotowuje żadnej.', dopelniacz: 'interpelacji',
+  },
+  zapytania: {
+    tytul: 'Zapytania poselskie', rejestr: 'rejestr zapytań', podpisane: 'Podpisane zapytania',
+    zadnej: 'Rejestr nie odnotowuje żadnego.', dopelniacz: 'zapytania',
+  },
+};
+
+/**
+ * Interpelacje albo zapytania poselskie — ta sama sekcja, inne slowa.
+ * Do 03.10.2026 byla to sekcja wpisana w strone tylko dla interpelacji.
+ */
+function PytaniaPosla({ dane, rodzaj }: { dane: InterpelacjePosla; rodzaj: RodzajPytan }) {
+  const t = NAPISY_PYTAN[rodzaj];
+  if (dane.wKadencji === 0) return null;
+  return (
+    <section className="mt-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="szryft text-2xl font-semibold">{t.tytul}</h2>
+        <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta={t.rejestr} />
+      </div>
+      {/* Bez form osobowych: „podpisał/podpisała" wymagaloby rodzaju,
+          ktorego nie zapisujemy, a rejestr go nie podaje. */}
+      <p className="mt-2 max-w-2xl text-sm text-atrament-2">
+        <span className="liczby">
+          {`${t.podpisane}: ${liczba(dane.ile)} z ${liczba(dane.wKadencji)}`}
+        </span>
+        {dane.wezszeNizKadencja && dane.od
+          ? `${' złożonych od '}${dataSlownie(dane.od)}${dane.do ? ` do ${dataSlownie(dane.do)}` : ''}, w czasie trwania tego mandatu. `
+          : ' złożonych w tej kadencji. '}
+        {dane.ile === 0
+          ? t.zadnej
+          : dane.bezOdpowiedzi > 0
+            ? `Bez odpowiedzi w rejestrze: ${liczba(dane.bezOdpowiedzi)} — to informacja o adresacie, nie o pośle.`
+            : 'Wszystkie mają w rejestrze odpowiedź.'}
+      </p>
+      <ul className="mt-5 space-y-2">
+        {dane.ostatnie.map((i) => (
+          <li
+            key={i.numer}
+            className="rounded-2xl border border-kreska bg-papier-2 p-4 transition-colors hover:border-kreska-2"
+          >
+            <p className="liczby text-xs text-atrament-3">
+              {`nr ${i.numer} · ${dataSlownie(i.data_wplywu)}`}
+              {i.autorow > 1 ? ` · ${zOdmiana(i.autorow, 'autor', 'autorów', 'autorów')}` : ''}
+              {i.odpowiedzi === 0 ? ' · bez odpowiedzi' : ''}
+            </p>
+            {/*
+              Tytul przechodzi przez te sama regule, co tytul
+              glosowania — jedna regula dla wszystkich (regula 7).
+              ZMIERZONE 30.09.2026 na 20 145 tytulach: dzis nie zmienia
+              ani jednego, bo tytuly interpelacji sa tematami polityki,
+              nie sprawami jednostkowymi. Sprawdzone tez osobno:
+              „Pan/Pani + nazwisko" 0 trafien, inicjaly 2 (oba falszywe:
+              patron szpitala, numer uchwaly), jedyne nazwisko w tytule
+              nalezy do WICEMINISTER w jej roli publicznej. Zostawiamy
+              filtr, bo tytuly pisza poslowie i jutro moze byc inaczej.
+            */}
+            <p className="mt-1">
+              {i.adres ? (
+                <a
+                  href={i.adres}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-akcent"
+                >
+                  {skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)}
+                </a>
+              ) : (
+                skroc(bezNazwiskOsobPrywatnych(i.tytul), 180)
+              )}
+            </p>
+            {i.adresaci ? (
+              <p className="mt-1 text-sm text-atrament-2">{`do: ${i.adresaci}`}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {dane.ile > 0 ? (
+        <p className="mt-3 text-xs text-atrament-3">
+          {`Pokazujemy metryczkę, nie treść: pełny tekst ${t.dopelniacz} i odpowiedzi jest`}
+          w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.
+        </p>
+      ) : null}
+    </section>
   );
 }

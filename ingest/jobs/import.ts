@@ -1819,17 +1819,32 @@ async function importObecnosci(db: DatabaseSync): Promise<void> {
  * dziala, wiec to ok. 41 zapytan. Pusta odpowiedz znaczy koniec — rejestr
  * nie podaje liczby wszystkich w tresci.
  */
-async function importInterpelacji(db: DatabaseSync): Promise<void> {
-  log('-> interpelacje poselskie (Sejm)');
+/**
+ * Interpelacje i zapytania poselskie maja te sama budowe w rejestrze, wiec
+ * jeden import. Nazwy tabel pochodza z tej stalej, nigdy z wejscia.
+ */
+type RodzajPytan = {
+  etykieta: string;
+  pobierz: (offset: number, limit: number) => Promise<api.ApiInterpelacja[]>;
+  tabela: 'interpelacje' | 'zapytania';
+};
+const INTERPELACJE: RodzajPytan = { etykieta: 'interpelacje poselskie', pobierz: api.interpelacje, tabela: 'interpelacje' };
+const ZAPYTANIA: RodzajPytan = { etykieta: 'zapytania poselskie', pobierz: api.zapytania, tabela: 'zapytania' };
+
+const importInterpelacji = (db: DatabaseSync) => importPytan(db, INTERPELACJE);
+const importZapytan = (db: DatabaseSync) => importPytan(db, ZAPYTANIA);
+
+async function importPytan(db: DatabaseSync, r: RodzajPytan): Promise<void> {
+  log(`-> ${r.etykieta} (Sejm)`);
   const PORCJA = 500;
   const wszystkie: api.ApiInterpelacja[] = [];
   for (let offset = 0; ; offset += PORCJA) {
-    const paczka = await api.interpelacje(offset, PORCJA);
+    const paczka = await r.pobierz(offset, PORCJA);
     wszystkie.push(...paczka);
     if (paczka.length < PORCJA) break;
-    if (offset > 200_000) throw new Error('interpelacje: rejestr nie konczy stronicowania');
+    if (offset > 200_000) throw new Error(`${r.tabela}: rejestr nie konczy stronicowania`);
   }
-  log(`   ${wszystkie.length} interpelacji w kadencji`);
+  log(`   ${wszystkie.length} w kadencji`);
   if (!wszystkie.length) return;
 
   const znaniPoslowie = new Set(
@@ -1837,7 +1852,7 @@ async function importInterpelacji(db: DatabaseSync): Promise<void> {
   );
 
   const wstaw = db.prepare(
-    `insert into interpelacje(numer, tytul, data_wplywu, data_wyslania, adresaci, odpowiedzi,
+    `insert into ${r.tabela}(numer, tytul, data_wplywu, data_wyslania, adresaci, odpowiedzi,
                               ostatnia_odpowiedz, opoznienie_dni, adres, zmieniony)
      values (?,?,?,?,?,?,?,?,?,?)
      on conflict(numer) do update set tytul=excluded.tytul, data_wplywu=excluded.data_wplywu,
@@ -1846,7 +1861,7 @@ async function importInterpelacji(db: DatabaseSync): Promise<void> {
        opoznienie_dni=excluded.opoznienie_dni, adres=excluded.adres, zmieniony=excluded.zmieniony`,
   );
   const wstawAutora = db.prepare(
-    'insert or ignore into interpelacje_autorzy(numer, posel_id) values (?,?)',
+    `insert or ignore into ${r.tabela}_autorzy(numer, posel_id) values (?,?)`,
   );
 
   let autorow = 0;
@@ -1854,7 +1869,7 @@ async function importInterpelacji(db: DatabaseSync): Promise<void> {
   let bezDaty = 0;
   const wieluAutorow = wszystkie.filter((i) => i.from.length > 1).length;
   wTransakcji(db, () => {
-    db.prepare('delete from interpelacje_autorzy').run();
+    db.prepare(`delete from ${r.tabela}_autorzy`).run();
     for (const i of wszystkie) {
       // Kontrola dziedziny przed zapisem: data spoza wzorca to nie data.
       if (!/^\d{4}-\d{2}-\d{2}$/.test(i.receiptDate)) { bezDaty++; continue; }
@@ -1882,13 +1897,13 @@ async function importInterpelacji(db: DatabaseSync): Promise<void> {
     }
   });
 
-  const bezOdpowiedzi = db.prepare('select count(*) as c from interpelacje where odpowiedzi = 0')
+  const bezOdpowiedzi = db.prepare(`select count(*) as c from ${r.tabela} where odpowiedzi = 0`)
     .get() as unknown as { c: number };
-  log(`   ${autorow} podpisow autorow, ${wieluAutorow} interpelacji ma wiecej niz jednego autora`);
+  log(`   ${autorow} podpisow autorow, ${wieluAutorow} ma wiecej niz jednego autora`);
   log(`   bez odpowiedzi w rejestrze: ${bezOdpowiedzi.c}`);
   if (obcy) log(`   UWAGA: ${obcy} podpisow z identyfikatorem posla spoza naszej listy`);
-  if (bezDaty) log(`   UWAGA: ${bezDaty} interpelacji bez poprawnej daty wplywu — pominiete`);
-  odnotujImport(db, 'interpelacje', wszystkie.length,
+  if (bezDaty) log(`   UWAGA: ${bezDaty} pozycji bez poprawnej daty wplywu — pominiete`);
+  odnotujImport(db, r.tabela, wszystkie.length,
     `${autorow} podpisow; bez odpowiedzi: ${bezOdpowiedzi.c}${obcy ? `; obcych autorow: ${obcy}` : ''}`);
 }
 
@@ -1976,6 +1991,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   glosy: importGlosow,
   procesy: importProcesow,
   interpelacje: importInterpelacji,
+  zapytania: importZapytan,
   komisje: importKomisji,
   zamowienia: importZamowien,
   regon: importRegon,

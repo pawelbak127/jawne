@@ -146,6 +146,14 @@ export const interpelacje = (offset: number, limit = 500) =>
   pobierzJson<ApiInterpelacja[]>(`${BAZA}/interpellations?limit=${limit}&offset=${offset}`);
 
 /**
+ * Zapytania poselskie (pisemne). ZMIERZONE 03.10.2026: ta sama budowa co
+ * interpelacje — num, title, from, receiptDate, recipientDetails, replies,
+ * answerDelayedDays, links — i to samo stronicowanie.
+ */
+export const zapytania = (offset: number, limit = 500) =>
+  pobierzJson<ApiInterpelacja[]>(`${BAZA}/writtenQuestions?limit=${limit}&offset=${offset}`);
+
+/**
  * Komisja sejmowa ze skladem. ZMIERZONE 03.10.2026 na zywym API: 40 komisji
  * (31 STANDING, 6 EXTRAORDINARY, 3 INVESTIGATIVE), 1 051 czlonkostw,
  * 408 roznych poslow, JEDNO zapytanie na calosc (172 kB).

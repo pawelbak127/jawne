@@ -429,6 +429,34 @@ create table if not exists interpelacje_autorzy (
 create index if not exists interpelacje_autorzy_posel on interpelacje_autorzy(posel_id);
 
 /*
+ * Zapytania poselskie (od 03.10.2026) — ta sama budowa co interpelacje
+ * (zmierzone na zywym API: identyczne pola), wiec i te same kolumny.
+ * Osobne tabele, nie kolumna „rodzaj": inaczej kazde zapytanie strony
+ * interpelacji musialoby pamietac o filtrze, a zapomniany filtr po cichu
+ * dodalby zapytania do licznika interpelacji.
+ */
+create table if not exists zapytania (
+  numer           integer primary key,
+  tytul           text not null,
+  data_wplywu     text not null,
+  data_wyslania   text,
+  adresaci        text,
+  odpowiedzi      integer not null,
+  ostatnia_odpowiedz text,
+  opoznienie_dni  integer,
+  adres           text,
+  zmieniony       text
+);
+create index if not exists zapytania_data on zapytania(data_wplywu desc);
+
+create table if not exists zapytania_autorzy (
+  numer     integer not null references zapytania(numer),
+  posel_id  integer not null references poslowie(id),
+  primary key (numer, posel_id)
+);
+create index if not exists zapytania_autorzy_posel on zapytania_autorzy(posel_id);
+
+/*
  * Komisje sejmowe i ich sklad (od 03.10.2026). Odpowiedz rejestru na pytanie
  * „na czym komu zalezy" bez naszej klasyfikacji: posel sam wybral komisje,
  * Sejm zatwierdzil uchwala, a zakres dzialania opisal urzad (pole zakres).
