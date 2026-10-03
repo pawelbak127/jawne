@@ -11,7 +11,13 @@ WorkingDirectory=/srv/jawne
 EnvironmentFile=/etc/jawne/jawne.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh sejm
-TimeoutStartSec=2h
+# ZMIERZONE 03.10.2026: przebieg padl na 2h w etapie „indeks firm" — 1 h 58 min
+# przy 3 minutach czasu procesora, czyli w czekaniu na dysk i na blokade zapisu
+# (historia SUDOP pisze w trybie ciaglym). Etap przebudowuje sie teraz tylko po
+# zmianie w pomocy publicznej, wiec wiekszosc nocy jest krotka — ale ta JEDNA
+# noc po przebiegu SUDOP nadal go potrzebuje, a przekroczenie limitu kosztuje
+# caly przebieg, razem z klubami, poslami i glosami.
+TimeoutStartSec=4h
 Nice=10
 NoNewPrivileges=true
 PrivateTmp=true

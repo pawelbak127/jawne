@@ -571,6 +571,50 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
   log('-> wyliczenia: indeks firm — beneficjentow pomocy publicznej');
   const maPomoc = db.prepare("select count(*) as c from sqlite_master where name = 'pomoc_publiczna'").get() as { c: number };
   if (maPomoc.c) {
+    /*
+     * PRZEBUDOWA TYLKO WTEDY, GDY POMOCY PRZYBYLO.
+     *
+     * ZMIERZONE 03.10.2026: `jawne-sejm` padl na `TimeoutStartSec=2h`
+     * dokladnie w tym etapie — 1 h 58 min przy 3 minutach czasu procesora,
+     * czyli prawie caly ten czas CZEKAL na dysk i na blokade zapisu, bo
+     * historia SUDOP pisze teraz w trybie ciaglym. Przy 16 minutach
+     * (pulapka 56) to sie jeszcze miescilo.
+     * Zadanie `sejm` chodzi CODZIENNIE, a `pomoc_publiczna` zmienia sie
+     * wylacznie wtedy, gdy przebiegnie SUDOP. Przez to najdrozszy etap nocy
+     * powtarzal to samo grupowanie po 3,78 mln wierszy — i to on zabieral
+     * calemu zadaniu wynik: po przekroczeniu limitu systemd zabija proces,
+     * wiec przepadaly tez `kluby`, `poslowie`, `glosowania` i `glosy`.
+     *
+     * Podpis to trzy natychmiastowe odczyty, nie przebieg po tabeli:
+     * liczba wierszy, najwyzszy `id` i najswiezsze `pobrano`. Ostatnie dwa
+     * sa konieczne — dzien pobrany ponownie jest USUWANY i wpisywany na
+     * nowo, wiec liczba wierszy moze wyjsc identyczna przy innej tresci,
+     * a wtedy sam `count(*)` przepuscilby zmiane po cichu.
+     * To ta sama zasada co „rok juz kompletny jest pomijany" w GUS i co
+     * pulapka 57: nie licz od zera tego, co sie nie ruszylo.
+     */
+    const KLUCZ_INDEKSU_FIRM = 'indeks-firm';
+    const podpisPomocy = () => {
+      const w = db.prepare(
+        `select count(*) as wierszy, coalesce(max(id), 0) as ost from pomoc_publiczna`,
+      ).get() as { wierszy: number; ost: number };
+      const d = db.prepare(
+        `select coalesce(max(pobrano), '-') as pobrano from pomoc_publiczna_dni`,
+      ).get() as { pobrano: string };
+      return `${w.wierszy}:${w.ost}:${d.pobrano}`;
+    };
+    const podpis = podpisPomocy();
+    const byly = db.prepare('select podpis from agregaty where klucz = ?')
+      .get(KLUCZ_INDEKSU_FIRM) as { podpis: string } | undefined;
+    // Podpis bez tabeli to nie „bez zmian", a pusta wyszukiwarka firm.
+    const maIndeks = (db.prepare(
+      "select count(*) as c from sqlite_master where name = 'firmy_szukaj'",
+    ).get() as { c: number }).c > 0;
+    if (maIndeks && byly?.podpis === podpis) {
+      const ile = (db.prepare('select count(*) as c from firmy_szukaj').get() as { c: number }).c;
+      log(`   bez zmian w pomocy publicznej — zostaje ${ile} firm w indeksie`);
+      odnotujImport(db, 'szukaj-firmy', ile);
+    } else {
     wTransakcji(db, () => {
       db.exec(`
         drop table if exists firmy_szukaj;
@@ -613,6 +657,15 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     }
     log(`   ${firm} firm w indeksie`);
     odnotujImport(db, 'szukaj-firmy', firm);
+    // Podpis PO przebudowie, nie przed: przerwany przebieg ma sie powtorzyc,
+    // a nie zostac uznany za zrobiony.
+    db.prepare(
+      `insert into agregaty (klucz, podpis, wartosc, policzono) values (?, ?, ?, ?)
+         on conflict(klucz) do update set podpis = excluded.podpis,
+                                          wartosc = excluded.wartosc,
+                                          policzono = excluded.policzono`,
+    ).run(KLUCZ_INDEKSU_FIRM, podpis, JSON.stringify({ firm }), new Date().toISOString());
+    }
   } else {
     log('   pomijam — nie ma jeszcze tabeli pomoc_publiczna');
   }

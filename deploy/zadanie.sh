@@ -22,6 +22,17 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 TSX=node_modules/.bin/tsx
 
+# TRZECIE miejsce, w ktorym trzeba podniesc sterte — i przeoczylem je
+# 02.10.2026, poprawiajac dwa pierwsze (instaluj.sh i jawne.sh).
+# ZMIERZONE: `jawne-sudop-dzien` padl 02.10 o 22:39 z „Ineffective
+# mark-compacts near heap limit" przy 911 MB. Maszyna ma 1,8 GB RAM, ale
+# domyslna sterta Node to ok. 920 MB i nie rosnie razem z nia.
+# NODE_OPTIONS, nie flaga przy `node`: `tsx` uruchamia WLASNY proces potomny
+# i argumenty silnika do niego nie dochodza (pulapka z 02.10.2026).
+# `instaluj.sh` zatrzymuje te zadania na czas budowy, wiec ten limit nie
+# konkuruje z webpackiem.
+export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=1400"
+
 # Jedno pobieranie z SUDOP naraz. flock ustawia zadania w kolejce U NAS,
 # zamiast wysylac drugie zapytanie do urzedu. Blokada w sudop.ts
 # (dane/zrodla/sudop/.blokada) zostaje jako druga linia obrony.
