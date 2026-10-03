@@ -223,6 +223,12 @@ EOF
   jako rm -rf .next-poprzednia
   [ -d "$KATALOG/.next" ] && jako mv .next .next-poprzednia
   jako mv .next-budowa .next
+  # Z CZEGO zbudowano — zeby `sudo jawne stan` mogl to porownac z HEAD.
+  # ZMIERZONE 03.10.2026: HEAD stal piec commitow i dziewiec godzin PRZED
+  # dzialajaca strona, bo `aktualizuj` padl po `git pull`, a przed budowa —
+  # i nic tego nie mowilo. Potrzebny jest commit, nie data pliku: pull
+  # starszego commita dalby „nowszy build" przy starym kodzie.
+  jako bash -c 'git log -1 --format=%H > .next/ZBUDOWANO_Z'
   systemctl reset-failed jawne-strona 2>/dev/null || true
   systemctl enable jawne-strona >/dev/null
   systemctl restart jawne-strona
