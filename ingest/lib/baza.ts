@@ -518,6 +518,28 @@ create table if not exists ted_ogloszenia (
   wykonawcow integer not null
 );
 create index if not exists ted_data on ted_ogloszenia(data desc);
+/*
+ * Indeks po NABYWCY — bez niego strona gminy przemiatala cala tabele.
+ *
+ * ZMIERZONE 03.10.2026. "zamowieniaGminy" laczy ted_ogloszenia z regon po
+ * "nabywca_id" i filtruje po "regon.teryt"; bez tego indeksu plan brzmial
+ * "SCAN o", czyli 130 034 wiersze, TRZY RAZY na stronie, dla KAZDEJ
+ * z 2 479 gmin — tak samo dla gminy, ktora nie ma ani jednego zamowienia.
+ * Lokalnie: 134 ms -> 0,0 ms (typowa gmina), 122 -> 16,5 ms (Krakow).
+ * Plan zmienia sie na "SEARCH r USING regon_teryt" + "SEARCH o USING
+ * ted_nabywca". Budowa indeksu trwa 91 ms.
+ *
+ * Na serwerze bylo to znacznie grozniejsze niz lokalnie i polozylo serwis:
+ * baza ma tam 4,8 GB przy 1,8 GB pamieci, wiec przemiatanie nie czytalo
+ * z pamieci podrecznej, tylko z dysku — "next-server" siedzial w stanie "D"
+ * przy 46% iowait, a kolejne zadania ustawialy sie za nim. Z zewnatrz
+ * wygladalo to na awarie HTTP: TLS konczyl sie w 0,138 s, a odpowiedz
+ * miala zero bajtow.
+ * Lekcja ogolniejsza: brak indeksu na maszynie, gdzie tabela miesci sie
+ * w pamieci podrecznej, jest kosztem; na maszynie, gdzie sie nie miesci,
+ * jest awaria.
+ */
+create index if not exists ted_nabywca on ted_ogloszenia(nabywca_id);
 
 create table if not exists ted_wykonawcy (
   numer text not null,
