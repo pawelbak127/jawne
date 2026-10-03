@@ -722,6 +722,64 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     tylko date. Przy okazji: `stan` liczy teraz Warszawe jako jedna gmine
     (pulapka 24), bo pokazywal 2 478 tam, gdzie strona glowna mowi 2 479.
 
+63. **Ustawienie ZAPISANE to nie ustawienie DZIAŁAJĄCE.** ZMIERZONE
+    03.10.2026 na serwerze: `JAWNE_KONTAKT` zapisany w pliku o 14:24, proces
+    strony wstał o 13:55 — systemd czyta `EnvironmentFile` **przy starcie
+    jednostki**, więc proces miał tę zmienną PUSTĄ przez dobę. Skutki:
+    próg jawności z zasady 7 był wyłączony, a mapa strony oddawała 50 000
+    adresów pod starą domeną `sslip.io`. `sudo jawne klucze` pokazywało przy
+    tym komplet — bo czytało PLIK. To ta sama pomyłka co pułapka 62
+    („Co mamy" z dziennika zamiast z tabeli), tylko o ustawieniach: **widok,
+    który czyta inne źródło niż to, z którego żyje strona, potwierdza stan,
+    którego nie ma.**
+    Drugi rozjazd tej samej ciszy, znaleziony przy okazji: HEAD stał na
+    commicie z 22:39, a działająca strona była zbudowana o 13:54 — bo
+    `aktualizuj` padł PO `git pull`, a przed budową, i nic tego nie mówiło.
+    Dlatego `sudo jawne stan` zaczyna się teraz od sekcji „Co jest wdrożone",
+    która porównuje jedno z drugim, a `ustaw` sam restartuje stronę zamiast
+    radzić „zobaczy po przebudowie". Znacznikiem jest **commit**
+    (`.next/ZBUDOWANO_Z`), nie data pliku: pull starszej wersji dałby
+    „nowszy build" przy starym kodzie.
+
+64. **Etap, który nie ma czego przeliczyć, i tak przelicza.** `jawne-sejm`
+    padł 03.10.2026 na `TimeoutStartSec=2h` w etapie „indeks firm" —
+    1 h 58 min przy **3 minutach czasu procesora**, czyli prawie cały ten czas
+    w czekaniu na dysk i na blokadę zapisu, odkąd historia SUDOP pisze w trybie
+    ciągłym (przy 16 minutach z pułapki 56 to się jeszcze mieściło).
+    Sedno nie jest w pamięci ani w SQL-u: zadanie `sejm` chodzi **codziennie**,
+    a `pomoc_publiczna` zmienia się **wyłącznie po przebiegu SUDOP** — więc
+    najdroższy etap nocy powtarzał grupowanie po 3,78 mln wierszy bez powodu.
+    I nie tracił tylko siebie: po przekroczeniu limitu systemd zabija proces,
+    więc przepadały też `kluby`, `poslowie`, `glosowania` i `glosy`.
+    Zasada obok pułapek 52 i 57: **zanim zapytasz, czy to liczyć taniej,
+    zapytaj, czy w ogóle jest co liczyć.** Podpis to trzy natychmiastowe
+    odczyty — liczba wierszy, najwyższy `id`, najświeższe `pobrano`; dwa
+    ostatnie są konieczne, bo dzień pobrany ponownie jest usuwany i wpisywany
+    na nowo, więc sam `count(*)` może wyjść identyczny przy innej treści.
+
+65. **Serwis mówił „nie indeksuj" tylko jednym kanałem.** `/robots.txt`
+    oddawał naszą stronę 404 (zmierzone 03.10.2026) — `noindex` istniał
+    wyłącznie jako meta w HTML-u, czyli w kanale, który roboty czytają
+    DRUGI. Teraz o obu rozstrzyga jedna zmienna `JAWNE_INDEKSOWANIE`
+    (domyślnie wyłączona, `src/lib/premiera.ts`). Rozjazd między dwoma
+    takimi oświadczeniami jest gorszy niż każdy z nich osobno: nie wiadomo,
+    co serwis właściwie mówi. Przed premierą `robots.txt` **nie podaje mapy
+    strony** — wskazywanie 50 tys. adresów i jednoczesne zabranianie ich
+    odwiedzania to sprzeczny komunikat.
+
+66. **Tekst leżał w bazie, był indeksowany do wyszukiwarki i niewidoczny
+    na stronie.** Rejestr Sejmu sam streszcza każdy projekt ustawy polem
+    `description`; importujemy je do `procesy.opis` od 23.09.2026. ZMIERZONE
+    03.10.2026: wypełnione dla **943 z 956 projektów ustaw (98,6%)**, średnio
+    329 znaków. Kolumny nie było w `KOLUMNY_PROCESU`, więc nie docierała do
+    żadnej strony — **a jednocześnie wchodziła do indeksu wyszukiwania**
+    (`procesy_szukaj` składa tytuł + opis). Po tym tekście dało się u nas
+    szukać, ale nie dało się go przeczytać; przez dziesięć dni zastanawialiśmy
+    się, jak streścić ustawy, mając streszczenia w bazie. Ten sam kształt co
+    pułapka 59 (wydatki na sport istniały w BDL i nie istniały u nas).
+    **Zanim dołożysz źródło, sprawdź, czy pokazujesz wszystko, co już
+    pobrałeś** — najtaniej przez przegląd kolumn, których nie ma w `dane.ts`.
+
 ---
 
 ## Bezpieczeństwo
