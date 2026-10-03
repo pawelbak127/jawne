@@ -30,7 +30,7 @@
   --papier-3:    #f1efe9;  /* wypelnienia, paski skali */
   --atrament:    #17161a;
   --atrament-2:  #56535e;  /* tekst drugorzedny, podpisy */
-  --atrament-3:  #8b8794;  /* metki, znaki wodne */
+  --atrament-3:  #6c6878;  /* tekst objasniajacy i odnosniki do rejestru — patrz barwy.test */
   --kreska:      #e3e0d8;
   --kreska-2:    #cfcbc0;
   --akcent:      #0a6b62;  /* glebokie morskie — zaden polski klub go nie uzywa */
@@ -48,7 +48,7 @@
     --papier-3:    #212129;
     --atrament:    #f2f1ee;
     --atrament-2:  #a6a2b0;
-    --atrament-3:  #736f7e;
+    --atrament-3:  #938f9e;
     --kreska:      #2a2a33;
     --kreska-2:    #3a3945;
     --akcent:      #4fd1c0;
@@ -65,7 +65,7 @@
   --papier-3:    #212129;
   --atrament:    #f2f1ee;
   --atrament-2:  #a6a2b0;
-  --atrament-3:  #736f7e;
+  --atrament-3:  #938f9e;
   --kreska:      #2a2a33;
   --kreska-2:    #3a3945;
   --akcent:      #4fd1c0;
