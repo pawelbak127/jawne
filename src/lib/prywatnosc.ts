@@ -115,13 +115,24 @@ const INSTYTUCJA: readonly RegExp[] = [
   /((?<!nie)publiczn|miejsk|gminn|powiatow|wojewódzk|państwow|samorządow|komunaln|narodow|krajow|regionaln|naukow|polsk)\p{L}*\s+(zakład|centrum|ośrod|akademi|agencj|instytut|szkoł|przedszkol|zespół|park|przedsiębiorstw|bank|zasób|fundusz|rad[ay]|inspektorat|służb|biur)/iu,
 ];
 
-// Nigdy z nazwy: spolka cywilna (umowa osob fizycznych) i wspolnota
-// mieszkaniowa (nazwa to adres budynku, w malej wspolnocie — kilku rodzin).
+// Spolka cywilna: NIGDY jawna z samej nazwy — to umowa osob fizycznych,
+// a jej nazwa to zwykle nazwiska wspolnikow. Powyzej progu kwotowego
+// pokazuje sie jednak tak samo jak osoba fizyczna (decyzja Pawla z 18.09.2026,
+// potwierdzona 03.10.2026 — patrz docs/nazwiska.md).
 // ZMIERZONE 24.09.2026: w bazie jest tez zapis BEZ KROPEK — "DOMOSFERA SC RIL
 // KOZLOWSCY" — a REGON nadaje takiej spolce typ „P". Samodzielne "sc" w
 // polskiej nazwie to praktycznie zawsze spolka cywilna, a koszt pomylki jest
 // po bezpiecznej stronie: chowamy nazwe, ktora mozna bylo pokazac.
-const NIGDY = /(?<![\p{L}\p{N}])s\.?\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna|wspólnot\p{L}*\s+mieszkaniow/iu;
+//
+// ROZJAZD NAPRAWIONY 03.10.2026: do tego dnia spolka cywilna i wspolnota
+// siedzialy razem w jednej liscie `NIGDY`, ktora blokowala takze prog —
+// wbrew decyzji z 18.09 zapisanej w CLAUDE.md i docs/nazwiska.md. Kod
+// i dokumentacja mowily dwie rozne rzeczy przez dwa tygodnie.
+const SPOLKA_CYWILNA = /(?<![\p{L}\p{N}])s\.?\s?c\.?(?![\p{L}\p{N}])|spółka\s+cywilna/iu;
+// Wspolnota mieszkaniowa: JAWNA. Ma zdolnosc prawna i wlasny NIP, a jej
+// nazwa to adres budynku, nie nazwisko — wiec imie w nazwie ulicy
+// („ul. Jana Pawla II") nie moze jej ukrywac.
+const WSPOLNOTA = /wspólnot\p{L}*\s+mieszkaniow/iu;
 const KOD_POCZTOWY = /(?<!\d)\d{2}-\d{3}(?!\d)/;
 
 // Po tych slowach stoi patron w dopelniaczu: "im. Jana Pawła II", "pw. św. Józefa".
@@ -187,8 +198,10 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
   // wspolnikow („GP TRUCK TRADING S.C. GRZEGORZ K… AGNIESZKA K…"). Spolka
   // cywilna nie jest osoba prawna — to umowa osob fizycznych — wiec tutaj
   // rejestr myli sie w druga strone niz nasza heurystyka i jego odpowiedzi
-  // nie wolno brac za dobra monete. To samo dotyczy wspolnot mieszkaniowych.
-  if (NIGDY.test(nazwa)) return false;
+  // nie wolno brac za dobra monete. Spolke sprawdzamy PRZED wspolnota:
+  // gdyby nazwa miala oba znaczniki, bezpieczniej ja schowac.
+  if (SPOLKA_CYWILNA.test(nazwa)) return false;
+  if (WSPOLNOTA.test(nazwa)) return true;
   const zRejestru = osobaFizycznaWRegon(typRegon);
   // Poza tym rejestr ma pierwszenstwo przed nasza heurystyka — w obie strony.
   if (zRejestru === false) return true;
@@ -211,8 +224,8 @@ export function nazwaPodmiotuJawna(nazwa: string | null | undefined, typRegon?: 
  * ZMIERZONE na 84 211 przypadkach: prog odslania 63 z 12 907 ukrytych nazw
  * (0,5 %), lacznie 78,2 mln zl pomocy. Prog 500 tys. EUR odslonilby dwie.
  *
- * Prog NIE znosi listy `NIGDY`: spolka cywilna i wspolnota mieszkaniowa
- * zostaja ukryte niezaleznie od kwoty (w pomiarze wpadla tam "U&B s.c.").
+ * Spolka cywilna podlega progowi tak samo jak osoba fizyczna (do 03.10.2026
+ * kod chowal ja niezaleznie od kwoty — wbrew decyzji z 18.09).
  *
  * ZMIANA (03.10.2026, Pawel): 100 000 -> 10 000 EUR. Uzasadnienie Pawla:
  * UOKiK i tak publikuje te przypadki w SUDOP, bez zadnego progu.
@@ -287,8 +300,7 @@ export function nazwaDoPokazania(nazwa: string | null | undefined, opcje: OpcjeN
   if (nazwaPodmiotuJawna(nazwa, opcje.typRegon)) return { tekst: nazwa!.trim(), pominieta: false };
   const nadProgiem = opcje.progAktywny === true
     && (opcje.pomocEur ?? 0) >= PROG_JAWNOSCI_EUR
-    && Boolean(nazwa?.trim())
-    && !NIGDY.test(nazwa!);
+    && Boolean(nazwa?.trim());
   if (nadProgiem) return { tekst: nazwa!.trim(), pominieta: false };
   return { tekst: 'nazwa pominięta — może to być osoba fizyczna', pominieta: true };
 }

@@ -152,13 +152,19 @@ npm run paczka-na-serwer                                    # baza + odpowiedzi 
    „pokazujemy tak dużo, jak możemy, nie łamiąc prawa”). Pole `Typ` z BIR:
    `P`/`LP` → osoba prawna, nazwa nie jest daną osobową i pokazujemy ją zawsze;
    `F`/`LF` → osoba fizyczna, obowiązuje reguła jak dotąd. Gdy REGON nie zna
-   NIP-u, wracamy do heurystyki. **Wyjątek `NIGDY` stoi PONAD rejestrem**:
+   NIP-u, wracamy do heurystyki. **Spółka cywilna stoi PONAD rejestrem**
+   (`SPOLKA_CYWILNA` w `prywatnosc.ts`):
    REGON nadaje spółkom cywilnym typ `P`, a ich nazwy to wprost nazwiska
    wspólników („… S.C. GRZEGORZ K… AGNIESZKA K…”) — spółka cywilna nie jest
    osobą prawną, tylko umową osób fizycznych. Zmierzone na 93 287 nazwach:
    54 nazwy się odsłaniają (spółki z literówką w formie prawnej, ZOZ-y,
    PKS), 0 się chowa; osobno 65 nazw ze spółek cywilnych zapisanych bez
    kropek („… SC …”) przeszło do ukrytych.
+   **Rozjazd naprawiony 03.10.2026:** przez dwa tygodnie kod chował spółkę
+   cywilną i wspólnotę mieszkaniową ZAWSZE (jedna lista `NIGDY` blokowała
+   też próg), choć ten plik i `docs/nazwiska.md` zapisywały decyzję z 18.09.
+   Po naprawie, lokalna kopia bazy: +121 spółek cywilnych powyżej progu,
+   +5 wspólnot (same adresy budynków), 0 schowanych.
 8. **„Ostatnie głosowania" = głosowania nad całością projektów**, rozpoznane
    po słowach rejestru. Nie wybieramy „ważnych" według siebie.
 9. **Kwota w gminie zawsze na mieszkańca i z punktem odniesienia.** Mediana

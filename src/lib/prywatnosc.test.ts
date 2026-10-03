@@ -91,6 +91,8 @@ describe('nazwaPodmiotuJawna', () => {
     // zwiazek metropolitalny udziela pomocy jak kazdy organ
     'Przewodniczący Zarządu Przykładowej Metropolii',
     'STAROSTA POWIATU JAROSŁAW', 'Przykład Anna Przykładna Jan Przykładny sp. jawna',
+    // wspolnota mieszkaniowa — nazwa to adres budynku (decyzja z 18.09.2026)
+    'Wspólnota Mieszkaniowa przy ul. Przykładowej 1',
   ];
   for (const n of jawne) it(`pokazuje: ${n}`, () => expect(nazwaPodmiotuJawna(n)).toBe(true));
 
@@ -103,7 +105,6 @@ describe('nazwaPodmiotuJawna', () => {
     'F.H. „PRZYKŁAD” Jan Przykładowski 00-000 Przykładowo ul. Kościuszki 1', 'Firma Handlowa PRZYKŁAD 00-001 Przykładowo',
     // imie wlasciciela za patronem nadal zatrzymuje
     'Niepubliczne Przedszkole im. Kubusia Puchatka Anna Przykładowa',
-    'Wspólnota Mieszkaniowa przy ul. Przykładowej 1',
     // udzielajacym bywa jednoosobowa firma szkoleniowa
     'Centrum Doradztwa Przykładowego Urszula Przykładna',
   ];
@@ -151,10 +152,26 @@ describe('prog jawnosci osoby fizycznej', () => {
     expect(nazwaDoPokazania(osoba, { pomocEur: null, progAktywny: true }).pominieta).toBe(true);
   });
 
-  // Spolka cywilna i wspolnota mieszkaniowa sa ukryte ZAWSZE — prog ich nie znosi.
-  it('prog nie omija listy "nigdy"', () => {
-    expect(nazwaDoPokazania('"U&B" s.c.', { pomocEur: 9_000_000, progAktywny: true }).pominieta).toBe(true);
-    expect(nazwaDoPokazania('Wspólnota Mieszkaniowa przy ul. Przykładowej 1', { pomocEur: 9_000_000, progAktywny: true }).pominieta).toBe(true);
+  /*
+   * Decyzja Pawla z 18.09.2026, potwierdzona 03.10.2026: spolka cywilna
+   * podlega progowi TAK SAMO jak osoba fizyczna. Do 03.10 kod chowal ja
+   * zawsze, a ten test pilnowal rozjazdu z dokumentacja zamiast decyzji.
+   */
+  it('spolka cywilna: ukryta ponizej progu, widoczna powyzej — jak osoba fizyczna', () => {
+    const sc = 'PIZZERIA PRZYKŁAD S.C. ANNA I ADAM PRZYKŁADOWI';
+    expect(nazwaDoPokazania(sc, { pomocEur: PROG_JAWNOSCI_EUR - 1, progAktywny: true }).pominieta).toBe(true);
+    expect(nazwaDoPokazania(sc, { pomocEur: PROG_JAWNOSCI_EUR, progAktywny: true }).pominieta).toBe(false);
+    // REGON nadaje s.c. typ P — to nie omija progu w dol ani w gore
+    expect(nazwaDoPokazania(sc, { pomocEur: PROG_JAWNOSCI_EUR - 1, progAktywny: true, typRegon: 'P' }).pominieta).toBe(true);
+    // bez drogi sprzeciwu prog nie dziala w ogole
+    expect(nazwaDoPokazania(sc, { pomocEur: 9_000_000, progAktywny: false }).pominieta).toBe(true);
+  });
+
+  it('wspolnota mieszkaniowa jest jawna zawsze — jej nazwa to adres budynku', () => {
+    expect(nazwaDoPokazania('Wspólnota Mieszkaniowa przy ul. Przykładowej 1', {}).pominieta).toBe(false);
+    // imie w nazwie ULICY nie jest nazwiskiem czlonka wspolnoty
+    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa ul. Jana Pawła II 5')).toBe(true);
+    expect(nazwaPodmiotuJawna('WSPÓLNOTA MIESZKANIOWA NIERUCHOMOŚCI PRZY UL. GEN. WŁ. ANDERSA 37')).toBe(true);
   });
 
   it('spolka jest jawna takze bez progu i bez kwoty', () => {
@@ -216,7 +233,12 @@ describe('spolka cywilna: nasza regula jest ostrzejsza niz REGON', () => {
     expect(nazwaPodmiotuJawna('DOMOSFERA SC RIL KOZŁOWSCY', 'P')).toBe(false);
   });
 
-  it('wspolnota mieszkaniowa zostaje poza regula rejestru', () => {
-    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5', 'P')).toBe(false);
+  it('wspolnota mieszkaniowa jest jawna niezaleznie od rejestru', () => {
+    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5', 'P')).toBe(true);
+    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5', null)).toBe(true);
+  });
+
+  it('nazwa z oboma znacznikami jest chowana — bezpieczniejsza strona', () => {
+    expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5 Kowalski i Nowak s.c.')).toBe(false);
   });
 });
