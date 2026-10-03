@@ -1,12 +1,85 @@
 # Wzor dla /etc/caddy/Caddyfile. Plik na serwerze generuje deploy/instaluj.sh:
 # ADRES zamienia na JAWNE_HOST z /etc/jawne/jawne.env (np. 3-121-45-67.sslip.io,
 # potem domena), a przy pustym JAWNE_HOST na ":80" — sam HTTP pod adresem IP.
+# Blok miedzy znacznikami WWW dostaje tylko serwis z domena.
 # Zmiany rob tutaj, w repozytorium, nie na serwerze.
 #
-# Celowo BEZ dziennika wejsc: adres IP czytelnika to dana osobowa, a nam
-# do niczego niepotrzebna.
+# DZIENNIK WEJSC — od 03.10.2026, na prosbe Pawla o statystyki odwiedzin.
+# Do tego dnia dziennika nie bylo wcale („adres IP czytelnika to dana
+# osobowa, a nam do niczego niepotrzebna"). Teraz jest potrzebny, wiec
+# zbieramy NAJMNIEJ, ile sie da, i obcinamy PRZY ZAPISIE, a nie przy raporcie
+# — czego nie zapisano, tego nie trzeba chronic ani usuwac:
+#
+#  - adres IP skrocony do sieci /24 (IPv4) i /48 (IPv6),
+#  - bez frazy wyszukiwania (parametr q w /szukaj i /api/szukaj): ktos, kto
+#    szuka nazwiska osoby prywatnej, nie zostawia go w naszych logach,
+#  - bez naglowkow, ktore niosa te sama fraze inna droga. ZMIERZONE w Next 16:
+#    przy nawigacji w przegladarce leci Next-Router-State-Tree z zakodowanym
+#    drzewem strony, a w nim parametry wyszukiwania. Do tego Cookie
+#    i Authorization (nie uzywamy ich, ale nie chcemy ich nigdy zapisac),
+#  - bez zadan wyprzedzajacych (Next-Router-Prefetch) i plikow statycznych —
+#    to nie sa wejscia czytelnika, a zawyzalyby liczby kilkukrotnie,
+#  - 90 dni, potem Caddy usuwa pliki sam.
+#
+# Polityka prywatnosci (src/app/prywatnosc/page.tsx) opisuje dokladnie to.
+# Zmiana tutaj bez zmiany tam zrobi z naszej strony nieprawde.
+
+(dziennik) {
+	log {
+		output file /var/log/caddy/wejscia.log {
+			roll_size 50MiB
+			roll_keep 40
+			roll_keep_for 2160h
+		}
+		format filter {
+			request>remote_ip ip_mask {
+				ipv4 24
+				ipv6 48
+			}
+			request>client_ip ip_mask {
+				ipv4 24
+				ipv6 48
+			}
+			request>uri query {
+				delete q
+			}
+			request>headers>Cookie delete
+			request>headers>Authorization delete
+			request>headers>Next-Router-State-Tree delete
+			request>headers>Next-Url delete
+			request>headers>Next-Router-Segment-Prefetch delete
+		}
+	}
+
+	@nie_wejscie {
+		header Next-Router-Prefetch 1
+	}
+	@statyczne path /_next/static/* /_next/image* /favicon.ico /mapa/*
+	log_skip @nie_wejscie
+	log_skip @statyczne
+
+	# Odsylacz (Referer) bez sciezki i parametrow — takze miedzy naszymi
+	# stronami. Bez tego przejscie z /szukaj?q=… na wynik zapisaloby fraze
+	# w naglowku Referer nastepnego zadania. Strony, do ktorych linkujemy
+	# (rejestry), tez dostaja tylko nasz adres.
+	header Referrer-Policy strict-origin
+}
 
 ADRES {
+	import dziennik
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3000
 }
+
+# WWW-POCZATEK
+# ZMIERZONE 03.10.2026: www.zrejestru.pl wskazywal w DNS na 185.110.48.29,
+# czyli na serwer Hostido, ktory pokazywal wlasna strone zastepcza z wlasnym
+# certyfikatem *.zrejestru.pl. Czytelnik wpisujacy „www" nie trafial do nas.
+# Ten blok przekierowuje www na adres bez www — zacznie dzialac sam, gdy rekord
+# A dla www zostanie przestawiony na nasz serwer: Caddy pobiera certyfikat
+# w tle i ponawia, a blad dla www nie dotyka adresu glownego.
+# `sudo jawne stan` mowi, dokad www wskazuje.
+www.ADRES {
+	redir https://ADRES{uri} permanent
+}
+# WWW-KONIEC

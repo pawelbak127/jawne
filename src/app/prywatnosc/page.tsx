@@ -10,15 +10,22 @@ export const metadata: Metadata = {
 };
 
 /** Data ostatniej zmiany treści — widoczna, bo polityka bez daty nic nie mówi. */
-const AKTUALIZACJA = '23 września 2026';
+const AKTUALIZACJA = '3 października 2026';
 
 /**
  * Polityka prywatnosci.
  *
  * Pisana pod to, co serwis NAPRAWDE robi, a nie pod szablon: nie mamy
- * ciasteczek analitycznych, nie prowadzimy dziennika wejsc i nie mamy kont
- * uzytkownikow. Kazde zdanie o naszych danych da sie sprawdzic w kodzie
- * albo w konfiguracji serwera (`deploy/Caddyfile`).
+ * ciasteczek ani kont uzytkownikow. Kazde zdanie o naszych danych da sie
+ * sprawdzic w kodzie albo w konfiguracji serwera (`deploy/Caddyfile`).
+ *
+ * Od 03.10.2026 serwer prowadzi dziennik wejsc (statystyka odwiedzin, prosba
+ * Pawla). Do tego dnia ta strona mowila „nie prowadzimy dziennika wejsc" —
+ * i bylo to prawda. Sekcja „Dziennik wejsc" opisuje DOKLADNIE to, co jest
+ * w Caddyfile: maske IP, usuniete frazy wyszukiwania, 90 dni. Zmiana tam bez
+ * zmiany tutaj robi z tej strony nieprawde, dlatego oba pliki wchodza
+ * w jednym wdrozeniu, a `instaluj.sh` wlacza dziennik dopiero PO podmianie
+ * wersji strony.
  *
  * MIEJSCA DO UZUPELNIENIA przed premiera sa oznaczone <Uzupelnij>: nazwa
  * i adres administratora oraz adres kontaktowy (JAWNE_KONTAKT). Bez adresu
@@ -38,9 +45,14 @@ export default function StronaPrywatnosci() {
           co z nimi robimy, czego nie robimy i jak zgłosić sprzeciw.
         </p>
         <p>
-          O odwiedzających nie zbieramy niczego: nie ma kont, nie ma formularzy,
-          nie ma ciasteczek śledzących, nie ma narzędzi analitycznych i nie
-          prowadzimy dziennika wejść na serwerze.
+          O odwiedzających zbieramy tak mało, jak się da: nie ma kont, formularzy,
+          ciasteczek ani zewnętrznych narzędzi analitycznych. Serwer prowadzi
+          dziennik wejść, z którego liczymy, ile osób odwiedza serwis — ze skróconym
+          adresem IP i bez tego, czego szukasz. Szczegóły są{' '}
+          <Link href="#dziennik" className="text-akcent underline underline-offset-4 hover:no-underline">
+            niżej
+          </Link>
+          .
         </p>
       </div>
 
@@ -133,9 +145,8 @@ export default function StronaPrywatnosci() {
           Podstawą prawną jest <span className="font-medium text-atrament">prawnie
           uzasadniony interes</span> (art. 6 ust. 1 lit. f RODO): informowanie o sprawach
           publicznych i kontrola społeczna wydatkowania środków publicznych. Interes ten
-          zważyliśmy z prawami osób, których dane pokazujemy —{' '}
-          <Zewnetrzny adres="https://github.com/">test równowagi</Zewnetrzny> jest spisany
-          i udostępniamy go na żądanie pod adresem kontaktowym.
+          zważyliśmy z prawami osób, których dane pokazujemy — test równowagi jest
+          spisany i udostępniamy go na żądanie pod adresem kontaktowym.
         </p>
         <p>
           Nie prosimy o zgodę, bo nie na zgodzie opieramy przetwarzanie; nie realizujemy
@@ -215,6 +226,10 @@ export default function StronaPrywatnosci() {
           także u nas przy kolejnym pobraniu. Surowe odpowiedzi z rejestrów trzymamy,
           żeby dało się odtworzyć każdą liczbę i pokazać, skąd się wzięła.
         </p>
+        <p>
+          Dziennik wejść na serwer — 90 dni, potem usuwa się sam (szczegóły w sekcji
+          o dzienniku wejść).
+        </p>
       </Sekcja>
 
       <Sekcja tytul="Kto jeszcze ma dostęp">
@@ -236,6 +251,48 @@ export default function StronaPrywatnosci() {
         </p>
       </Sekcja>
 
+      <Sekcja tytul="Dziennik wejść i statystyka odwiedzin" id="dziennik">
+        <p>
+          Serwer zapisuje każde wejście na stronę, żebyśmy wiedzieli, ile osób korzysta
+          z serwisu i które strony są czytane, oraz żeby dało się wykryć nadużycia
+          (na przykład zalewanie serwera zapytaniami). Robi to sam serwer — w Twojej
+          przeglądarce nie uruchamiamy w tym celu niczego.
+        </p>
+        <p>Przy każdym wejściu zapisujemy:</p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li>
+            <span className="font-medium text-atrament">adres IP skrócony już przy zapisie</span>{' '}
+            — z adresu 83.10.20.123 zostaje 83.10.20.0, więc nie da się z niego wskazać
+            jednego łącza;
+          </li>
+          <li>datę i godzinę, adres otwartej strony i kod odpowiedzi serwera;</li>
+          <li>nazwę przeglądarki i systemu, którą przeglądarka sama wysyła;</li>
+          <li>
+            adres strony, z której przyszedłeś (jeśli przeglądarka go poda) — a z naszych
+            stron przeglądarka wysyła wyłącznie nasz adres, bez ścieżki.
+          </li>
+        </ul>
+        <p>
+          <span className="font-medium text-atrament">Nie zapisujemy tego, czego szukasz</span>:
+          fraza z wyszukiwarki jest usuwana z adresu i z nagłówków, zanim cokolwiek trafi
+          na dysk. Ktoś, kto szuka czyjegoś nazwiska, nie zostawia go w naszych zapisach.
+        </p>
+        <p>
+          Zapisy kasują się same po <span className="font-medium text-atrament">90 dniach</span>.
+          Nie łączymy ich z niczym, nie przekazujemy nikomu i nie próbujemy ustalić, kim
+          jest odwiedzający. Z tych zapisów liczymy wyłącznie sumy: ile osób, ile odsłon,
+          które strony, skąd przychodzą wejścia.
+        </p>
+        <p>
+          Nawet skrócony adres razem z nazwą przeglądarki może w wyjątkowych sytuacjach
+          być daną osobową, dlatego traktujemy go jak daną osobową. Podstawą jest prawnie
+          uzasadniony interes (art. 6 ust. 1 lit. f RODO): utrzymanie serwisu
+          w działaniu, jego bezpieczeństwo i wiedza o tym, czy jest potrzebny. Możesz
+          wnieść sprzeciw pod adresem kontaktowym; dziennik nie wymaga od Ciebie żadnej
+          zgody, bo nie zapisujemy niczego w Twoim urządzeniu.
+        </p>
+      </Sekcja>
+
       <Sekcja tytul="Zmiany">
         <p>
           Zmiany tej polityki opisujemy z datą, a historia zmian jest publiczna razem
@@ -252,9 +309,11 @@ export default function StronaPrywatnosci() {
   );
 }
 
-function Sekcja({ tytul, children }: { tytul: string; children: React.ReactNode }) {
+function Sekcja({ tytul, id, children }: { tytul: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="mt-10">
+    // scroll-mt: naglowek strony jest przyklejony (sticky, 64 px) i bez tego
+    // odnosnik do #dziennik chowalby tytul sekcji pod nim.
+    <section id={id} className="mt-10 scroll-mt-24">
       <h2 className="szryft text-2xl font-semibold">{tytul}</h2>
       <div className="mt-4 space-y-4 leading-relaxed text-atrament-2">{children}</div>
     </section>

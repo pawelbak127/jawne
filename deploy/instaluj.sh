@@ -51,7 +51,8 @@ EOF
     echo "   w tle dziala unattended-upgrades — apt poczeka na blokade (do 10 min)"
   fi
   apt-get update -q
-  apt-get install -y -q git curl ca-certificates gnupg sqlite3 sudo unattended-upgrades \
+  # goaccess: raport HTML z dziennika wejsc (sudo jawne statystyki), od 03.10.2026.
+  apt-get install -y -q git curl ca-certificates gnupg sqlite3 sudo unattended-upgrades goaccess \
     debian-keyring debian-archive-keyring apt-transport-https
   cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
@@ -128,12 +129,6 @@ EOF
   chown "root:$UZYTKOWNIK" "$USTAWIENIA"
   chmod 640 "$USTAWIENIA"
   host=$(sed -n 's/^JAWNE_HOST=//p' "$USTAWIENIA")
-
-  krok "Caddy: ${host:-:80}"
-  sed "s|^ADRES {|${host:-:80} {|" "$KATALOG/deploy/Caddyfile" > /etc/caddy/Caddyfile
-  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-  systemctl enable caddy >/dev/null
-  systemctl reload-or-restart caddy
 
   krok "Jednostki systemd i polecenie 'jawne'"
   install -m 644 "$KATALOG"/deploy/systemd/jawne-* /etc/systemd/system/
@@ -232,6 +227,29 @@ EOF
   systemctl reset-failed jawne-strona 2>/dev/null || true
   systemctl enable jawne-strona >/dev/null
   systemctl restart jawne-strona
+
+  krok "Caddy: ${host:-:80}"
+  # PO podmianie wersji, nie przed nia (do 03.10.2026 byl przed budowa).
+  # Od tego dnia Caddy prowadzi dziennik wejsc, a polityka prywatnosci
+  # mowi o nim dopiero w nowej wersji strony. W starej kolejnosci dziennik
+  # ruszalby kwadrans wczesniej, a czytelnik czytalby w tym czasie „nie
+  # prowadzimy dziennika wejsc" — czyli nieprawde. Przy okazji zmiana domeny
+  # wchodzi razem z wersja, ktora ja zna, a nie ze stara.
+  if [ -n "$host" ]; then
+    sed -e "s|ADRES|$host|g" "$KATALOG/deploy/Caddyfile" > /etc/caddy/Caddyfile
+  else
+    # Bez domeny: sam HTTP pod adresem IP, bez bloku www.
+    sed -e '/^# WWW-POCZATEK/,/^# WWW-KONIEC/d' -e "s|^ADRES {|:80 {|" \
+      "$KATALOG/deploy/Caddyfile" > /etc/caddy/Caddyfile
+  fi
+  # Walidacja jako uzytkownik caddy, NIE jako root. ZMIERZONE 03.10.2026:
+  # `caddy validate` OTWIERA plik dziennika („opening log writer … wejscia.log").
+  # Uruchomiona jako root utworzylaby go z wlascicielem root, a usluga Caddy
+  # (uzytkownik caddy) nie moglaby potem do niego pisac — przeladowanie by
+  # padlo, a dziennik nie ruszylby nigdy, bez slowa w tym skrypcie.
+  sudo -u caddy -H caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  systemctl enable caddy >/dev/null
+  systemctl reload-or-restart caddy
 
   krok "Harmonogram danych"
   for t in sudop-dzien sudop-historia sejm gus fundusze ted; do

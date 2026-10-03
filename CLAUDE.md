@@ -103,6 +103,7 @@ npx tsx ingest/jobs/sudop.ts --historia --plan              # co pobierze noc se
 npm run paczka-na-serwer                                    # baza + odpowiedzi SUDOP dla serwera
 
 # Serwer (docs/serwer.md): sudo jawne stan | plan | logi ZAD | sprawdz | sumy | aktualizuj
+# Odwiedziny:  sudo jawne statystyki [DNI]   (dziennik Caddy, IP do /24, bez fraz; raport HTML przez scp)
 # Zadania serwera: sudop-dzien, sudop-historia, sejm, gus, fundusze, ted
 ```
 
@@ -803,6 +804,22 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     czytelnika; samoczynne składanie nie przycina pliku, dopóki trzyma go
     czytelnik, a `next-server` chodzi dobami. Migracje składają go
     `TRUNCATE` tuż przed budową.
+
+68. **`www` wskazywał na cudzy serwer, a `caddy validate` jako root zepsułby
+    dziennik.** Dwie rzeczy z 03.10.2026, obie znalezione dopiero pomiarem:
+    (1) `www.zrejestru.pl` miał w DNS adres **185.110.48.29 — serwer Hostido**,
+    który pokazywał własną stronę zastępczą z własnym certyfikatem
+    `*.zrejestru.pl`. Adres główny działał, więc żadne nasze narzędzie tego nie
+    widziało; teraz `sudo jawne stan` mówi, dokąd wskazuje `www`, a Caddy ma
+    blok przekierowania, który zacznie działać sam po zmianie rekordu A.
+    (2) **`caddy validate` OTWIERA plik dziennika** („opening log writer …
+    wejscia.log”, zmierzone jako zwykły użytkownik — dostał „permission
+    denied”). `instaluj.sh` waliduje jako root, więc utworzyłby plik
+    z właścicielem root, a usługa Caddy (użytkownik `caddy`) nie mogłaby do
+    niego pisać — przeładowanie by padło, a dziennik nie ruszyłby nigdy.
+    Walidacja idzie teraz jako `caddy`. Zasada ogólniejsza: **polecenie
+    „tylko sprawdzające” potrafi tworzyć pliki — sprawdź jako kto je
+    uruchamiasz.**
 
 ---
 

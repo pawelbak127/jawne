@@ -10,6 +10,7 @@
 #   sudo jawne agregaty      przelicz stan sum OD ZERA (po dodaniu nowego kubelka)
 #   sudo jawne aktualizuj    git pull + instaluj.sh (strona kilka minut niedostepna)
 #   sudo jawne wgraj PLIK    baza z komputera (npm run paczka-na-serwer) + instaluj.sh
+#   sudo jawne statystyki [DNI]   odwiedziny z dziennika wejsc (domyslnie 30 dni)
 #   sudo jawne ustaw NAZWA   GUS_BDL_KLUCZ, GUS_BIR_KLUCZ, SMUP_KLUCZ, JAWNE_KONTAKT,
 #                            JAWNE_HOST, JAWNE_INDEKSOWANIE (tak = zdejmij noindex)
 #   sudo jawne klucze        ktore z nich sa ustawione (wartosci NIE pokazujemy)
@@ -78,6 +79,22 @@ wdrozenie() {
       printf '   %-20s %s\n' "$n" "${zPliku:-(pusta)}  (strona nie chodzi — nie ma czego porownac)"
     fi
   done
+  # Dokad wskazuje www. ZMIERZONE 03.10.2026: www.zrejestru.pl wskazywal na
+  # serwer Hostido (185.110.48.29) z jego strona zastepcza, a nie na nas —
+  # i nic w naszych narzedziach tego nie pokazywalo, bo adres glowny dzialal.
+  local hostWww ipGlowny ipWww
+  hostWww=$(sed -n 's/^JAWNE_HOST=//p' "$USTAWIENIA" 2>/dev/null | tail -1)
+  if [ -n "$hostWww" ] && [[ $hostWww != *sslip.io ]]; then
+    ipGlowny=$(getent ahostsv4 "$hostWww" | awk 'NR==1 {print $1}')
+    ipWww=$(getent ahostsv4 "www.$hostWww" | awk 'NR==1 {print $1}')
+    if [ -n "$ipWww" ] && [ "$ipWww" = "$ipGlowny" ]; then
+      printf '   %-20s %s\n' "www.$hostWww" "wskazuje na ten serwer — przekierowanie na $hostWww dziala"
+    else
+      printf '   %-20s %s\n' "www.$hostWww" "wskazuje na ${ipWww:-nic}, a serwis jest na ${ipGlowny:-?}"
+      echo "   UWAGA: kto wpisze www, nie trafi do serwisu. W panelu DNS domeny ustaw"
+      echo "          rekord A dla www na ${ipGlowny:-adres serwera}. Reszte Caddy zrobi sam."
+    fi
+  fi
   if [ "$rozjazd" = 1 ]; then
     echo "   Samo zapisanie ustawienia nie wystarcza: systemd czyta plik przy STARCIE strony."
     echo "   Najtansza naprawa ustawien: sudo systemctl restart jawne-strona"
@@ -322,6 +339,36 @@ case "${1:-stan}" in
         printf '   %-22s %s\n' "$n" "ustawiony (${#wartosc} znakow)"
       fi
     done
+    ;;
+  statystyki)
+    # Odwiedziny z dziennika wejsc Caddy (od 03.10.2026). Dziennik nalezy do
+    # uzytkownika caddy (0600), wiec CZYTA go root, a LICZY uzytkownik jawne —
+    # uprawnienia roota sa potrzebne tylko do odczytu plikow.
+    dni=${2:-30}
+    [[ $dni =~ ^[0-9]+$ ]] || { echo "Ile dni wstecz? np. sudo jawne statystyki 7"; exit 2; }
+    shopt -s nullglob
+    pliki=(/var/log/caddy/wejscia*.log*)
+    shopt -u nullglob
+    if [ ${#pliki[@]} -eq 0 ]; then
+      echo "Dziennika wejsc jeszcze nie ma. Powstaje od wdrozenia z 03.10.2026: sudo jawne aktualizuj"
+      exit 0
+    fi
+    host=$(sed -n 's/^JAWNE_HOST=//p' "$USTAWIENIA" | tail -1)
+    zcat -f "${pliki[@]}" | jako env JAWNE_HOST="$host" node_modules/.bin/tsx ingest/jobs/statystyki.ts --dni="$dni" 2>&1 | bez_szumu
+    # Raport z wykresami (przegladarki, systemy, godziny). goaccess dochodzi
+    # z `aktualizuj`; bez niego zostaje sam raport tekstowy powyzej.
+    if command -v goaccess >/dev/null; then
+      domowy=$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)
+      cel="${domowy:-/root}/statystyki-zrejestru.html"
+      if zcat -f "${pliki[@]}" | goaccess - --log-format=CADDY --ignore-crawlers --keep-last="$dni" -o "$cel" >/dev/null 2>&1; then
+        chown "${SUDO_USER:-root}" "$cel" 2>/dev/null || true
+        echo
+        echo "Raport z wykresami zapisany. Na komputerze (PowerShell):"
+        echo "   scp jawne:statystyki-zrejestru.html ."
+      else
+        echo "(goaccess nie zbudowal raportu HTML — raport tekstowy powyzej jest kompletny)"
+      fi
+    fi
     ;;
   sprawdz) sprawdz ;;
   sumy)
