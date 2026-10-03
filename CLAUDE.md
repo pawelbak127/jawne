@@ -780,6 +780,30 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     **Zanim dołożysz źródło, sprawdź, czy pokazujesz wszystko, co już
     pobrałeś** — najtaniej przez przegląd kolumn, których nie ma w `dane.ts`.
 
+67. **Brak indeksu to na jednej maszynie koszt, a na drugiej AWARIA.**
+    ZMIERZONE 03.10.2026: zrejestru.pl przestał odpowiadać. Z zewnątrz
+    wyglądało to na usterkę HTTP — TCP łączył się w 0,047 s, TLS kończył
+    handshake w 0,138 s, a odpowiedź miała **zero bajtów**, także dla
+    `/favicon.ico`. Caddy żył; nie odpowiadał proces Node: stan `D`
+    (nieprzerywalny sen na wejściu-wyjściu), **46% iowait**, 25 MB/s odczytu
+    z dysku. Strony z pamięci podręcznej (`X-Nextjs-Cache: HIT`) szły
+    natychmiast, każda dynamiczna wisiała.
+    Powód: `zamowieniaGminy` łączy `ted_ogloszenia` z `regon` po
+    `nabywca_id`, a indeksu na tej kolumnie nie było. Plan to `SCAN o` —
+    130 034 wiersze, **trzy razy na stronie, dla każdej z 2 479 gmin**, tak
+    samo dla gminy, która nie ma ani jednego zamówienia.
+    **Lokalnie to były 134 ms i nikt by tego nie zauważył.** Na serwerze
+    baza ma 4,8 GB przy 1,8 GB pamięci, więc przemiatanie nie czyta z pamięci
+    podręcznej, tylko z dysku — a kolejne żądania ustawiają się za nim.
+    Po indeksie: 134 → 0,0 ms (typowa gmina), 122 → 16,5 ms (Kraków).
+    Zasada: **mierząc wydajność zapytania, pytaj nie „ile to trwa", tylko
+    „ile wierszy czyta i czy one się mieszczą w pamięci TEJ maszyny".**
+    Osobno, w tym samym miejscu: `sejm.db-wal` urósł do **978 MB**. W trybie
+    WAL każdy odczyt przegląda dziennik, więc obciąża to każde wejście
+    czytelnika; samoczynne składanie nie przycina pliku, dopóki trzyma go
+    czytelnik, a `next-server` chodzi dobami. Migracje składają go
+    `TRUNCATE` tuż przed budową.
+
 ---
 
 ## Bezpieczeństwo

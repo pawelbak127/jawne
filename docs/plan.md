@@ -22,17 +22,40 @@ w `CLAUDE.md` i w `docs/`; nowa sesja jest tańsza i nie traci niczego ważnego.
 
 ## Przed premierą — blokery
 
-Serwis ma dziś `robots: { index: false }` w `src/app/layout.tsx`.
+Od 03.10.2026 `noindex` **nie jest już wpisany w kod**: rozstrzyga zmienna
+`JAWNE_INDEKSOWANIE` (domyślnie wyłączona), wspólna dla `layout.tsx`
+i dla `/robots.txt` — `src/lib/premiera.ts`. Premiera to jedno polecenie:
+
+```bash
+sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
+```
+
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
+
+### Czeka na wdrożenie (stan 03.10.2026)
+
+**Serwer chodzi na buildzie z 02.10, 13:54 — dziewięć godzin i kilkanaście
+commitów wstecz**, bo `aktualizuj` padł po `git pull`, a przed budową.
+Dopóki Paweł nie uruchomi `sudo jawne aktualizuj`, na żywej stronie NIE MA:
+
+- poprawnej domeny w mapie strony (50 000 adresów pod starą `sslip.io`),
+- działającego progu jawności (`JAWNE_KONTAKT` jest w pliku, ale proces
+  strony go nie widzi — pułapka 63),
+- administratora danych i adresu kontaktowego na `/prywatnosc`
+  (strona pokazuje „[do uzupełnienia]”),
+- `robots.txt`, sekcji „Czego dotyczy” przy ustawach, indeksu `ted_nabywca`
+  (pułapka 67 — to on kładł serwis), poprawionego kontrastu i celów dotykowych.
+
+Po wdrożeniu `sudo jawne stan` sam powie, gdyby coś znowu się rozjechało.
 
 | | Co | Dlaczego blokuje | Stan |
 |---|---|---|---|
-| 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie. To jedyna rzecz, która dziś wstrzymuje działanie progu | **czekamy na adres Pawła** |
+| 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie | **jest 02.10.2026**: `kontakt@zrejestru.pl`, zapisany w `/etc/jawne/jawne.env`. **Na żywej stronie jeszcze nie działa** — proces wstał przed zapisem, patrz pułapka 63. Włączy się przy najbliższym `aktualizuj` |
 | 2 | **Polityka prywatności** | Wymagana, gdy przetwarzamy dane osobowe (art. 13–14 RODO): kto jest administratorem, po co, na jakiej podstawie, jak długo, jakie prawa | **napisana 23.09.2026**: `/prywatnosc`, odnośnik w stopce. Zostają dwa miejsca do uzupełnienia przez Pawła (administrator + adres, `JAWNE_KONTAKT`) — widoczne na stronie na żółto |
 | 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | **napisany 23.09.2026**: [test-rownowagi.md](test-rownowagi.md) — cel, niezbędność, ważenie, dziesięć zabezpieczeń z nazwami plików, co uruchamia ponowny test. Do uzupełnienia: administrator i adres |
 | 3a | ~~**Sprawdzić próg z rozporządzenia 651/2014 (GBER)**~~ | Gdyby próg publikacji był wyższy, w paśmie między progami pokazywalibyśmy nazwiska, których prawo publikować nie każe | **sprawdzone 30.09.2026: 100 tys. EUR się zgadza.** EUR-Lex nadal oddaje pustą odpowiedź (HTTP 202, zero bajtów), ale tekst nowelizacji GBER jest na stronie Komisji. Art. 9 ust. 1 lit. c) po zmianie z 2023 r.: publikacja „on each individual aid award exceeding EUR 100 000”, 500 tys. EUR dla produktów InvestEU (sekcja 16), 10 tys. EUR dla rolnictwa pierwotnego i rybołówstwa. Przed tą nowelizacją próg ogólny wynosił 500 tys. EUR — stąd rozbieżność w starszych opracowaniach |
-| 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | do kupienia |
-| 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła |
+| 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | **zrejestru.pl działa z certyfikatem** (02.10.2026). Zmienna zapisana; proces strony widzi jeszcze stary adres — jak wyżej |
+| 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła. Od 03.10 to jedno polecenie (`JAWNE_INDEKSOWANIE`), a nie zmiana w kodzie w dwóch miejscach |
 | 5a | **Klucz API GUS BDL** (darmowy, portal api.stat.gov.pl) | **Klucz jest generowany automatycznie po rejestracji** — nie trzeba o niego pisać ani na niego czekać (to dotyczyło klucza BIR). Bez klucza: 100 zapytań na 15 minut i **1 000 na 12 godzin**, czyli mniej niż jeden pełny import budżetów z działami. Z kluczem: 500 i 5 000. Klucz do `.env.local` jako `GUS_BDL_KLUCZ`, na serwerze `sudo jawne ustaw GUS_BDL_KLUCZ` | **klucz jest 01.10.2026** - wpisany w `.env.local`, zweryfikowany na zywym imporcie (etap `dzialy` startuje z naglowkiem "z kluczem"). Na serwerze: `sudo jawne ustaw GUS_BDL_KLUCZ`. Etap sam bierze 5 lat, gdy klucz jest, i 1 rok bez niego |
 | 6 | ~~**Obrazki podglądu linku dla stron gmin**~~ | Mamy je dla głosowań i posłów; strona gminy jest teraz najbardziej „udostępnialna” | **zrobione 19.09.2026**: nazwa, powiat, dochody i UE na mieszkańca, każda liczba z mianownikiem |
 
