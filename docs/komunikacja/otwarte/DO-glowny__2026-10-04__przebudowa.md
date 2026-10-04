@@ -14,7 +14,9 @@ z ponumerowanymi działami i „podstawą” przy każdej liczbie — forma mów
 „to odpis z rejestru, nie opinia”. Jeden wzór „wiersza rejestru”
 (etykieta · wartość · mianownik · podstawa) zamiast kart, odpowiedź
 w ramce „W liczbach” na pierwszym ekranie, metodologia zwinięta. Menu bez
-rozwijania (Sejm | Pieniądze publiczne), stałe pole szukania, jeden okruszek.
+rozwijania (Sejm | Pieniądze publiczne), stałe pole szukania, jeden okruszek,
+a w nagłówku każdej strony poza główną jedno zdanie, czym jest serwis
+(dziś stoi tylko w stopce; `nawigacja.md`, dział 3).
 
 **Do poprawy w `src/` niezależnie od kierunku** (szczegóły w `przeglad.md`,
 dział 0):

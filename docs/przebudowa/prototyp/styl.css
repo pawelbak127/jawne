@@ -326,3 +326,8 @@ details.metoda ul { margin: 6px 0 0; padding-left: 18px; }
   .tabela.osoby-tab td:first-child { flex: 1 1 100%; font-weight: 600; }
   .tabela.osoby-tab td:not(:first-child) { flex: 0 0 auto; color: var(--atrament-2); font-size: 14px; }
 }
+
+/* jedno zdanie „czym jest ten serwis” w nagłówku strony szczegółu (badania.md, dział 5) */
+.skad { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--kreska); max-width: 44rem; font-size: 14.5px; line-height: 1.5; color: var(--atrament-2); }
+.skad b { color: var(--atrament); font-weight: 600; }
+.skad a { white-space: nowrap; }

@@ -96,9 +96,9 @@ jak element interfejsu, nie jak przypis”), a etykiety mówią, dokąd prowadz�
   przeglądowe — ludzie lądują wprost na stronie posła albo debaty. Okienko
   wyskakujące zamknęło **75,7%** osób. Ramka „gdzie dalej” zebrała **0,1%**
   kliknięć. Dziennikarze i badacze potrzebują czego innego niż mieszkańcy.
-  *Dla nas:* każda strona szczegółu (gmina, poseł, firma, ustawa) powinna
-  sama wyjaśnić, czym jest serwis i skąd ma liczby — w jednym zdaniu nad
-  „W liczbach” (prototyp jeszcze tego nie ma, punkt 8 niżej). Żadnych
+  *Dla nas:* każda strona, na którą da się wejść z zewnątrz, sama mówi
+  jednym zdaniem, czym jest serwis i skąd ma liczby — w nagłówku strony,
+  przed „W liczbach” (punkt 8 niżej). Żadnych
   okienek. Odnośniki „dalej” tylko tam, gdzie kontekst je uzasadnia
   („Inne gminy powiatu”), a nie jako ramka na końcu.
 
@@ -133,13 +133,21 @@ Wpisane w prototyp niezależnie od motywu (to nie podlega wyborowi):
 5. Jasny domyślnie, ciemny według systemu albo przełącznika.
 6. Bez okienek wyskakujących, bez ramek „polecane”.
 7. Źródło przy każdej liczbie i wykresie.
+8. Jedno zdanie „czym jest ten serwis” w nagłówku każdej strony poza
+   główną i wynikami szukania — bo ludzie lądują na stronie posła albo
+   gminy prosto z wyszukiwarki i mediów społecznościowych
+   (mySociety 2023). Treść i miejsce: `nawigacja.md`, dział 3.
 
-Wynika z badań, a **prototyp jeszcze tego nie ma**:
-
-8. Jedno zdanie „czym jest ten serwis i skąd ma liczby” na stronach
-   szczegółu (gmina, poseł, firma, ustawa) — bo tam lądują ludzie
-   z wyszukiwarki i mediów społecznościowych (mySociety 2023). Dziś pod
-   nazwą gminy jest opis gminy, ale nic o serwisie.
+   **Dlaczego tego zabrakło w pierwszej wersji (poprawione 04.10).**
+   Prototyp powstał przed przeglądem badań, a zdanie o serwisie było
+   w nim tylko w dwóch miejscach: w stopce i obok logo — ale obok logo
+   dopiero od 1024 px. Na telefonie, czyli tam, dokąd prowadzi link
+   z Facebooka, nie było go na pierwszym ekranie w ogóle (stopka jest
+   kilka tysięcy pikseli niżej). Tak samo wygląda dziś `src/`: zdanie
+   „Niezależny serwis obywatelski…” stoi tylko w stopce `layout.tsx`,
+   a obok logo jest samo „Sejm X kadencji”, i to dopiero od 640 px.
+   Przegląd badań to wykazał, a ja w pierwszym podejściu tylko to
+   zapisałem, zamiast od razu poprawić prototyp.
 
 ## Jak motywy wypadają na tle tych ustaleń
 

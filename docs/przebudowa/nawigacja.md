@@ -73,6 +73,34 @@ jest odnośnikiem. Na telefonie okruszek zwija środek do „…”, zostawia
 pierwszy i przedostatni człon. Dla kogoś z linku to jedyna wskazówka, że
 serwis ma też drugą połowę.
 
+### Zdanie o serwisie — w nagłówku strony, nie w stopce
+
+Ludzie trafiają na stronę posła albo gminy prosto z wyszukiwarki i mediów
+społecznościowych, z pominięciem strony głównej (`badania.md`, dział 5).
+Dziś jedyne zdanie o tym, czym jest serwis, stoi w stopce — na telefonie
+kilka tysięcy pikseli pod pierwszym ekranem. Dlatego każda strona poza
+główną i wynikami szukania ma w nagłówku, pod nazwą i opisem, a przed
+„W liczbach”, jedno i to samo zdanie:
+
+> **zrejestru.pl** to niezależny serwis obywatelski: wypisuje dane
+> z oficjalnych rejestrów, przy każdej liczbie podaje, skąd pochodzi,
+> i nikogo nie ocenia. [Jak to działa](/o-serwisie)
+
+- Słowa „niezależny serwis obywatelski” pochodzą z dzisiejszej stopki
+  (`layout.tsx`), więc niczego nowego o serwisie nie deklarujemy.
+- Jedno zdanie, wszędzie takie samo, jeden komponent bez parametrów. Nie
+  powtarza objaśnień z działów (to właśnie było 47 powtórzeń z `przeglad.md`)
+  i nie wylicza rejestrów — na gminie robi to linia „stan danych”,
+  na pośle odnośnik „strona posła w Sejmie”.
+- Na telefonie zajmuje 90–112 px. Zmierzone na 390 × 844 we wszystkich
+  10 motywach: pierwsza liczba „W liczbach” nadal mieści się na pierwszym
+  ekranie (gmina, poseł, firma, ustawa, głosowanie).
+- Nie jest to pasek ani okienko: zwykły tekst w nagłówku strony, bez
+  przycisku „zamknij” — ramek „gdzie dalej” i okienek ludzie nie czytają
+  (mySociety: 0,1% kliknięć, 75,7% zamknięć).
+- Strona główna go nie potrzebuje — mówi to samo w nagłówku
+  („Przy każdej liczbie jest odnośnik do rejestru…”).
+
 ## 4. Długie strony: spis działów, który zostaje
 
 Gmina i poseł dostają **spis działów przyklejony pod nagłówkiem**
