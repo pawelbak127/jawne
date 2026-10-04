@@ -4,6 +4,6 @@
 |---|---|---|---|
 | 04.10.2026 | nazwa w nagłówku i tytule | **„zrejestru”** (Paweł: „raczej zrejestru”) | przyjęte w prototypie; „jawne” zostaje w kodzie i repozytorium |
 | 04.10.2026 | trasa `/firmy` | **tak** — osobna strona szukania firm (nazwa albo NIP) zamiast „Firmy” → `/szukaj` | do wdrożenia przez główną sesję |
-| 04.10.2026 | fonty (+ok. 40 kB wobec dziś) | Paweł: „do przyjęcia”, ale **do potwierdzenia przez główną sesję** (pułapki 54 i 58) | czeka na głównego |
+| 04.10.2026 | fonty | Paweł: „do przyjęcia”; **główna sesja potwierdziła**: dziś 221 kB, kierunek A 141 kB, czyli ok. 80 kB mniej (każdy z 10 motywów lżejszy niż dziś); fonty to pliki statyczne, bundlera nie obciążają (pułapka 58 — zmierzy przy wdrożeniu); wstępnie ładowane Plex Sans 400 i Brygada 600 | zamknięte (`DO-przebudowa__2026-10-04__fonty-i-poprawki.md`) |
 | 04.10.2026 | motyw: najpierw dziesięć zupełnie różnych (A–J), z nich Paweł wybierze kilka do doprecyzowania | 10 motywów na każdej stronie prototypu (pasek „Motyw”, `?k=a` … `?k=j`, `prototyp/kierunki.html`); badania w `badania.md`; moja propozycja na drugą rundę: A, I, J | czeka na wybór Pawła |
 | — | warunki UOKiK zwinięte do jednej linii | bez odpowiedzi | czeka |

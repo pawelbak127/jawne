@@ -23,15 +23,15 @@ dział 0):
 1. Warunki UOKiK na `/firma` po 50 przypadkach, na `/pomoc-publiczna`
    na końcu strony — zasada 10 każe „tuż przy liczbach”.
 2. Warunki UOKiK na stronie Krakowa bez daty pobrania.
-3. „jestw rejestrze” na stronie posła (2×, `PytaniaPosla`).
-4. „2496 gmin” na głównej wobec „2479” na `/gminy`.
+3. ~~„jestw rejestrze” na stronie posła~~ — zrobione (8f2da6a).
+4. ~~„2496 gmin” na głównej wobec „2479” na `/gminy`~~ — zrobione (8f2da6a).
 5. Głosowanie bez wyniku (przyjęto/odrzucono) — przy wecie (3/5)
    „232 za, 200 przeciw” czyta się jak przyjęcie. Czy rejestr to podaje?
 6. `/stan` pokazuje notatki importu („nie licze od nowa”, „368846929288 zl”).
 
 **Decyzje Pawła** (`docs/przebudowa/decyzje.md`): nagłówek „zrejestru”,
 nowa trasa `/firmy`; najpierw 10 zupełnie różnych motywów, potem wybór
-kilku; waga fontów — prośba do Ciebie w
-`DO-glowny__2026-10-04__decyzje-pawla.md`. Czeka: wybór motywów
+kilku; waga fontów — potwierdzona przez Ciebie (221 kB dziś, A ok. 80 kB
+mniej; obie wiadomości o fontach zamknięte). Czeka: wybór motywów
 i warunki UOKiK (pełna treść czy jedna linia z rozwinięciem — zależy od
 instrukcji UOKiK, zbiór 6068).

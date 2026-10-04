@@ -12,8 +12,13 @@ nad wiarygodnością i klikalnością: `badania.md`.
 
 Wagi fontów zmierzone na plikach `@fontsource/*` 5.3.0 (woff2, podzbiory
 `latin` + `latin-ext`, które przeglądarka i tak pobiera na polskiej stronie).
-Dla porównania dziś: Inter 400 = 23,7 + 35,0 kB, Source Serif 4 600 =
-21,5 + 18,4 kB.
+**Dla porównania dziś: 221 kB** — zmierzyła główna sesja na budowie `main`
+(`.next/static/media`, 04.10.2026): Inter zmienny 47 + 83 kB i Source
+Serif 4 50 + 41 kB, wszystkie cztery pliki wstępnie ładowane. Każdy
+z dziesięciu motywów waży mniej: od 50 kB (J) do 141 kB (A).
+Zastrzeżenie głównej sesji: przez `next/font/google` Google może podać
+krój jako font zmienny o innej wadze — wtedy `next/font/local` z plikami
+z `prototyp/fonty/`.
 
 ---
 
@@ -34,8 +39,10 @@ co dziś mówią akapity: „to jest odpis, nie opinia”.
 - Sygnatury (NIP, TERYT, nr druku, data stanu, „podstawa”): **IBM Plex Mono**
   500 (28 kB). Mono tylko w sygnaturach — to znak „to jest identyfikator
   z rejestru”, a nie styl tekstu.
-- Razem ok. 141 kB wobec ok. 100 kB dziś (Inter + Source Serif). Do
-  odchudzenia: Plex Sans tylko 400 + 600, bez kursywy.
+- Razem ok. 141 kB wobec **221 kB dziś** (Inter + Source Serif, zmierzone
+  przez główną sesję), czyli ok. 80 kB mniej. Plex Sans tylko 400 + 600,
+  bez kursywy. Wstępnie ładowane: Plex Sans 400 i Brygada 600 (nagłówek
+  strony jest na pierwszym ekranie); Plex Mono bez wstępnego ładowania.
 
 **Paleta** (kontrast tekstu wobec `--papier` / `--papier-2` / `--papier-3`):
 
@@ -349,7 +356,7 @@ zamiast opisywać ją akapitami. Wiersz rejestru (etykieta · wartość ·
 mianownik · podstawa) jest jednym wzorem dla gminy, posła, firmy i ustawy,
 więc przebudowa to jeden komponent zamiast siedemnastu kart. I jest
 najtańszy w obsłudze: działa w jednej kolumnie na telefonie, nie wymaga
-JavaScriptu, a fonty kosztują ok. 40 kB więcej niż dziś.
+JavaScriptu, a fonty ważą ok. 80 kB mniej niż dziś (141 wobec 221 kB).
 
 **Po przeglądzie badań (`badania.md`)** dodałbym do A sygnały klikalności
 z J: odnośniki wyraźnie podkreślone i żółte tło fokusu. I i J mają
