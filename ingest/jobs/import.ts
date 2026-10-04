@@ -1908,6 +1908,97 @@ async function importPytan(db: DatabaseSync, r: RodzajPytan): Promise<void> {
 }
 
 /**
+ * Wystapienia na sali ze stenogramow — jeden zapis na dzien obrad
+ * (ZMIERZONE 03.10.2026: 199 dni za nami, 100-500 wystapien na dzien).
+ *
+ * Dzien uznajemy za USTALONY, gdy ma wystapienia i zostal pobrany co najmniej
+ * 14 dni po sobie — wtedy go nie pobieramy. 14 dni to NASZE zalozenie, nie
+ * pomiar: wystapienia zlozone na pismie dochodza po dniu obrad (na ostatnim
+ * dniu 150 z 524), a jak dlugo — rejestr nie mowi. Pusty stenogram dla dnia,
+ * ktory sie odbyl, to „jeszcze nie opublikowany", a nie „nikt nie mowil",
+ * wiec taki dzien nigdy nie jest ustalony.
+ *
+ * Kontrola dziedziny przed zapisem (wzorzec 1): numer musi byc liczba
+ * calkowita; identyfikator spoza listy poslow jest raportowany i zapisany
+ * bez powiazania z poslem (wzorzec 2).
+ */
+async function importWystapien(db: DatabaseSync): Promise<void> {
+  log('-> wystapienia na sali (stenogramy Sejmu)');
+  const dzis = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw' }).format(new Date());
+  const posiedzenia = await api.posiedzenia();
+  const dni = posiedzenia
+    .flatMap((p) => (p.dates ?? []).map((d) => ({ posiedzenie: p.number, dzien: d })))
+    .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.dzien) && x.dzien <= dzis);
+
+  const znane = new Map(
+    (db.prepare('select posiedzenie, dzien, wystapien, pobrano from stenogramy_dni').all() as unknown as
+      { posiedzenie: number; dzien: string; wystapien: number; pobrano: string }[])
+      .map((r) => [`${r.posiedzenie}|${r.dzien}`, r]),
+  );
+  const ustalony = (x: { posiedzenie: number; dzien: string }) => {
+    const z = znane.get(`${x.posiedzenie}|${x.dzien}`);
+    return Boolean(z && z.wystapien > 0
+      && Date.parse(z.pobrano.slice(0, 10)) - Date.parse(x.dzien) >= 14 * 86_400_000);
+  };
+  const doPobrania = dni.filter((x) => !ustalony(x));
+  log(`   ${dni.length} dni obrad za nami; do pobrania ${doPobrania.length}, ustalonych ${dni.length - doPobrania.length}`);
+
+  const znaniPoslowie = new Set(
+    (db.prepare('select id from poslowie').all() as unknown as { id: number }[]).map((r) => r.id),
+  );
+  const usunDzien = db.prepare('delete from wystapienia where posiedzenie = ? and dzien = ?');
+  const wstaw = db.prepare(
+    `insert or replace into wystapienia(posiedzenie, dzien, numer, posel_id, nazwa, funkcja, poczatek, koniec,
+                                        sprawozdawca, sekretarz, na_pismie)
+     values (?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+  const zapiszDzien = db.prepare(
+    `insert into stenogramy_dni(posiedzenie, dzien, wystapien, pobrano) values (?,?,?,?)
+     on conflict(posiedzenie, dzien) do update set wystapien = excluded.wystapien, pobrano = excluded.pobrano`,
+  );
+
+  let wystapien = 0;
+  let obcy = 0;
+  let zlych = 0;
+  let pustych = 0;
+  for (const [i, x] of doPobrania.entries()) {
+    const odp = await api.stenogram(x.posiedzenie, x.dzien);
+    const lista = odp.statements ?? [];
+    if (!lista.length) pustych++;
+    wTransakcji(db, () => {
+      usunDzien.run(x.posiedzenie, x.dzien);
+      for (const w of lista) {
+        if (!Number.isInteger(w.num)) { zlych++; continue; }
+        const id = Number(w.memberID ?? 0);
+        let poselId: number | null = null;
+        if (id > 0) {
+          if (znaniPoslowie.has(id)) poselId = id;
+          else obcy++;
+        }
+        wstaw.run(
+          x.posiedzenie, x.dzien, w.num, poselId, w.name?.trim() || null, w.function?.trim() || null,
+          w.startDateTime ?? null, w.endDateTime ?? null,
+          w.rapporteur ? 1 : 0, w.secretary ? 1 : 0, w.unspoken ? 1 : 0,
+        );
+        wystapien++;
+      }
+      zapiszDzien.run(x.posiedzenie, x.dzien, lista.length, new Date().toISOString());
+    });
+    if ((i + 1) % 50 === 0) log(`   dni: ${i + 1}/${doPobrania.length}`);
+  }
+
+  const razem = db.prepare(
+    'select count(*) as w, count(distinct posel_id) as p, sum(na_pismie) as n from wystapienia',
+  ).get() as { w: number; p: number; n: number | null };
+  log(`   zapisano ${wystapien} wystapien w tym przebiegu; w bazie razem ${razem.w}, `
+    + `${razem.p} poslow z co najmniej jednym, na pismie ${razem.n ?? 0}`);
+  if (pustych) log(`   ${pustych} dni bez stenogramu (jeszcze nie opublikowany) — wroca nastepnym razem`);
+  if (obcy) log(`   UWAGA: ${obcy} wystapien z identyfikatorem posla spoza naszej listy — bez powiazania`);
+  if (zlych) log(`   UWAGA: ${zlych} wystapien bez poprawnego numeru — pominiete`);
+  odnotujImport(db, 'wystapienia', razem.w, `${razem.p} poslow; dni pobranych: ${doPobrania.length}`);
+}
+
+/**
  * Komisje sejmowe i ich sklad — jedno zapytanie (ZMIERZONE 03.10.2026:
  * 40 komisji, 1 051 czlonkostw, 408 poslow, 172 kB).
  *
@@ -1992,6 +2083,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   procesy: importProcesow,
   interpelacje: importInterpelacji,
   zapytania: importZapytan,
+  wystapienia: importWystapien,
   komisje: importKomisji,
   zamowienia: importZamowien,
   regon: importRegon,

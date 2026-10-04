@@ -1437,6 +1437,89 @@ export function funduszeGminy(teryt: string): FunduszeWOkresie[] {
 }
 
 // ---------------------------------------------------------------------------
+// Wystapienia na sali (od 03.10.2026)
+// ---------------------------------------------------------------------------
+
+export type Wystapienie = {
+  posiedzenie: number;
+  dzien: string;
+  numer: number;
+  funkcja: string | null;
+  poczatek: string | null;
+  koniec: string | null;
+  sprawozdawca: number;
+  sekretarz: number;
+  na_pismie: number;
+};
+
+export type WystapieniaPosla = {
+  /** Wszystkie wystapienia w stenogramach — licznik. */
+  ile: number;
+  /** W tym zlozone tylko na pismie (niewygloszone). */
+  naPismie: number;
+  /** W tym jako sekretarz posiedzenia — czynnosc proceduralna. */
+  jakoSekretarz: number;
+  /** Dni, w ktorych posel ZABRAL GLOS na sali (bez wystapien na pismie). */
+  dniZGlosem: number;
+  /** Dni obrad w czasie mandatu — mianownik (zasada 3). */
+  dniObrad: number;
+  ostatnie: Wystapienie[];
+};
+
+/**
+ * Wystapienia jednego posla.
+ *
+ * MIANOWNIK Z TEGO SAMEGO ZRODLA CO LICZNIK: dni obrad bierzemy ze
+ * stenogramow (stenogramy_dni), a nie z tabeli obecnosci. Pulapka 53: dwa
+ * konce tego samego rejestru licza inaczej, a obecnosc zna tylko dni
+ * z glosowaniami — dzien samej debaty mialby wystapienie bez dnia w
+ * mianowniku i iloraz wyszedlby ponad 100%.
+ * Okno mandatu jak przy interpelacjach: od pierwszego dnia w obecnosci do
+ * data_wygasniecia albo do dzis.
+ *
+ * `null`, gdy stenogramow jeszcze nie pobralismy — brak danych to stan,
+ * a nie zmierzone zero (wzorzec 6).
+ */
+export function wystapieniaPosla(id: number, ile = 8): WystapieniaPosla | null {
+  return bezTabeli(() => {
+    const dniWBazie = jeden<{ c: number }>('select count(*) as c from stenogramy_dni where wystapien > 0')?.c ?? 0;
+    if (!dniWBazie) return null;
+    const okno = jeden<{ od: string | null; wygaslo: string | null }>(
+      `select (select min(dzien) from obecnosc where posel_id = p.id) as od, p.data_wygasniecia as wygaslo
+         from poslowie p where p.id = ?`,
+      id,
+    );
+    const od = okno?.od ?? null;
+    const doKiedy = okno?.wygaslo ?? null;
+    const dniObrad = jeden<{ c: number }>(
+      `select count(distinct dzien) as c from stenogramy_dni
+        where wystapien > 0 and (? is null or dzien >= ?) and (? is null or dzien <= ?)`,
+      od, od, doKiedy, doKiedy,
+    )?.c ?? 0;
+    const licznik = jeden<{ ile: number; pismo: number; sekretarz: number; dni: number }>(
+      `select count(*) as ile, coalesce(sum(na_pismie), 0) as pismo, coalesce(sum(sekretarz), 0) as sekretarz,
+              count(distinct case when na_pismie = 0 then dzien end) as dni
+         from wystapienia where posel_id = ?`,
+      id,
+    );
+    const ostatnie = wszystkie<Wystapienie>(
+      `select posiedzenie, dzien, numer, funkcja, poczatek, koniec, sprawozdawca, sekretarz, na_pismie
+         from wystapienia where posel_id = ?
+        order by dzien desc, numer desc limit ?`,
+      id, ile,
+    );
+    return {
+      ile: licznik?.ile ?? 0,
+      naPismie: licznik?.pismo ?? 0,
+      jakoSekretarz: licznik?.sekretarz ?? 0,
+      dniZGlosem: licznik?.dni ?? 0,
+      dniObrad,
+      ostatnie,
+    };
+  }, null);
+}
+
+// ---------------------------------------------------------------------------
 // Komisje sejmowe (od 03.10.2026)
 // ---------------------------------------------------------------------------
 

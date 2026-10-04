@@ -176,3 +176,29 @@ export type ApiKomisja = {
 };
 
 export const komisje = () => pobierzJson<ApiKomisja[]>(`${BAZA}/committees`);
+
+/**
+ * Wystapienie ze stenogramu dnia obrad. ZMIERZONE 03.10.2026 na 8 dniach:
+ * 100-500 wystapien dziennie; `memberID` > 0 maja takze ministrowie bedacy
+ * poslami (ich `function` to wtedy np. „Minister Rolnictwa…"); `unspoken`
+ * to wystapienie zlozone tylko na pismie — nie ma wtedy `endDateTime`
+ * i takich wystapien przybywa PO dniu obrad (ostatni dzien: 150 z 524).
+ */
+export type ApiWystapienie = {
+  num: number;
+  name?: string;
+  function?: string;
+  memberID?: number;
+  startDateTime?: string;
+  endDateTime?: string;
+  rapporteur?: boolean;
+  secretary?: boolean;
+  unspoken?: boolean;
+};
+
+export const stenogram = (posiedzenie: number, dzien: string) =>
+  pobierzJson<{ statements?: ApiWystapienie[] }>(`${BAZA}/proceedings/${posiedzenie}/${dzien}/transcripts`);
+
+/** Adres tresci jednego wystapienia (HTML) — odnosnik przy pozycji na stronie. */
+export const adresWystapienia = (posiedzenie: number, dzien: string, numer: number) =>
+  `${BAZA}/proceedings/${posiedzenie}/${dzien}/transcripts/${numer}`;

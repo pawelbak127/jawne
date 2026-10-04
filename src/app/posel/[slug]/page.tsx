@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   bazaDostepna, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
-  posel, pytaniaPosla, slugiPoslow, statystykiPosla, zrodloImportu,
+  posel, pytaniaPosla, slugiPoslow, statystykiPosla, wystapieniaPosla, zrodloImportu,
   type InterpelacjePosla, type RodzajPytan,
 } from '@/lib/dane';
+import { adresWystapienia, minutyWystapienia, opisCzasu } from '@/lib/stenogramy';
 import { etykietaTypu } from '@/lib/komisje';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { MIN_RESZTY } from '@/lib/niezaleznosc';
@@ -55,6 +56,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const obecnosc = obecnoscPosla(p.id);
   const interpelacje = pytaniaPosla('interpelacje', p.id, 5);
   const zapytania = pytaniaPosla('zapytania', p.id, 5);
+  const wystapienia = wystapieniaPosla(p.id, 8);
   const komisje = komisjePosla(p.id);
   const komisjeZ = zrodloImportu('komisje');
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
@@ -323,6 +325,68 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
               </div>
             </div>
           </section>
+
+          {/*
+            WYSTAPIENIA NA SALI (03.10.2026), ze stenogramow Sejmu.
+            Mianownik to dni obrad w czasie mandatu, liczone z tego samego
+            zrodla co licznik (patrz `wystapieniaPosla`). Zadnego rankingu
+            i zadnego „lacznego czasu" (zasada 6) — lista z odnosnikiem do tresci.
+            Tematu rejestr przy wystapieniu nie podaje, wiec go nie dopisujemy.
+            Funkcja przy pozycji jest wazna: minister bedacy poslem ma ten sam
+            identyfikator, wiec jego wystapienia ministerialne trafiaja tutaj.
+          */}
+          {wystapienia ? (
+            <section className="mt-12">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h2 className="szryft text-2xl font-semibold">Wystąpienia na sali</h2>
+                <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/proceedings" etykieta="stenogramy w rejestrze" />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-atrament-2">
+                <span className="liczby">
+                  {`Głos na sali w ${liczba(wystapienia.dniZGlosem)} z ${liczba(wystapienia.dniObrad)} dni obrad w czasie mandatu. `}
+                </span>
+                {wystapienia.ile === 0
+                  ? 'Rejestr nie odnotowuje w stenogramach żadnego wystąpienia.'
+                  : `Wystąpień: ${liczba(wystapienia.ile)}`
+                    + (wystapienia.naPismie ? `, w tym ${liczba(wystapienia.naPismie)} złożonych tylko na piśmie` : '')
+                    + (wystapienia.jakoSekretarz ? `, ${liczba(wystapienia.jakoSekretarz)} jako sekretarz posiedzenia` : '')
+                    + '.'}
+              </p>
+              {wystapienia.ostatnie.length ? (
+                <ul className="mt-5 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
+                  {wystapienia.ostatnie.map((w) => {
+                    const czas = opisCzasu(minutyWystapienia(w.poczatek, w.koniec));
+                    return (
+                      <li key={`${w.posiedzenie}-${w.dzien}-${w.numer}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
+                        <span className="text-sm">
+                          <span className="liczby text-atrament-2">{dataSlownie(w.dzien)}</span>
+                          <span className="text-atrament-3">{` · posiedzenie ${w.posiedzenie}`}</span>
+                          {w.funkcja ? <span className="text-atrament-2">{` · ${w.funkcja}`}</span> : null}
+                          {czas ? <span className="text-atrament-3">{` · ${czas}`}</span> : null}
+                          {w.na_pismie ? <span className="text-atrament-3">{' · złożone na piśmie'}</span> : null}
+                          {w.sprawozdawca ? <span className="text-atrament-3">{' · sprawozdawca'}</span> : null}
+                          {w.sekretarz ? <span className="text-atrament-3">{' · sekretarz posiedzenia'}</span> : null}
+                        </span>
+                        <a
+                          href={adresWystapienia(w.posiedzenie, w.dzien, w.numer)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex min-h-6 items-center text-sm text-akcent underline underline-offset-4 hover:no-underline"
+                        >
+                          treść
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+              <p className="mt-3 text-xs leading-relaxed text-atrament-3">
+                Rejestr nie podaje tematu wystąpienia — jest w treści pod odnośnikiem.
+                Wystąpienia złożone na piśmie dochodzą do stenogramu po dniu obrad,
+                więc dla ostatnich dni liczba może jeszcze urosnąć.
+              </p>
+            </section>
+          ) : null}
 
           {/*
             KOMISJE (03.10.2026). Odpowiedz rejestru na „na czym komu zalezy"

@@ -457,6 +457,39 @@ create table if not exists zapytania_autorzy (
 create index if not exists zapytania_autorzy_posel on zapytania_autorzy(posel_id);
 
 /*
+ * Wystapienia na sali ze stenogramow (od 03.10.2026). Jeden wiersz to jedno
+ * wystapienie: kto, w jakiej funkcji (posel, sprawozdawca, minister bedacy
+ * poslem), kiedy, i czy zlozone tylko na pismie. TEMATU rejestr przy
+ * wystapieniu nie podaje — jest w tresci, do ktorej strona linkuje.
+ * stenogramy_dni pamieta, co pobrano i kiedy: swieze dni pobieramy ponownie,
+ * bo wystapienia na pismie dochodza po dniu obrad.
+ * (Bez odwrotnych apostrofow w tym komentarzu: caly SCHEMAT to szablon JS.)
+ */
+create table if not exists wystapienia (
+  posiedzenie  integer not null,
+  dzien        text not null,
+  numer        integer not null,
+  posel_id     integer references poslowie(id),   -- NULL: nie posel albo spoza naszej listy
+  nazwa        text,
+  funkcja      text,
+  poczatek     text,
+  koniec       text,
+  sprawozdawca integer not null,
+  sekretarz    integer not null,
+  na_pismie    integer not null,
+  primary key (posiedzenie, dzien, numer)
+) without rowid;
+create index if not exists wystapienia_posel on wystapienia(posel_id, dzien);
+
+create table if not exists stenogramy_dni (
+  posiedzenie integer not null,
+  dzien       text not null,
+  wystapien   integer not null,
+  pobrano     text not null,
+  primary key (posiedzenie, dzien)
+) without rowid;
+
+/*
  * Komisje sejmowe i ich sklad (od 03.10.2026). Odpowiedz rejestru na pytanie
  * „na czym komu zalezy" bez naszej klasyfikacji: posel sam wybral komisje,
  * Sejm zatwierdzil uchwala, a zakres dzialania opisal urzad (pole zakres).
