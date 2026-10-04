@@ -835,6 +835,29 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     „tylko sprawdzające” potrafi tworzyć pliki — sprawdź jako kto je
     uruchamiasz.**
 
+69. **Synchroniczna baza zamienia jedną wolną stronę w awarię całego
+    serwisu.** ZMIERZONE 04.10.2026: strona Krakowa czytała z dysku
+    **2,5 GB** i przez ponad dwie minuty nie odpowiadała ŻADNA strona, także
+    statyczna `/o-serwisie` — `node:sqlite` blokuje jedyny wątek procesu.
+    CPU stał bezczynnie, a iowait wynosił 47%. Kraków miał 191 910 wierszy pomocy rozsianych po pliku 5,6 GB
+    (zapis idzie dzień po dniu, więc wiersze jednej gminy leżą w tysiącach
+    miejsc), a strona robiła po nich osiem przebiegów. Indeks był właściwy
+    (`pomoc_teryt`), plan też — **winny był rozrzut wierszy, nie plan**.
+    Lokalnie: 2 485 wierszy, 6 ms. Strona gminy w trybie dni czyta teraz stan
+    sum przyrostowych (`pomoc_sumy_gmin_*`, tabele `WITHOUT ROWID` z kluczem
+    od TERYT-u, `src/lib/pomoc-gminy.ts`); zgodność sprawdzona na 2 441
+    gminach i w `sudo jawne sumy`. Zmiana zakresu stanu podnosi
+    `WERSJA_SUM` i stan liczy się raz od zera sam, bez flagi.
+    CSV gminy (`/gmina/…/csv/pomoc`) idzie STRUMIENIEM, dzień po dniu, z
+    `setImmediate` przed każdą porcją — bez tej przerwy strumień nie oddaje
+    sterowania i nic nie zyskujemy. Nowy indeks `(teryt, dzien)` przestawił
+    przy okazji plan podzapytania (bez `sqlite_stat1`): eksport Bełchatowa
+    z 3,8 s zrobił się dłuższy niż 5 minut. **Po dodaniu indeksu sprawdź plany
+    zapytań, które go nie dotyczą.**
+    Przy okazji: `max(a, b)` z dwoma argumentami to w SQLite funkcja
+    skalarna, która oddaje NULL, gdy KTÓRYKOLWIEK argument jest NULL-em —
+    upsert nazwy firmy kasował nią nazwę po dniu z pustym wpisem.
+
 ---
 
 ## Bezpieczeństwo

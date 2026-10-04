@@ -10,6 +10,7 @@ import { kategoriaFormy, type KategoriaPomocy } from './formy-pomocy';
 import { nazwaOrganu, organWykonawczyGminy } from './organy';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
+import { policzPomocGminy, pomocGminyZeSum } from './pomoc-gminy';
 import { KONTAKT } from './adres';
 import { zwinDoPowiatow, type LudnoscGminy, type WartoscNaMapie } from './mapa';
 import {
@@ -2185,25 +2186,76 @@ export type PomocDoEksportu = {
   forma: string | null; wartosc_nominalna: number | null; wartosc_brutto: number | null; wartosc_brutto_eur: number | null;
 };
 
-/**
- * Przypadki pomocy gminy w tym samym zakresie co strona: cale pobranie gminy
- * albo — gdy go nie ma — tylko dni ustalone.
- */
-export function pomocDoEksportu(teryt: string): PomocDoEksportu[] {
-  return bezTabeli(() => {
-    const pelna = jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c;
-    const P = pelna ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
-    return wszystkie<PomocDoEksportu>(
-      `select z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta,
-              (select max(x.wartosc_brutto_eur) from ${P} x where x.teryt = z.teryt and x.nip_beneficjenta = z.nip_beneficjenta) as max_eur_beneficjenta,
-              (select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon,
+const KOLUMNY_EKSPORTU = `z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta`;
+const RESZTA_EKSPORTU = `(select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon,
               z.wielkosc, z.pkd, z.udzielajacy, z.przeznaczenie, z.forma,
-              z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur
-         from ${P} z where z.teryt = ?
-        order by z.dzien desc, z.wartosc_brutto desc`,
-      teryt,
-    );
-  }, []);
+              z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur`;
+
+/**
+ * Przypadki pomocy gminy w tym samym zakresie co strona — PORCJAMI, dzien po
+ * dniu (od najnowszego), a nie jedna tablica.
+ *
+ * ZMIERZONE 04.10.2026 (pulapka 69): Krakow ma na serwerze 191 910 wierszy
+ * pomocy rozsianych po calym pliku bazy. Jedna tablica oznaczala dwie minuty
+ * zamrozonego serwisu (`node:sqlite` jest synchroniczny) i kilkaset MB
+ * obiektow JS — a do tego podzapytanie o najwieksza pomoc przy KAZDYM wierszu.
+ * Teraz trasa CSV bierze porcje po jednej i miedzy nimi oddaje sterowanie,
+ * wiec inni czytelnicy nie czekaja na koniec eksportu.
+ *
+ * Tryb dni: dni ze stanu sum (`pomoc_sumy_dni`) i najwieksza pojedyncza pomoc
+ * ze stanu (`pomoc_sumy_gmin_firmy`) — ten sam zbior, ktory pokazuje strona
+ * gminy, wiec plik nie odslania ani nie chowa niczego inaczej niz strona.
+ * Gmina pobrana w calosci (trzy pokazowe) idzie jedna porcja, jak dotad.
+ *
+ * `z.id` na koncu sortowania: przy tym samym dniu i tej samej kwocie kolejnosc
+ * zalezala od indeksu wybranego przez planer — po zmianie indeksu plik
+ * Belchatowa mial te same 34 815 wierszy w innym porzadku.
+ */
+export function* pomocDoEksportuPorcjami(teryt: string): Generator<PomocDoEksportu[]> {
+  const pelna = bezTabeli(
+    () => (jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c ?? 0) > 0,
+    false,
+  );
+  if (pelna) {
+    /*
+     * Najwieksza pomoc na NIP — JEDNO grupowanie i zlaczenie, nie podzapytanie
+     * przy kazdym wierszu. ZMIERZONE 04.10.2026: po dodaniu indeksu
+     * (teryt, dzien) planer (bez sqlite_stat1) wzial go do podzapytania zamiast
+     * indeksu po NIP-ie — 34 815 wierszy Belchatowa razy 34 815, eksport
+     * wisial ponad 5 minut zamiast 3,8 s. Ten zapis nie zalezy od wyboru
+     * planera. Wiersz bez NIP-u nie trafia w grupe NULL (NULL <> NULL), wiec
+     * dostaje NULL — jak w podzapytaniu.
+     */
+    yield bezTabeli(() => wszystkie<PomocDoEksportu>(
+      `with m as (
+         select nip_beneficjenta as nip, max(wartosc_brutto_eur) as max_eur
+           from pomoc_publiczna where teryt = ? group by nip_beneficjenta
+       )
+       select ${KOLUMNY_EKSPORTU}, m.max_eur as max_eur_beneficjenta, ${RESZTA_EKSPORTU}
+         from pomoc_publiczna z left join m on m.nip = z.nip_beneficjenta
+        where z.teryt = ?
+        order by z.dzien desc, z.wartosc_brutto desc, z.id`,
+      teryt, teryt,
+    ), []);
+    return;
+  }
+  const dni = bezTabeli(
+    () => wszystkie<{ dzien: string }>('select dzien from pomoc_sumy_dni order by dzien desc'),
+    [],
+  );
+  for (const { dzien } of dni) {
+    // Wiersz bez NIP-u nie trafia w zaden wpis stanu (NULL <> ''), wiec
+    // dostaje NULL — tak jak w podzapytaniu, ktore bylo tu wczesniej.
+    const porcja = bezTabeli(() => wszystkie<PomocDoEksportu>(
+      `select ${KOLUMNY_EKSPORTU}, f.max_eur as max_eur_beneficjenta, ${RESZTA_EKSPORTU}
+         from pomoc_publiczna z
+         left join pomoc_sumy_gmin_firmy f on f.teryt = z.teryt and f.nip = z.nip_beneficjenta
+        where z.teryt = ? and z.dzien = ?
+        order by z.wartosc_brutto desc, z.id`,
+      teryt, dzien,
+    ), []);
+    if (porcja.length) yield porcja;
+  }
 }
 
 export type ProjektGminy = {
@@ -2347,7 +2399,7 @@ export function organyPomocy(teryt: string): OrganyPomocy {
      * samej stronie mowilyby o innym swiecie.
      *
      * Liczenie na zywo jest tu tanie i NIE lamie pulapki 52: idzie indeksem
-     * pokrywajacym `pomoc_teryt` dla JEDNEJ gminy (sprawdzone planem
+     * po gminie (`pomoc_teryt_dzien`) dla JEDNEJ gminy (sprawdzone planem
      * zapytania: SEARCH USING COVERING INDEX), a nie przebiegiem po tabeli.
      * Takich gmin jest tyle, ile pelnych pobran — dzis trzy.
      */
@@ -2561,60 +2613,28 @@ export function pomocGminy(teryt: string): PomocGminy {
     // pokazujemy je, ale mowimy wprost, ze to nie jest cala historia.
     // Swieze dni sa niepelne (urzedy zglaszaja pomoc do 7 dni po fakcie),
     // wiec w trybie dni liczymy tylko dni ustalone — patrz DNI_DO_USTALENIA.
-    const dni = pobranie ? null : bezTabeli(
-      () => jeden<{ od: string; do: string; dni: number }>(
-        `select min(dzien) as od, max(dzien) as do, count(*) as dni from ${DNI_USTALONE}`,
+    if (pobranie) {
+      // Gmina pobrana w calosci: jej 10-letniej historii nie ma w stanie sum
+      // (pulapka 35), wiec liczymy z tabeli. To trzy gminy pokazowe.
+      const policzona = policzPomocGminy(czytnik, 'pomoc_publiczna', teryt);
+      return { zrodlo: { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }, pobranie, ...policzona };
+    }
+    /*
+     * Tryb dni ustalonych — ZE STANU SUM, nie z tabeli pomocy. ZMIERZONE
+     * 04.10.2026: liczenie z tabeli kosztowalo strone Krakowa 2,5 GB odczytu
+     * i ponad dwie minuty zamrozonego serwisu (`src/lib/pomoc-gminy.ts`).
+     * Zakres dni tez bierzemy ze stanu, nie z rejestru dni: liczby i podpis
+     * pod nimi musza opisywac ten sam zbior dni.
+     */
+    const dni = bezTabeli(
+      () => jeden<{ od: string | null; do: string | null; dni: number }>(
+        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_sumy_dni',
       ),
       null,
     );
-    // Pelne pobranie gminy obejmuje wszystkie jej wiersze; tryb dni — tylko
-    // dni ustalone. Jedna podkwerenda zamiast warunku w kazdym zapytaniu.
-    const P = pobranie ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
-    const maWiersze = !pobranie && dni?.dni
-      ? (jeden<{ c: number }>(`select count(*) as c from ${P} where teryt = ?`, teryt)?.c ?? 0) > 0
-      : false;
-    if (!pobranie && !maWiersze) return pusto;
-    const zrodlo: ZrodloPomocy = pobranie
-      ? { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }
-      : { rodzaj: 'dni', od: dni!.od, do: dni!.do, dni: dni!.dni };
-    const razem = jeden<{ przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string }>(
-      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow, sum(wartosc_brutto) as brutto,
-              min(dzien) as pierwszy, max(dzien) as ostatni
-         from ${P} where teryt = ?`, teryt,
-    );
-    // Ta sama regula co przy `beneficjenci` — rejestr, nie heurystyka.
-    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null; typ_regon: string | null }>(
-      `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur,
-              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
-         from ${P} p where teryt = ? group by nip_beneficjenta`, teryt,
-    ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur, typ_regon: r.typ_regon }));
-    const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
-      `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${P} where teryt = ? group by rok order by rok`, teryt,
-    );
-    const grupa = (kolumna: 'przeznaczenie' | 'udzielajacy') => wszystkie<{ nazwa: string; przypadkow: number; brutto: number | null }>(
-      `select coalesce(${kolumna}, '(brak w rejestrze)') as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${P} where teryt = ? group by nazwa order by brutto desc nulls last limit 6`, teryt,
-    );
-    // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
-    // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
-    /*
-     * `typ_regon` jest tu OBOWIAZKOWY, nie ozdobny. Od 24.09.2026 o jawnosci
-     * nazwy rozstrzyga rejestr, nie heurystyka — ale decyzja weszla tylko
-     * na strone firmy i do wyszukiwarki. ZMIERZONE 01.10.2026 na 93 287
-     * nazwach: bez tego strona gminy pokazywala 48 nazw, ktore `/firma`
-     * chowa, i chowala 350, ktore `/firma` pokazuje. Dwie strony tego samego
-     * serwisu odpowiadaly inaczej na to samo pytanie o te sama firme.
-     */
-    const beneficjenci = wszystkie<{
-      nazwa: string; nip: string | null; przypadkow: number; brutto: number | null;
-      max_eur: number | null; typ_regon: string | null;
-    }>(
-      `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto,
-              max(wartosc_brutto_eur) as max_eur,
-              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
-         from ${P} p where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
-    );
-    return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
+    if (!dni?.dni || !dni.od || !dni.do) return pusto;
+    const policzona = pomocGminyZeSum(czytnik, teryt);
+    if (!policzona.razem) return pusto;
+    return { zrodlo: { rodzaj: 'dni', od: dni.od, do: dni.do, dni: dni.dni }, pobranie: null, ...policzona };
   }, pusto);
 }

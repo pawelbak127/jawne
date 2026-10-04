@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
-  bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, listaPoslow, okregi, ostatnieGlosowania,
-  podsumowanie,
+  bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, listaPoslow, ostatnieGlosowania,
+  podsumowanie, wojewodztwaGmin,
 } from '@/lib/dane';
 import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU } from '@/lib/plan-sali';
 import { polaczPlan } from '@/lib/sala';
@@ -21,8 +21,9 @@ export default function StronaGlowna() {
   const listaKlubow = kluby();
   const glosowania = ostatnieGlosowania(6, { nadCaloscia: true });
   const glosowanNadCaloscia = liczbaGlosowan({ nadCaloscia: true });
-  const listaOkregow = okregi();
-  const gminLiczba = listaOkregow.reduce((a, o) => a + o.gmin, 0);
+  // Ta sama liczba co na /gminy: Warszawa raz, nie 18 dzielnic (pulapka 24).
+  // Z okregow wychodzilo 2496 wobec 2479 na /gminy — zgloszenie sesji przebudowy.
+  const gminLiczba = wojewodztwaGmin().reduce((a, w) => a + w.gmin, 0);
   const ustawUchwalonych = liczbaProcesow('projekt ustawy', 'uchwalone');
 
   const { miejsca: miejscaNaSali } = polaczPlan(MIEJSCA, listaPoslow());

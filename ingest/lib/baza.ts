@@ -288,7 +288,13 @@ create table if not exists pomoc_publiczna (
    */
   klucz               text
 );
-create index if not exists pomoc_teryt on pomoc_publiczna(teryt);
+/*
+  Gmina + dzien, nie sama gmina (04.10.2026): eksport CSV gminy idzie dzien po
+  dniu, zeby nie trzymac w pamieci i nie czytac naraz 192 tys. wierszy Krakowa
+  (pulapka 69). Indeks po samym teryt jest jego przedrostkiem — usuwa go
+  zalozSchemat.
+*/
+create index if not exists pomoc_teryt_dzien on pomoc_publiczna(teryt, dzien);
 create index if not exists pomoc_nip on pomoc_publiczna(nip_beneficjenta);
 create unique index if not exists pomoc_klucz on pomoc_publiczna(klucz);
 
@@ -388,6 +394,50 @@ create table if not exists pomoc_sumy_wymiar (
   z_kwota     integer not null,
   brutto      real not null,
   primary key (wymiar, klucz)
+);
+/*
+  Pomoc w JEDNEJ gminie: lata, beneficjenci i dwie grupy (na co, kto udzielil).
+  ZMIERZONE 04.10.2026: strona Krakowa liczyla to z tabeli pomocy — 191 910
+  wierszy rozsianych po pliku 5,6 GB, osiem przebiegow, 2,5 GB odczytu i ponad
+  dwie minuty zamrozonego serwisu. Klucz glowny zaczyna sie od teryt, a tabele
+  sa WITHOUT ROWID, wiec wiersze jednej gminy leza obok siebie.
+  W pomoc_sumy_gmin_firmy wiersze bez NIP-u leza pod nip = '' (jedna grupa,
+  tak jak NULL w group by). Grupy maja klucz z rejestru albo
+  „(brak w rejestrze)” — tak jak strona gminy.
+*/
+create table if not exists pomoc_sumy_gmin_lata (
+  teryt       text not null,
+  rok         text not null,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  pierwszy    text not null,
+  ostatni     text not null,
+  primary key (teryt, rok)
+) without rowid;
+create table if not exists pomoc_sumy_gmin_firmy (
+  teryt       text not null,
+  nip         text not null,
+  nazwa       text,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  max_eur     real,                     -- najwieksza POJEDYNCZA pomoc, do progu jawnosci
+  primary key (teryt, nip)
+) without rowid;
+create table if not exists pomoc_sumy_gmin_wymiar (
+  teryt       text not null,
+  wymiar      text not null,          -- przeznaczenie | udzielajacy
+  klucz       text not null,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  primary key (teryt, wymiar, klucz)
+) without rowid;
+/* Wersja ZAKRESU stanu — gdy kod liczy wiecej niz stan, stan liczy sie od zera. */
+create table if not exists pomoc_sumy_wersja (
+  id          integer primary key check (id = 1),
+  wersja      integer not null
 );
 /* Czolowka najwiekszych przypadkow — po kazdym dniu przycinana do 50. */
 create table if not exists pomoc_sumy_naj (
@@ -824,6 +874,13 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   if (kolumnyRegon.length && !kolumnyRegon.some((k) => k.name === 'rekordow')) {
     db.exec('alter table regon add column rekordow integer not null default 1');
     zrobione.push('dodano kolumne regon.rekordow');
+  }
+
+  // Przedrostek nowego indeksu (teryt, dzien) — zbedny, a zajmuje miejsce
+  // i spowalnia kazdy zapis pomocy.
+  if (db.prepare("select 1 from sqlite_master where type = 'index' and name = 'pomoc_teryt'").get()) {
+    db.exec('drop index pomoc_teryt');
+    zrobione.push('usunieto indeks pomoc_teryt (zastapiony przez pomoc_teryt_dzien)');
   }
 
   const bezDaty = db.prepare('select dzien, pobrano from pomoc_publiczna_dni where pobrano_dzien is null')

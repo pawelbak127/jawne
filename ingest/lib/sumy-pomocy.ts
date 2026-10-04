@@ -6,6 +6,7 @@ import {
 } from '../../src/lib/przeglad.js';
 import type { WartoscNaMapie } from '../../src/lib/mapa.js';
 import { formaZnana, kategoriaFormy, type KategoriaPomocy } from '../../src/lib/formy-pomocy.js';
+import { BRAK_W_REJESTRZE } from '../../src/lib/pomoc-gminy.js';
 
 /**
  * Sumy pomocy publicznej liczone PRZYROSTOWO — dzien po dniu, raz na zawsze.
@@ -51,6 +52,22 @@ const wieksza = (a: string | null, b: string | null): string | null => {
   return a >= b ? a : b;
 };
 
+/**
+ * Wersja ZAKRESU stanu. Podnosimy ja, gdy stan zaczyna obejmowac cos nowego —
+ * wtedy stary stan nie ma tych danych dla dni juz policzonych i trzeba go
+ * zbudowac od zera (`odswiezSumy` robi to sam, bez flagi).
+ *  1 — przeglad krajowy, mapa, firmy, organy (30.09.2026),
+ *  2 — pomoc w gminie: lata, beneficjenci, grupy (04.10.2026, strona gminy).
+ */
+export const WERSJA_SUM = 2;
+
+/** Jak `wieksza`, dla liczb: max() z SQL-a, ktory pomija NULL. */
+const wiekszaLiczba = (a: number | null, b: number | null): number | null => {
+  if (a === null) return b;
+  if (b === null) return a;
+  return a >= b ? a : b;
+};
+
 /** Ile najwiekszych przypadkow trzymamy w stanie; strona pokazuje 15. */
 const NAJWIEKSZYCH = 50;
 
@@ -85,6 +102,10 @@ type Wklad = {
   wymiary: Map<string, Kubelek & { wymiar: Wymiar; klucz: string; nazwa: string | null }>;
   /** Kto podjal decyzje: klucz `teryt|nip organu|kategoria formy`. */
   organy: Map<string, Kubelek & { teryt: string; nip: string; kategoria: KategoriaPomocy; nazwa: string | null }>;
+  /** Beneficjent w gminie: klucz `teryt NUL nip` (pusty NIP = wiersze bez NIP-u). */
+  gminyFirmy: Map<string, Kubelek & { teryt: string; nip: string; nazwa: string | null; maxEur: number | null }>;
+  /** Grupa w gminie: klucz `teryt NUL wymiar NUL klucz`. */
+  gminyWymiar: Map<string, Kubelek & { teryt: string; wymiar: 'przeznaczenie' | 'udzielajacy'; klucz: string }>;
   naj: WierszPomocy[];
 };
 
@@ -96,6 +117,8 @@ const pustyWklad = (): Wklad => ({
   firmy: new Map(),
   wymiary: new Map(),
   organy: new Map(),
+  gminyFirmy: new Map(),
+  gminyWymiar: new Map(),
   naj: [],
 });
 
@@ -171,6 +194,32 @@ function dolozWiersz(w: Wklad, r: WierszPomocy): void {
     else w.wymiary.set(k, { wymiar, klucz, nazwa, przypadkow: 1, zKwota: ma, brutto: ile });
   }
 
+  /*
+   * Pomoc w gminie — dla strony gminy (WERSJA_SUM 2). Te same reguly co
+   * w SQL-u `policzPomocGminy`: wiersz bez NIP-u to jedna grupa, wartosc
+   * bez wpisu w rejestrze to „(brak w rejestrze)”, max() pomija NULL.
+   */
+  const nip = r.nip_beneficjenta ?? '';
+  const kf = `${r.teryt}\u0000${nip}`;
+  const gf = w.gminyFirmy.get(kf);
+  if (gf) {
+    gf.przypadkow += 1; gf.zKwota += ma; gf.brutto += ile;
+    gf.nazwa = wieksza(gf.nazwa, r.nazwa_beneficjenta);
+    gf.maxEur = wiekszaLiczba(gf.maxEur, r.wartosc_brutto_eur);
+  } else {
+    w.gminyFirmy.set(kf, {
+      teryt: r.teryt, nip, nazwa: r.nazwa_beneficjenta, maxEur: r.wartosc_brutto_eur,
+      przypadkow: 1, zKwota: ma, brutto: ile,
+    });
+  }
+  for (const [wymiar, wartosc] of [['przeznaczenie', r.przeznaczenie], ['udzielajacy', r.udzielajacy]] as const) {
+    const klucz = wartosc ?? BRAK_W_REJESTRZE;
+    const kw = `${r.teryt}\u0000${wymiar}\u0000${klucz}`;
+    const gw = w.gminyWymiar.get(kw);
+    if (gw) { gw.przypadkow += 1; gw.zKwota += ma; gw.brutto += ile; }
+    else w.gminyWymiar.set(kw, { teryt: r.teryt, wymiar, klucz, przypadkow: 1, zKwota: ma, brutto: ile });
+  }
+
   // Najwieksze: wystarczy trzymac czolowke KAZDEGO dnia — przypadek, ktory
   // jest w pierwszej pietnastce kraju, jest tym bardziej w pierwszej
   // piecdziesiatce swojego dnia.
@@ -197,6 +246,15 @@ function wkladDnia(db: DatabaseSync, dzien: string): Wklad {
   return w;
 }
 
+/*
+ * max(a, b) z DWOMA argumentami jest w SQLite funkcja skalarna i oddaje NULL,
+ * gdy ktorykolwiek argument jest NULL-em — inaczej niz agregat max(), ktory
+ * NULL-e pomija. Do 04.10.2026 upsert nazwy firmy mial wlasnie max(a, b):
+ * jeden dzien z pusta nazwa kasowal nazwe zebrana z poprzednich dni, a druga
+ * droga (agregat) podawala nazwe. Od nazwy zalezy regula jawnosci.
+ */
+const MAKS_BEZ_NULL = (a: string, b: string) => `max(coalesce(${a}, ${b}), coalesce(${b}, ${a}))`;
+
 /** Dopisuje wklad dnia do stanu. Jedna transakcja na dzien. */
 function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad): void {
   const gmina = db.prepare(
@@ -207,7 +265,7 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
   );
   const firma = db.prepare(
     `insert into pomoc_sumy_firm (nip, nazwa, przypadkow, z_kwota, brutto) values (?, ?, ?, ?, ?)
-       on conflict(nip) do update set nazwa = max(pomoc_sumy_firm.nazwa, excluded.nazwa),
+       on conflict(nip) do update set nazwa = ${MAKS_BEZ_NULL('pomoc_sumy_firm.nazwa', 'excluded.nazwa')},
                                       przypadkow = przypadkow + excluded.przypadkow,
                                       z_kwota = z_kwota + excluded.z_kwota,
                                       brutto = brutto + excluded.brutto`,
@@ -224,7 +282,7 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
     `insert into pomoc_sumy_organy (teryt, nip_organu, kategoria, nazwa, przypadkow, z_kwota, brutto)
      values (?, ?, ?, ?, ?, ?, ?)
        on conflict(teryt, nip_organu, kategoria) do update set
-         nazwa = max(pomoc_sumy_organy.nazwa, excluded.nazwa),
+         nazwa = ${MAKS_BEZ_NULL('pomoc_sumy_organy.nazwa', 'excluded.nazwa')},
          przypadkow = przypadkow + excluded.przypadkow,
          z_kwota = z_kwota + excluded.z_kwota,
          brutto = brutto + excluded.brutto`,
@@ -233,9 +291,45 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
     `insert into pomoc_sumy_naj (dzien, teryt, nip, nazwa, brutto, max_eur, przeznaczenie, udzielajacy)
      values (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
+  const gminaRok = db.prepare(
+    `insert into pomoc_sumy_gmin_lata (teryt, rok, przypadkow, z_kwota, brutto, pierwszy, ostatni)
+     values (?, ?, ?, ?, ?, ?, ?)
+       on conflict(teryt, rok) do update set przypadkow = przypadkow + excluded.przypadkow,
+                                             z_kwota = z_kwota + excluded.z_kwota,
+                                             brutto = brutto + excluded.brutto,
+                                             pierwszy = min(pierwszy, excluded.pierwszy),
+                                             ostatni = max(ostatni, excluded.ostatni)`,
+  );
+  const gminaFirma = db.prepare(
+    `insert into pomoc_sumy_gmin_firmy (teryt, nip, nazwa, przypadkow, z_kwota, brutto, max_eur)
+     values (?, ?, ?, ?, ?, ?, ?)
+       on conflict(teryt, nip) do update set
+         nazwa = ${MAKS_BEZ_NULL('pomoc_sumy_gmin_firmy.nazwa', 'excluded.nazwa')},
+         przypadkow = przypadkow + excluded.przypadkow,
+         z_kwota = z_kwota + excluded.z_kwota,
+         brutto = brutto + excluded.brutto,
+         max_eur = ${MAKS_BEZ_NULL('pomoc_sumy_gmin_firmy.max_eur', 'excluded.max_eur')}`,
+  );
+  const gminaWymiar = db.prepare(
+    `insert into pomoc_sumy_gmin_wymiar (teryt, wymiar, klucz, przypadkow, z_kwota, brutto)
+     values (?, ?, ?, ?, ?, ?)
+       on conflict(teryt, wymiar, klucz) do update set przypadkow = przypadkow + excluded.przypadkow,
+                                                       z_kwota = z_kwota + excluded.z_kwota,
+                                                       brutto = brutto + excluded.brutto`,
+  );
+  const rok = dzien.slice(0, 4);
 
   wTransakcji(db, () => {
-    for (const [teryt, s] of w.gminy) gmina.run(teryt, s.przypadkow, s.zKwota, s.brutto);
+    for (const [teryt, s] of w.gminy) {
+      gmina.run(teryt, s.przypadkow, s.zKwota, s.brutto);
+      gminaRok.run(teryt, rok, s.przypadkow, s.zKwota, s.brutto, dzien, dzien);
+    }
+    for (const f of w.gminyFirmy.values()) {
+      gminaFirma.run(f.teryt, f.nip, f.nazwa, f.przypadkow, f.zKwota, f.brutto, f.maxEur);
+    }
+    for (const g of w.gminyWymiar.values()) {
+      gminaWymiar.run(g.teryt, g.wymiar, g.klucz, g.przypadkow, g.zKwota, g.brutto);
+    }
     for (const [nip, s] of w.firmy) firma.run(nip, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
     for (const s of w.wymiary.values()) wymiar.run(s.wymiar, s.klucz, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
     for (const o of w.organy.values()) organ.run(o.teryt, o.nip, o.kategoria, o.nazwa, o.przypadkow, o.zKwota, o.brutto);
@@ -257,10 +351,23 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
 function wyczyscStan(db: DatabaseSync): void {
   wTransakcji(db, () => {
     for (const t of ['pomoc_sumy_dni', 'pomoc_sumy_gmin', 'pomoc_sumy_firm', 'pomoc_sumy_wymiar',
-      'pomoc_sumy_organy', 'pomoc_sumy_naj']) {
+      'pomoc_sumy_organy', 'pomoc_sumy_naj', 'pomoc_sumy_gmin_lata', 'pomoc_sumy_gmin_firmy',
+      'pomoc_sumy_gmin_wymiar']) {
       db.prepare(`delete from ${t}`).run();
     }
+    /*
+     * Wersja w TEJ SAMEJ transakcji co czyszczenie: przerwana odbudowa zostawia
+     * czysty stan z nowa wersja i czesc dni, a nastepny przebieg dolicza
+     * brakujace dni zamiast zaczynac od zera. Kazdy dzien jest osobna,
+     * calkowita transakcja, wiec stan nigdy nie ma polowy dnia.
+     */
+    db.prepare('insert or replace into pomoc_sumy_wersja (id, wersja) values (1, ?)').run(WERSJA_SUM);
   });
+}
+
+function wersjaStanu(db: DatabaseSync): number | null {
+  const r = db.prepare('select wersja from pomoc_sumy_wersja where id = 1').get() as unknown as { wersja: number } | undefined;
+  return r?.wersja ?? null;
 }
 
 export type WynikOdswiezenia = { dodanych: number; odBudowy: boolean; opis: string };
@@ -286,13 +393,19 @@ export function odswiezSumy(db: DatabaseSync, odNowa = false): WynikOdswiezenia 
 
   const wgDnia = new Map(ustalone.map((d) => [d.dzien, d.pobrano]));
   const zmienione = [...policzone].filter(([dzien, pobrano]) => wgDnia.get(dzien) !== pobrano);
-  const odbudowa = odNowa || zmienione.length > 0;
-  if (odbudowa) wyczyscStan(db);
+  // Stan z poprzedniej wersji nie ma tego, co nowa wersja liczy, dla dni JUZ
+  // policzonych — dolozenie samych nowych dni dawaloby gminie pare dni zamiast
+  // calej historii. Pusty stan (pierwszy przebieg) nie jest odbudowa.
+  const staraWersja = policzone.size > 0 && wersjaStanu(db) !== WERSJA_SUM;
+  const odbudowa = odNowa || zmienione.length > 0 || staraWersja;
+  if (odbudowa || wersjaStanu(db) === null) wyczyscStan(db);
 
   const doPoliczenia = odbudowa ? ustalone : ustalone.filter((d) => !policzone.has(d.dzien));
   for (const d of doPoliczenia) dopiszDzien(db, d.dzien, d.pobrano, wkladDnia(db, d.dzien));
 
-  const powod = odNowa ? ' (na zadanie)' : zmienione.length ? ` (${zmienione.length} dni pobrano od nowa)` : '';
+  const powod = odNowa ? ' (na zadanie)'
+    : zmienione.length ? ` (${zmienione.length} dni pobrano od nowa)`
+      : staraWersja ? ` (nowy zakres sum, wersja ${WERSJA_SUM})` : '';
   return {
     dodanych: doPoliczenia.length,
     odBudowy: odbudowa,
@@ -553,16 +666,18 @@ export function firmyDoMapy(
 export function sumyFirm(
   db: DatabaseSync,
   delta = policzDelte(db),
-): Map<string, { nazwa: string | null; brutto: number; typRegon: string | null }> {
-  const sumy = new Map<string, { nazwa: string | null; brutto: number; typRegon: string | null }>();
-  for (const r of db.prepare('select nip, nazwa, brutto from pomoc_sumy_firm').all() as unknown as
-    { nip: string; nazwa: string | null; brutto: number }[]) {
-    sumy.set(r.nip, { nazwa: r.nazwa, brutto: r.brutto, typRegon: null });
+): Map<string, { nazwa: string | null; brutto: number | null; typRegon: string | null }> {
+  // `zKwota` niesiemy do konca, zeby firma bez zadnej kwoty dostala NULL,
+  // a nie zmierzone zero (regula 4) — tak jak `sum()` w drugiej drodze.
+  const sumy = new Map<string, { nazwa: string | null; brutto: number; zKwota: number; typRegon: string | null }>();
+  for (const r of db.prepare('select nip, nazwa, z_kwota, brutto from pomoc_sumy_firm').all() as unknown as
+    { nip: string; nazwa: string | null; z_kwota: number; brutto: number }[]) {
+    sumy.set(r.nip, { nazwa: r.nazwa, brutto: r.brutto, zKwota: r.z_kwota, typRegon: null });
   }
   for (const [nip, d] of delta.firmy) {
     const s = sumy.get(nip);
-    if (s) { s.brutto += d.brutto; s.nazwa = wieksza(s.nazwa, d.nazwa); }
-    else sumy.set(nip, { nazwa: d.nazwa, brutto: d.brutto, typRegon: null });
+    if (s) { s.brutto += d.brutto; s.zKwota += d.zKwota; s.nazwa = wieksza(s.nazwa, d.nazwa); }
+    else sumy.set(nip, { nazwa: d.nazwa, brutto: d.brutto, zKwota: d.zKwota, typRegon: null });
   }
   /*
    * Typ z REGON dociagamy JEDNYM przebiegiem po tabeli, nie zapytaniem na NIP.
@@ -575,7 +690,7 @@ export function sumyFirm(
     const s = sumy.get(r.nip);
     if (s) s.typRegon = r.typ;
   }
-  return sumy;
+  return new Map([...sumy].map(([nip, s]) => [nip, { nazwa: s.nazwa, brutto: kwota(s.zKwota, s.brutto), typRegon: s.typRegon }]));
 }
 
 /** Jedno policzenie delty na przebieg — mapa i firmy czytaja to samo. */
@@ -746,6 +861,82 @@ export function sprawdzSumy(
     if (r.nazwa !== s.nazwa) dopisz(`firmy/${r.nip} nazwa: „${r.nazwa}" vs „${s.nazwa}"`);
   }
   if (ileA !== firmyB.size) dopisz(`firmy: ${ileA} vs ${firmyB.size} NIP-ow`);
+  koniec();
+
+  /*
+   * 4. Pomoc w gminie (strona gminy, WERSJA_SUM 2) — trzy zwykle „group by"
+   * po dniach ustalonych, STRUMIENIEM. Stan czytamy po kluczu glownym, wiec
+   * w pamieci nie lezy zadna z dwoch stron w calosci.
+   */
+  mow('   licze pomoc w gminach od zera (lata, beneficjenci, grupy)…');
+  koniec = etap('gminy');
+  const sumyZgodne = (nazwa: string, a: { p: number; z: number; b: number }, s: Kubelek | undefined) => {
+    if (!s) { dopisz(`${nazwa}: brak w stanie`); return; }
+    if (a.p !== s.przypadkow || a.z !== s.zKwota) dopisz(`${nazwa}: ${a.p}/${a.z} vs ${s.przypadkow}/${s.zKwota} przypadkow`);
+    if (!ROWNE(a.b, s.brutto)) dopisz(`${nazwa}: ${a.b} vs ${s.brutto}`);
+  };
+  const ZRODLO_GMIN = `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
+
+  const rokStanu = db.prepare(
+    'select przypadkow, z_kwota, brutto, pierwszy, ostatni from pomoc_sumy_gmin_lata where teryt = ? and rok = ?',
+  );
+  let ileLat = 0;
+  for (const a of db.prepare(
+    `select teryt, substr(dzien, 1, 4) as rok, count(*) as p, count(wartosc_brutto) as z,
+            coalesce(sum(wartosc_brutto), 0) as b, min(dzien) as od, max(dzien) as do
+       from ${ZRODLO_GMIN} group by teryt, rok`,
+  ).iterate() as unknown as Iterable<{ teryt: string; rok: string; p: number; z: number; b: number; od: string; do: string }>) {
+    ileLat += 1;
+    const s = rokStanu.get(a.teryt, a.rok) as unknown as
+      { przypadkow: number; z_kwota: number; brutto: number; pierwszy: string; ostatni: string } | undefined;
+    sumyZgodne(`gmina/${a.teryt}/${a.rok}`, a, s && { przypadkow: s.przypadkow, zKwota: s.z_kwota, brutto: s.brutto });
+    if (s && (s.pierwszy !== a.od || s.ostatni !== a.do)) {
+      dopisz(`gmina/${a.teryt}/${a.rok}: dni ${a.od}..${a.do} vs ${s.pierwszy}..${s.ostatni}`);
+    }
+  }
+  const ileLatStanu = (db.prepare('select count(*) as c from pomoc_sumy_gmin_lata').get() as unknown as { c: number }).c;
+  if (ileLat !== ileLatStanu) dopisz(`gminy/lata: ${ileLat} vs ${ileLatStanu} wierszy`);
+
+  const firmaStanu = db.prepare(
+    'select nazwa, przypadkow, z_kwota, brutto, max_eur from pomoc_sumy_gmin_firmy where teryt = ? and nip = ?',
+  );
+  let ileFirm = 0;
+  for (const a of db.prepare(
+    `select teryt, coalesce(nip_beneficjenta, '') as nip, count(*) as p, count(wartosc_brutto) as z,
+            coalesce(sum(wartosc_brutto), 0) as b, max(wartosc_brutto_eur) as max_eur, max(nazwa_beneficjenta) as nazwa
+       from ${ZRODLO_GMIN} group by teryt, coalesce(nip_beneficjenta, '')`,
+  ).iterate() as unknown as Iterable<
+    { teryt: string; nip: string; p: number; z: number; b: number; max_eur: number | null; nazwa: string | null }>) {
+    ileFirm += 1;
+    const s = firmaStanu.get(a.teryt, a.nip) as unknown as
+      { nazwa: string | null; przypadkow: number; z_kwota: number; brutto: number; max_eur: number | null } | undefined;
+    const etykieta = `gmina/${a.teryt}/firma ${a.nip || '(bez NIP)'}`;
+    sumyZgodne(etykieta, a, s && { przypadkow: s.przypadkow, zKwota: s.z_kwota, brutto: s.brutto });
+    // Nazwa i najwieksza pojedyncza pomoc nie sa ozdoba: od nich zalezy regula jawnosci.
+    if (s && s.nazwa !== a.nazwa) dopisz(`${etykieta} nazwa: „${a.nazwa}" vs „${s.nazwa}"`);
+    if (s && !ROWNE(a.max_eur, s.max_eur)) dopisz(`${etykieta} max_eur: ${a.max_eur} vs ${s.max_eur}`);
+  }
+  const ileFirmStanu = (db.prepare('select count(*) as c from pomoc_sumy_gmin_firmy').get() as unknown as { c: number }).c;
+  if (ileFirm !== ileFirmStanu) dopisz(`gminy/firmy: ${ileFirm} vs ${ileFirmStanu} wierszy`);
+
+  const grupaStanu = db.prepare(
+    'select przypadkow, z_kwota, brutto from pomoc_sumy_gmin_wymiar where teryt = ? and wymiar = ? and klucz = ?',
+  );
+  let ileGrup = 0;
+  for (const wymiar of ['przeznaczenie', 'udzielajacy'] as const) {
+    for (const a of db.prepare(
+      `select teryt, coalesce(${wymiar}, '${BRAK_W_REJESTRZE}') as klucz, count(*) as p, count(wartosc_brutto) as z,
+              coalesce(sum(wartosc_brutto), 0) as b
+         from ${ZRODLO_GMIN} group by teryt, coalesce(${wymiar}, '${BRAK_W_REJESTRZE}')`,
+    ).iterate() as unknown as Iterable<{ teryt: string; klucz: string; p: number; z: number; b: number }>) {
+      ileGrup += 1;
+      const s = grupaStanu.get(a.teryt, wymiar, a.klucz) as unknown as
+        { przypadkow: number; z_kwota: number; brutto: number } | undefined;
+      sumyZgodne(`gmina/${a.teryt}/${wymiar}/${a.klucz}`, a, s && { przypadkow: s.przypadkow, zKwota: s.z_kwota, brutto: s.brutto });
+    }
+  }
+  const ileGrupStanu = (db.prepare('select count(*) as c from pomoc_sumy_gmin_wymiar').get() as unknown as { c: number }).c;
+  if (ileGrup !== ileGrupStanu) dopisz(`gminy/grupy: ${ileGrup} vs ${ileGrupStanu} wierszy`);
   koniec();
 
   // Gdy przycielismy liste, czytelnik ma wiedziec, ile bylo naprawde.

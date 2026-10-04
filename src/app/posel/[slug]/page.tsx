@@ -567,8 +567,9 @@ function PytaniaPosla({ dane, rodzaj }: { dane: InterpelacjePosla; rodzaj: Rodza
       </ul>
       {dane.ile > 0 ? (
         <p className="mt-3 text-xs text-atrament-3">
-          {`Pokazujemy metryczkę, nie treść: pełny tekst ${t.dopelniacz} i odpowiedzi jest`}
-          w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.
+          {/* Cale zdanie w jednym napisie: zlamanie wiersza miedzy {…} a tekstem
+              JSX wycina razem ze spacja — tak powstalo „jestw rejestrze”. */}
+          {`Pokazujemy metryczkę, nie treść: pełny tekst ${t.dopelniacz} i odpowiedzi jest w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.`}
         </p>
       ) : null}
     </section>

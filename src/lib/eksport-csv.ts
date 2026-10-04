@@ -26,8 +26,20 @@ function komorka(w: Komorka): string {
 }
 
 export function doCsv(naglowki: readonly string[], wiersze: readonly (readonly Komorka[])[]): string {
-  const linie = [naglowki, ...wiersze].map((w) => w.map(komorka).join(';'));
-  return `${BOM}${linie.join('\r\n')}\r\n`;
+  return naglowekCsv(naglowki) + wierszeCsv(wiersze);
+}
+
+/*
+ * Ten sam plik w kawalkach — dla eksportu, ktory nie miesci sie naraz
+ * (pulapka 69). naglowekCsv + wierszeCsv + wierszeCsv … daje bajt w bajt to
+ * samo co doCsv; pilnuje tego test.
+ */
+export function naglowekCsv(naglowki: readonly string[]): string {
+  return `${BOM}${naglowki.map(komorka).join(';')}\r\n`;
+}
+
+export function wierszeCsv(wiersze: readonly (readonly Komorka[])[]): string {
+  return wiersze.map((w) => `${w.map(komorka).join(';')}\r\n`).join('');
 }
 
 /** Nazwa pliku bez polskich znakow i spacji — rozne systemy roznie je obsluguja. */
