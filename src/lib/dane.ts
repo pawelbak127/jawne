@@ -1986,7 +1986,15 @@ export type PrzypadekFirmy = {
   przeznaczenie: string | null;
   forma: string | null;
   udzielajacy: string | null;
+  /** NIP udzielajacego — do filtra nazw (pulapka 34) i do strony organu. */
+  nip_udzielajacego: string | null;
+  /** Typ udzielajacego w REGON, gdy go znamy — rozstrzyga o jawnosci nazwy. */
+  typ_udzielajacego: string | null;
   srodek: string | null;
+  /** Numer programu pomocowego; „SA.…" to sprawa w Komisji Europejskiej. */
+  srodek_numer: string | null;
+  /** Podstawa prawna z SUDOP (od 04.10.2026 pokazywana na stronie firmy). */
+  podstawa: string | null;
 };
 
 /** Beneficjent pomocy publicznej po NIP — podsumowanie. */
@@ -2046,12 +2054,33 @@ export function firmyDoMapy(): string[] {
   return zapisane ? (JSON.parse(zapisane.wartosc) as string[]) : [];
 }
 
+/**
+ * Ktore z podanych NIP-ow organow maja wlasna strone (`/organ/[nip]`).
+ * Strona powstaje z tabeli sum, czyli z dni USTALONYCH — organ znany tylko
+ * z dni swiezych albo z historii gmin pokazowych dawalby 404. Osobne
+ * zapytanie, zeby brak tej tabeli nie wyzerowal listy przypadkow.
+ */
+export function organyZeStrona(nipy: string[]): Set<string> {
+  const unikalne = [...new Set(nipy.filter(Boolean))];
+  if (!unikalne.length) return new Set();
+  return bezTabeli(
+    () => new Set(wszystkie<{ nip: string }>(
+      `select distinct nip_organu as nip from pomoc_sumy_organy
+        where nip_organu in (${unikalne.map(() => '?').join(',')})`,
+      ...unikalne,
+    ).map((r) => r.nip)),
+    new Set<string>(),
+  );
+}
+
 /** Pojedyncze przypadki pomocy dla firmy, od najnowszych. */
 export function przypadkiFirmy(nip: string, ile = 50): PrzypadekFirmy[] {
   return bezTabeli(
     () => wszystkie<PrzypadekFirmy>(
       `select dzien, wartosc_brutto as brutto, wartosc_nominalna as nominalna, przeznaczenie, forma,
-              udzielajacy, srodek_nazwa as srodek
+              udzielajacy, nip_udzielajacego,
+              (select typ from regon r where r.nip = pomoc_publiczna.nip_udzielajacego) as typ_udzielajacego,
+              srodek_nazwa as srodek, srodek_numer, podstawa
          from pomoc_publiczna where nip_beneficjenta = ?
         order by dzien desc, wartosc_brutto desc limit ?`,
       nip, ile,

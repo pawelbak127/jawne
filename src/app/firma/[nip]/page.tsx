@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type Firma, type ZamowieniaFirmy } from '@/lib/dane';
+import { bazaDostepna, firma, organyZeStrona, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type Firma, type PrzypadekFirmy, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Zrodlo } from '@/components/Zrodlo';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
+import { adresSprawyKE, numerSprawyKE } from '@/lib/sprawy-ke';
 
 /**
  * Strona beneficjenta pomocy publicznej.
@@ -82,6 +83,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
   if (!w) notFound();
   const { f } = w;
   const przypadki = przypadkiFirmy(nip, 50);
+  const zeStrona = organyZeStrona(przypadki.map((p) => p.nip_udzielajacego ?? ''));
   const zamowienia = zamowieniaFirmy(nip);
   const imp = zrodloImportu('sudop');
 
@@ -149,10 +151,29 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
             <li key={`${p.dzien}-${i}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
               <div className="min-w-0 flex-1">
                 <p className="leading-snug font-medium">{skroc(p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}</p>
-                <p className="mt-1 text-sm text-atrament-2">{skroc(p.udzielajacy ?? '—', 80)}</p>
+                <Udzielajacy p={p} maStrone={Boolean(p.nip_udzielajacego && zeStrona.has(p.nip_udzielajacego))} />
                 <p className="mt-1 text-xs text-atrament-3">
                   {`${dataKrotko(p.dzien)}${p.forma ? ` · ${skroc(p.forma, 60)}` : ''}${p.srodek ? ` · ${skroc(p.srodek, 60)}` : ''}`}
                 </p>
+                {/*
+                  Podstawa prawna i sprawa w Komisji Europejskiej (04.10.2026) —
+                  prosba Pawla „czy da sie wejsc glebiej w te pomoc". Oba pola sa
+                  w SUDOP; dokumentow (decyzji, umow) rejestr nie udostepnia.
+                  Odnosnik do Komisji tylko przy numerze „SA.…" — patrz sprawy-ke.ts.
+                */}
+                {p.podstawa ? (
+                  <p className="mt-1 text-xs leading-relaxed text-atrament-3">{`Podstawa prawna: ${p.podstawa}`}</p>
+                ) : null}
+                {numerSprawyKE(p.srodek_numer) ? (
+                  <a
+                    href={adresSprawyKE(numerSprawyKE(p.srodek_numer)!)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex min-h-6 items-center text-xs text-akcent underline underline-offset-4 hover:no-underline"
+                  >
+                    {`decyzja Komisji Europejskiej w sprawie ${numerSprawyKE(p.srodek_numer)}`}
+                  </a>
+                ) : null}
               </div>
               <div className="shrink-0 text-left sm:text-right">
                 <p className="liczby font-semibold">{zlote(p.brutto)}</p>
@@ -167,6 +188,13 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
             </li>
           ))}
         </ul>
+        {przypadki.some((p) => p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1) ? (
+          <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+            Wartość brutto to ekwiwalent dotacji brutto, czyli tyle, ile pomoc jest warta dla firmy.
+            Przy dotacji to cała kwota, ale przy pożyczce, gwarancji czy płatnościach rozłożonych
+            w czasie bywa niższa niż kwota nominalna. Rejestr podaje obie; sumujemy brutto.
+          </p>
+        ) : null}
 
         <WarunkiSudop pobrano={imp?.kiedy ?? null} />
 
@@ -272,5 +300,31 @@ function Zamowienia({ z }: { z: ZamowieniaFirmy }) {
         da się z niej wyczytać, ile przypadło tej firmie.
       </p>
     </section>
+  );
+}
+
+/**
+ * Kto udzielil pomocy — przez TEN SAM filtr nazw co beneficjent.
+ *
+ * Do 04.10.2026 nazwa szla tu wprost z rejestru, a pulapka 34 mowi, ze
+ * udzielajacym bywa osoba fizyczna (firmy szkoleniowe przy projektach UE).
+ * Gdy nazwe wolno pokazac jako osobe prawna lub instytucje, prowadzi do
+ * strony organu (`/organ/[nip]` istnieje dokladnie dla takich).
+ */
+function Udzielajacy({ p, maStrone }: { p: PrzypadekFirmy; maStrone: boolean }) {
+  if (!p.udzielajacy?.trim()) return <p className="mt-1 text-sm text-atrament-2">—</p>;
+  const jawny = nazwaPodmiotuJawna(p.udzielajacy, p.typ_udzielajacego);
+  const nazwa = nazwaDoPokazania(p.udzielajacy, { typRegon: p.typ_udzielajacego });
+  return (
+    <p className={`mt-1 text-sm ${nazwa.pominieta ? 'text-atrament-3 italic' : 'text-atrament-2'}`}>
+      {'przyznał: '}
+      {jawny && maStrone ? (
+        <Link href={`/organ/${p.nip_udzielajacego}`} className="text-akcent underline underline-offset-4 hover:no-underline">
+          {skroc(nazwa.tekst, 80)}
+        </Link>
+      ) : (
+        skroc(nazwa.tekst, 80)
+      )}
+    </p>
   );
 }

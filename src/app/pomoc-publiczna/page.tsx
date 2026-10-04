@@ -148,13 +148,20 @@ export default function StronaPomocy() {
               <li key={`${n.nip}-${n.dzien}-${i}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
                 <div className="min-w-0 flex-1">
                   <p className={`leading-snug font-medium ${nazwa.pominieta ? 'text-atrament-3 italic' : ''}`}>
+                    {/*
+                      Link WIDOCZNY, nie tylko po najechaniu. ZGLOSZENIE PAWLA
+                      04.10.2026: „nie mozna tego dalej rozwinac" — a link byl,
+                      tylko wygladal jak zwykly tekst (podkreslenie dopiero po
+                      najechaniu myszka, na telefonie nigdy).
+                    */}
                     {!nazwa.pominieta && n.nip ? (
-                      <Link href={`/firma/${n.nip}`} className="hover:text-akcent hover:underline">{nazwa.tekst}</Link>
+                      <Link href={`/firma/${n.nip}`} className="text-akcent underline underline-offset-4 hover:no-underline">{nazwa.tekst}</Link>
                     ) : nazwa.tekst}
                   </p>
                   <p className="mt-1 text-sm text-atrament-2">{skroc(n.przeznaczenie ?? '—', 110)}</p>
                   <p className="mt-1 text-xs text-atrament-3">
-                    {`${dataSlownie(n.dzien)} · ${skroc(n.udzielajacy ?? '—', 60)}`}
+                    {/* Udzielajacy przez ten sam filtr nazw co beneficjent (pulapka 34). */}
+                    {`${dataSlownie(n.dzien)} · ${skroc(nazwaDoPokazania(n.udzielajacy).tekst, 60)}`}
                     {n.gmina ? (
                       <>
                         {' · '}
