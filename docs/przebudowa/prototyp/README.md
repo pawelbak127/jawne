@@ -1,7 +1,7 @@
 # Prototyp — kierunek A „Wypis z rejestru”
 
 Otwórz `index.html` w przeglądarce (dwuklik wystarczy, nic nie trzeba
-budować). Motyw: przycisk ◐ albo ustawienie systemu. Telefon: wąskie okno
+budować). Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno
 albo narzędzia deweloperskie, 390 px.
 
 | plik | strona | dane |
@@ -10,6 +10,8 @@ albo narzędzia deweloperskie, 390 px.
 | `gmina.html` | `/gmina/126101` — Kraków | z `tekst/gmina-krakow.txt` |
 | `posel.html` | `/posel/andrzej-adamczyk` | z `tekst/posel.txt` (bez zdjęcia) |
 | `firma.html` | `/firma/7690502495` — PGE GiEK | z `tekst/firma.txt` |
+| `kierunki.html` | porównanie A, B, C, A+B | — |
+| `gmina-b.html`, `gmina-c.html`, `gmina-ab.html` | Kraków w kierunkach B, C i A+B | ta sama treść co `gmina.html`; styl to nakładka `skora-*.css` na `styl.css` |
 
 **Skąd liczby:** przepisane dosłownie z wyrenderowanego tekstu stron na
 gałęzi `przebudowa-zrzuty` (lokalna budowa `main` @ 414bc5d, 04.10.2026).
@@ -37,9 +39,10 @@ szerokość dokumentu = szerokość okna (spis działów przewija się w bok
 wewnątrz własnego paska, tak ma być), 0 błędów konsoli, fonty z `fonty/`,
 żaden cel dotykowy poza tekstem ciągłym poniżej 24 px.
 
-`fonty/`: Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex Mono 500,
-podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL OFL 1.1
-(pliki `OFL-*.txt`). Razem 141 kB.
+`fonty/`: kierunek A — Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex
+Mono 500 (141 kB); B — Półtawski Nowy 400/600 (81 kB); C — Archivo 400/700
+(55 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
+OFL 1.1 (pliki `OFL-*.txt`).
 
 Pliki CSS i JS są tylko dla prototypu — kod strony przebuduje główna sesja
 w `src/` (Tailwind 4, te same nazwy zmiennych co w `globals.css`).

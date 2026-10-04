@@ -287,3 +287,13 @@ details.metoda ul { margin: 6px 0 0; padding-left: 18px; }
   .tabela.decyzje td.l:nth-last-child(2)::before { content: "decyzje: "; color: var(--atrament-2); }
   .tabela.przypadki td.l:nth-last-child(2)::before { content: "przypadki: "; color: var(--atrament-2); }
 }
+
+/* przełącznik kierunków (tylko prototyp) */
+.kierunki-pasek { background: var(--papier-3); border-bottom: 1px solid var(--kreska); font-size: 13.5px; font-family: "IBM Plex Sans", sans-serif; }
+.kierunki-pasek .obszar { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-height: 40px; padding-top: 4px; padding-bottom: 4px; }
+.kierunki-pasek a { color: var(--atrament); padding: 4px 2px; }
+.kierunki-pasek a[aria-current="page"] { font-weight: 600; text-decoration-thickness: 3px; }
+
+/* długi opis paska schodzi do drugiej linii zamiast rozpychać stronę (zmierzone w B na 390 px) */
+.lista-paskow .opis { flex-wrap: wrap; }
+.lista-paskow .opis span:last-child { margin-left: auto; }

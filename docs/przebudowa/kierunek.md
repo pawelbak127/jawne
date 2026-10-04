@@ -154,4 +154,6 @@ więc przebudowa to jeden komponent zamiast siedemnastu kart. I jest
 najtańszy w obsłudze: działa w jednej kolumnie na telefonie, nie wymaga
 JavaScriptu, a fonty kosztują ok. 40 kB więcej niż dziś.
 
-Prototyp: `prototyp/` (strona główna, gmina, poseł, firma).
+Prototyp: `prototyp/` (strona główna, gmina, poseł, firma w kierunku A)
+oraz `prototyp/kierunki.html` — ta sama strona Krakowa w A, B, C i A+B.
+Decyzje Pawła: `decyzje.md`.

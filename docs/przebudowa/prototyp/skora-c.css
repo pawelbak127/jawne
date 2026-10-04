@@ -1,0 +1,60 @@
+/*
+  Kierunek C „Tablica” — oznakowanie publiczne. Nakładka na styl.css.
+  Czerń i biel, jeden grotesk (Archivo), wielkie liczby, interakcja =
+  odwrócenie barw. Jedyny kolor to dane (głosy, kluby).
+*/
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-ext-700-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+:root {
+  --papier: #ffffff; --papier-2: #ffffff; --papier-3: #eeeeee;
+  --atrament: #000000; --atrament-2: #333333; --atrament-3: #555555;
+  --kreska: #000000; --kreska-2: #000000; --akcent: #000000; --akcent-slaby: #eeeeee;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #000000; --papier-2: #0d0d0d; --papier-3: #1c1c1c;
+  --atrament: #ffffff; --atrament-2: #d0d0d0; --atrament-3: #ababab;
+  --kreska: #ffffff; --kreska-2: #ffffff; --akcent: #ffffff; --akcent-slaby: #1c1c1c; } }
+:root[data-motyw="ciemny"] {
+  --papier: #000000; --papier-2: #0d0d0d; --papier-3: #1c1c1c;
+  --atrament: #ffffff; --atrament-2: #d0d0d0; --atrament-3: #ababab;
+  --kreska: #ffffff; --kreska-2: #ffffff; --akcent: #ffffff; --akcent-slaby: #1c1c1c; }
+
+body, h1, h2, h3, .marka b, .drzwi b, .dzial > .nr, .mono, a.zrodlo, details.metoda > summary::before {
+  font-family: "Archivo", "Arial Narrow", sans-serif; letter-spacing: 0; }
+h1 { font-weight: 700; font-size: clamp(2.4rem, 9vw, 4.5rem); text-transform: uppercase; line-height: 1; }
+h2 { font-weight: 700; text-transform: uppercase; font-size: 1.5rem; }
+h3 { font-weight: 700; }
+.marka b { font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+.naglowek { border-bottom: 6px solid var(--atrament); }
+.menu-grupy a[aria-current="page"] { background: var(--atrament); color: var(--papier); border-bottom-color: var(--atrament); }
+.mono { font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: .04em; }
+.dzial { border-bottom: 0; }
+.dzial .tytul { background: var(--atrament); color: var(--papier); padding: 8px 12px; }
+.dzial .tytul a.zrodlo { background: var(--papier); color: var(--atrament); }
+.dzial > .nr { font-weight: 700; font-size: 2.6rem; color: var(--atrament); line-height: 1; }
+
+/* liczba wielka, opis wersalikami pod nią */
+.wiersze { border-top: 6px solid var(--atrament); }
+.wiersz { grid-template-columns: minmax(0, 1fr); border-bottom: 2px solid var(--atrament); padding: 16px 0 18px; }
+.wiersz .co { order: 2; text-transform: uppercase; font-weight: 700; font-size: 13px; letter-spacing: .03em; }
+.wiersz .ile { order: 1; text-align: left; font-weight: 700; font-size: 2.6rem; line-height: 1; }
+.wiersz.duzy .ile { font-size: clamp(3rem, 11vw, 4.5rem); }
+.wiersz .z-czego, .wiersz .podstawa { grid-column: 1; grid-row: auto; order: 3; }
+.wiersz .podstawa { order: 4; border: 0 !important; padding: 0 !important; }
+@media (min-width: 900px) { .wiersz { grid-template-columns: minmax(0, 1fr); } .wiersz .z-czego { grid-column: 1; } }
+
+/* źródło jako czarny prostokąt */
+a.zrodlo { background: var(--atrament); color: var(--papier); padding: 4px 10px; font-weight: 700; text-transform: uppercase; font-size: 12px; margin-top: 6px; }
+a.zrodlo .data { color: inherit; opacity: .8; }
+a:not(.zrodlo):hover { background: var(--atrament); color: var(--papier); text-decoration: none; }
+
+.w-liczbach { border: 6px solid var(--atrament); }
+.uwaga { border-left: 0; background: var(--atrament); color: var(--papier); padding: 10px 14px; }
+.uwaga a { color: var(--papier); }
+.pasek { height: 10px; }
+.pasek i { background: var(--atrament); }
+details.metoda { border-top: 2px solid var(--atrament); }
+.stopka { border-top: 6px solid var(--atrament); }
+.prototyp { background: var(--atrament); }

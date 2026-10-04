@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Spis · prototyp zrejestru</title>
+<title>Cztery kierunki · prototyp zrejestru</title>
 <link rel="stylesheet" href="styl.css">
 <script src="motyw.js"></script>
 </head>
 <body>
-<div class="prototyp"><div class="obszar"><b>Prototyp układu</b> · <a href="index.html">spis prototypu</a></div></div>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu</b> — porównanie kierunków · <a href="index.html">spis prototypu</a></div></div>
 <header class="naglowek">
   <div class="obszar gora">
     <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
@@ -30,18 +30,20 @@
   <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a></div></nav>
 </header>
 <main id="tresc">
-<div class="obszar" style="padding:40px 16px">
-  <p class="mono szary">docs/przebudowa/prototyp · kierunek A „Wypis z rejestru”</p>
-  <h1 style="margin-top:10px">Prototyp</h1>
-  <p class="podtytul szary" style="margin-top:10px;max-width:42rem">Statyczne strony do obejrzenia w przeglądarce — bez budowania, bez bazy. Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno (390 px).</p>
-  <p style="margin-top:18px"><a href="kierunki.html"><b>Porównanie kierunków A, B, C i A+B →</b></a> (ta sama strona Krakowa w czterech stylach)</p>
-  <div class="wiersze" style="margin-top:24px;max-width:46rem">
-    <div class="wiersz"><p class="co"><a href="glowna.html">Strona główna</a></p><p class="ile mono" style="font-size:12px">/</p><p class="z-czego">głosowania, kluby i liczby z tekst/glowna.txt</p></div>
-    <div class="wiersz"><p class="co"><a href="gmina.html">Gmina: Kraków</a></p><p class="ile mono" style="font-size:12px">/gmina/126101</p><p class="z-czego">pełna treść strony skrócona do 6 działów; listy obcięte z odnośnikiem „pokaż wszystkie”</p></div>
-    <div class="wiersz"><p class="co"><a href="posel.html">Poseł: Andrzej Adamczyk</a></p><p class="ile mono" style="font-size:12px">/posel/andrzej-adamczyk</p><p class="z-czego">bez zdjęcia (nie było go w zrzutach jako pliku)</p></div>
-    <div class="wiersz"><p class="co"><a href="firma.html">Firma: PGE GiEK</a></p><p class="ile mono" style="font-size:12px">/firma/7690502495</p><p class="z-czego">50 przypadków zgrupowanych w 4 wiersze; warunki UOKiK tuż pod liczbą</p></div>
-  </div>
-  <p class="uwaga" style="margin-top:24px"><b>Skąd liczby:</b> przepisane z wyrenderowanego tekstu stron (gałąź <span class="mono">przebudowa-zrzuty</span>, lokalna budowa <span class="mono">main@414bc5d</span>, 04.10.2026). Na zrejestru.pl mogą być inne, bo serwer pobiera SUDOP co godzinę.</p>
+<div class="obszar" style="padding:40px 16px 0">
+  <p class="mono szary">docs/przebudowa/kierunek.md · ta sama strona Krakowa, ta sama treść HTML</p>
+  <h1 style="margin-top:10px">Cztery kierunki</h1>
+  <p class="podtytul szary" style="margin-top:10px;max-width:44rem">Każdy wariant to ta sama strona gminy z tymi samymi liczbami — różni się tylko styl. Przełączaj kierunki paskiem na górze strony gminy; przełącznik motywu działa w każdym.</p>
+  <div class="tabela-przewijana"><table class="tabela" style="margin-top:24px">
+    <thead><tr><th>Kierunek</th><th>Litery</th><th>Barwy</th><th>Liczby i źródła</th><th class="l">Fonty</th></tr></thead>
+    <tbody>
+      <tr><td><a href="gmina.html"><b>A „Wypis z rejestru”</b></a><br><span class="szary">rekomendacja</span></td><td>Brygada 1918 + IBM Plex Sans, Plex Mono w sygnaturach</td><td>papier kancelaryjny, atrament, zieleń tylko na tym, co się klika</td><td>wiersz rejestru: etykieta · wartość · z czego · podstawa na prawym marginesie</td><td class="l">141 kB</td></tr>
+      <tr><td><a href="gmina-b.html"><b>B „Monitor”</b></a><br><span class="szary">gazeta urzędowa</span></td><td>Antykwa Półtawskiego (Półtawski Nowy) do tekstu i nagłówków</td><td>biel gazety, czerń, sepia</td><td>liczby jak pogrubione słowa, źródła kursywą na marginesie, podwójne linie</td><td class="l">ok. 109 kB*</td></tr>
+      <tr><td><a href="gmina-c.html"><b>C „Tablica”</b></a><br><span class="szary">oznakowanie publiczne</span></td><td>Archivo, wersaliki</td><td>czysta czerń i biel</td><td>liczba wielka, opis pod nią, źródło jako czarny prostokąt</td><td class="l">55 kB*</td></tr>
+      <tr><td><a href="gmina-ab.html"><b>A+B „Wypis z marginesem”</b></a><br><span class="szary">mieszanka</span></td><td>jak A</td><td>jak A</td><td>jak A, a „Jak to liczymy” stoi otwarte na marginesie obok działu (od 1200 px); na telefonie zwinięte</td><td class="l">141 kB</td></tr>
+    </tbody></table></div>
+  <p class="szary" style="margin-top:12px;font-size:13.5px">* W prototypie B i C są nakładką na A, więc przeglądarka pobiera też fonty A. Liczby wag z <span class="mono">kierunek.md</span> dotyczą samego kierunku.</p>
+  <p class="uwaga" style="margin-top:20px">B i C to szkice stylu na tej samej treści, nie przemyślane do końca projekty: w B liczby wciąż stoją w wierszach, a nie w zdaniach (tego nie da się zrobić samym stylem), a C pokazuje problem z kierunek.md — wielkie liczby czytają się jak nagłówek prasowy.</p>
 </div>
 </main>
 <footer class="stopka"><div class="obszar">
