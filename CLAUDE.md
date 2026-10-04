@@ -29,8 +29,10 @@ Node >= 24 (node:sqlite)
 ```
 
 JavaScript po stronie klienta jest **dozwolony i używany**: wyszukiwanie
-w trakcie pisania, filtry, podświetlanie bloków w półkolu. Biblioteki UI nie
-są zakazane — na razie żadna nie zarobiła na miejsce w zależnościach.
+w trakcie pisania, filtry, podświetlanie bloków w półkolu. Biblioteki UI,
+fonty i komponenty wolno dodawać; miarą jest waga strony (pułapka 54:
+ten sam komponent na 499 stronach to nie ten sam koszt) i pamięć przy
+budowie na serwerze (pułapka 58).
 
 ### Gdzie czego szukać
 
@@ -879,18 +881,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
 
 ---
 
-## Jak pracować z Pawłem
+## Konwencje
 
-- Jest Lead Developerem, nie zawodowym programistą. Rozumie architekturę
-  i zadaje trafne pytania. **Kilka razy jego wątpliwość okazała się słuszna,
-  a pewność modelu błędna.** „To dziwne, że tak musi być" traktuj jako sygnał
-  do sprawdzenia, nie do obrony tezy.
-- Chce gotowych komend, krok po kroku, z zaznaczoną kolejnością.
-- **Nie każ mu usuwać linii z plików konfiguracyjnych.**
-- Małe, atomowe commity. Commity i dokumentacja po polsku, kod po angielsku
-  poza nazwami dziedzinowymi.
-- Gdy popełnisz błąd, nazwij go wprost i wyjaśnij mechanizm. Ten projekt stoi
-  na wiarygodności.
+- Commity i dokumentacja po polsku, kod po angielsku poza nazwami dziedzinowymi.
+- Małe, atomowe commity; błąd nazwany wprost w treści commita razem
+  z mechanizmem — historia zmian jest częścią wiarygodności serwisu.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
