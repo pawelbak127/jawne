@@ -1191,6 +1191,21 @@ export function stronaProcesow(od: number, ile: number, rodzaj = 'projekt ustawy
   );
 }
 
+export type Streszczenie = { tekst: string; model: string; przygotowano: string };
+
+/**
+ * Streszczenie „po ludzku" — osobnym zapytaniem, NIE kolumna w
+ * KOLUMNY_PROCESU: gdyby tabeli jeszcze nie bylo, `bezTabeli` oddalby
+ * pusty wynik dla calej listy ustaw, a nie tylko dla streszczenia.
+ * Do tabeli trafia wylacznie to, co przeszlo bezpiecznik w imporcie.
+ */
+export function streszczenieUstawy(numer: string): Streszczenie | null {
+  return bezTabeli(
+    () => jeden<Streszczenie>('select tekst, model, przygotowano from streszczenia where numer = ?', numer),
+    null,
+  );
+}
+
 export function proces(numer: string): ProcesSkrot | null {
   return bezTabeli(
     () => jeden<ProcesSkrot>(`select ${KOLUMNY_PROCESU} from procesy p where p.numer = ?`, numer),

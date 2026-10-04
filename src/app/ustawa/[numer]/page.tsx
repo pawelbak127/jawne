@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, etapyProcesu, proces, type EtapProcesu, type ProcesSkrot } from '@/lib/dane';
+import { bazaDostepna, etapyProcesu, proces, streszczenieUstawy, type EtapProcesu, type ProcesSkrot } from '@/lib/dane';
 import { dataSlownie, skroc } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -43,6 +43,7 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
   const p = proces(numer);
   if (!p) notFound();
   const etapy = etapyProcesu(numer);
+  const streszczenie = streszczenieUstawy(numer);
   const s = stan(p);
   const tytul = bezNazwiskOsobPrywatnych(p.tytul);
 
@@ -84,6 +85,24 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
         nie wychodza na strone (zasada 7). Import stosuje ja do tego samego
         pola, skladajac indeks wyszukiwania.
       */}
+      {/*
+        PO LUDZKU (04.10.2026) — prosba Pawla: „dla zwyklego zjadacza chleba".
+        Napisane przez model jezykowy WYLACZNIE z opisu rejestru, ktory stoi
+        tuz nizej — zrodlo jest o rzut oka, a nie zamiast. Kazda liczba
+        przeszla bezpiecznik (musi wystepowac w opisie rejestru), a gdy rejestr
+        zmieni opis, streszczenie znika samo (skrot zrodla). Podpis mowi wprost,
+        kto to napisal i ze rozstrzyga tekst rejestru.
+      */}
+      {streszczenie ? (
+        <section className="mt-6 rounded-2xl border border-kreska bg-akcent-slaby p-5">
+          <h2 className="szryft text-lg font-semibold">Po ludzku</h2>
+          <p className="mt-2 leading-relaxed">{streszczenie.tekst}</p>
+          <p className="mt-3 text-xs leading-relaxed text-atrament-2">
+            {`Streszczenie napisał automatycznie model językowy (${streszczenie.model}) wyłącznie na podstawie opisu z rejestru, który jest niżej. Może zawierać błędy — rozstrzyga tekst rejestru. Każda liczba w streszczeniu została sprawdzona: musi występować w opisie rejestru.`}
+          </p>
+        </section>
+      ) : null}
+
       {p.opis ? (
         <section className="mt-6 rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

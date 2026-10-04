@@ -25,6 +25,8 @@ import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js'
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
 import { slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
+import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
+import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
@@ -1908,6 +1910,45 @@ async function importPytan(db: DatabaseSync, r: RodzajPytan): Promise<void> {
 }
 
 /**
+ * Streszczenia ustaw z pliku w repozytorium — bez sieci.
+ *
+ * Kazde przechodzi dwie kontrole, zanim trafi do bazy:
+ *  1. skrot opisu, z ktorego je napisano, musi sie zgadzac z BIEZACYM opisem
+ *     w rejestrze — inaczej streszczenie opowiada o tekscie, ktorego juz nie ma,
+ *  2. bezpiecznik liczb (src/lib/streszczenia.ts): kazdy ciag cyfr ze
+ *     streszczenia musi wystepowac w opisie rejestru.
+ * Odrzucone sa RAPORTOWANE z powodem (wzorzec 2) — strona pokazuje wtedy
+ * sam opis rejestru, czyli nic sie nie psuje.
+ */
+async function importStreszczen(db: DatabaseSync): Promise<void> {
+  log('-> streszczenia ustaw (plik w repozytorium, bez sieci)');
+  const plik = join(process.cwd(), 'ingest', 'zrodla', 'streszczenia', 'ustawy.json');
+  if (!existsSync(plik)) { log('   brak pliku — pomijam'); return; }
+  const wpisy = JSON.parse(readFileSync(plik, 'utf8')) as Record<string, WpisStreszczenia>;
+  const opis = db.prepare('select opis from procesy where numer = ?');
+  const wstaw = db.prepare(
+    'insert into streszczenia(numer, tekst, zrodlo_skrot, model, przygotowano) values (?,?,?,?,?)',
+  );
+  let dobrych = 0;
+  const odrzucone: string[] = [];
+  wTransakcji(db, () => {
+    db.prepare('delete from streszczenia').run();
+    for (const [numer, w] of Object.entries(wpisy)) {
+      const o = (opis.get(numer) as { opis: string | null } | undefined)?.opis ?? null;
+      if (!o) { odrzucone.push(`${numer}: druku nie ma w bazie albo nie ma opisu`); continue; }
+      if (skrotOpisu(o) !== w.zrodlo_skrot) { odrzucone.push(`${numer}: opis w rejestrze sie zmienil`); continue; }
+      const s = sprawdzStreszczenie(w.tekst, o);
+      if (!s.ok) { odrzucone.push(`${numer}: ${s.bledy.join('; ')}`); continue; }
+      wstaw.run(numer, w.tekst.trim(), w.zrodlo_skrot, w.model, w.przygotowano);
+      dobrych++;
+    }
+  });
+  log(`   ${dobrych} z ${Object.keys(wpisy).length} przeszlo kontrole`);
+  for (const o of odrzucone) log(`   ODRZUCONE ${o}`);
+  odnotujImport(db, 'streszczenia', dobrych, odrzucone.length ? `odrzucone: ${odrzucone.length}` : undefined);
+}
+
+/**
  * Wystapienia na sali ze stenogramow — jeden zapis na dzien obrad
  * (ZMIERZONE 03.10.2026: 199 dni za nami, 100-500 wystapien na dzien).
  *
@@ -2083,6 +2124,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   procesy: importProcesow,
   interpelacje: importInterpelacji,
   zapytania: importZapytan,
+  streszczenia: importStreszczen,
   wystapienia: importWystapien,
   komisje: importKomisji,
   zamowienia: importZamowien,

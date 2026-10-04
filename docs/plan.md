@@ -55,11 +55,17 @@ Po wdrożeniu `sudo jawne stan` sam powie, gdyby coś znowu się rozjechało.
    (pułapka 68). Rekordów AAAA nie ma ani dla `www`, ani dla adresu głównego,
    więc wystarczy ten jeden. Przekierowanie po naszej stronie jest już
    w Caddyfile i zacznie działać samo.
-2. **Sprawdzić, czy `kontakt@zrejestru.pl` odbiera pocztę.** MX wskazuje na
-   `mail.zrejestru.pl` (Hostido), a wcześniej ustaliliśmy, że plan nie ma
-   skrzynek. Próg jawności z zasady 7 stoi na tym, że droga sprzeciwu
-   DZIAŁA — adres, który odbija listy, jest tylko na papierze. Test: wysłać
-   list z innej skrzynki i zobaczyć, czy dochodzi.
+2. **Poczta `kontakt@zrejestru.pl` — SPRAWDZONE 04.10.2026: NIE DZIAŁA.**
+   Próbny list odbił się z `550 authentication required`: serwer Hostido
+   (`mail.zrejestru.pl` → 185.110.48.29) nie przyjmuje poczty dla domeny,
+   a skrzynki w tym planie założyć się nie da. Tymczasem na żywej stronie
+   próg jawności DZIAŁA i odsyła po sprzeciw właśnie na ten adres — droga
+   sprzeciwu istnieje tylko na papierze.
+   Naprawa: przekierowanie poczty przez zewnętrzną usługę (np. ImprovMX):
+   rekordy MX domeny na serwery tej usługi, w jej panelu `kontakt@` →
+   skrzynka Pawła. Do czasu testu, który przejdzie, `JAWNE_KONTAKT`
+   wyczyszczony (`sudo jawne ustaw JAWNE_KONTAKT`, Enter) — wtedy próg
+   się wyłącza, zgodnie z zasadą 7.
 3. **Drugie `sudo jawne aktualizuj`** po tym, które trwa 03.10 od 20:13 —
    dopiero ono przyniesie dziennik wejść, statystyki, przekierowanie www,
    nową politykę prywatności, oś lat funduszy UE i komisje.

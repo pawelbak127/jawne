@@ -457,6 +457,22 @@ create table if not exists zapytania_autorzy (
 create index if not exists zapytania_autorzy_posel on zapytania_autorzy(posel_id);
 
 /*
+ * Streszczenia ustaw prostym jezykiem (od 04.10.2026). Zrodlem jest plik
+ * ingest/zrodla/streszczenia/ustawy.json w repozytorium — kazde streszczenie
+ * ma tam historie zmian i da sie je przejrzec przed publikacja. Do tej tabeli
+ * trafia tylko to, co przeszlo bezpiecznik (src/lib/streszczenia.ts) i czego
+ * skrot zrodla zgadza sie z BIEZACYM opisem rejestru: gdy rejestr zmieni
+ * opis, stare streszczenie przestaje sie pokazywac samo.
+ */
+create table if not exists streszczenia (
+  numer        text primary key,
+  tekst        text not null,
+  zrodlo_skrot text not null,
+  model        text not null,
+  przygotowano text not null
+);
+
+/*
  * Wystapienia na sali ze stenogramow (od 03.10.2026). Jeden wiersz to jedno
  * wystapienie: kto, w jakiej funkcji (posel, sprawozdawca, minister bedacy
  * poslem), kiedy, i czy zlozone tylko na pismie. TEMATU rejestr przy
