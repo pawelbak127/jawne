@@ -309,8 +309,13 @@ function rozdzielPodpisy(podpisy, wedlugNazwiska) {
  * Gdy po trzech turach nic nie pasuje, numer zostaje `null`. Zgadywanie numeru
  * przy czyims nazwisku kosztuje wiecej niz jego brak.
  *
- * ZMIERZONE: tura 1 daje 390 z 460 miejsc, tura 2 kolejne 50, tura 3 — 17.
- * Bez numeru zostaja 3 podpisy.
+ * ZMIERZONE 30.09.2026: tura 1 dawala 390 z 460 miejsc, tura 2 kolejne 50,
+ * tura 3 — 17; bez numeru zostawaly 3 podpisy, a jeden numer trafial do
+ * niewlasciwej osoby (patrz kolejnosc tur nizej).
+ * Po zmianie kolejnosci 04.10.2026: numer ma wszystkie 460 podpisow, zaden
+ * numer sie nie powtarza, a wzgledem poprzedniej wersji zmienily sie dokladnie
+ * 4 przypisania (A. Luczak 214 -> 215; Kolodziejczak, Kierzek-Koperska
+ * i Mieszkowski dostali 214, 211 i 147).
  */
 function przypiszNumery(podpisy, numery) {
   const przypisane = new Map();
@@ -337,7 +342,23 @@ function przypiszNumery(podpisy, numery) {
     }
   };
 
+  /*
+   * NAJPIERW TYPOWY PION, potem luzniejsze wszystko. ZGLOSZENIE PAWLA
+   * 04.10.2026 (zrzut z dwiema „rozjechanymi" parami kropek) i to byl blad
+   * kolejnosci, nie rysunku. Dawniej druga tura dopuszczala pion 3-20 juz
+   * przy odstepie w bok 8 — wiec „A. Luczak" zabral numer 214 lezacy 17,1
+   * pod nazwiskiem (dwa razy dalej niz zwykle), zanim „M.M. Kolodziejczak"
+   * mogla do niego dojsc (8,5 pod nazwiskiem, 9,1 w bok). Ona zostala bez
+   * numeru, a jego wlasciwy numer 215 (8,1 pod nazwiskiem) — wolny. Dwa
+   * inne podpisy (Kierzek-Koperska, Mieszkowski) mialy wolny numer z typowym
+   * pionem, ale 16-23 w bok: dluzsze nazwiska rysownik przesuwa na boki.
+   * Typowy pion (4-14, mediana 8,3) jest pewniejszy niz maly odstep w bok,
+   * wiec idzie pierwszy przy kazdej szerokosci; luzne tury zostaja na koniec.
+   */
   tura(5, 4, 14);
+  tura(8, 4, 14);
+  tura(16, 4, 14);
+  tura(26, 4, 14);
   tura(8, 3, 20);
   tura(14, 0, 26);
   return przypisane;
