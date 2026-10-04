@@ -9,13 +9,13 @@
 <script src="motyw.js"></script>
 </head>
 <body>
-<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu, runda 2.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="znak">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
 <header class="naglowek">
   <div class="obszar gora">
     <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
     <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
       <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
-    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Jasny albo ciemny"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
     <div class="tylko-tel">
       <details class="panel"><summary class="przycisk">Menu</summary>
         <div class="panel-tresc">
@@ -33,84 +33,81 @@
 </header>
 <main id="tresc">
 <div class="obszar">
-  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Sejm</a><i aria-hidden="true">›</i></span><span class=""><a href="#">Posłowie</a><i aria-hidden="true">›</i></span><span aria-current="page">Andrzej Adamczyk</span></nav>
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Sejm</a><i aria-hidden="true">›</i></span><span class=""><a href="poslowie.html">Posłowie</a><i aria-hidden="true">›</i></span><span aria-current="page">Andrzej Adamczyk</span></nav>
   <header class="wypis">
     <div class="glowa-posla">
       <div class="portret" role="img" aria-label="zdjęcie z rejestru Sejmu">zdjęcie</div>
       <div style="min-width:0;flex:1">
-        <p class="sygnatura mono"><span>poseł X kadencji</span><span>okręg nr 13</span></p>
         <h1>Andrzej Adamczyk</h1>
-        <p class="podtytul"><span class="kropka" style="background:#4a3aa7"></span><b>PiS</b> · Klub Parlamentarny Prawo i Sprawiedliwość · <a href="gmina.html">okręg nr 13 Kraków</a></p>
-        <p style="margin-top:10px"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/MP" target="_blank" rel="noreferrer"><span class="nazwa">strona posła w Sejmie</span></a></p>
+        <p class="podtytul"><span class="kropka" style="background:#4a3aa7"></span><b>PiS</b> · poseł X kadencji z <a href="okreg.html">okręgu nr 13 Kraków</a></p>
       </div>
     </div>
-    <p class="skad"><b>zrejestru.pl</b> to niezależny serwis obywatelski: wypisuje dane z oficjalnych rejestrów, przy każdej liczbie podaje, skąd pochodzi, i nikogo nie ocenia. <a href="#">Jak to działa</a></p>
-  <details class="metoda" style="max-width:none"><summary>Metryczka</summary><div class="tresc"><dl class="metryczka">
-      <dt>Głosów w wyborach</dt><dd>45 171</dd><dt>Zawód</dt><dd>ekonomista</dd><dt>Wykształcenie</dt><dd>wyższe</dd>
-      <dt>Miejsce na sali</dt><dd>nr 476 · <a href="#">pokaż na planie</a></dd><dt>E-mail</dt><dd>Andrzej.Adamczyk@sejm.pl</dd></dl></div></details>
+  <p class="skad"><b>zrejestru.pl</b> — niezależny serwis obywatelski: dane z oficjalnych rejestrów, przy każdej liczbie jej źródło, bez ocen. <a href="#">Jak to działa</a></p>
   </header>
-</div>
-<nav class="spis" aria-label="Działy tej strony"><div class="obszar"><ol><li><a href="#liczby"><span class="mono">1</span>W liczbach</a></li><li><a href="#inaczej"><span class="mono">2</span>Inaczej niż klub</a></li><li><a href="#ostatnie"><span class="mono">3</span>Ostatnie głosowania</a></li><li><a href="#rozklad"><span class="mono">4</span>Rozkład głosów</a></li><li><a href="#wystapienia"><span class="mono">5</span>Wystąpienia</a></li><li><a href="#komisje"><span class="mono">6</span>Komisje</a></li><li><a href="#pytania"><span class="mono">7</span>Interpelacje</a></li></ol></div></nav>
-<div class="obszar">
   <section class="w-liczbach" id="liczby" aria-labelledby="liczby-t">
     <h2 id="liczby-t">Andrzej Adamczyk w liczbach</h2>
     <div class="wiersze">
-      <div class="wiersz duzy"><p class="co">Głosowania inaczej niż reszta klubu</p><p class="ile">0,7%</p><p class="z-czego">31 z 4232 porównywalnych głosowań (za, przeciw, wstrzymał się — nieobecność się nie liczy) <a class="do-dzialu" href="#inaczej">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></p></div>
-      <div class="wiersz duzy"><p class="co">Udział w głosowaniach</p><p class="ile">92,5%</p><p class="z-czego">4283 z 4632 głosowań odnotowanych w rejestrze <a class="do-dzialu" href="#rozklad">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></p></div>
-      <div class="wiersz duzy"><p class="co">Dni z nieobecnością uznane za usprawiedliwione</p><p class="ile">13 z 51</p><p class="z-czego">liczymy dni obrad, nie głosowania — tak podaje rejestr. <b>Rejestr nie podaje, dlaczego posła nie było</b> — i my tego nie rozstrzygamy.</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/MP" target="_blank" rel="noreferrer"><span class="nazwa">statystyka posła</span></a></p></div>
+      <div class="wiersz duzy" data-odpowiedz><p class="co">Głosowania inaczej niż reszta klubu</p><p class="ile">0,7%</p><p class="z-czego">31 z 4232 porównywalnych głosowań (za, przeciw, wstrzymał się — nieobecność się nie liczy) <a class="do-dzialu" href="#inaczej">te głosowania ↓</a></p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></p></div>
+      <div class="wiersz duzy" data-odpowiedz><p class="co">Udział w głosowaniach</p><p class="ile">92,5%</p><p class="z-czego">4283 z 4632 głosowań odnotowanych w rejestrze <a class="do-dzialu" href="#rozklad">rozkład głosów ↓</a></p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></p></div>
+      <div class="wiersz duzy" data-odpowiedz><p class="co">Dni z nieobecnością uznane za usprawiedliwione</p><p class="ile">13 z 51</p><p class="z-czego">liczymy dni obrad, nie głosowania — tak podaje rejestr. <b>Rejestr nie podaje, dlaczego posła nie było</b> — i my tego nie rozstrzygamy.</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/MP" target="_blank" rel="noreferrer"><span class="nazwa">statystyka posła</span></a></p></div>
     </div>
   </section>
+  <p class="stan-danych" data-stan><span>Klub Parlamentarny Prawo i Sprawiedliwość</span><span>stan danych: głosowania 17.09.2026 · porównanie z klubem 03.10.2026 · obecność 28.09.2026</span><span><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/MP" target="_blank" rel="noreferrer"><span class="nazwa">strona posła w Sejmie</span></a></span></p>
+  <details class="metoda"><summary>Metryczka posła</summary><div class="tresc"><dl class="metryczka"><dt>Głosów w wyborach</dt><dd>45 171</dd><dt>Zawód</dt><dd>ekonomista</dd><dt>Wykształcenie</dt><dd>wyższe</dd><dt>Miejsce na sali</dt><dd>nr 476 · <a href="#">pokaż miejsce na planie sali</a></dd><dt>E-mail</dt><dd>Andrzej.Adamczyk@sejm.pl</dd></dl></div></details>
+</div>
+<nav class="spis" aria-label="Działy tej strony"><div class="obszar"><ol><li><a href="#inaczej"><span class="znak">2</span>Inaczej niż klub</a></li><li><a href="#ostatnie"><span class="znak">3</span>Ostatnie głosowania</a></li><li><a href="#rozklad"><span class="znak">4</span>Rozkład głosów</a></li><li><a href="#wystapienia"><span class="znak">5</span>Wystąpienia</a></li><li><a href="#komisje"><span class="znak">6</span>Komisje</a></li><li><a href="#pytania"><span class="znak">7</span>Interpelacje</a></li></ol></div></nav>
+<div class="obszar">
   <section class="dzial" id="inaczej" aria-labelledby="inaczej-t"><div class="nr" aria-hidden="true">2</div><div>
-  <div class="tytul"><h2 id="inaczej-t"><span class="nr-tel">2. </span>Głosowania inaczej niż reszta klubu</h2></div>
+  <div class="tytul"><h2 id="inaczej-t"><span class="nr-tel">2. </span>Inaczej niż klub: 31 z 4232 głosowań</h2></div>
   
-    <ul class="pozycje"><li><div><p class="meta mono">31 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji w sprawie sprawozdania z wykonania budżetu państwa za okres od dnia 1 stycznia do dnia 31 grudnia 2025 r. wraz z…</a>
-<p class="meta" style="margin-top:4px"><span class="kropka" style="background:var(--przeciw)"></span>poseł: przeciw &nbsp; <span class="kropka" style="background:var(--za)"></span>reszta klubu: za</p></div><p class="kwota"></p></li><li><div><p class="meta mono">31 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o poselskim projekcie ustawy o zmianie ustawy o samorządzie gminnym (druki nr 2649, 2682 i 2682-A) — poprawka 3</a>
-<p class="meta" style="margin-top:4px"><span class="kropka" style="background:var(--wstrzymal)"></span>poseł: wstrzymał się &nbsp; <span class="kropka" style="background:var(--za)"></span>reszta klubu: za</p></div><p class="kwota"></p></li><li><div><p class="meta mono">17 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o opiece nad dziećmi w wieku do lat 3 oraz niektórych innych ustaw (druki…</a>
+    <ul class="pozycje"><li><div><p class="meta">31 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji w sprawie sprawozdania z wykonania budżetu państwa za okres od dnia 1 stycznia do dnia 31 grudnia 2025 r. wraz z…</a>
+<p class="meta" style="margin-top:4px"><span class="kropka" style="background:var(--przeciw)"></span>poseł: przeciw &nbsp; <span class="kropka" style="background:var(--za)"></span>reszta klubu: za</p></div><p class="kwota"></p></li><li><div><p class="meta">31 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o poselskim projekcie ustawy o zmianie ustawy o samorządzie gminnym (druki nr 2649, 2682 i 2682-A) — poprawka 3</a>
+<p class="meta" style="margin-top:4px"><span class="kropka" style="background:var(--wstrzymal)"></span>poseł: wstrzymał się &nbsp; <span class="kropka" style="background:var(--za)"></span>reszta klubu: za</p></div><p class="kwota"></p></li><li><div><p class="meta">17 lipca 2026</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o opiece nad dziećmi w wieku do lat 3 oraz niektórych innych ustaw (druki…</a>
 <p class="meta" style="margin-top:4px"><span class="kropka" style="background:var(--wstrzymal)"></span>poseł: wstrzymał się &nbsp; <span class="kropka" style="background:var(--za)"></span>reszta klubu: za</p></div><p class="kwota"></p></li></ul>
-    <p style="margin-top:12px"><a href="#">Wszystkie 31 →</a></p>
+    <p style="margin-top:12px"><a href="#">Wszystkie 31 głosowań inaczej niż klub →</a></p>
     <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><ul><li>Porównujemy tylko głosy „za”, „przeciw” i „wstrzymał się”. Nieobecność nie jest stanowiskiem.</li><li>Punkt odniesienia: najczęstszy głos pozostałych członków klubu, bez samego posła.</li><li>Głosowanie liczymy, gdy reszta klubu oddała co najmniej 2 głosy i miała jeden wyraźnie najczęstszy głos.</li><li>Posłowie niezrzeszeni nie tworzą klubu, więc ich głosów nie porównujemy.</li><li>Każdy głos porównujemy z klubem z dnia głosowania.</li><li>Inny głos może wynikać z przekonań, umowy w klubie albo pomyłki — rejestr tego nie podaje.</li></ul></div></details>
 </div></section>
   <section class="dzial" id="ostatnie" aria-labelledby="ostatnie-t"><div class="nr" aria-hidden="true">3</div><div>
-  <div class="tytul"><h2 id="ostatnie-t"><span class="nr-tel">3. </span>Ostatnie głosowania</h2></div>
-  <p class="wstep">Wszystkie, także porządkowe — rodzaj głosowania przy każdym.</p><ul class="pozycje"><li><div><p class="meta mono">4 września 2026 · posiedzenie 64 · pkt 29</p><a class="tytul-poz" href="#">Wybór nowego składu osobowego Komisji do Spraw Unii Europejskiej (druk nr 3061)</a><p class="meta">głosowanie nad przyjęciem wniosku z druku</p></div><p class="kwota"><span class="kropka" style="background:var(--za)"></span>za</p></li><li><div><p class="meta mono">4 września 2026 · posiedzenie 64 · pkt 27</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy o zmianie ustawy o świadczeniu usług drogą elektroniczną oraz niektórych innych ustaw (druki nr 2993 i 3016)</a><p class="meta">poprawka 1</p></div><p class="kwota"><span class="kropka" style="background:var(--przeciw)"></span>przeciw</p></li><li><div><p class="meta mono">15 września 2026 · posiedzenie 65</p><a class="tytul-poz" href="#">Głosowanie kworum</a><p class="meta">sprawa porządkowa</p></div><p class="kwota"><span class="kropka" style="background:var(--inne)"></span>obecny</p></li></ul><p style="margin-top:12px"><a href="#">Wszystkie głosy →</a></p>
+  <div class="tytul"><h2 id="ostatnie-t"><span class="nr-tel">3. </span>Ostatnie głosowania, od 15 września 2026</h2></div>
+  <p class="wstep">Wszystkie, także porządkowe — rodzaj głosowania przy każdym.</p><ul class="pozycje"><li><div><p class="meta">15 września 2026 · posiedzenie 65</p><a class="tytul-poz" href="#">Głosowanie kworum</a><p class="meta">sprawa porządkowa</p></div><p class="kwota"><span class="kropka" style="background:var(--inne)"></span>obecny</p></li><li><div><p class="meta">4 września 2026 · posiedzenie 64 · pkt 29</p><a class="tytul-poz" href="#">Wybór nowego składu osobowego Komisji do Spraw Unii Europejskiej (druk nr 3061)</a><p class="meta">głosowanie nad przyjęciem wniosku z druku</p></div><p class="kwota"><span class="kropka" style="background:var(--za)"></span>za</p></li><li><div><p class="meta">4 września 2026 · posiedzenie 64 · pkt 27</p><a class="tytul-poz" href="#">Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy o zmianie ustawy o świadczeniu usług drogą elektroniczną oraz niektórych innych ustaw (druki nr 2993 i 3016)</a><p class="meta">poprawka 1</p></div><p class="kwota"><span class="kropka" style="background:var(--przeciw)"></span>przeciw</p></li></ul><p style="margin-top:12px"><a href="#">Wszystkie głosy posła →</a></p>
 </div></section>
   <section class="dzial" id="rozklad" aria-labelledby="rozklad-t"><div class="nr" aria-hidden="true">4</div><div>
-  <div class="tytul"><h2 id="rozklad-t"><span class="nr-tel">4. </span>Rozkład głosów</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></div>
-  <p class="wstep">4632 głosowania odnotowane w rejestrze.</p><ul class="lista-paskow"><li><div class="opis"><span><span class="kropka" style="background:var(--za)"></span>za</span><span>2427 · 52,4%</span></div><div class="pasek"><i style="width:52.4%;background:var(--za)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--przeciw)"></span>przeciw</span><span>1332 · 28,8%</span></div><div class="pasek"><i style="width:28.8%;background:var(--przeciw)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--wstrzymal)"></span>wstrzymał się</span><span>473 · 10,2%</span></div><div class="pasek"><i style="width:10.2%;background:var(--wstrzymal)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--brak)"></span>nieobecny</span><span>349 · 7,5%</span></div><div class="pasek"><i style="width:7.5%;background:var(--brak)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--inne)"></span>obecny</span><span>43 · 0,9%</span></div><div class="pasek"><i style="width:0.9%;background:var(--inne)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--inne)"></span>głos ważny</span><span>8 · 0,2%</span></div><div class="pasek"><i style="width:0.2%;background:var(--inne)"></i></div></li></ul>
+  <div class="tytul"><h2 id="rozklad-t"><span class="nr-tel">4. </span>Rozkład głosów: 2427 razy „za” w 4632 głosowaniach</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></div>
+  <h3 class="tytul-wykresu" id="rozklad-w">„Za” to ponad połowa głosów (52,4%), „przeciw” — 28,8%</h3><ul class="lista-paskow" data-wykres="rozklad-w"><li><div class="opis"><span><span class="kropka" style="background:var(--za)"></span>za</span><span>2427 · 52,4%</span></div><div class="pasek"><i style="width:52.4%;background:var(--za)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--przeciw)"></span>przeciw</span><span>1332 · 28,8%</span></div><div class="pasek"><i style="width:28.8%;background:var(--przeciw)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--wstrzymal)"></span>wstrzymał się</span><span>473 · 10,2%</span></div><div class="pasek"><i style="width:10.2%;background:var(--wstrzymal)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--brak)"></span>nieobecny</span><span>349 · 7,5%</span></div><div class="pasek"><i style="width:7.5%;background:var(--brak)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--inne)"></span>obecny</span><span>43 · 0,9%</span></div><div class="pasek"><i style="width:0.9%;background:var(--inne)"></i></div></li><li><div class="opis"><span><span class="kropka" style="background:var(--inne)"></span>głos ważny</span><span>8 · 0,2%</span></div><div class="pasek"><i style="width:0.2%;background:var(--inne)"></i></div></li></ul>
 </div></section>
   <section class="dzial" id="wystapienia" aria-labelledby="wystapienia-t"><div class="nr" aria-hidden="true">5</div><div>
-  <div class="tytul"><h2 id="wystapienia-t"><span class="nr-tel">5. </span>Wystąpienia na sali</h2></div>
+  <div class="tytul"><h2 id="wystapienia-t"><span class="nr-tel">5. </span>Wystąpienia: głos na sali w 50 z 198 dni obrad</h2></div>
   
     <div class="wiersze"><div class="wiersz "><p class="co">Dni obrad z głosem na sali</p><p class="ile">50 z 198</p><p class="z-czego">dni obrad w czasie mandatu · 95 wystąpień, w tym 2 złożone tylko na piśmie</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/proceedings" target="_blank" rel="noreferrer"><span class="nazwa">stenogramy</span></a></p></div></div>
-    <ul class="pozycje"><li><div><p>18 września 2026 · posiedzenie 65 · 2 min</p></div><p class="kwota"><a href="#">treść</a></p></li><li><div><p>17 września 2026 · posiedzenie 65 · 2 min</p></div><p class="kwota"><a href="#">treść</a></p></li></ul>
+    <ul class="pozycje"><li><div><p>18 września 2026 · posiedzenie 65 · 2 min</p></div><p class="kwota"><a href="#">treść wystąpienia z 18 września</a></p></li><li><div><p>17 września 2026 · posiedzenie 65 · 2 min</p></div><p class="kwota"><a href="#">treść wystąpienia z 17 września</a></p></li></ul>
     <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><p>Rejestr nie podaje tematu wystąpienia — jest w treści pod odnośnikiem. Wystąpienia na piśmie dochodzą po dniu obrad, więc dla ostatnich dni liczba może urosnąć.</p></div></details>
 </div></section>
   <section class="dzial" id="komisje" aria-labelledby="komisje-t"><div class="nr" aria-hidden="true">6</div><div>
-  <div class="tytul"><h2 id="komisje-t"><span class="nr-tel">6. </span>Komisje</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/committees" target="_blank" rel="noreferrer"><span class="nazwa">skład komisji</span></a></div>
-  <ul class="pozycje"><li><div><a class="tytul-poz" href="#">Komisja Infrastruktury</a><p class="meta">zastępca przewodniczącego · od 29 listopada 2023</p><p class="meta" style="margin-top:4px">Do zakresu działania Komisji należą sprawy budownictwa oraz gospodarki przestrzennej i mieszkaniowej, sprawy transportu lądowego i powietrznego, poczty oraz geodezji i kartografii.</p></div><p class="kwota mono" style="font-weight:500">stała</p></li></ul><p class="szary" style="margin-top:10px;font-size:13.5px">Skład według rejestru z 3 października 2026. Rejestr nie przechowuje historii: kto odszedł z komisji, znika z listy.</p>
+  <div class="tytul"><h2 id="komisje-t"><span class="nr-tel">6. </span>Komisje: 1 — zastępca przewodniczącego Komisji Infrastruktury</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/committees" target="_blank" rel="noreferrer"><span class="nazwa">skład komisji</span></a></div>
+  <ul class="pozycje"><li><div><a class="tytul-poz" href="#">Komisja Infrastruktury</a><p class="meta">zastępca przewodniczącego · od 29 listopada 2023</p><p class="meta" style="margin-top:4px">Do zakresu działania Komisji należą sprawy budownictwa oraz gospodarki przestrzennej i mieszkaniowej, sprawy transportu lądowego i powietrznego, poczty oraz geodezji i kartografii.</p></div><p class="kwota">stała</p></li></ul><p class="drobny szary" style="margin-top:10px">Skład według rejestru z 3 października 2026. Rejestr nie przechowuje historii: kto odszedł z komisji, znika z listy.</p>
 </div></section>
   <section class="dzial" id="pytania" aria-labelledby="pytania-t"><div class="nr" aria-hidden="true">7</div><div>
-  <div class="tytul"><h2 id="pytania-t"><span class="nr-tel">7. </span>Interpelacje i zapytania</h2></div>
+  <div class="tytul"><h2 id="pytania-t"><span class="nr-tel">7. </span>Interpelacje: 141 podpisanych, 12 bez odpowiedzi</h2></div>
   
     <div class="wiersze">
       <div class="wiersz "><p class="co">Interpelacje podpisane</p><p class="ile">141 z 20 191</p><p class="z-czego">złożonych w tej kadencji · bez odpowiedzi w rejestrze: 12 — to informacja o adresacie, nie o pośle</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/openapi/" target="_blank" rel="noreferrer"><span class="nazwa">rejestr interpelacji</span></a></p></div>
       <div class="wiersz "><p class="co">Zapytania podpisane</p><p class="ile">9 z 4049</p><p class="z-czego">złożonych w tej kadencji · bez odpowiedzi w rejestrze: 5</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/openapi/" target="_blank" rel="noreferrer"><span class="nazwa">rejestr zapytań</span></a></p></div>
     </div>
-    <ul class="pozycje"><li><div><a class="tytul-poz" href="#">Interpelacja w sprawie planowanego definitywnego zamknięcia przejazdu kolejowo-drogowego na linii kolejowej nr 94</a><p class="meta"><span class="mono">nr 20190</span> · 1 października 2026 · 5 autorów · bez odpowiedzi</p></div><p class="kwota"></p></li></ul>
-    <p class="szary" style="margin-top:10px;font-size:13.5px">Pełny tekst i odpowiedź — pod odnośnikiem.</p>
+    <ul class="pozycje"><li><div><a class="tytul-poz" href="#">Interpelacja w sprawie planowanego definitywnego zamknięcia przejazdu kolejowo-drogowego na linii kolejowej nr 94</a><p class="meta"><span class="znak">nr 20190</span> · 1 października 2026 · 5 autorów · bez odpowiedzi</p></div><p class="kwota"></p></li></ul>
+    <p class="drobny szary" style="margin-top:10px">Pełny tekst i odpowiedź — pod odnośnikiem.</p>
 </div></section>
 </div>
 </main>
 <footer class="stopka"><div class="obszar">
   <div class="kolumny">
-    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
     <div><b>Rejestry</b><ul>
       <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
       <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
       <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
       <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
-      <li><a href="#">wszystkie (8) →</a></li></ul></div>
-    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
   </div>
 </div></footer>
 </body>

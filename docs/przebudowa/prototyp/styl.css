@@ -1,344 +1,334 @@
 /*
-  Prototyp kierunku A „Wypis z rejestru”. Statyczny, bez budowania.
-  Nazwy zmiennych jak w src/app/globals.css, żeby paleta dała się przenieść
-  jeden do jednego i sprawdzić tym samym testem (src/lib/kontrast.test.ts).
+  Prototyp — FUNDAMENT wspólny dla wszystkich motywów (runda 2, docs/przebudowa/runda-2.md).
+  Tu jest struktura, kolejność i rozmiary minimalne; motyw (skora-*.css) zmienia tylko styl:
+  kroje, paletę, linie, rytm, rysunek liczby i źródła. Bez motywu strona też działa
+  (kroje systemowe, neutralna paleta).
+
+  Nazwy zmiennych barw jak w src/app/globals.css, żeby każdą paletę sprawdził ten sam test
+  (src/lib/kontrast.test.ts).
+
+  F5 — pismo: tekst ciągły 18 px na telefonie i 20 px od 1024 px; drobny tekst (okruszek,
+  opis pod liczbą, źródło, metryczki) najmniej 15/16 px. Nic mniejszego.
 */
-
-/* ---------- fonty (OFL, pliki obok; latin + latin-ext jak w next/font) ---------- */
-@font-face { font-family: "Brygada 1918"; font-weight: 600; font-display: swap;
-  src: url(fonty/brygada-1918-latin-600-normal.woff2) format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family: "Brygada 1918"; font-weight: 600; font-display: swap;
-  src: url(fonty/brygada-1918-latin-ext-600-normal.woff2) format("woff2");
-  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap;
-  src: url(fonty/ibm-plex-sans-latin-400-normal.woff2) format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap;
-  src: url(fonty/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2");
-  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap;
-  src: url(fonty/ibm-plex-sans-latin-600-normal.woff2) format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap;
-  src: url(fonty/ibm-plex-sans-latin-ext-600-normal.woff2) format("woff2");
-  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap;
-  src: url(fonty/ibm-plex-mono-latin-500-normal.woff2) format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap;
-  src: url(fonty/ibm-plex-mono-latin-ext-500-normal.woff2) format("woff2");
-  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-
-/* ---------- paleta (kontrast w docs/przebudowa/kierunek.md) ---------- */
 :root {
-  --papier: #f5f3ed; --papier-2: #fbfaf6; --papier-3: #ebe7dc;
-  --atrament: #151412; --atrament-2: #46433c; --atrament-3: #5c5850;
-  --kreska: #d6d0c2; --kreska-2: #b9b2a2;
-  --akcent: #0b5a52; --akcent-slaby: #dcebe7;
-  /* barwy głosów z src/lib/barwy-glosu.ts */
+  --papier: #ffffff; --papier-2: #ffffff; --papier-3: #f2f2f2;
+  --atrament: #1a1a1a; --atrament-2: #444444; --atrament-3: #5f5f5f;
+  --kreska: #d4d4d4; --kreska-2: #a8a8a8;
+  --akcent: #1d5fa8; --akcent-slaby: #e3edf8; --ostrzezenie: #8a5a00;
+  /* barwy głosów z src/lib/barwy-glosu.ts — barwy z funkcją, nie ozdoba (F4) */
   --za: #1b9e63; --przeciw: #d2453f; --wstrzymal: #e0a021; --brak: #cfcbc0; --inne: #8b8794;
+  --f-tekst: ui-sans-serif, system-ui, sans-serif;
+  --f-naglowek: var(--f-tekst);
+  --f-liczba: var(--f-tekst);
+  --f-znak: ui-monospace, monospace;
+  --w-naglowek: 650; --w-liczba: 650;
+  --tekst: 18px; --drobny: 15px; --sredni: 16px;
+  --linia: 1px; --linia-mocna: 2px;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-motyw="jasny"]) {
-    --papier: #121210; --papier-2: #1a1a17; --papier-3: #24231f;
-    --atrament: #efece4; --atrament-2: #bdb8ab; --atrament-3: #a39e91;
-    --kreska: #38362f; --kreska-2: #57544a;
-    --akcent: #6fd3c3; --akcent-slaby: #173a35;
-    --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866; --inne: #9d99a8;
-    color-scheme: dark;
-  }
-}
-:root[data-motyw="ciemny"] {
-  --papier: #121210; --papier-2: #1a1a17; --papier-3: #24231f;
-  --atrament: #efece4; --atrament-2: #bdb8ab; --atrament-3: #a39e91;
-  --kreska: #38362f; --kreska-2: #57544a;
-  --akcent: #6fd3c3; --akcent-slaby: #173a35;
+@media (min-width: 1024px) { :root { --tekst: 20px; --drobny: 16px; --sredni: 17px; } }
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #141414; --papier-2: #1b1b1b; --papier-3: #242424;
+  --atrament: #ededed; --atrament-2: #c4c4c4; --atrament-3: #a6a6a6;
+  --kreska: #3a3a3a; --kreska-2: #5a5a5a; --akcent: #8cbcf2; --akcent-slaby: #1b2b3d; --ostrzezenie: #f0b85a;
   --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866; --inne: #9d99a8;
-  color-scheme: dark;
-}
+  color-scheme: dark; } }
+:root[data-motyw="ciemny"] {
+  --papier: #141414; --papier-2: #1b1b1b; --papier-3: #242424;
+  --atrament: #ededed; --atrament-2: #c4c4c4; --atrament-3: #a6a6a6;
+  --kreska: #3a3a3a; --kreska-2: #5a5a5a; --akcent: #8cbcf2; --akcent-slaby: #1b2b3d; --ostrzezenie: #f0b85a;
+  --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866; --inne: #9d99a8;
+  color-scheme: dark; }
 
 /* ---------- podstawy ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 7.5rem; }
+html { font-size: var(--tekst); -webkit-text-size-adjust: 100%; scroll-padding-top: 4rem; }
 body {
   margin: 0; background: var(--papier); color: var(--atrament);
-  font: 400 15px/1.55 "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  font-variant-numeric: tabular-nums; overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--f-tekst); font-size: 1rem; line-height: 1.55; font-weight: 400;
+  font-variant-numeric: tabular-nums; overflow-wrap: break-word; -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { font-family: "Brygada 1918", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.08; }
-h2 { font-size: 1.6rem; line-height: 1.2; }
-h3 { font-size: 1.15rem; line-height: 1.3; }
+h1, h2, h3 { font-family: var(--f-naglowek); font-weight: var(--w-naglowek); margin: 0; line-height: 1.15; }
+h1 { font-size: 2rem; line-height: 1.08; }
+@media (min-width: 1024px) { h1 { font-size: 2.4rem; } }
+h1.dlugi { font-size: 1.3rem; line-height: 1.2; }
+@media (min-width: 1024px) { h1.dlugi { font-size: 1.7rem; } }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.08rem; }
 p { margin: 0; }
-a { color: var(--akcent); text-underline-offset: 3px; }
+/* tekst ciągły: 55–75 znaków w wierszu na komputerze (F5) */
+.wstep, .podtytul, .tresc-ciagla, .uwaga, details.metoda .tresc, .zgadnij p, .po-ludzku p, .pozycje .streszczenie { max-width: var(--miara, 34em); }
+a { color: var(--akcent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
-:focus-visible { outline: 2px solid var(--akcent); outline-offset: 2px; }
-.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; font-size: 0.8rem; letter-spacing: 0; }
+:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+.znak { font-family: var(--f-znak); font-size: var(--drobny); }
 .szary { color: var(--atrament-2); }
 .blady { color: var(--atrament-3); }
-.obszar { width: 100%; max-width: 76rem; margin-inline: auto; padding-inline: 1rem; }
-@media (min-width: 640px) { .obszar { padding-inline: 1.5rem; } }
+.drobny { font-size: var(--drobny); }
+.obszar { width: 100%; max-width: 72rem; margin-inline: auto; padding-inline: 16px; }
+@media (min-width: 640px) { .obszar { padding-inline: 24px; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---------- pasek prototypu (nie wchodzi do serwisu) ---------- */
-.prototyp { background: var(--atrament); color: var(--papier); font-size: 12.5px; padding: 6px 0; }
-.prototyp a { color: inherit; }
+/* ---------- prototyp: pasek „Motyw” i ramka (nie wchodzą do serwisu, pomiar je usuwa) ---------- */
+.prototyp, .kierunki-pasek { font: 400 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+.prototyp { background: #1a1a1a; color: #fff; padding: 6px 0; }
+.prototyp a { color: inherit; display: inline-flex; align-items: center; min-height: 24px; }
+.kierunki-pasek { background: #eeeeee; color: #1a1a1a; border-bottom: 1px solid #cccccc; }
+.kierunki-pasek .obszar { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-height: 40px; padding-block: 4px; }
+.kierunki-pasek a { color: #1a1a1a; padding: 4px 2px; }
+.kierunki-pasek a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 3px; }
+.notka-proj { margin-top: 12px; padding: 8px 12px; border: 1.5px dashed #999; font: 400 14px/1.45 ui-sans-serif, system-ui, sans-serif; color: #555; max-width: 46rem; }
+.notka-proj::before { content: "PROTOTYP: "; font-weight: 700; color: #1a1a1a; }
 
-/* ---------- nagłówek serwisu ---------- */
-.naglowek { border-bottom: 1.5px solid var(--atrament); background: var(--papier); }
-.naglowek .gora { display: flex; align-items: center; gap: 12px; min-height: 60px; }
-.marka { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: var(--atrament); padding: 8px 0; }
-.marka b { font-family: "Brygada 1918", Georgia, serif; font-weight: 600; font-size: 1.5rem; letter-spacing: -0.01em; }
-.marka span { display: none; color: var(--atrament-2); font-size: 13px; }
-@media (min-width: 1024px) { .marka span { display: inline; } }
+/* ---------- nagłówek serwisu: nazwa z lewej, szukanie, menu widoczne (F2, F12) ---------- */
+.naglowek { background: var(--papier); border-bottom: var(--linia-mocna) solid var(--atrament); }
+.naglowek .gora { display: flex; align-items: center; gap: 12px; min-height: 52px; }
+.marka { display: flex; align-items: baseline; gap: 12px; text-decoration: none; color: var(--atrament); padding: 6px 0; }
+.marka b { font-family: var(--f-naglowek); font-weight: var(--w-naglowek); font-size: 1.35rem; line-height: 1; }
+.marka span { display: none; color: var(--atrament-2); font-size: var(--drobny); }
+@media (min-width: 1280px) { .marka span { display: inline; } }
 .szukaj { flex: 1; display: none; }
+@media (min-width: 1024px) { .szukaj { display: block; max-width: 28rem; margin-left: auto; } }
 .szukaj input, .pole {
-  width: 100%; min-height: 44px; padding: 0 14px; border: 1.5px solid var(--atrament);
-  background: var(--papier-2); color: var(--atrament); font: inherit; border-radius: 0;
+  width: 100%; min-height: 46px; padding: 0 14px; border: var(--linia-mocna) solid var(--atrament);
+  background: var(--papier-2); color: var(--atrament); font: inherit; font-size: var(--sredni); border-radius: 0;
 }
-.szukaj input::placeholder, .pole::placeholder { color: var(--atrament-3); }
-@media (min-width: 1024px) { .szukaj { display: block; max-width: 30rem; margin-left: auto; } }
+.szukaj input::placeholder, .pole::placeholder { color: var(--atrament-3); opacity: 1; }
 .przycisk {
   min-height: 44px; min-width: 44px; padding: 0 12px; display: inline-grid; place-items: center;
-  background: none; border: 1.5px solid transparent; color: var(--atrament); font: inherit; cursor: pointer;
-  text-decoration: none;
+  background: none; border: var(--linia-mocna) solid transparent; color: var(--atrament); font: inherit; font-size: var(--sredni); cursor: pointer; text-decoration: none;
 }
 .przycisk:hover { border-color: var(--atrament); }
 .tylko-tel { margin-left: auto; display: flex; gap: 4px; }
 @media (min-width: 1024px) { .tylko-tel { display: none; } }
-.menu-grupy { display: none; border-top: 1px solid var(--kreska); }
-@media (min-width: 1024px) { .menu-grupy { display: flex; gap: 32px; } }
-.menu-grupy div { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
-.menu-grupy .podpis { font-size: 11.5px; letter-spacing: 0.04em; color: var(--atrament-2); margin-right: 8px; font-weight: 600; }
-.menu-grupy a { color: var(--atrament); text-decoration: none; padding: 10px 8px; font-size: 14px; border-bottom: 3px solid transparent; }
+/* komputer: wszystkie działy w dwóch podpisanych grupach, bez rozwijania */
+.menu-grupy { display: none; border-top: var(--linia) solid var(--kreska); }
+@media (min-width: 1024px) { .menu-grupy { display: flex; flex-wrap: wrap; gap: 0 28px; } }
+.menu-grupy div { display: flex; align-items: center; flex-wrap: wrap; }
+.menu-grupy .podpis { font-size: var(--drobny); color: var(--atrament-2); margin-right: 6px; font-weight: 600; }
+.menu-grupy a { color: var(--atrament); text-decoration: none; padding: 10px 8px; font-size: var(--sredni); border-bottom: 3px solid transparent; }
 .menu-grupy a:hover { border-bottom-color: var(--kreska-2); }
 .menu-grupy a[aria-current="page"] { border-bottom-color: var(--atrament); font-weight: 600; }
+/* telefon: szukanie i działy obu grup na wierzchu, reszta pod „Menu” */
+.tel { padding-bottom: 0; }
+@media (min-width: 1024px) { .tel { display: none; } }
+.tel .pole { margin: 0 0 4px; }
+.skroty { display: flex; align-items: stretch; overflow-x: auto; white-space: nowrap; scrollbar-width: none; margin: 0 -8px; }
+.skroty::-webkit-scrollbar { display: none; }
+.skroty a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: var(--drobny); color: var(--atrament); text-decoration: none; border-bottom: 3px solid transparent; }
+.skroty a[aria-current="page"] { border-bottom-color: var(--atrament); font-weight: 600; }
+.skroty .kreska { flex: none; width: 1px; margin: 10px 6px; background: var(--kreska-2); }
 details.panel > summary { list-style: none; }
 details.panel > summary::-webkit-details-marker { display: none; }
 details.panel[open] .panel-tresc { display: block; }
-.panel-tresc {
-  display: none; position: absolute; left: 0; right: 0; z-index: 30; background: var(--papier-2);
-  border-bottom: 1.5px solid var(--atrament); padding: 12px 16px 16px;
-}
-.panel-tresc p { font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--atrament-2); margin: 14px 0 4px; }
-.panel-tresc a { display: block; padding: 10px 0; color: var(--atrament); text-decoration: none; border-bottom: 1px solid var(--kreska); }
+.panel-tresc { display: none; position: absolute; left: 0; right: 0; z-index: 30; background: var(--papier-2); border-bottom: var(--linia-mocna) solid var(--atrament); padding: 8px 16px 16px; }
+.panel-tresc p { font-size: var(--drobny); font-weight: 600; color: var(--atrament-2); margin: 14px 0 2px; }
+.panel-tresc a { display: block; padding: 10px 0; color: var(--atrament); text-decoration: none; border-bottom: var(--linia) solid var(--kreska); }
 
-/* ---------- okruszek i nagłówek wypisu ---------- */
-.okruszek { font-size: 13px; color: var(--atrament-2); padding: 18px 0 0; display: flex; flex-wrap: wrap; gap: 4px 6px; }
-.okruszek a { color: var(--atrament-2); padding: 4px 0; }
-.okruszek a:hover { color: var(--akcent); }
+/* ---------- początek strony: okruszek, nazwa, jedno zdanie o serwisie (F1, F13) ---------- */
+.okruszek { font-size: var(--drobny); color: var(--atrament-2); padding: 14px 0 0; display: flex; flex-wrap: wrap; gap: 2px 6px; }
+.okruszek a { color: var(--atrament-2); }
 .okruszek i { font-style: normal; margin-left: 6px; color: var(--atrament-3); }
 .okruszek .wielokropek { display: none; }
 @media (max-width: 639px) { .okruszek .srodek { display: none; } .okruszek .wielokropek { display: inline; } }
-.pliki a { display: inline-flex; align-items: center; min-height: 32px; }
-.wypis { padding: 14px 0 22px; border-bottom: 1px solid var(--kreska); }
-.wypis .sygnatura { color: var(--atrament-2); display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 10px; }
-.wypis .podtytul { margin-top: 8px; color: var(--atrament-2); font-size: 1.05rem; }
+.wypis { padding: 10px 0 0; }
+.wypis .podtytul { margin-top: 8px; color: var(--atrament-2); }
+.skad { margin-top: 10px; padding-top: 8px; border-top: var(--linia) solid var(--kreska); max-width: 40em; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
+.skad b { color: var(--atrament); font-weight: 600; }
+.skad a { white-space: nowrap; }
+/* data stanu danych i sygnatura rejestru — zaraz pod odpowiedzią (F13, Stanford 8) */
+.stan-danych { margin-top: 10px; font-size: var(--drobny); color: var(--atrament-2); display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.stan-danych .znak { font-size: var(--drobny); }
+
+/* ---------- „W liczbach” — JEDYNY obramowany blok na ekranie (F6) ---------- */
+.w-liczbach { border: var(--linia-mocna) solid var(--atrament); background: var(--papier-2); padding: 2px 16px 4px; margin-top: 14px; }
+@media (min-width: 640px) { .w-liczbach { padding: 4px 24px 8px; } }
+.w-liczbach > h2 { font-size: 1.1rem; padding: 12px 0 0; }
+
+/* wiersz rejestru: etykieta · wartość · z czego · porównanie · źródło */
+.wiersze { margin-top: 8px; }
+.wiersz { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 12px 0; border-bottom: var(--linia) solid var(--kreska); }
+.wiersz:last-child { border-bottom: 0; }
+@media (min-width: 900px) { .wiersz { grid-template-columns: minmax(0, 1fr) auto 14rem; } }
+.wiersz .co { font-weight: 600; line-height: 1.35; }
+.wiersz .ile { text-align: right; font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.35rem; line-height: 1.2; white-space: nowrap; }
+.wiersz.duzy .ile { font-size: 1.6rem; }
+.wiersz .z-czego, .wiersz .porownanie { grid-column: 1 / -1; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
+.wiersz .porownanie { color: var(--atrament); }
+@media (min-width: 900px) { .wiersz .z-czego, .wiersz .porownanie { grid-column: 1 / 3; } }
+.wiersz .podstawa { grid-column: 1 / -1; }
+@media (min-width: 900px) { .wiersz .podstawa { grid-column: 3; grid-row: 1 / span 3; align-self: start; padding-left: 12px; border-left: var(--linia) solid var(--kreska); } }
+.dzial .wiersze { border-top: var(--linia-mocna) solid var(--atrament); margin-top: 16px; }
+.dzial .wiersz:last-child { border-bottom: var(--linia) solid var(--kreska); }
+
+/* odnośnik do rejestru — element interfejsu, nie przypis (zasada 1) */
+a.zrodlo {
+  display: inline-grid; grid-template-columns: 1em auto; column-gap: 6px; align-items: start;
+  min-height: 28px; padding: 3px 0; text-align: left; font-size: var(--drobny); line-height: 1.35;
+  color: var(--akcent); text-decoration: none;
+}
+a.zrodlo::before {
+  content: ""; width: 1em; height: 1em; margin-top: 0.1em; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+a.zrodlo .nazwa { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a.zrodlo:hover .nazwa { text-decoration-thickness: 2px; }
+a.zrodlo .data { grid-column: 2; color: var(--atrament-2); }
+
+/* warunki UOKiK — tuż przy liczbach SUDOP (zasada 10) */
+.warunki { margin-top: 10px; padding-top: 10px; border-top: var(--linia) solid var(--kreska); font-size: var(--drobny); color: var(--atrament-2); max-width: 46em; }
+.w-liczbach .warunki { margin-bottom: 10px; }
 
 /* ---------- spis działów (przyklejony) ---------- */
-.spis { position: sticky; top: 0; z-index: 20; background: var(--papier); border-bottom: 1px solid var(--kreska); }
+.spis { position: sticky; top: 0; z-index: 20; background: var(--papier); border-bottom: var(--linia) solid var(--kreska); margin-top: 22px; }
 .spis ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.spis a { display: block; white-space: nowrap; padding: 12px 10px; color: var(--atrament-2); text-decoration: none; font-size: 14px; border-bottom: 3px solid transparent; }
-.spis a .mono { color: var(--atrament-3); margin-right: 4px; }
+.spis a { display: block; white-space: nowrap; padding: 10px 10px; color: var(--atrament-2); text-decoration: none; font-size: var(--drobny); border-bottom: 3px solid transparent; }
+.spis a .znak { color: var(--atrament-3); margin-right: 4px; }
 .spis a.biezacy { color: var(--atrament); border-bottom-color: var(--atrament); }
 
-/* ---------- działy ---------- */
-.dzial { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 28px; padding: 36px 0 8px; border-bottom: 1px solid var(--kreska); }
+/* ---------- działy: linia i odstęp, nie karty (F6); nagłówek od odpowiedzi (F7) ---------- */
+.dzial { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 28px; padding: 36px 0 10px; border-bottom: var(--linia) solid var(--kreska); }
 @media (min-width: 900px) { .dzial { grid-template-columns: 3rem minmax(0, 1fr); } }
-.dzial > .nr { font-family: "Brygada 1918", Georgia, serif; font-weight: 600; font-size: 1.6rem; line-height: 1.2; color: var(--atrament-3); }
+.dzial > .nr { font-family: var(--f-naglowek); font-weight: var(--w-naglowek); font-size: 1.3rem; line-height: 1.15; color: var(--atrament-3); }
 @media (max-width: 899px) { .dzial > .nr { display: none; } }
 .dzial .tytul { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
 .dzial .tytul .nr-tel { color: var(--atrament-3); }
 @media (min-width: 900px) { .dzial .tytul .nr-tel { display: none; } }
-.dzial .wstep { margin-top: 8px; max-width: 44rem; color: var(--atrament-2); }
+.dzial .wstep { margin-top: 10px; color: var(--atrament-2); }
+.dzial h3 { margin-top: 30px; }
 
-/* ---------- wiersz rejestru: etykieta · wartość · mianownik · podstawa ---------- */
-.wiersze { margin-top: 18px; border-top: 1.5px solid var(--atrament); }
-.wiersz { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 14px 0; border-bottom: 1px solid var(--kreska); }
-@media (min-width: 900px) { .wiersz { grid-template-columns: minmax(0, 1fr) auto 15rem; } }
-.wiersz .co { font-weight: 600; }
-.wiersz .ile { text-align: right; font-weight: 600; font-size: 1.25rem; line-height: 1.3; white-space: nowrap; }
-.wiersz .z-czego { grid-column: 1 / -1; color: var(--atrament-2); font-size: 13.5px; }
-@media (min-width: 900px) { .wiersz .z-czego { grid-column: 1 / 3; } }
-.wiersz .podstawa { grid-column: 1 / -1; }
-@media (min-width: 900px) { .wiersz .podstawa { grid-column: 3; grid-row: 1 / span 2; align-self: start; padding-left: 12px; border-left: 1px solid var(--kreska); } }
-.wiersz.duzy .ile { font-size: 1.75rem; }
-.wiersz .do-dzialu { font-size: 13.5px; }
-
-/* odnośnik do rejestru — wygląda jak przycisk, nie jak przypis (zasada 1) */
-a.zrodlo {
-  display: inline-grid; grid-template-columns: 14px auto; column-gap: 6px; align-items: start;
-  min-height: 28px; padding: 3px 0; text-align: left;
-  font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; font-size: 12px;
-  color: var(--akcent); text-decoration: none; line-height: 1.35;
-}
-a.zrodlo::before {
-  content: ""; width: 14px; height: 14px; margin-top: 1px; background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-a.zrodlo:hover .nazwa { text-decoration: underline; }
-a.zrodlo .data { grid-column: 2; color: var(--atrament-2); }
-
-/* ---------- ramka „w liczbach” — jedyna ramka na stronie ---------- */
-.w-liczbach { border: 1.5px solid var(--atrament); background: var(--papier-2); padding: 4px 16px 6px; margin-top: 22px; }
-@media (min-width: 640px) { .w-liczbach { padding: 4px 22px 8px; } }
-.w-liczbach > h2 { font-size: 1.15rem; padding: 14px 0 0; }
-.w-liczbach .wiersze { border-top: 0; margin-top: 6px; }
-.w-liczbach .wiersz:last-child { border-bottom: 0; }
-
-/* ---------- uwaga: wygląda jak uwaga, nie jak kolejna karta ---------- */
-.uwaga { margin-top: 16px; padding: 4px 0 4px 14px; border-left: 4px solid var(--atrament); max-width: 46rem; font-size: 14.5px; }
+/* uwaga — wygląda jak uwaga, nie jak kolejna karta */
+.uwaga { margin-top: 16px; padding: 2px 0 2px 14px; border-left: 4px solid var(--ostrzezenie); }
 .uwaga b { font-weight: 600; }
 
-/* ---------- „Jak to liczymy” — jedno na dział ---------- */
-details.metoda { margin-top: 14px; max-width: 46rem; border-top: 1px dashed var(--kreska-2); }
-details.metoda > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 8px; color: var(--atrament); font-weight: 600; font-size: 14px; list-style: none; }
+/* „Jak to liczymy” — jedno na dział, na końcu działu (F7) */
+details.metoda { margin-top: 18px; max-width: 46em; border-top: var(--linia) dashed var(--kreska-2); }
+details.metoda > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 10px; color: var(--atrament); font-weight: 600; font-size: var(--sredni); list-style: none; }
 details.metoda > summary::-webkit-details-marker { display: none; }
-details.metoda > summary::before { content: "+"; font-family: "IBM Plex Mono", monospace; width: 18px; height: 18px; display: inline-grid; place-items: center; border: 1.5px solid var(--atrament); font-size: 13px; line-height: 1; }
+details.metoda > summary::before { content: "+"; font-family: var(--f-znak); width: 22px; height: 22px; display: inline-grid; place-items: center; border: var(--linia-mocna) solid var(--atrament); font-size: var(--drobny); line-height: 1; flex: none; }
 details.metoda[open] > summary::before { content: "−"; }
-details.metoda .tresc { padding: 0 0 14px 26px; color: var(--atrament-2); font-size: 14px; }
+details.metoda .tresc { padding: 0 0 14px 32px; color: var(--atrament-2); }
 details.metoda .tresc p + p { margin-top: 8px; }
-details.metoda ul { margin: 6px 0 0; padding-left: 18px; }
+details.metoda ul { margin: 6px 0 0; padding-left: 20px; }
+details.metoda li + li { margin-top: 4px; }
 
-/* ---------- tabele i paski ---------- */
-.tabela { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-.tabela th { text-align: left; font-weight: 600; font-size: 12.5px; color: var(--atrament-2); border-bottom: 1.5px solid var(--atrament); padding: 8px 8px 8px 0; }
-.tabela td { border-bottom: 1px solid var(--kreska); padding: 10px 8px 10px 0; vertical-align: top; }
+/* ---------- wykresy: paski na wspólnej osi, tytuł u góry jako zdanie z wnioskiem (F11) ---------- */
+.tytul-wykresu { margin-top: 30px; font-size: 1.08rem; max-width: 34em; }
+.lista-paskow { list-style: none; margin: 12px 0 0; padding: 0; max-width: 46rem; }
+.lista-paskow li { padding: 8px 0; }
+.lista-paskow .opis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: var(--sredni); }
+.lista-paskow .opis span:last-child { margin-left: auto; color: var(--atrament-2); white-space: nowrap; }
+.pasek { height: 8px; background: var(--papier-3); margin-top: 6px; }
+.pasek i { display: block; height: 100%; background: var(--atrament); }
+.slupki { display: flex; align-items: flex-end; gap: 8px; height: 140px; margin-top: 16px; max-width: 40rem; border-bottom: var(--linia-mocna) solid var(--atrament); }
+.slupki div { flex: 1; background: var(--atrament); min-height: 2px; }
+.slupki-lata { display: flex; gap: 8px; max-width: 40rem; font-size: var(--drobny); color: var(--atrament-2); line-height: 1.3; padding-top: 6px; }
+.slupki-lata span { flex: 1; text-align: center; }
+.slupki-lata b { display: block; font-weight: 600; color: var(--atrament); }
+.podpis-wykresu { margin-top: 8px; font-size: var(--drobny); color: var(--atrament-2); }
+/* pasek głosowania: za / przeciw / wstrzymał / nie głosowało */
+.glosy { display: flex; height: 12px; margin-top: 8px; }
+.glosy i { display: block; height: 100%; }
+.kropka { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 6px; }
+.legenda { list-style: none; padding: 0; margin: 14px 0 0; max-width: 46rem; columns: 2; column-gap: 28px; font-size: var(--sredni); }
+.legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: var(--linia) solid var(--kreska); break-inside: avoid; }
+
+/* ---------- „Jak myślisz, ile…?” — opcjonalne, do pominięcia, bez JS pokazuje liczbę (F10) ---------- */
+.zgadnij { margin-top: 30px; padding: 16px 0; border-top: var(--linia-mocna) solid var(--atrament); border-bottom: var(--linia) solid var(--kreska); }
+.zgadnij h3 { margin: 0; font-size: 1.08rem; }
+.zgadnij .pytanie { margin-top: 12px; }
+.zgadnij .pytanie[hidden], .zgadnij [hidden] { display: none; }
+.zgadnij label { display: flex; justify-content: space-between; gap: 12px; font-size: var(--sredni); }
+.zgadnij output { font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.2rem; color: var(--atrament); }
+.zgadnij input[type=range] { width: 100%; max-width: 30rem; margin: 10px 0; accent-color: var(--akcent); min-height: 44px; }
+.zgadnij .przyciski { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.zgadnij button { min-height: 44px; padding: 0 18px; font: inherit; font-size: var(--sredni); cursor: pointer; }
+.zgadnij button[data-sprawdz] { background: var(--atrament); color: var(--papier); border: var(--linia-mocna) solid var(--atrament); }
+.zgadnij button[data-pomin] { background: none; border: 0; color: var(--akcent); text-decoration: underline; padding: 0 4px; }
+.zgadnij .odpowiedz { margin-top: 12px; }
+.zgadnij .odpowiedz b { font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.35rem; }
+.zgadnij .roznica { display: block; margin-top: 4px; color: var(--atrament-2); }
+
+/* ---------- tabele ---------- */
+.tabela { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: var(--sredni); }
+.tabela th { text-align: left; font-weight: 600; font-size: var(--drobny); color: var(--atrament-2); border-bottom: var(--linia-mocna) solid var(--atrament); padding: 8px 10px 8px 0; }
+.tabela td { border-bottom: var(--linia) solid var(--kreska); padding: 10px 10px 10px 0; vertical-align: top; }
 .tabela .l { text-align: right; white-space: nowrap; }
 .tabela-przewijana { overflow-x: auto; }
-.pasek { height: 6px; background: var(--papier-3); margin-top: 6px; }
-.pasek i { display: block; height: 100%; background: var(--atrament); }
-.lista-paskow { list-style: none; margin: 16px 0 0; padding: 0; max-width: 46rem; }
-.lista-paskow li { padding: 8px 0; }
-.lista-paskow .opis { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
-.lista-paskow .opis span:last-child { color: var(--atrament-2); white-space: nowrap; }
-
-/* słupki lat */
-.slupki { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin-top: 16px; max-width: 40rem; border-bottom: 1.5px solid var(--atrament); }
-.slupki div { flex: 1; background: var(--atrament); position: relative; min-height: 2px; }
-.slupki-lata { display: flex; gap: 6px; max-width: 40rem; font-size: 11.5px; color: var(--atrament-2); }
-.slupki-lata span { flex: 1; text-align: center; }
-
-/* pasek głosowania: za / przeciw / wstrzymał / obecni bez głosu */
-.glosy { display: flex; height: 10px; margin-top: 8px; }
-.glosy i { display: block; height: 100%; }
-.kropka { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: baseline; margin-right: 6px; }
-
-/* listy pozycji (projekty, głosowania, przypadki) */
-.pozycje { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1.5px solid var(--atrament); }
-.pozycje li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 20px; padding: 14px 0; border-bottom: 1px solid var(--kreska); }
-.pozycje .meta { color: var(--atrament-2); font-size: 13px; }
-.pozycje .kwota { text-align: right; font-weight: 600; white-space: nowrap; }
-.pozycje .kwota small { display: block; font-weight: 400; color: var(--atrament-2); font-size: 12.5px; }
-.pozycje a.tytul-poz { color: var(--atrament); text-decoration: none; font-weight: 600; }
-.pozycje a.tytul-poz:hover { color: var(--akcent); text-decoration: underline; }
-
-/* drzwi na stronie głównej */
-.drzwi { display: grid; gap: 0; margin-top: 28px; border-top: 1.5px solid var(--atrament); }
-@media (min-width: 760px) { .drzwi { grid-template-columns: repeat(3, 1fr); } }
-.drzwi a { display: block; padding: 18px 18px 20px 0; border-bottom: 1px solid var(--kreska); color: var(--atrament); text-decoration: none; }
-@media (min-width: 760px) { .drzwi a { border-bottom: 0; border-right: 1px solid var(--kreska); padding-left: 18px; } .drzwi a:first-child { padding-left: 0; } .drzwi a:last-child { border-right: 0; } }
-.drzwi b { font-family: "Brygada 1918", Georgia, serif; font-size: 1.35rem; font-weight: 600; display: block; }
-.drzwi span { display: block; margin-top: 4px; color: var(--atrament-2); font-size: 14px; }
-.drzwi a:hover b { color: var(--akcent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
-
-/* posłowie z okręgu — nazwiska, nie same zdjęcia */
-.osoby { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
-.osoby a { color: var(--atrament); text-decoration: none; display: inline-flex; align-items: center; min-height: 28px; }
-.osoby a:hover { color: var(--akcent); text-decoration: underline; }
-
-/* stopka */
-.stopka { margin-top: 64px; border-top: 1.5px solid var(--atrament); padding: 28px 0 40px; font-size: 14px; color: var(--atrament-2); }
-.stopka .kolumny { display: grid; gap: 24px; }
-@media (min-width: 760px) { .stopka .kolumny { grid-template-columns: 1.4fr 1fr 1fr; } }
-.stopka ul { list-style: none; margin: 8px 0 0; padding: 0; }
-.stopka li a { display: inline-flex; min-height: 28px; align-items: center; color: var(--atrament-2); }
-.stopka b { color: var(--atrament); }
-
-/* metryczka (dane osobowe posła) */
-.metryczka { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin-top: 14px; font-size: 14px; }
-.metryczka dt { color: var(--atrament-2); }
-.metryczka dd { margin: 0; }
-
-.portret { width: 112px; height: 140px; background: var(--papier-3); border: 1px solid var(--kreska); display: grid; place-items: center; color: var(--atrament-3); font-size: 12px; flex: none; }
-.glowa-posla { display: flex; gap: 20px; align-items: flex-start; }
-@media (max-width: 639px) { .glowa-posla { gap: 14px; } .portret { width: 72px; height: 90px; } }
-
-/* legenda klubów, warunki UOKiK, podpisy słupków */
-.legenda { list-style: none; padding: 0; margin: 14px 0 0; max-width: 46rem; columns: 2; column-gap: 28px; font-size: 14px; }
-.legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--kreska); break-inside: avoid; }
-.warunki { margin-top: 14px; font-size: 12.5px; max-width: 46rem; border-top: 1px solid var(--kreska); padding-top: 10px; }
-.w-liczbach .warunki { max-width: none; margin-bottom: 8px; }
-.slupki-lata { line-height: 1.3; padding-top: 4px; }
-.slupki-lata b { font-weight: 600; color: var(--atrament); font-size: 11px; }
-
-/* tabele na telefonie: wiersz jako blok, bez przewijania w bok */
 @media (max-width: 639px) {
   .tabela thead { display: none; }
   .tabela, .tabela tbody { display: block; }
-  .tabela tr { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--kreska); }
+  .tabela tr { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 10px 0; border-bottom: var(--linia) solid var(--kreska); }
   .tabela td { border: 0; padding: 0; }
   .tabela td:not(.l) { flex: 1 1 100%; }
   .tabela td.l:last-child { margin-left: auto; font-weight: 600; }
   .tabela.decyzje td.l:nth-last-child(2)::before { content: "decyzje: "; color: var(--atrament-2); }
   .tabela.przypadki td.l:nth-last-child(2)::before { content: "przypadki: "; color: var(--atrament-2); }
-}
-
-/* przełącznik kierunków (tylko prototyp) */
-.kierunki-pasek { background: var(--papier-3); border-bottom: 1px solid var(--kreska); font-size: 13.5px; font-family: "IBM Plex Sans", sans-serif; }
-.kierunki-pasek .obszar { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-height: 40px; padding-top: 4px; padding-bottom: 4px; }
-.kierunki-pasek a { color: var(--atrament); padding: 4px 2px; }
-.kierunki-pasek a[aria-current="page"] { font-weight: 600; text-decoration-thickness: 3px; }
-
-/* długi opis paska schodzi do drugiej linii zamiast rozpychać stronę (zmierzone w B na 390 px) */
-.lista-paskow .opis { flex-wrap: wrap; }
-.lista-paskow .opis span:last-child { margin-left: auto; }
-
-/* notka projektowa w prototypie: miejsce na coś, czego dziś strona nie podaje */
-.notka-proj { margin-top: 10px; padding: 8px 12px; border: 1.5px dashed var(--kreska-2); font-size: 13.5px; color: var(--atrament-2); max-width: 46rem; }
-.notka-proj::before { content: "PROTOTYP: "; font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 12px; color: var(--atrament); }
-
-/* zakładki filtrów listy — tekst z kreską, nie pigułki */
-.zakladki { display: flex; flex-wrap: wrap; gap: 0 4px; margin-top: 18px; border-bottom: 1.5px solid var(--atrament); }
-.zakladki a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--atrament-2); text-decoration: none; border-bottom: 4px solid transparent; margin-bottom: -1.5px; }
-.zakladki a[aria-current="page"] { color: var(--atrament); font-weight: 600; border-bottom-color: var(--atrament); }
-.zakladki a .mono { margin-left: 6px; color: var(--atrament-3); }
-
-/* skok po literach na długiej liście */
-.litery { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 14px; }
-.litery a { display: inline-grid; place-items: center; min-width: 32px; min-height: 32px; font-family: "IBM Plex Mono", monospace; font-weight: 500; color: var(--atrament); text-decoration: none; border: 1px solid var(--kreska); }
-.litery a:hover { border-color: var(--atrament); }
-
-/* droga ustawy — oś czasu z kreską */
-.droga { list-style: none; margin: 16px 0 0; padding: 0; border-left: 2px solid var(--atrament); max-width: 46rem; }
-.droga li { position: relative; padding: 8px 0 14px 18px; }
-.droga li::before { content: ""; position: absolute; left: -6px; top: 14px; width: 10px; height: 10px; background: var(--papier); border: 2px solid var(--atrament); border-radius: 50%; }
-.droga li.ostatni::before { background: var(--atrament); }
-.droga .kiedy { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 12.5px; color: var(--atrament-2); }
-.stronicowanie a, .stronicowanie span { display: inline-flex; align-items: center; min-height: 44px; }
-.prototyp a { display: inline-flex; align-items: center; min-height: 24px; }
-@media (max-width: 639px) {
   .tabela.osoby-tab tr { gap: 0 10px; padding: 8px 0; }
   .tabela.osoby-tab td:first-child { flex: 1 1 100%; font-weight: 600; }
-  .tabela.osoby-tab td:not(:first-child) { flex: 0 0 auto; color: var(--atrament-2); font-size: 14px; }
+  .tabela.osoby-tab td:not(:first-child) { flex: 0 0 auto; color: var(--atrament-2); }
 }
 
-/* jedno zdanie „czym jest ten serwis” w nagłówku strony szczegółu (badania.md, dział 5) */
-.skad { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--kreska); max-width: 44rem; font-size: 14.5px; line-height: 1.5; color: var(--atrament-2); }
-.skad b { color: var(--atrament); font-weight: 600; }
-.skad a { white-space: nowrap; }
+/* ---------- listy pozycji (projekty, głosowania, przypadki) ---------- */
+.pozycje { list-style: none; margin: 16px 0 0; padding: 0; border-top: var(--linia-mocna) solid var(--atrament); }
+.pozycje li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 20px; padding: 14px 0; border-bottom: var(--linia) solid var(--kreska); }
+.pozycje .meta { color: var(--atrament-2); font-size: var(--drobny); }
+.pozycje .kwota { text-align: right; font-family: var(--f-liczba); font-weight: var(--w-liczba); white-space: nowrap; }
+.pozycje .kwota small { display: block; font-family: var(--f-tekst); font-weight: 400; color: var(--atrament-2); font-size: var(--drobny); }
+.pozycje a.tytul-poz { color: var(--atrament); font-weight: 600; text-decoration-color: var(--kreska-2); }
+.pozycje a.tytul-poz:hover { color: var(--akcent); text-decoration-color: currentColor; }
+.pozycje .streszczenie { margin-top: 6px; max-width: 34em; }
 
-/* telefon: pole szukania i główne działy na wierzchu, reszta pod „Menu” (badania-ux.md, dział 6) */
-@media (max-width: 1023px) { .naglowek .gora { min-height: 50px; } }
-.tel { padding-bottom: 0; }
-.tel .pole { margin: 2px 0 4px; }
-.skroty { display: flex; align-items: stretch; overflow-x: auto; white-space: nowrap; scrollbar-width: none; margin: 0 -8px; }
-.skroty::-webkit-scrollbar { display: none; }
-.skroty a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 8px; font-size: 14.5px; color: var(--atrament); text-decoration: none; border-bottom: 3px solid transparent; }
-.skroty a[aria-current="page"] { border-bottom-color: var(--atrament); font-weight: 600; }
-.skroty .kreska { flex: none; width: 1px; margin: 10px 6px; background: var(--kreska-2); }
-@media (min-width: 1024px) { .tel { display: none; } }
+/* drzwi na stronie głównej */
+.drzwi { display: grid; margin-top: 24px; border-top: var(--linia-mocna) solid var(--atrament); }
+@media (min-width: 760px) { .drzwi { grid-template-columns: repeat(3, 1fr); } }
+.drzwi a { display: block; padding: 16px 18px 18px 0; border-bottom: var(--linia) solid var(--kreska); color: var(--atrament); text-decoration: none; }
+@media (min-width: 760px) { .drzwi a { border-bottom: 0; border-right: var(--linia) solid var(--kreska); padding-left: 18px; } .drzwi a:first-child { padding-left: 0; } .drzwi a:last-child { border-right: 0; } }
+.drzwi b { font-family: var(--f-naglowek); font-weight: var(--w-naglowek); font-size: 1.2rem; display: block; color: var(--akcent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+.drzwi span { display: block; margin-top: 4px; color: var(--atrament-2); font-size: var(--sredni); }
+.drzwi a:hover b { text-decoration-thickness: 3px; }
+
+/* zakładki filtrów listy, skok po literach, stronicowanie */
+.zakladki { display: flex; flex-wrap: wrap; gap: 0 4px; margin-top: 18px; border-bottom: var(--linia-mocna) solid var(--atrament); }
+.zakladki a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--atrament-2); text-decoration: none; border-bottom: 4px solid transparent; margin-bottom: -2px; font-size: var(--sredni); }
+.zakladki a[aria-current="page"] { color: var(--atrament); font-weight: 600; border-bottom-color: var(--atrament); }
+.zakladki a .znak { margin-left: 6px; color: var(--atrament-3); }
+/* filtr listy: pole szukania i wybór obok siebie */
+.filtry { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; max-width: 46rem; }
+.filtry input { flex: 1 1 14rem; width: auto; }
+.filtry select { flex: 0 1 auto; width: auto; padding: 0 10px; }
+/* skok po literach: jeden rząd, na telefonie przewijany w bok */
+.litery { display: flex; gap: 2px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+@media (min-width: 1024px) { .litery { flex-wrap: wrap; } }
+.litery a { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; font-size: var(--sredni); color: var(--atrament); text-decoration: none; border-bottom: var(--linia) solid var(--kreska); }
+.litery a:hover { border-bottom-color: var(--atrament); }
+.stronicowanie { margin-top: 14px; display: flex; justify-content: space-between; }
+.stronicowanie a, .stronicowanie span { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* droga ustawy — oś czasu */
+.droga { list-style: none; margin: 16px 0 0; padding: 0; border-left: var(--linia-mocna) solid var(--atrament); max-width: 46rem; }
+.droga li { position: relative; padding: 8px 0 14px 18px; }
+.droga li::before { content: ""; position: absolute; left: -7px; top: 15px; width: 12px; height: 12px; background: var(--papier); border: var(--linia-mocna) solid var(--atrament); border-radius: 50%; }
+.droga li.ostatni::before { background: var(--atrament); }
+.droga .kiedy { font-family: var(--f-znak); font-size: var(--drobny); color: var(--atrament-2); }
+
+/* poseł: portret i metryczka */
+.glowa-posla { display: flex; gap: 18px; align-items: flex-start; }
+.portret { width: 104px; height: 130px; background: var(--papier-3); display: grid; place-items: center; color: var(--atrament-2); font-size: var(--drobny); flex: none; }
+@media (max-width: 639px) { .glowa-posla { gap: 14px; } .portret { width: 68px; height: 86px; } }
+.metryczka { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin-top: 12px; font-size: var(--sredni); }
+.metryczka dt { color: var(--atrament-2); }
+.metryczka dd { margin: 0; }
+.osoby { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+/* ---------- stopka: kto za tym stoi i kontakt na każdej stronie (F13) ---------- */
+.stopka { margin-top: 64px; border-top: var(--linia-mocna) solid var(--atrament); padding: 28px 0 40px; font-size: var(--sredni); color: var(--atrament-2); }
+.stopka .kolumny { display: grid; gap: 24px; }
+@media (min-width: 900px) { .stopka .kolumny { grid-template-columns: 1.3fr 1fr 1fr; } }
+.stopka b { color: var(--atrament); }
+.stopka p { margin-top: 6px; max-width: 30em; }
+.stopka ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.stopka li a { display: inline-flex; min-height: 30px; align-items: center; }
+.pliki { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
+.pliki a { display: inline-flex; align-items: center; min-height: 36px; }
