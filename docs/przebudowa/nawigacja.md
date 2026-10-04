@@ -219,7 +219,44 @@ przewijania na 390 px — najwyżej 4 rzeczy), **Działy** (kolejność),
 
 ---
 
-## 6. Brak wyniku też jest odpowiedzią
+## 6. Pozostałe strony
+
+Dwa wspólne wzorce zamiast osobnego pomysłu na każdą stronę:
+
+**Lista** (posłowie, głosowania, ustawy, komisje, okręgi, gminy, firmy):
+okruszek → nagłówek z jednym zdaniem i liczbą wszystkich pozycji → pole
+szukania → zakładki filtrów z liczbą (tekst z kreską, nie pigułki) →
+lista w wierszach (na telefonie najwyżej dwie linie na pozycję) →
+stronicowanie jawne („strona 1 z 24”, wzorzec 4 z `CLAUDE.md`).
+Opisy i szczegóły zostają na stronie pozycji, nie na liście.
+
+**Szczegół** (gmina, poseł, firma, ustawa, głosowanie, okręg, komisja,
+organ): okruszek → nagłówek z sygnaturą (kody z rejestru w mono) →
+„W liczbach” → ponumerowane działy → jedno „Jak to liczymy” na dział.
+
+| strona | wzorzec | co od razu | zmiana względem dziś | prototyp |
+|---|---|---|---|---|
+| `/poslowie` | lista | pole szukania, zakładki „sprawujący mandat 460 / wszyscy 499 / mandat wygasł 39”, filtr klubu, skok po literach | wiersz tabeli zamiast karty; bez zdjęć na liście (pułapka 54); 37 244 → ok. 24 000 px na telefonie | `poslowie.html` |
+| `/glosowania` | lista | zakładki: wszystkie 4641 / nad całością 698 / poprawki / porządkowe | **rodzaj głosowania przy każdej pozycji**; przy większości kwalifikowanej (weto 3/5) wynik z rejestru obok liczb | `glosowania.html` |
+| `/glosowanie/[id]` | szczegół | wynik (przyjęto/odrzucono — z rejestru), pasek, „za” wśród oddanych z mianownikiem, odnośnik do ustawy | tabela klubów zostaje; lista 460 nazwisk zwinięta za polem „znajdź posła” (dziś większość z 30 971 px) | `glosowanie.html` |
+| `/ustawy` | lista | szukanie w tytułach i opisach, zakładki stanu, „po ludzku ✓” | bez pełnego opisu przy każdej pozycji (jest na stronie projektu) | `ustawy.html` |
+| `/ustawa/[numer]` | szczegół | tytuł, stan, ostatni etap słowami, „Po ludzku” | droga jako oś czasu; **nazwa komisji zamiast kodu** („komisja INF” → „Komisja Infrastruktury INF”); powtórzone „Skierowanie” z tego samego dnia złączone | `ustawa.html` |
+| `/okreg/[nr]` | szczegół | posłowie okręgu w tabeli z „inaczej niż klub: a z b”, liczba gmin i uprawnionych | tabela 10 × 10 głosowań przewija się w ramce z przyklejonymi nazwiskami | `okreg.html` |
+| `/okregi` | lista | 41 okręgów według województw, pole „znajdź gminę” | bez zmian treści; wiersze zamiast kafli | — |
+| `/gminy`, `/gminy/[woj]` | lista | pole szukania gminy, 16 województw z liczbą gmin | ta sama liczba gmin co na głównej (dziś 2479 tu, 2496 na głównej) | — |
+| `/komisje`, `/komisja/[kod]` | lista / szczegół | komisje stałe i nadzwyczajne z kodem i liczbą członków; skład z funkcjami | kod zawsze z nazwą; „skład z dnia …” przy liście członków | — |
+| `/organ/[nip]` | szczegół | decyzje o pomocy, gminy, rodzaje pomocy w tabeli | jedna legenda rodzajów zamiast objaśnienia przy każdym; warunki UOKiK pod „W liczbach” | — |
+| `/pomoc-publiczna` | szczegół | pole „sprawdź firmę”, 3 liczby z okresem przy każdej, warunki UOKiK zaraz pod nimi | listy skrócone do 3–5 + „pokaż wszystkie”; tabela wielkości firm | `pomoc-publiczna.html` |
+| `/firmy` (nowa) | lista | pole „Nazwa firmy albo NIP”, wyniki, zdanie o firmach, których nie pokazujemy | nowa trasa (decyzja Pawła) | `firmy.html` |
+| `/szukaj` | lista | zakładki wyników z liczbą (gminy · ustawy · firmy · głosowania · posłowie) | każda grupa 1–3 pozycje i odnośnik do pełnej listy | `szukaj.html` |
+| `/mapa` | narzędzie | mapa, przełącznik miary, legenda „ciemniej = więcej zł na mieszkańca, nie lepiej” | bez zmian treści; legenda i źródło w stylu kierunku | — |
+| `/sala` | narzędzie | plan sali, wybór głosowania | bez zmian; lista głosowań do wyboru z rodzajem głosowania | — |
+| `/stan` | serwisowa | tabela zbiorów: co, ile, kiedy pobrane | **teksty dla czytelnika zamiast notatek importu** — dziś widać „agregaty (zbiór bez opisu) 0”, „nie licze od nowa; liczone 0 s”, „dochody 2025: 368846929288 zl” | — |
+| `/o-serwisie`, `/prywatnosc` | tekst | jedna kolumna 40rem | nazwa „zrejestru” (decyzja Pawła); dziś „jawne pokazuje dane publiczne o Sejmie”, choć połowa serwisu to pieniądze | — |
+
+---
+
+## 7. Brak wyniku też jest odpowiedzią
 
 Wyszukiwarka i `/firmy`, gdy nic nie znalazły:
 

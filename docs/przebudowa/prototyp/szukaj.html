@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Spis · prototyp zrejestru</title>
+<title>Szukaj · prototyp zrejestru</title>
 <link rel="stylesheet" href="styl.css">
 <script src="motyw.js"></script>
 </head>
 <body>
-<div class="prototyp"><div class="obszar"><b>Prototyp układu</b> · <a href="index.html">spis prototypu</a></div></div>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
 <header class="naglowek">
   <div class="obszar gora">
     <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
@@ -30,18 +30,24 @@
   <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
 </header>
 <main id="tresc">
-<div class="obszar" style="padding:40px 16px">
-  <p class="mono szary">docs/przebudowa/prototyp · kierunek A „Wypis z rejestru”</p>
-  <h1 style="margin-top:10px">Prototyp</h1>
-  <p class="podtytul szary" style="margin-top:10px;max-width:42rem">Statyczne strony do obejrzenia w przeglądarce — bez budowania, bez bazy. Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno (390 px).</p>
-  <p style="margin-top:18px"><a href="kierunki.html"><b>Porównanie siedmiu kierunków →</b></a> (każdy kierunek na każdej stronie)</p>
-  <div class="wiersze" style="margin-top:24px;max-width:46rem">
-    <div class="wiersz"><p class="co"><a href="glowna.html">Strona główna</a></p><p class="ile mono" style="font-size:12px">/</p><p class="z-czego">głosowania, kluby i liczby z tekst/glowna.txt</p></div>
-    <div class="wiersz"><p class="co"><a href="gmina.html">Gmina: Kraków</a></p><p class="ile mono" style="font-size:12px">/gmina/126101</p><p class="z-czego">pełna treść strony skrócona do 6 działów; listy obcięte z odnośnikiem „pokaż wszystkie”</p></div>
-    <div class="wiersz"><p class="co"><a href="posel.html">Poseł: Andrzej Adamczyk</a></p><p class="ile mono" style="font-size:12px">/posel/andrzej-adamczyk</p><p class="z-czego">bez zdjęcia (nie było go w zrzutach jako pliku)</p></div>
-    <div class="wiersz"><p class="co"><a href="firma.html">Firma: PGE GiEK</a></p><p class="ile mono" style="font-size:12px">/firma/7690502495</p><p class="z-czego">50 przypadków zgrupowanych w 4 wiersze; warunki UOKiK tuż pod liczbą</p></div>
-  </div>
-  <p class="uwaga" style="margin-top:24px"><b>Skąd liczby:</b> przepisane z wyrenderowanego tekstu stron (gałąź <span class="mono">przebudowa-zrzuty</span>, lokalna budowa <span class="mono">main@414bc5d</span>, 04.10.2026). Na zrejestru.pl mogą być inne, bo serwer pobiera SUDOP co godzinę.</p>
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span aria-current="page">Szukaj</span></nav>
+  <header class="wypis"><h1>Szukaj</h1></header>
+  <form role="search" action="#" style="margin-top:6px;max-width:40rem"><label for="qs" class="sr">Szukaj</label><input class="pole" id="qs" type="search" value="krak" style="min-height:52px;font-size:1.05rem"></form>
+  <nav class="zakladki" aria-label="Wyniki"><a href="#" aria-current="page">wszystko</a><a href="#gminy-w">gminy<span class="mono">1</span></a><a href="#ustawy-w">ustawy<span class="mono">3</span></a><a href="firmy.html">firmy<span class="mono">6</span></a><a href="#glos-w">głosowania<span class="mono">2</span></a></nav>
+  <section class="dzial" id="gminy-w" aria-labelledby="gminy-w-t"><div class="nr" aria-hidden="true"></div><div>
+  <div class="tytul"><h2 id="gminy-w-t">Gminy</h2></div>
+  <ul class="pozycje"><li><div><a class="tytul-poz" href="gmina.html">Kraków</a><p class="meta">miasto na prawach powiatu, woj. małopolskie · okręg nr 13</p></div><p class="kwota"></p></li></ul>
+</div></section>
+  <section class="dzial" id="ustawy-w" aria-labelledby="ustawy-w-t"><div class="nr" aria-hidden="true"></div><div>
+  <div class="tytul"><h2 id="ustawy-w-t">Ustawy</h2></div>
+  <ul class="pozycje"><li><div><p class="meta mono">druk 3030</p><a class="tytul-poz" href="#">Rządowy projekt ustawy o usprawnieniu procesu inwestycyjnego w zakresie kluczowych inwestycji infrastrukturalnych</a><p class="meta">W toku · Sprawozdanie komisji</p></div><p class="kwota"></p></li><li><div><p class="meta mono">druk 727</p><a class="tytul-poz" href="#">Rządowy projekt ustawy o zmianie nazwy Akademii Wychowania Fizycznego im. Bronisława Czecha w Krakowie</a><p class="meta">Uchwalono</p></div><p class="kwota"></p></li></ul><p style="margin-top:8px"><a href="#">wszystkie 3 →</a></p>
+</div></section>
+  <section class="dzial" id="firmy-w" aria-labelledby="firmy-w-t"><div class="nr" aria-hidden="true"></div><div>
+  <div class="tytul"><h2 id="firmy-w-t">Firmy</h2></div>
+  <ul class="pozycje"><li><div><a class="tytul-poz" href="#">OCHRONA MIENIA KRAKÓW SP. Z O.O.</a><p class="meta">Kraków · 1 przypadek pomocy</p></div><p class="kwota">395 tys. zł</p></li></ul><p style="margin-top:8px"><a href="firmy.html">wszystkie 6 w wyszukiwarce firm →</a></p>
+</div></section>
+  <p class="notka-proj">zakładki z liczbą wyników zamiast jednej długiej strony; każda grupa pokazuje 1–3 pozycje i prowadzi do pełnej listy.</p>
 </div>
 </main>
 <footer class="stopka"><div class="obszar">

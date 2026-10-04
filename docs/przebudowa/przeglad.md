@@ -71,6 +71,22 @@ główną sesję, niezależnie od wyboru kierunku):
 13. **Na głównej sala przed liczbami.** Plan sali zajmuje większość
     drugiego ekranu na komputerze, zaraz pod sześcioma kartami; „co mamy” i ostatnie głosowania
     są dopiero pod nim (`glowna--komputer--01.jpg`).
+14. **Głosowanie bez wyniku.** Ani lista, ani strona głosowania nie mówi,
+    czy wniosek przyjęto. Przy ponownym uchwaleniu ustawy po wecie
+    Prezydenta (`/glosowania`, 17.09.2026, pkt 28: „232 za, 200 przeciw”)
+    potrzeba większości 3/5 — więcej „za” niż „przeciw” nie znaczy
+    przyjęcia, a czytelnik tak to przeczyta. → **gł.** (czy rejestr podaje
+    wynik albo wymaganą większość — do sprawdzenia w API).
+15. **`/stan` pokazuje notatki importu zamiast tekstu dla czytelnika:**
+    „agregaty(zbiór bez opisu) 0”, „bez zmian (16:2026-08-19:2026-09-06) —
+    nie licze od nowa; liczone 0 s”, „dochody 2025: 368846929288 zl” (bez
+    polskich znaków i bez formatowania liczby). → **gł.**
+16. **Kod komisji bez nazwy:** na stronie ustawy etap „Skierowanie · komisja
+    INF” — „INF” to Komisja Infrastruktury (zgodnie z `/komisje`), ale strona
+    tego nie mówi.
+17. **„wnioskuo”** — na liście głosowań: „głosowanie nad przyjęciem
+    wnioskuo wyrażenie zgody przez Sejm…” (brak spacji; do sprawdzenia, czy
+    u nas, czy w rejestrze).
 
 ---
 

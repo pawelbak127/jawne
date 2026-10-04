@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Głosowanie 64-40 · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html" aria-current="page">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Sejm</a><i aria-hidden="true">›</i></span><span class=""><a href="glosowania.html">Głosowania</a><i aria-hidden="true">›</i></span><span aria-current="page">posiedzenie 64, głosowanie 40</span></nav>
+  <header class="wypis">
+    <p class="sygnatura mono"><span>4.09.2026</span><span>posiedzenie 64, pkt 14</span><span>głosowanie nr 40</span></p>
+    <p style="font-weight:600;font-size:1.1rem">Poprawka 1</p>
+    <h1 style="font-size:clamp(1.5rem,4vw,2.2rem);margin-top:6px">Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o odnawialnych źródłach energii oraz niektórych innych ustaw (druki nr 2821, 3022 i 3022-A)</h1>
+    <p class="podtytul"><a href="#">Co się stało z tym projektem (druk nr 2821) →</a></p>
+  </header>
+  <section class="w-liczbach" aria-labelledby="wynik-t">
+    <h2 id="wynik-t">Wynik</h2>
+    <div class="glosy" style="height:14px;margin-top:12px" role="img" aria-label="za 31, przeciw 383, wstrzymało się 23, nie głosowało 23"><i style="width:6.74%;background:var(--za)"></i><i style="width:83.26%;background:var(--przeciw)"></i><i style="width:5.00%;background:var(--wstrzymal)"></i><i style="width:5.00%;background:var(--brak)"></i></div>
+    <div class="wiersze">
+      <div class="wiersz duzy"><p class="co">Głosy „za” wśród oddanych</p><p class="ile">7,1%</p><p class="z-czego">31 z 437 oddanych głosów: za 31, przeciw 383, wstrzymało się 23 · 23 posłów nie głosowało</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">dane głosowania</span></a></p></div>
+    </div>
+    <p class="notka-proj">tu ma stać wynik z rejestru: „przyjęto” albo „odrzucono” i wymagana większość. Dziś strona go nie podaje — przy odrzucaniu weta (3/5) więcej „za” niż „przeciw” nie znaczy przyjęcia.</p>
+  </section>
+  <section class="dzial" id="kluby" aria-labelledby="kluby-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="kluby-t"><span class="nr-tel">2. </span>Jak głosowały kluby</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></div>
+  
+    <p class="wstep">Kluby z dnia głosowania — także te, których dziś już nie ma.</p>
+    <div class="tabela-przewijana"><table class="tabela"><thead><tr><th>Klub</th><th class="l">za</th><th class="l">przeciw</th><th class="l">wstrz.</th><th class="l">nie głos.</th><th>rozkład</th></tr></thead><tbody><tr><td><span class="kropka" style="background:#b0407a"></span>Razem</td><td class="l">0</td><td class="l">0</td><td class="l">3</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 0, wstrzymało się 3, nie głosowało 1"><i style="width:75.00%;background:var(--wstrzymal)"></i><i style="width:25.00%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#e34948"></span>Lewica</td><td class="l">0</td><td class="l">21</td><td class="l">0</td><td class="l">0</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 21, wstrzymało się 0, nie głosowało 0"><i style="width:100.00%;background:var(--przeciw)"></i></div></td></tr><tr><td><span class="kropka" style="background:#2a78d6"></span>KO</td><td class="l">0</td><td class="l">153</td><td class="l">0</td><td class="l">3</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 153, wstrzymało się 0, nie głosowało 3"><i style="width:98.08%;background:var(--przeciw)"></i><i style="width:1.92%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#e87ba4"></span>Polska2050</td><td class="l">0</td><td class="l">14</td><td class="l">0</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 14, wstrzymało się 0, nie głosowało 1"><i style="width:93.33%;background:var(--przeciw)"></i><i style="width:6.67%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#008300"></span>PSL-TD</td><td class="l">28</td><td class="l">3</td><td class="l">0</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 28, przeciw 3, wstrzymało się 0, nie głosowało 1"><i style="width:87.50%;background:var(--za)"></i><i style="width:9.38%;background:var(--przeciw)"></i><i style="width:3.12%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#5b4636"></span>Demokracja</td><td class="l">0</td><td class="l">2</td><td class="l">1</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 2, wstrzymało się 1, nie głosowało 1"><i style="width:50.00%;background:var(--przeciw)"></i><i style="width:25.00%;background:var(--wstrzymal)"></i><i style="width:25.00%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#1baf7a"></span>Centrum</td><td class="l">1</td><td class="l">13</td><td class="l">0</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 1, przeciw 13, wstrzymało się 0, nie głosowało 1"><i style="width:6.67%;background:var(--za)"></i><i style="width:86.67%;background:var(--przeciw)"></i><i style="width:6.67%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#eb6834"></span>RozwojPlus</td><td class="l">0</td><td class="l">38</td><td class="l">0</td><td class="l">3</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 38, wstrzymało się 0, nie głosowało 3"><i style="width:92.68%;background:var(--przeciw)"></i><i style="width:7.32%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td class="l">0</td><td class="l">138</td><td class="l">0</td><td class="l">8</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 138, wstrzymało się 0, nie głosowało 8"><i style="width:94.52%;background:var(--przeciw)"></i><i style="width:5.48%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#eda100"></span>Konfederacja</td><td class="l">0</td><td class="l">0</td><td class="l">15</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 0, wstrzymało się 15, nie głosowało 1"><i style="width:93.75%;background:var(--wstrzymal)"></i><i style="width:6.25%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#8a6a4f"></span>Konfederacja_KP</td><td class="l">0</td><td class="l">0</td><td class="l">2</td><td class="l">1</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 0, przeciw 0, wstrzymało się 2, nie głosowało 1"><i style="width:66.67%;background:var(--wstrzymal)"></i><i style="width:33.33%;background:var(--brak)"></i></div></td></tr><tr><td><span class="kropka" style="background:#9a958c"></span>niez.</td><td class="l">2</td><td class="l">1</td><td class="l">2</td><td class="l">2</td><td style="min-width:120px"><div class="glosy" role="img" aria-label="za 2, przeciw 1, wstrzymało się 2, nie głosowało 2"><i style="width:28.57%;background:var(--za)"></i><i style="width:14.29%;background:var(--przeciw)"></i><i style="width:28.57%;background:var(--wstrzymal)"></i><i style="width:28.57%;background:var(--brak)"></i></div></td></tr></tbody></table></div>
+</div></section>
+  <section class="dzial" id="sala" aria-labelledby="sala-t"><div class="nr" aria-hidden="true">3</div><div>
+  <div class="tytul"><h2 id="sala-t"><span class="nr-tel">3. </span>Na sali</h2></div>
+  <p class="wstep">Półkole z miejscami posłów, kolor = oddany głos — bez zmian względem dzisiejszej strony.</p><p class="notka-proj">komponent Polkole zostaje; zmienia się tylko otoczenie (bez karty z cieniem).</p>
+</div></section>
+  <section class="dzial" id="wszyscy" aria-labelledby="wszyscy-t"><div class="nr" aria-hidden="true">4</div><div>
+  <div class="tytul"><h2 id="wszyscy-t"><span class="nr-tel">4. </span>Wszystkie głosy imienne</h2></div>
+  
+    <p class="wstep">460 posłów: przeciw 383 · za 31 · wstrzymało się 23 · nieobecni 23.</p>
+    <form role="search" action="#" style="margin-top:12px;max-width:30rem"><label for="qg" class="sr">Znajdź posła</label><input class="pole" id="qg" type="search" placeholder="Znajdź posła na liście"></form>
+    <p class="notka-proj">lista 460 nazwisk (dziś większość z 30 971 px na telefonie) jest zwinięta za polem szukania i filtrem głosu; pełną pokazuje „pokaż wszystkich”.</p>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

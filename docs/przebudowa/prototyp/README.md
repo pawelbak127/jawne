@@ -4,14 +4,25 @@ Otwórz `index.html` w przeglądarce (dwuklik wystarczy, nic nie trzeba
 budować). Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno
 albo narzędzia deweloperskie, 390 px.
 
-| plik | strona | dane |
+| plik | strona | dane (z `tekst/*.txt`) |
 |---|---|---|
-| `glowna.html` | `/` | z `tekst/glowna.txt` |
-| `gmina.html` | `/gmina/126101` — Kraków | z `tekst/gmina-krakow.txt` |
-| `posel.html` | `/posel/andrzej-adamczyk` | z `tekst/posel.txt` (bez zdjęcia) |
-| `firma.html` | `/firma/7690502495` — PGE GiEK | z `tekst/firma.txt` |
-| `kierunki.html` | porównanie A, B, C, A+B | — |
-| `gmina-b.html`, `gmina-c.html`, `gmina-ab.html` | Kraków w kierunkach B, C i A+B | ta sama treść co `gmina.html`; styl to nakładka `skora-*.css` na `styl.css` |
+| `glowna.html` | `/` | glowna |
+| `gmina.html` | `/gmina/126101` — Kraków | gmina-krakow |
+| `posel.html` | `/posel/andrzej-adamczyk` (bez zdjęcia) | posel |
+| `firma.html` | `/firma/7690502495` — PGE GiEK | firma |
+| `ustawa.html`, `ustawy.html` | `/ustawa/3101`, `/ustawy` | ustawa, ustawy |
+| `glosowanie.html`, `glosowania.html` | `/glosowanie/64-40`, `/glosowania` | glosowanie, glosowania |
+| `poslowie.html`, `okreg.html` | `/poslowie`, `/okreg/14` | poslowie, okreg |
+| `pomoc-publiczna.html` | `/pomoc-publiczna` | pomoc-publiczna |
+| `firmy.html` | `/firmy` — **nowa trasa** | firmy z `szukaj` |
+| `szukaj.html` | `/szukaj?q=krak` | szukaj |
+| `kierunki.html` | porównanie 7 kierunków stylu | — |
+
+**Kierunki stylu:** każda strona działa w każdym z siedmiu kierunków —
+pasek „Kierunek” nad nagłówkiem albo `?k=a|b|c|ab|d|e|f` w adresie
+(wybór zapamiętany w przeglądarce). Styl B–F to nakładka `skora-*.css`
+na `styl.css`; HTML jest jeden. Ramki z napisem „PROTOTYP:” to notki
+projektowe: pokazują miejsce na coś, czego dziś strona nie podaje.
 
 **Skąd liczby:** przepisane dosłownie z wyrenderowanego tekstu stron na
 gałęzi `przebudowa-zrzuty` (lokalna budowa `main` @ 414bc5d, 04.10.2026).
@@ -27,21 +38,22 @@ Dlatego wysokość nie jest uczciwym porównaniem z dzisiejszą stroną —
 porównywalny jest układ: odpowiedź na pierwszym ekranie, metodologia
 zwinięta, warunki UOKiK przy danych.
 
-| strona | prototyp, telefon | dziś, telefon |
+| strona (kierunek A, bez paska wyboru kierunku) | prototyp, telefon | dziś, telefon |
 |---|---|---|
 | główna | 3 704 px | 6 186 px |
 | Kraków | 8 566 px | 27 046 px |
 | poseł | 4 682 px | 9 387 px |
 | firma | 3 046 px | 17 005 px |
 
-Sprawdzone w Chromium (Playwright), 4 strony × 390/1280 px × jasny/ciemny:
+Sprawdzone w Chromium (Playwright), 15 stron × 6 kierunków (A–F) × 390/1280 px × jasny/ciemny = 360 renderów:
 szerokość dokumentu = szerokość okna (spis działów przewija się w bok
 wewnątrz własnego paska, tak ma być), 0 błędów konsoli, fonty z `fonty/`,
 żaden cel dotykowy poza tekstem ciągłym poniżej 24 px.
 
-`fonty/`: kierunek A — Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex
-Mono 500 (141 kB); B — Półtawski Nowy 400/600 (81 kB); C — Archivo 400/700
-(55 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
+`fonty/`: A — Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex Mono 500
+(141 kB); B — Półtawski Nowy 400/600 (81 kB); C — Archivo 400/700 (55 kB);
+D — fonty A bez Brygady; E — Source Serif 4 i Public Sans 400/600 (128 kB);
+F — Newsreader i Public Sans 400/600 (126 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
 OFL 1.1 (pliki `OFL-*.txt`).
 
 Pliki CSS i JS są tylko dla prototypu — kod strony przebuduje główna sesja

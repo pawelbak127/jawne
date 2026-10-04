@@ -1,4 +1,4 @@
-# Kierunek stylu — trzy propozycje i jedna rekomendacja
+# Kierunek stylu — siedem propozycji i jedna rekomendacja
 
 Wspólne dla wszystkich trzech (to treść, nie styl — nie podlega wyborowi):
 odnośnik do rejestru przy liczbie, mianownik, półpauza ≠ zero, brak ocen,
@@ -144,6 +144,85 @@ liczbie przegrywa wizualnie. Zostawiam jako punkt odniesienia, nie polecam.
 
 ---
 
+## D. „Kartoteka” — karta katalogowa i segregator
+
+**Pomysł.** Serwis jako szafa z kartoteką: każdy dział to przekładka
+segregatora z zakładką, ramka „W liczbach” to karta katalogowa, źródło —
+pieczątka w ramce. Bliski A (porządek, rejestr), ale bardziej „biurowy”
+i mniej książkowy; dobrze znosi długie listy (posłowie, głosowania).
+
+**Typografia.** IBM Plex Mono 500 w nagłówkach, etykietach i liczbach, IBM
+Plex Sans w tekście — bez kroju szeryfowego. Ok. **107 kB** (Plex Sans
+400/600 + Plex Mono 500).
+
+**Paleta.** Jasna: karton `#f4efe2`, grafit `#1b1f24` (14,4:1),
+`--atrament-3` `#575d66` (5,8:1), akcent petrol `#155e75` (6,3:1),
+niebieskawe linie karty. Ciemna: `#14171a` / `#e8e4da` (14,2:1), akcent
+`#67c3db` (8,9:1).
+
+**Czym różni się od AI.** Zakładki-przekładki zamiast kart z cieniem,
+pismo maszynowe zamiast Intera, pieczątka zamiast „badge”.
+
+**Ryzyko.** Mono w nagłówkach jest szerokie — długie tytuły ustaw łamią
+się częściej; trzeba trzymać mono tylko w krótkich etykietach.
+
+---
+
+## E. „Rocznik” — rocznik statystyczny GUS
+
+**Pomysł.** Strona jak tablica z „Rocznika Statystycznego”: liczby w tabeli
+drukowanej (gruba linia, cienkie, gruba), „Dział N” na marginesie,
+mianownik kursywą pod liczbą. Najbliższy temu, jak dziennikarz i radny
+czytają dane urzędowe; najmniej „stylizowany” z siedmiu.
+
+**Typografia.** Source Serif 4 400/600 do tekstu i liczb (ten sam krój co
+dziś w nagłówkach — znany, z cyframi tablicowymi), Public Sans 400/600 do
+nagłówków tabel. Ok. **128 kB**.
+
+**Paleta.** Biel, czerń `#1a1a1a` (17,4:1), `--atrament-3` `#5f5f5f`
+(6,4:1), akcent oliwkowy `#4f5b17` (7,4:1). Ciemna: `#121212` / `#ececea`
+(15,8:1), akcent `#b9c86a` (10,3:1).
+
+**Czym różni się od AI.** Linie tabeli drukowanej zamiast kart; szeryf
+w tekście ciągłym; nagłówki jak w publikacji statystycznej.
+
+**Ryzyko.** Dla mieszkańca może wyglądać „urzędowo-sucho” — mniej
+zaproszenia niż A czy F.
+
+---
+
+## F. „Reportaż” — dziennikarstwo danych
+
+**Pomysł.** Jak duże redakcje piszą o danych: dużo powietrza, liczba duża
+i szeryfowa, a tuż pod nią opis i mianownik; „W liczbach” w dwóch
+kolumnach. Najcieplejszy z siedmiu, najbardziej dla mieszkańca.
+
+**Typografia.** Newsreader 400/600 do nagłówków i liczb, Public Sans
+400/600 do tekstu. Ok. **126 kB**.
+
+**Paleta.** Ciepła szarość `#f7f5f2`, atrament `#1d1b19` (15,8:1),
+`--atrament-3` `#665f57` (5,8:1), akcent terakota `#8f3b1f` (6,9:1).
+Ciemna: `#161412` / `#f1ece4` (15,6:1), akcent `#f0a07e` (8,8:1).
+
+**Czym różni się od AI.** Szeryfowe liczby i redakcyjny rytm zamiast siatki
+kafli; brak ramek.
+
+**Ryzyko.** Bliżej C, niż wygląda: duża liczba nad opisem to pokusa
+„nagłówka”. Trzyma się dzięki temu, że mianownik stoi zaraz pod liczbą
+i jest w tym samym bloku. Strona dłuższa o 15–25% niż w A (zmierzone na Krakowie).
+
+---
+
+## Jak oglądać i mieszać
+
+Każdy kierunek działa na **każdej** stronie prototypu: pasek „Kierunek” nad
+nagłówkiem albo `?k=a|b|c|ab|d|e|f` w adresie (wybór zostaje zapamiętany).
+Przegląd w `prototyp/kierunki.html`. Kierunki dają się łączyć jak A+B:
+z jednego bierze się litery i barwy, z drugiego sposób pokazania liczby
+albo marginesu — np. „E z marginesem A+B” albo „D z liczbami F”.
+
+---
+
 ## Rekomendacja
 
 **A, „Wypis z rejestru”.** Jako jedyny z trzech przekuwa najważniejszą
@@ -154,6 +233,6 @@ więc przebudowa to jeden komponent zamiast siedemnastu kart. I jest
 najtańszy w obsłudze: działa w jednej kolumnie na telefonie, nie wymaga
 JavaScriptu, a fonty kosztują ok. 40 kB więcej niż dziś.
 
-Prototyp: `prototyp/` (strona główna, gmina, poseł, firma w kierunku A)
-oraz `prototyp/kierunki.html` — ta sama strona Krakowa w A, B, C i A+B.
+Prototyp: `prototyp/` — 13 stron, każda w każdym kierunku;
+porównanie w `prototyp/kierunki.html`.
 Decyzje Pawła: `decyzje.md`.

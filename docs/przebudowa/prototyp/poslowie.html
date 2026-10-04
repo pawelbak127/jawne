@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Posłowie · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html" aria-current="page">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Sejm</a><i aria-hidden="true">›</i></span><span aria-current="page">Posłowie</span></nav>
+  <header class="wypis"><h1>Posłowie</h1><p class="podtytul">Cały skład kadencji, razem z tymi, których mandat wygasł — nikogo nie ukrywamy.</p></header>
+  <form role="search" action="#" style="margin-top:18px;max-width:40rem"><label for="qp" class="sr">Znajdź posła</label><input class="pole" id="qp" type="search" placeholder="Nazwisko albo miejscowość okręgu, np. Kraków"></form>
+  <nav class="zakladki" aria-label="Kto"><a href="#" aria-current="page">sprawujący mandat<span class="mono">460</span></a><a href="#">wszyscy w kadencji<span class="mono">499</span></a><a href="#">mandat wygasł<span class="mono">39</span></a></nav>
+  <p style="margin-top:12px;font-size:14px"><label for="klub" class="szary">Klub:</label> <select id="klub" class="pole" style="display:inline-block;width:auto;min-height:36px;padding:0 8px"><option>wszystkie kluby</option><option>KO</option><option>PiS</option><option>RozwojPlus</option><option>PSL-TD</option><option>Lewica</option><option>Konfederacja</option><option>Polska2050</option><option>Centrum</option><option>niez.</option><option>Demokracja</option><option>Razem</option><option>Konfederacja_KP</option></select></p>
+  <nav class="litery" aria-label="Skocz do litery"><a href="#">A</a><a href="#">B</a><a href="#">C</a><a href="#">D</a><a href="#">F</a><a href="#">G</a><a href="#">H</a><a href="#">I</a><a href="#">J</a><a href="#">K</a><a href="#">L</a><a href="#">Ł</a><a href="#">M</a><a href="#">N</a><a href="#">O</a><a href="#">P</a><a href="#">R</a><a href="#">S</a><a href="#">Ś</a><a href="#">T</a><a href="#">U</a><a href="#">W</a><a href="#">Z</a><a href="#">Ż</a></nav>
+  <div class="tabela-przewijana"><table class="tabela osoby-tab"><thead><tr><th>Imię i nazwisko</th><th>Klub</th><th>Okręg</th></tr></thead><tbody><tr><td><a href="posel.html">Andrzej Adamczyk</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Kraków</td></tr><tr><td><a href="#">Piotr Adamowicz</a></td><td><span class="kropka" style="background:#2a78d6"></span>KO</td><td>Gdańsk</td></tr><tr><td><a href="#">Waldemar Andzel</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Katowice</td></tr><tr><td><a href="#">Dorota Arciszewska-Mielewczyk</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Słupsk</td></tr><tr><td><a href="#">Jan Krzysztof Ardanowski</a></td><td><span class="kropka" style="background:#5b4636"></span>Demokracja</td><td>Toruń</td></tr><tr><td><a href="#">Iwona Ewa Arent</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Olsztyn</td></tr><tr><td><a href="#">Marek Ast</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Zielona Góra</td></tr><tr><td><a href="#">Urszula Augustyn</a></td><td><span class="kropka" style="background:#2a78d6"></span>KO</td><td>Tarnów</td></tr><tr><td><a href="#">Piotr Babinetz</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Krosno</td></tr><tr><td><a href="#">Anna Baluch</a></td><td><span class="kropka" style="background:#eb6834"></span>RozwojPlus</td><td>Lublin</td></tr><tr><td><a href="#">Ryszard Bartosik</a></td><td><span class="kropka" style="background:#eb6834"></span>RozwojPlus</td><td>Konin</td></tr><tr><td><a href="#">Władysław Bartoszewski</a></td><td><span class="kropka" style="background:#008300"></span>PSL-TD</td><td>Warszawa</td></tr></tbody></table></div>
+  <p class="notka-proj">lista jako tabela: na komputerze jeden wiersz na posła, na telefonie dwie linie (dziś trzy, 37 244 px). Przy 460 posłach to ok. 24 000 px na telefonie — dlatego skok po literach, filtr klubu i pole szukania na górze. Bez zdjęć na liście: 460 portretów to też waga strony (pułapka 54).</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>
