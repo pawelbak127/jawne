@@ -5,6 +5,38 @@ jesteś, i każda zaczyna się od odpowiedzi, a kończy metodologią.
 
 ---
 
+## 0. Runda 2 — co fundament zmienia w każdym szablonie niżej
+
+Fundament F1–F14 (`runda-2.md`, pomiar w `kierunek.md`) zmienia kolejność
+i rozmiary, a szablony w działach 5–6 opisują treść. Gdy coś się różni,
+rozstrzyga ta lista — prototyp rundy 2 jest z nią zgodny:
+
+1. **Kolejność początku strony szczegółu:** okruszek → nazwa (h1) → jedno
+   zdanie opisu → zdanie o serwisie → **„W liczbach”** (jedyna ramka) →
+   linia „stan danych” z identyfikatorami (TERYT, NIP, nr druku) i datami
+   → spis działów → działy. Spis działów nie ma już pozycji
+   „1 W liczbach”, bo „W liczbach” stoi przed nim.
+2. **Pole szukania w nagłówku na każdej stronie**, także na głównej. Strona
+   główna nie ma już osobnego pola, tylko przykłady wyszukiwań pod
+   nagłówkiem. Wyniki szukania pokazują zapytanie w tym samym polu.
+3. **Nagłówek działu zaczyna się od odpowiedzi** („Pomoc publiczna: 27 zł
+   na mieszkańca w 16 pobranych dniach”). Dział kończy się „Jak to
+   liczymy”. Warunki UOKiK stoją zaraz pod liczbami SUDOP — także
+   w „W liczbach” gminy.
+4. **Kwota gminy najpierw na mieszkańca**, suma pod nią; pod nią jedno
+   zdanie porównawcze policzone z naszych danych.
+5. **Wykres ma nad sobą tytuł-zdanie z wnioskiem** i liczbą.
+6. **„Jak myślisz, ile…?”** na gminie i na głosowaniu, w dziale (nie
+   w „W liczbach”), z „Pomiń”. Bez JavaScriptu pokazuje od razu liczbę.
+7. **Listy:** filtr (pole + wybór) w jednym rzędzie, litery w jednym
+   przewijanym rzędzie, a liczba wyników w podtytule zamiast osobnego
+   akapitu nad listą. Numer strony i data stanu danych stoją pod listą.
+8. **Stopka:** „Kto za tym stoi” (słowa ze strony „O serwisie”) i kontakt.
+   Adres e-mail pochodzi z ustawienia `JAWNE_KONTAKT`; w prototypie jest
+   tylko opis.
+9. **Okręg** dostał własne „W liczbach”: posłowie z okręgu, gminy
+   i uprawnieni do głosowania.
+
 ## 1. Mapa serwisu (bez zmian w adresach)
 
 ```

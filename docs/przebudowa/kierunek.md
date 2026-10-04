@@ -1,376 +1,306 @@
-# Kierunek stylu — dziesięć motywów i jedna rekomendacja
+# Kierunek stylu — runda 2: dziesięć motywów na jednym fundamencie
 
-Wspólne dla wszystkich dziesięciu (to treść, nie styl — nie podlega wyborowi):
-odnośnik do rejestru przy liczbie, mianownik, półpauza ≠ zero, brak ocen,
-reguły jawności, warunki UOKiK, kontrast AA w obu motywach, cele ≥ 24 px,
-390 px, `latin-ext`. Nazwy zmiennych CSS zostają (`--papier`, `--atrament`,
-`--akcent` …), więc `src/lib/kontrast.test.ts` sprawdzi każdą paletę bez
-zmian w teście. Kontrast policzony tym samym wzorem co w teście.
+Decyzja Pawła z 04.10.2026 po lekturze `badania-ux.md`: „Bazując na tych
+danych trzeba przebudować wszystkie motywy na nowo.” Zadanie:
+`runda-2.md`.
 
-Dlaczego te wspólne zasady i jak motywy wypadają na tle badań
-nad wiarygodnością i klikalnością: `badania.md`.
+W rundzie 1 motywy różniły się naraz stylem i użytecznością: G miał inne
+menu, C inną hierarchię, E inną gęstość. Wybór motywu byłby wtedy wyborem
+przypadkowego zestawu kompromisów. W rundzie 2:
 
-Wagi fontów zmierzone na plikach `@fontsource/*` 5.3.0 (woff2, podzbiory
-`latin` + `latin-ext`, które przeglądarka i tak pobiera na polskiej stronie).
-**Dla porównania dziś: 221 kB** — zmierzyła główna sesja na budowie `main`
-(`.next/static/media`, 04.10.2026): Inter zmienny 47 + 83 kB i Source
-Serif 4 50 + 41 kB, wszystkie cztery pliki wstępnie ładowane. Każdy
-z dziesięciu motywów waży mniej: od 50 kB (J) do 141 kB (A).
-Zastrzeżenie głównej sesji: przez `next/font/google` Google może podać
-krój jako font zmienny o innej wadze — wtedy `next/font/local` z plikami
-z `prototyp/fonty/`.
+- **fundament F1–F14 jest wspólny** — `prototyp/styl.css` i treść stron.
+  To ta sama struktura, ta sama kolejność i te same rozmiary minimalne.
+  Wynika z badań; motyw go nie zmienia;
+- **motyw to warstwa stylu** — `prototyp/skora-a.css` … `skora-j.css`.
+  Zmienia kroje, paletę, linie, rytm oraz sposób rysowania liczby
+  i źródła. Każdy motyw (także A) jest osobną nakładką z własnymi fontami.
+
+**Jak oglądać:** `prototyp/index.html` → pasek „Motyw” nad nagłówkiem albo
+`?k=a` … `?k=j` w adresie. Zestawienie jest w `prototyp/kierunki.html`.
+**Jak mierzyć:** `node prototyp/pomiar.cjs` (Playwright) daje tabelę niżej
+i surowe `pomiar.json`.
 
 ---
 
-## A. „Wypis z rejestru” — **rekomendacja**
+## Fundament — co dostała każda strona, niezależnie od motywu
 
-**Pomysł.** Każda strona jest wypisem: takim, jaki wydaje urząd z rejestru
-gruntów albo KRS — nagłówek z oznaczeniem i datą stanu, ponumerowane działy,
-przy każdym dziale „podstawa” (rejestr i data pobrania). Domena to
-zrejestru.pl; serwis nie komentuje, tylko wypisuje. Forma sama mówi to,
-co dziś mówią akapity: „to jest odpis, nie opinia”.
-
-**Typografia.**
-- Nagłówki: **Brygada 1918** 600 (polski krój, odtworzenie czcionki z 1918 r.,
-  latin-ext 19,9 kB + latin 14,5 kB). Rozpoznawalny, nie z generatora,
-  z polskimi znakami rysowanymi od początku, a nie dorobionymi.
-- Tekst i liczby: **IBM Plex Sans** 400/600 (79 kB razem). Wyraźne „1/l/I”,
-  cyfry tablicowe, dobra czytelność w 13–14 px.
-- Sygnatury (NIP, TERYT, nr druku, data stanu, „podstawa”): **IBM Plex Mono**
-  500 (28 kB). Mono tylko w sygnaturach — to znak „to jest identyfikator
-  z rejestru”, a nie styl tekstu.
-- Razem ok. 141 kB wobec **221 kB dziś** (Inter + Source Serif, zmierzone
-  przez główną sesję), czyli ok. 80 kB mniej. Plex Sans tylko 400 + 600,
-  bez kursywy. Wstępnie ładowane: Plex Sans 400 i Brygada 600 (nagłówek
-  strony jest na pierwszym ekranie); Plex Mono bez wstępnego ładowania.
-
-**Paleta** (kontrast tekstu wobec `--papier` / `--papier-2` / `--papier-3`):
-
-| token | jasny | ciemny |
+| | Co jest w prototypie | Skąd (badania-ux.md) |
 |---|---|---|
-| `--papier` | `#f5f3ed` (papier kancelaryjny) | `#121210` |
-| `--papier-2` | `#fbfaf6` | `#1a1a17` |
-| `--papier-3` | `#ebe7dc` | `#24231f` |
-| `--atrament` | `#151412` — 16,6 / 17,6 / 14,9 | `#efece4` — 15,9 / 14,8 / 13,3 |
-| `--atrament-2` | `#46433c` — 8,9 / 9,5 / 8,0 | `#bdb8ab` — 9,5 / 8,8 / 7,9 |
-| `--atrament-3` | `#5c5850` — 6,4 / 6,8 / 5,7 | `#a39e91` — 7,0 / 6,5 / 5,9 |
-| `--kreska` | `#d6d0c2` | `#38362f` |
-| `--akcent` | `#0b5a52` — 7,3 / 7,7 / 6,5 | `#6fd3c3` — 10,5 / 9,8 / 8,8 |
+| F1 | Na 390 × 844 px widać nazwę strony, jedno zdanie o serwisie i pierwszą odpowiedź z mianownikiem i źródłem. „W liczbach” stoi przed spisem działów, a identyfikatory (TERYT, NIP, druk) zeszły pod odpowiedź. | §1, §5 |
+| F2 | Nazwa serwisu z lewej u góry, pole szukania w nagłówku na każdej stronie (także na głównej — jej osobne pole zniknęło), menu u góry. | §1 Tuch 2012 |
+| F3 | Bez ustawienia systemu każdy motyw jest jasny; ciemny ma pełną paletę. | §5 Piepenbrock 2013 |
+| F4 | Jeden akcent (odnośniki, fokus) plus barwy z funkcją: kluby, głosy, ostrzeżenie. Żadnych barwnych teł dla ozdoby. | §1 Reinecke 2013 |
+| F5 | Tekst 18 px na telefonie i 20 px od 1024 px, interlinia 1,55, miara wiersza 59–71 znaków. Drobny tekst (okruszek, opis pod liczbą, źródło, warunki UOKiK) ma 15/16 px; nic mniejszego. | §5 Rello 2016 |
+| F6 | Najwyżej jeden obramowany blok na ekranie — „W liczbach”. Działy oddzielone linią i odstępem. | §1 |
+| F7 | Nagłówek działu zaczyna się od odpowiedzi („Budżet 2025: 11,8 tys. zł dochodów na mieszkańca”). „Jak to liczymy” jest zawsze na końcu działu, a warunki UOKiK tuż przy liczbach. | §5 NN/g |
+| F8 | Kwoty gminy najpierw na mieszkańca, suma pod nimi. Pomoc publiczna na stronie gminy i w kraju też na mieszkańca. | §3 PNAS 2022, zasada 9 |
+| F9 | Zdania porównawcze **policzone z naszych danych** (rachunek niżej): krotność mediany, porównanie z województwem, równowartość w budżecie, średnia na przypadek, udział dużych firm. | §3 Barrio 2016 |
+| F10 | „Jak myślisz, ile…?” na gminie (udział oświaty w wydatkach) i na głosowaniu (w ilu klubach najczęściej „przeciw”). Ma suwak, „Sprawdź” i „Pomiń”. Bez JavaScriptu pokazuje od razu liczbę. | §3 Kim 2017 |
+| F11 | 10 wykresów, każdy z tytułem u góry jako zdaniem z wnioskiem („Co trzecia złotówka wydatków (34,9%) idzie na oświatę”). Wszystkie to paski na wspólnej osi. | §4 Borkin 2016 |
+| F12 | Na 1280 px wszystkie 10 działów widoczne. Na 390 px szukanie i działy obu grup na wierzchu. Żadnego odnośnika „więcej”: „budżet miasta ↓”, „treść wystąpienia z 18 września”. | §6 NN/g 2016 |
+| F13 | Strona szczegółu ma okruszek, zdanie o serwisie i linię „stan danych” z datami. Stopka na każdej stronie mówi, kto prowadzi serwis, i podaje kontakt. | §8, §2 Stanford |
+| F14 | Fonty 50–142 kB; dziś serwis wysyła 221 kB. Żadnych obrazów ozdobnych (warstwice H zniknęły). | §7 |
 
-Dzisiejszy `--atrament-3` ma 4,70 na `--papier-3`; tu najniższa wartość to
-5,7. **Zasada barwy: akcent znaczy wyłącznie „to się klika”** (odnośnik,
-źródło, fokus). Paski i wykresy dostają atrament albo barwy klubów, nigdy
-akcent — dziś akcent jest i odnośnikiem, i paskiem, i ramką organu gminy.
+**Dlaczego F10 nie pyta o liczby z przykładu w `runda-2.md`.** „Dochody na
+mieszkańca” i „ilu posłów było przeciw” stoją w „W liczbach” na pierwszym
+ekranie (F1). Pytanie o nie musiałoby albo schować odpowiedź z pierwszego
+ekranu, albo pytać o coś, co czytelnik już widzi. Dlatego pytania dotyczą
+liczb z działów niżej. Obie są o miejscach i całym Sejmie, nie o osobach.
 
-**Siatka.** Na komputerze trzy kolumny wewnątrz `76rem`:
-`[numer działu 3rem] [treść] [podstawa 14rem]`. Numer działu („1”, „2.3”)
-w lewym marginesie, sygnatura źródła w prawym — jak na marginesie wypisu.
-Na telefonie jedna kolumna; „podstawa” schodzi pod liczbę.
+### Pomiar F1–F14 (najgorszy wynik ze wszystkich 13 stron, 04.10.2026)
 
-**Liczby i źródła.** Zamiast kafla — **wiersz rejestru** (liczby w przykładach w tym pliku są wymyślone, pokazują tylko układ):
+| motyw | F1 pierwsza / ostatnia odp. (px, tel.) | F2 | F3 jasność tła | F4 | F5 | F6 bloki/ekran | F7 | F8 | F9 g/f/pp | F10 g / gł | F11 | F12 | F13 | F14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A | 834 / 1466 | tak | 0.896 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 66–71 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 142 kB, ozdoby 0 |
+| B | 821 / 1452 | tak | 0.948 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 61–70 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 81 kB, ozdoby 0 |
+| C | 841 / 1560 | tak | 1 | 0 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 59–71 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 55 kB, ozdoby 0 |
+| D | 835 / 1462 | tak | 0.865 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 66–71 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 108 kB, ozdoby 0 |
+| E | 835 / 1422 | tak | 1 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 61–68 zn. | 0 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 128 kB, ozdoby 0 |
+| F | 812 / 1660 | tak | 0.915 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 65–69 zn. | 0 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 126 kB, ozdoby 0 |
+| G | 837 / 1454 | tak | 0.936 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 59–71 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 84 kB, ozdoby 0 |
+| H | 819 / 1549 | tak | 0.896 | 1 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 65–69 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 129 kB, ozdoby 0 |
+| I | 841 / 1471 | tak | 0.955 | 0 odc., 0 tła | 0 < 15 px; 18/20 px; 1.55; 59–71 zn. | 1 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 55 kB, ozdoby 0 |
+| J | 824 / 1468 | tak | 1 | 1 odc., 1 tła | 0 < 15 px; 18/20 px; 1.55; 61–67 zn. | 0 | 34/34; metoda na końcu 8/8 | 3/3 | 3/1/1 | jest / jest | 20/20 | 10 na 1280; tel. Sejm+Pieniądze; ogólne 0 | tak | 50 kB, ozdoby 0 |
 
-```
-2.1  Dochody na mieszkańca                     7 412 zł
-     54,3 mln zł ÷ 7 326 mieszkańców · mediana w woj. (177 gmin): 6 905 zł
-     podstawa: GUS BDL · 2025 · pobrano 12.09.2026 ↗
-```
+Jak czytać kolumny:
+- **F1:** dolna krawędź pierwszej odpowiedzi; granica to 844 px. Ostatnia
+  pozycja „W liczbach” ma granicę 1688 px. Bez paska „Motyw” i ramki
+  prototypu, których w serwisie nie będzie.
+- **F3:** jasność tła 0–1, liczona bez ustawienia systemu.
+- **F4:** odcienie barwne w tekście i tłach poza znakami danych. „1 tła”
+  w J to przycisk „Sprawdź” w barwie akcentu.
+- **F5:** ile tekstów ma mniej niż 15 px; najmniejszy tekst ciągły na
+  telefonie i na komputerze; interlinia; mediana znaków w pełnym wierszu
+  na 1280 px.
+- **F6:** najwięcej obramowanych bloków na jednym ekranie.
+- **F7:** nagłówki działów z liczbą; „Jak to liczymy” na końcu działu.
+- **F8:** kwoty „W liczbach” gminy podane na mieszkańca.
+- **F9:** zdania porównawcze na gminie, firmie i pomocy publicznej.
+- **F11:** wykresy z tytułem u góry i liczbą w tytule; dwie szerokości.
 
-Etykieta po lewej, wartość po prawej w cyfrach tablicowych, mianownik
-w drugim wierszu, podstawa w trzecim (mono, akcent, z ikoną ↗ — wygląda jak
-przycisk, nie jak przypis). Wiersze oddzielone kreską, bez kart i bez cieni.
-Najważniejsze 3–4 wiersze strony stoją na górze w ramce „Gmina w liczbach”
-— jedyna ramka na stronie.
+Dodatkowo, poza tabelą:
+- 600 renderów (15 stron × 10 motywów × 390/1280 × jasny/ciemny): bez
+  przepełnienia i bez błędów konsoli;
+- cele dotykowe ≥ 24 px na 13 stronach w obu szerokościach;
+- F4 w trybie ciemnym: najwyżej 1 odcień;
+- F10 bez JavaScriptu: liczba widoczna we wszystkich motywach.
 
-**Czym różni się od „typowej strony z AI”.**
-- Zero zaokrąglonych kart z cieniem; podział robią kreski i numery działów.
-- Zero gradientów, siatek-tła, pigułek i wersalikowych nadtytułów.
-- Krój nagłówków z polską historią zamiast Intera/Geista.
-- Hierarchia z numeracji (1, 1.1, 1.2), a nie z wielkości kart.
-- Ostrzeżenie wygląda jak ostrzeżenie (lewa gruba kreska + „Uwaga:”),
-  a nie jak kolejna szara karta.
+**Poprawki samego pomiaru** — zanim tabela się ustaliła, skrypt mylił się
+w pięciu miejscach. Każdy błąd wyszedł przy sprawdzaniu, na czym dany punkt
+„padł”:
+- numer działu („2.”) liczył się jako liczba w nagłówku;
+- położenie nazwy serwisu było liczone od nazwy strony, którą na stronie
+  posła przesuwa portret;
+- jasny beż papieru liczył się jako kolor;
+- tekst opcji listy wyboru wchodził do tekstu ciągłego;
+- długość wiersza była dzielona przez liczbę wierszy razem z krótkim
+  ostatnim, co zaniżało wynik o ok. 15 znaków.
 
-**Ryzyko.** Może wyglądać urzędowo i chłodno. Lekarstwo: proste słowa
-w etykietach („Ile gmina ma pieniędzy”), a „dokumentowość” tylko w formie.
+### Zdania porównawcze — rachunek (F9, każdy z kontrolą w generatorze)
 
----
+| Gdzie | Zdanie | Rachunek |
+|---|---|---|
+| gmina | 1,4 raza więcej niż mediana w województwie | 9,67 mld zł ÷ 816 614 = 11 842 zł; ÷ 8288 zł = 1,43 |
+| gmina | 3,4 raza więcej niż mediana; 97% wydatków na oświatę | 4392 ÷ 1275 = 3,44; 3,59 ÷ 3,71 mld zł = 0,968 |
+| gmina | pomoc: 27 zł na mieszkańca, ok. 2 razy więcej niż w województwie | 22,2 mln zł ÷ 816 614 = 27,2 zł; ÷ 13 zł (małopolskie, te same 16 dni) = 2,09 |
+| firma | średnio 9,3 mln zł na przypadek | 12,8 mld zł ÷ 1380 |
+| pomoc publiczna | 27 zł na mieszkańca; 43% dla dużych firm, które mają 1,7% przypadków | 992 mln zł ÷ 37 319 859 (GUS 2025, suma z dziennika importu) = 26,6; 425 ÷ 992 = 0,428; 1314 ÷ 78 868 = 0,0167 |
+| głosowanie | w 7 z 11 klubów najczęściej „przeciw” | najczęstszy głos w każdym klubie, bez niezrzeszonych |
 
-## B. „Monitor” — gazeta urzędowa
-
-**Pomysł.** Serwis jako dziennik: winieta, łamy, marginalia. Odnosi się do
-„Monitora Polskiego” i „Dziennika Ustaw” — tam, gdzie ustawy z serwisu są
-publikowane. Najlepszy do czytania długich stron posła i ustawy.
-
-**Typografia.** **Półtawski Nowy** (Antykwa Półtawskiego, 1928, polski krój
-książkowy; 400/600: 25,6 + 14,3 + 26,6 + 14,9 = 81 kB) do nagłówków
-i tekstu, **IBM Plex Mono** 500 do liczb w tabelach (28 kB). Razem ok. 109 kB.
-
-**Paleta.** Jasna: papier `#fbf9f4`, atrament `#111111` (17,9:1),
-`--atrament-3` `#5e584f` (6,7:1), akcent sepia `#7a3f0c` (7,9:1). Ciemna:
-`#171512` / `#f1ebe0` (15,4:1), akcent `#e6a95e` (8,9:1). Sepia nie jest
-barwą żadnego klubu.
-
-**Siatka.** Szeroka kolumna tekstu 38rem + wąska kolumna marginaliów 12rem
-na źródła i definicje (definicja stoi obok słowa, a nie w rozwijanym).
-Na telefonie marginalia zamieniają się w przypisy rozwijane po dotknięciu.
-
-**Liczby i źródła.** Liczby w tekście, pogrubione, z mianownikiem w zdaniu
-(„Gmina wydała na inwestycje 12,4 mln zł, czyli 1 690 zł na mieszkańca —
-mediana w województwie 1 210 zł.”). Źródło w marginesie na wysokości zdania.
-
-**W prototypie mocniej (04.10).** Od 1024 px winieta pośrodku jak tytuł
-gazety, pod nią szukanie i menu; akapity wyjustowane z dzieleniem wyrazów;
-listy (głosowania, ustawy) w dwóch łamach z linią między nimi.
-
-**Czym różni się od AI.** Łamy i marginalia zamiast kart; antykwa zamiast
-groteski; tekst ciągły zamiast siatki kafli.
-
-**Ryzyko.** Wolniejszy dla mieszkańca, który chce liczby w 10 sekund.
-Tabele i wykresy wymagają osobnego stylu, bo łamów nie da się z nimi
-pogodzić. Najwięcej pracy przy przebudowie.
-
----
-
-## C. „Tablica” — oznakowanie publiczne
-
-**Pomysł.** Jak tablica informacyjna na budowie z funduszy UE albo tablica
-odjazdów: czarne na białym, duże cyfry, nic poza informacją.
-Interaktywność = odwrócenie (białe na czarnym), a nie kolor.
-
-**Typografia.** **Archivo** 400/700 (14,7 + 12,9 + 14,5 + 13,3 = 55 kB),
-grotesk z wąskimi cyframi; nic więcej. Najlżejszy wariant.
-
-**Paleta.** Czysta czerń i biel: `#000` na `#fff` 21:1, `--atrament-3`
-`#555555` (7,5:1). Ciemny: odwrotnie. Akcent = atrament; jedyny kolor na
-stronie to dane (barwy klubów w wykresach).
-
-**Siatka.** Pasy na całą szerokość, każdy pas = jedna liczba albo jedna
-lista. Liczby 56–72 px.
-
-**Liczby i źródła.** Liczba wielka, pod nią mianownik i podstawa wersalikami
-w 12 px. Źródło jako czarny prostokąt „ŹRÓDŁO ↗”.
-
-**Czym różni się od AI.** Brak koloru, brak zaokrągleń, brak cieni;
-bezkompromisowy kontrast.
-
-**Ryzyko — poważne.** Wielkie liczby czytają się sensacyjnie
-(„13,2 MLD ZŁ”), a serwis nie ocenia (zasada 6). Mianownik przy dużej
-liczbie przegrywa wizualnie. Zostawiam jako punkt odniesienia, nie polecam.
+„13 zł” dla województwa jest zaokrąglone na stronie źródłowej, dlatego
+zdanie mówi „ok. 2 razy”, a nie „2,1 raza”.
 
 ---
 
-## D. „Kartoteka” — karta katalogowa i segregator
+## Motywy — co zmienił każdy względem rundy 1
 
-**Pomysł.** Serwis jako szafa z kartoteką: każdy dział to przekładka
-segregatora z zakładką, ramka „W liczbach” to karta katalogowa, źródło —
-pieczątka w ramce. Bliski A (porządek, rejestr), ale bardziej „biurowy”
-i mniej książkowy; dobrze znosi długie listy (posłowie, głosowania).
+Wspólne dla wszystkich: zniknęły barwne tła (zieleń, mięta i liliowy
+w I; panele w G), małe pismo (11,5–14 px w opisach, menu i źródłach) i
+drugie ramki. W rundzie 1 nakładki B–J ładowały też fonty A, np. H ważył
+205 kB zamiast 129. Teraz każdy motyw ładuje wyłącznie swoje fonty.
+Kontrast liczony wzorem z `src/lib/kontrast.test.ts`, najsłabsza para tekst/tło.
 
-**Typografia.** IBM Plex Mono 500 w nagłówkach, etykietach i liczbach, IBM
-Plex Sans w tekście — bez kroju szeryfowego. Ok. **107 kB** (Plex Sans
-400/600 + Plex Mono 500).
+### A „Wypis z rejestru”
+**Tożsamość:** odpis z rejestru — „Dział N” na marginesie, sygnatury
+i daty pismem maszynowym, przy każdej liczbie „podstawa: …”.
+**Zmiana względem rundy 1:**
+- przed nazwą rejestru stoi napis „podstawa:”; na komputerze, jak
+  w rundzie 1, źródło ma własną kolumnę po prawej;
+- „Dział N” stoi wprost na marginesie;
+- identyfikatory zeszły pod odpowiedź.
 
-**Paleta.** Jasna: karton `#f4efe2`, grafit `#1b1f24` (14,4:1),
-`--atrament-3` `#575d66` (5,8:1), akcent petrol `#155e75` (6,3:1),
-niebieskawe linie karty. Ciemna: `#14171a` / `#e8e4da` (14,2:1), akcent
-`#67c3db` (8,9:1).
+**Fonty:** Brygada 1918 600, IBM Plex Sans 400/600, Plex Mono 500 —
+**142 kB**.
+**Kontrast:** tekst 14,9, najsłabszy szary 5,7, akcent 6,5 (ciemny: 13,3 /
+5,9 / 8,8).
+**Nie jak z AI:** dokument z rejestru zamiast kart; polski krój nagłówków
+z 1918 r.; maszynopis tylko tam, gdzie jest identyfikator.
+**Ryzyko:** spokojny — przyciąga powagą, nie efektem.
 
-**Czym różni się od AI.** Zakładki-przekładki zamiast kart z cieniem,
-pismo maszynowe zamiast Intera, pieczątka zamiast „badge”.
+### B „Monitor”
+**Tożsamość:** gazeta urzędowa — antykwa Półtawskiego w całym tekście,
+podwójne linie, kapitaliki w nagłówkach, źródła kursywą jak przypisy.
+**Zmiana względem rundy 1:**
+- zniknęła winieta pośrodku (F2: nazwa z lewej);
+- zniknęły tekst wyjustowany i listy w dwóch łamach. To szacunek, nie
+  pomiar: przy 20 px dwa łamy byłyby węższe niż miara 55–75 znaków (F5);
+- gazetę niosą teraz linie i kapitaliki.
 
-**Ryzyko.** Mono w nagłówkach jest szerokie — długie tytuły ustaw łamią
-się częściej; trzeba trzymać mono tylko w krótkich etykietach.
+**Fonty:** Półtawski Nowy 400/600 — **81 kB**.
+**Kontrast:** 16,0 / 6,0 / 7,0 (ciemny: 12,7 / 5,9 / 7,3).
+**Nie jak z AI:** polska antykwa książkowa zamiast groteski, podwójna linia
+zamiast cienia.
+**Ryzyko:** antykwa w tabelach liczb jest mniej czytelna niż groteska;
+w danych przewagę ma A albo E.
 
----
+### C „Tablica”
+**Tożsamość:** oznakowanie publiczne — czerń i biel, wersaliki, liczba nad
+etykietą, źródło jako czarna etykieta, odwrócenie zamiast koloru.
+**Zmiana względem rundy 1:**
+- liczba stoi teraz nad etykietą w ramach jednego wiersza, a nie jako
+  osobny pas;
+- długie tytuły (ustawa, firma) nie są już pisane wersalikami (F1);
+- wielkie cyfry zostały, ale z mianownikiem tuż pod nimi.
 
-## E. „Rocznik” — rocznik statystyczny GUS
+**Fonty:** Archivo 400/700 — **55 kB**.
+**Kontrast:** 18,3 / 6,5 / akcent = tekst (ciemny: odwrotnie, 17,0).
+**Nie jak z AI:** zero koloru, zero zaokrągleń, zero cieni.
+**Ryzyko:** wielkie liczby mogą czytać się sensacyjnie (zasada 6) —
+dlatego mianownik i porównanie stoją w tym samym bloku co liczba.
 
-**Pomysł.** Strona jak tablica z „Rocznika Statystycznego”: liczby w tabeli
-drukowanej (gruba linia, cienkie, gruba), „Dział N” na marginesie,
-mianownik kursywą pod liczbą. Najbliższy temu, jak dziennikarz i radny
-czytają dane urzędowe; najmniej „stylizowany” z dziesięciu.
+### D „Kartoteka”
+**Tożsamość:** segregator — dział zaczyna zakładka nad grubą kreską,
+liczby i nagłówki pismem maszynowym, źródło jak pieczątka.
+**Zmiana względem rundy 1:**
+- zakładka nad kreską ma tło, nie ramkę (F6);
+- pieczątka źródła mieści się w jednym wierszu, żeby nie była drugim
+  blokiem.
 
-**Typografia.** Source Serif 4 400/600 do tekstu i liczb (ten sam krój co
-dziś w nagłówkach — znany, z cyframi tablicowymi), Public Sans 400/600 do
-nagłówków tabel. Ok. **128 kB**.
+**Fonty:** IBM Plex Mono 500, Plex Sans 400/600 — **108 kB**.
+**Kontrast:** 12,5 / 5,0 / 5,5 (ciemny: 11,2 / 5,3 / 7,1).
+**Nie jak z AI:** przekładki i pieczątki zamiast kafli i „badge”.
+**Ryzyko:** pismo maszynowe w nagłówkach jest szerokie — długie tytuły
+łamią się częściej.
 
-**Paleta.** Biel, czerń `#1a1a1a` (17,4:1), `--atrament-3` `#5f5f5f`
-(6,4:1), akcent oliwkowy `#4f5b17` (7,4:1). Ciemna: `#121212` / `#ececea`
-(15,8:1), akcent `#b9c86a` (10,3:1).
+### E „Rocznik”
+**Tożsamość:** tablica z rocznika statystycznego — linia gruba–cienka–gruba,
+„Dział N”, liczby szeryfowe, mianownik kursywą.
+**Zmiana względem rundy 1:**
+- „W liczbach” nie ma ramki — to tabela drukowana, więc na ekranie nie ma
+  żadnego obramowanego bloku (F6 = 0).
 
-**Czym różni się od AI.** Linie tabeli drukowanej zamiast kart; szeryf
-w tekście ciągłym; nagłówki jak w publikacji statystycznej.
+**Fonty:** Source Serif 4 400/600, Public Sans 400/600 — **128 kB**.
+**Kontrast:** 15,4 / 5,6 / 6,5 (ciemny: 13,3 / 6,4 / 8,6).
+**Nie jak z AI:** linie tabeli drukowanej, szeryf w tekście ciągłym.
+**Ryzyko:** dla mieszkańca najbardziej „urzędowo-suchy”.
 
-**Ryzyko.** Dla mieszkańca może wyglądać „urzędowo-sucho” — mniej
-zaproszenia niż A czy F.
+### F „Reportaż”
+**Tożsamość:** dziennikarstwo danych — dużo powietrza, liczba duża
+i szeryfowa nad opisem, porównanie kursywą, „W liczbach” bez ramki,
+w dwóch kolumnach na komputerze.
+**Zmiana względem rundy 1:**
+- zdanie porównawcze dostało głos redakcyjny — szeryfową kursywę;
+- liczba ma 2,4 rem. Większa nie mieści się w dwóch ekranach telefonu:
+  ostatnia pozycja kończy się na 1660 z 1688 px.
 
----
+**Fonty:** Newsreader 400/600, Public Sans 400/600 — **126 kB**.
+**Kontrast:** 13,9 / 5,1 / 6,1 (ciemny: 13,1 / 6,1 / 7,4).
+**Nie jak z AI:** rytm redakcyjny zamiast siatki kafli; liczba jak
+w nagłówku reportażu.
+**Ryzyko:** najdłuższa strona na telefonie; najbliżej do „sensacyjnej”
+liczby — trzyma ją mianownik w tym samym bloku.
 
-## F. „Reportaż” — dziennikarstwo danych
+### G „Pulpit” (w rundzie 1 „Dyżur nocny”)
+**Tożsamość:** narzędzie pracy — etykieta wersalikami nad liczbą pismem
+maszynowym, „W liczbach” jako **jedna** ramka podzielona liniami na pola.
+Od 1280 px spis działów stoi w bocznym pasku, dodatkowo do menu u góry.
+**Zmiana względem rundy 1 — największa z dziesięciu:**
+- „ciemny najpierw” stał w sprzeczności z F3, więc tożsamość jest teraz
+  jasna, a dawna nocna paleta została jako wersja ciemna;
+- boczne menu zastępowało górne (wbrew F2) — teraz menu jest u góry,
+  a z boku stoi tylko spis działów strony;
+- działy jako panele z ramkami zniknęły (F6);
+- nazwa „Dyżur nocny” przestała pasować i zmieniła się na „Pulpit”.
 
-**Pomysł.** Jak duże redakcje piszą o danych: dużo powietrza, liczba duża
-i szeryfowa, a tuż pod nią opis i mianownik; „W liczbach” w dwóch
-kolumnach. Najcieplejszy z dziesięciu, najbardziej dla mieszkańca.
+**Fonty:** Archivo 400/700, IBM Plex Mono 500 — **84 kB**.
+**Kontrast:** 16,2 / 5,9 / 5,9 (ciemny: 12,9 / 5,1 / 7,6).
+**Nie jak z AI:** gęstość narzędzia zamiast przewiewnej strony reklamowej;
+pola oddzielone liniami, nie kafle z cieniem.
+**Ryzyko:** nadal wygląda „dla zawodowców”; boczny pasek tylko na stronach
+gminy i posła.
 
-**Typografia.** Newsreader 400/600 do nagłówków i liczb, Public Sans
-400/600 do tekstu. Ok. **126 kB**.
+### H „Atlas”
+**Tożsamość:** mapa i legenda — nazwy miejsc kursywą szeryfową, „W liczbach”
+w podwójnej ramce jak legenda, paski z podziałką co 25% jak skala mapy.
+**Zmiana względem rundy 1:**
+- zniknęły warstwice pod nazwą (obraz ozdobny, F14) i kreskowanie pasków;
+- podziałka ma funkcję: wspólna oś (F11).
 
-**Paleta.** Ciepła szarość `#f7f5f2`, atrament `#1d1b19` (15,8:1),
-`--atrament-3` `#665f57` (5,8:1), akcent terakota `#8f3b1f` (6,9:1).
-Ciemna: `#161412` / `#f1ece4` (15,6:1), akcent `#f0a07e` (8,8:1).
+**Fonty:** Newsreader 400 kursywa / 600, Public Sans 400/600 —
+**129 kB**.
+**Kontrast:** 11,2 / 5,0 / 5,8 (ciemny: 10,6 / 5,0 / 6,3).
+**Nie jak z AI:** język mapy wynika z treści (gminy, okręgi), nie z mody.
+**Ryzyko:** na stronach posła i ustawy kursywa nazw jest tylko stylem.
 
-**Czym różni się od AI.** Szeryfowe liczby i redakcyjny rytm zamiast siatki
-kafli; brak ramek.
+### I „Plakat” (w rundzie 1 „Naklejka”)
+**Tożsamość:** plakat — czarno-biały, ciężkie wersaliki, grube kreski;
+jedyna „naklejka” z twardym cieniem to „W liczbach”, a żółć pojawia się
+tylko pod tym, co właśnie wskazujesz albo naciskasz.
+**Zmiana względem rundy 1:**
+- miętowe nagłówki, liliowe źródła i żółte „W liczbach” to były barwne tła
+  dla ozdoby (F4);
+- ramki i cienie na wszystkim to był brak F6;
+- z neobrutalizmu zostały grube kreski, jedna naklejka i „przycisk, który
+  się wciska” — teraz jako stan przy wskazaniu, nie stała ozdoba;
+- nazwa zmieniła się na „Plakat”.
 
-**Ryzyko.** Bliżej C, niż wygląda: duża liczba nad opisem to pokusa
-„nagłówka”. Trzyma się dzięki temu, że mianownik stoi zaraz pod liczbą
-i jest w tym samym bloku. Strona dłuższa o 15–25% niż w A (zmierzone na Krakowie).
+**Fonty:** Archivo 400/700 — **55 kB**.
+**Kontrast:** 16,1 / 7,2 / akcent = tekst; żółć pod tekstem #111: 13,7
+(ciemny: 14,5 / 8,1).
+**Nie jak z AI:** ostre, płaskie, ciężkie — przeciwieństwo miękkich cieni
+i gradientów.
+**Ryzyko:** najmniej urzędowy; dla części czytelników może tracić na
+powadze.
 
----
+### J „Usługa publiczna”
+**Tożsamość:** w duchu GOV.UK Design System — czarny pasek z nazwą
+i niebieską kreską, niebieskie podkreślone odnośniki, żółty fokus z czarną
+kreską, „W liczbach” jako lista podsumowania bez ramki.
+**Zmiana względem rundy 1:**
+- pismo 20 px na komputerze (było 19);
+- zielony przycisk „Sprawdź” to był drugi akcent, więc jest teraz w barwie
+  odnośników (F4).
 
-## G. „Dyżur nocny” — pulpit danych
-
-**Pomysł.** Serwis jako narzędzie pracy: na szerokim ekranie menu stoi
-w bocznym pasku (przyklejone), działy to panele, liczby pismem maszynowym,
-uwagi w bursztynie. Zaprojektowany najpierw jako ciemny — dla dziennikarza
-i radnego, który siedzi nad danymi wieczorem. Ma też pełną wersję jasną
-i jak wszystkie idzie za ustawieniem systemu.
-
-**Typografia.** Archivo 400/700 w tekście i nagłówkach (nagłówki działów
-wersalikami), IBM Plex Mono 500 w liczbach. Ok. **84 kB**.
-
-**Paleta.** Ciemna: `#0d1117` / `#e6edf3` (16,0:1), `--atrament-3`
-`#8b96a3` (6,3:1), akcent cyjan `#4cc2ff` (9,4:1), bursztyn `#f2b84b`
-(10,6:1). Jasna: `#eef1f4` / `#0d1117` (16,7:1), `--atrament-3` `#505c69`
-(6,0:1), akcent `#00609e` (5,8:1), bursztyn `#8a5a00` (5,2:1; na
-najciemniejszym tle 4,8:1).
-
-**Czym różni się od AI.** Gęstość narzędzia zamiast „przewiewnej” strony
-reklamowej; boczne menu jak w programie, nie hamburger.
-
-**Ryzyko.** Najmniej typowy układ z dziesięciu (badania: pierwsze wrażenie
-wygrywają układy typowe). Dla mieszkańca może wyglądać jak narzędzie
-„nie dla mnie”. Na telefonie menu wraca na górę — bocznego paska tam nie ma.
-„Ciemny najpierw” stoi wbrew badaniom polaryzacji (Piepenbrock 2013:
-ciemny tekst na jasnym tle czyta się lepiej w każdym wieku), a panele
-podnoszą złożoność wizualną (Reinecke 2013) — `badania-ux.md`.
-
----
-
-## H. „Atlas” — mapa i legenda
-
-**Pomysł.** Serwis o miejscach (2 479 gmin, 41 okręgów) mówi językiem mapy:
-pod nazwą gminy delikatne warstwice, nazwa miejsca kursywą szeryfową jak
-na arkuszu mapy, numer działu jak oznaczenie arkusza, „W liczbach” jako
-legenda w podwójnej ramce z kluczem przed każdą etykietą, paski
-kreskowane zamiast pełnych.
-
-**Typografia.** Newsreader kursywa 400 (nazwy miejsc, marka) i 600
-(liczby), Public Sans 400/600 w tekście. Ok. **129 kB** — kursywa jest
-prawdziwym krojem, nie pochyleniem dorobionym przez przeglądarkę.
-
-**Paleta.** Jasna: papier mapy `#f6f3ea`, atrament granatowy `#1f2d3a`
-(12,7:1), `--atrament-3` `#5a6672` (5,3:1; na najciemniejszym tle
-4,7:1), akcent błękit wody `#1d5a8c` (6,5:1). Ciemna: `#121a21` /
-`#e9e4d6` (13,8:1), `--atrament-3` `#9d998c` (6,2:1), akcent `#7fb6e6`
-(8,1:1).
-
-**Czym różni się od AI.** Ozdobnik wynika z treści (to są miejsca), a nie
-z mody; legenda zamiast kart z ikonami.
-
-**Ryzyko.** Strony posła i ustawy nie są „miejscami” — tam warstwice
-i kursywa nazw są dekoracją. Ozdobnik pod nazwą może rozpraszać przy
-pierwszym spojrzeniu (badania: wygrywa niska złożoność).
-
----
-
-## I. „Naklejka” — neobrutalizm
-
-**Pomysł.** Grube czarne ramki (3 px), twarde cienie bez rozmycia, płaskie
-mocne kolory: żółć na „W liczbach”, mięta na nagłówkach działów, liliowy
-na źródłach. **Wszystko, co się klika, wygląda jak przycisk**, który da się
-wcisnąć — przy najechaniu unosi się i cień rośnie. Odpowiedź na pytanie
-o klikalność wprost: badania NN/g pokazują, że słabe sygnały klikalności
-kosztują ok. 22% czasu.
-
-**Typografia.** Archivo 400/700, nic więcej. Ok. **55 kB** — razem z C
-najlżejszy.
-
-**Paleta.** Jasna: krem `#fffaf0` / `#111111` (18,1:1), `--atrament-3`
-`#4d4d4d` (8,1:1), żółć `#ffd84d`, mięta `#9be7c4` (atrament na niej
-13,1:1), liliowy `#cbb7ff` (10,6:1). Ciemna: `#141414` / `#fafafa`
-(17,7:1), żółć przyciemniona do `#5c4a00`, mięta `#0b4434`, liliowy
-`#3d2c7a` — tekst na każdym z nich ≥ 4,6:1.
-
-**Czym różni się od AI.** Typowa strona z AI ma miękkie cienie,
-zaokrąglenia i gradienty — tu wszystko jest ostre i płaskie. Charakter
-jak z plakatu, nie z szablonu.
-
-**Ryzyko.** Najmniej urzędowy z dziesięciu: dla części czytelników
-„zabawny” wygląd może podważać powagę liczb przy nazwiskach (zasada:
-wiarygodność jest produktem). Mocne barwy trzeba trzymać z dala od barw
-klubów w wykresach.
-
----
-
-## J. „Usługa publiczna” — w duchu GOV.UK
-
-**Pomysł.** Najlepiej przebadany wzorzec stron publicznych: czarny pasek
-z nazwą serwisu i niebieską kreską, szary pasek menu z podkreślonymi
-niebieskimi odnośnikami, duże pismo (19 px od 640 px), żółte tło fokusu
-z czarną kreską, „W liczbach” jako lista podsumowania (klucz · wartość ·
-źródło) bez ramek, uwaga z wykrzyknikiem w kółku. Zero ozdobników.
-
-**Typografia.** Public Sans 400/600 — krój zrobiony dla administracji
-USA (U.S. Web Design System), otwarty. Ok. **50 kB**, najlżejszy
-z dziesięciu.
-
-**Paleta.** Jasna: biel / `#0b0c0c` (19,6:1), `--atrament-3` `#505a5f`
-(7,1:1), odnośnik `#1d70b8` (5,2:1; na szarym pasku 4,6:1), fokus
-`#ffdd00` z `#0b0c0c`. Ciemna: `#0b0c0c` / `#f3f2f1` (17,5:1), odnośnik
-`#79b4ec` (8,9:1).
-
-**Czym różni się od AI.** Nie ma w nim niczego „zaprojektowanego na
-pokaz”; wygląda jak usługa, z której się korzysta.
-
-**Ryzyko.** Najmniej charakteru: łatwo wziąć zrejestru za stronę urzędu,
-a serwis jest niezależny. Trzeba by odróżnić go marką i barwą paska —
-nie kopiować GOV.UK jeden do jednego.
+**Fonty:** Public Sans 400/600 — **50 kB**, najlżejszy.
+**Kontrast:** 17,5 / 6,3 / 4,6 (ciemny: 14,1 / 7,6 / 7,2). 4,6 to odnośnik
+na szarym pasku menu — najsłabsza para ze wszystkich motywów, nadal
+powyżej 4,5.
+**Nie jak z AI:** nic „zaprojektowanego na pokaz”; wygląda jak usługa.
+**Ryzyko:** łatwo wziąć zrejestru za stronę urzędu, choć to niezależny
+serwis. Nazwa i zdanie o serwisie (F1) muszą to mówić, a pasek nie może
+kopiować GOV.UK jeden do jednego.
 
 ---
 
-## Jak oglądać i mieszać
+## Rekomendacja na wybór Pawła: A, J i F
 
-Każdy motyw działa na **każdej** stronie prototypu: pasek „Motyw” nad
-nagłówkiem albo `?k=a` … `?k=j` w adresie (wybór zostaje zapamiętany).
-Przegląd w `prototyp/kierunki.html`. Jasny i ciemny przełącza przycisk
-w nagłówku. A+B nie jest osobnym motywem, tylko dodatkiem do A
-(„Jak to liczymy” na marginesie od 1200 px) — jest pod `?k=ab`, poza
-paskiem. Kierunki dają się łączyć jak A+B:
-z jednego bierze się litery i barwy, z drugiego sposób pokazania liczby
-albo marginesu — np. „E z marginesem A+B” albo „D z liczbami F”.
+W pomiarach F1–F14 wszystkie dziesięć przechodzi, więc fundament przestał
+różnicować. Różnią się charakterem, wagą i ryzykiem:
 
----
+- **A „Wypis z rejestru”** — najlepiej oddaje to, czym serwis jest:
+  „podstawa” przy każdej liczbie to zasada 1 zamieniona w formę strony.
+  142 kB, wciąż o 79 kB mniej niż dziś.
+- **J „Usługa publiczna”** — najbardziej typowy układ (Tuch 2012),
+  najlżejszy (50 kB), F6 = 0. Wybór, jeśli liczy się przede wszystkim
+  „od razu wiem, jak tego używać”.
+- **F „Reportaż”** — najbardziej zapraszający dla mieszkańca: liczba
+  i porównanie jak w dobrym dziennikarstwie danych. F6 = 0.
 
-## Rekomendacja
+Dla odważniejszej wersji: **I „Plakat”** (55 kB) — najbardziej
+rozpoznawalny, ale z ryzykiem powagi.
 
-**A, „Wypis z rejestru”.** Jako jedyny z dziesięciu przekuwa najważniejszą
-cechę serwisu — „każda liczba ma podstawę w rejestrze” — w formę strony,
-zamiast opisywać ją akapitami. Wiersz rejestru (etykieta · wartość ·
-mianownik · podstawa) jest jednym wzorem dla gminy, posła, firmy i ustawy,
-więc przebudowa to jeden komponent zamiast siedemnastu kart. I jest
-najtańszy w obsłudze: działa w jednej kolumnie na telefonie, nie wymaga
-JavaScriptu, a fonty ważą ok. 80 kB mniej niż dziś (141 wobec 221 kB).
-
-**Po przeglądzie badań (`badania.md`)** dodałbym do A sygnały klikalności
-z J: odnośniki wyraźnie podkreślone i żółte tło fokusu. I i J mają
-najmocniejsze oparcie w badaniach nad klikalnością, a A najlepiej oddaje
-to, czym serwis jest — dlatego na drugą rundę proponuję A, I i J.
-Przegląd z pełnych tekstów (`badania-ux.md`) dochodzi do tego samego:
-badania nie rozstrzygają między A a J, a „A z widocznym menu i dużym
-pismem” mieści wszystkie jego dziesięć wniosków. Widoczne menu na
-telefonie jest już w prototypie; wielkość pisma to pierwsza rzecz do
-zmierzenia w drugiej rundzie.
-
-Prototyp: `prototyp/` — 15 stron, każda w każdym motywie;
-porównanie w `prototyp/kierunki.html`.
-Decyzje Pawła: `decyzje.md`.
+Kroki po wyborze, wspólne dla każdego motywu:
+- test z zadaniami na 5–6 osobach („ile gmina dostała z UE na
+  mieszkańca?”) na 2–3 wybranych motywach;
+- zmierzenie, czy duże pismo nie wydłuża strony za bardzo dla stałych
+  czytelników.

@@ -3,6 +3,9 @@ Gałąź / commit: claude/add-project-summaries-9fumtv (PR pawelbak127/jawne#2)
 
 # Przebudowa wyglądu i nawigacji — gotowe do wyboru (wersja po zrzutach)
 
+> **Runda 2:** motywy i rekomendacja są teraz w `DO-glowny__2026-10-04__runda-2.md`
+> (propozycja A, J, F). Lista „do poprawy w `src/`” niżej jest nadal aktualna.
+
 **W `docs/przebudowa/`:** `przeglad.md` (dział 0: zmierzone na Twoich
 zrzutach), `kierunek.md` (10 motywów), `badania.md` (co przyciąga i co się dobrze klika — źródła), `nawigacja.md` (menu, okruszek,
 szablony wszystkich stron), `teksty.md` (10 zmian + błędy w tekście), `prototyp/`

@@ -176,7 +176,14 @@ gdy zostaną 2–3 motywy.
 | I „Naklejka” | wysoka | **najmocniejszy** (wszystko jak przycisk) | najmniej „urzędowy” — może tracić na powadze |
 | J „Usługa publiczna” | **najwyższa** | **mocny** (wzorzec GOV.UK) | najmniej charakteru, „jak strona urzędu” |
 
-## Wnioski z `badania-ux.md` — co już jest w prototypie, a co czeka
+## Wnioski z `badania-ux.md` — co już jest w prototypie
+
+**Runda 2 (04.10.2026, decyzja Pawła):** wszystko z listy „czeka na drugą
+rundę” niżej weszło do wspólnego fundamentu F1–F14 — większe pismo
+(18/20 px, nic poniżej 15 px), tytuły wykresów z wnioskiem, zdania
+porównawcze liczone z naszych danych i „Jak myślisz, ile…?”. Każdy punkt
+jest zmierzony w każdym motywie: `kierunek.md`. Lista niżej zostaje jako
+zapis tego, w jakiej kolejności to przychodziło.
 
 **Przeniesione do prototypu 04.10.2026:**
 
@@ -192,7 +199,7 @@ gdy zostaną 2–3 motywy.
   ciemny tekst na jasnym tle lepszy u młodszych i starszych) — dopisane
   do ryzyka G w `kierunek.md`. Prototyp i tak idzie za ustawieniem systemu.
 
-**Czeka na drugą rundę — bo to decyzje, a nie poprawki:**
+**Czekało na drugą rundę (zrobione w rundzie 2):**
 
 - **Większe pismo** (Rello 2016: zrozumienie spada przy małym piśmie;
   autorzy zalecają 24 px na komputerze; czytelnicy serwisów obywatelskich
