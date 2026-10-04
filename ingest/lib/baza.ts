@@ -288,7 +288,13 @@ create table if not exists pomoc_publiczna (
    */
   klucz               text
 );
-create index if not exists pomoc_teryt on pomoc_publiczna(teryt);
+/*
+  Gmina + dzien, nie sama gmina (04.10.2026): eksport CSV gminy idzie dzien po
+  dniu, zeby nie trzymac w pamieci i nie czytac naraz 192 tys. wierszy Krakowa
+  (pulapka 69). Indeks po samym teryt jest jego przedrostkiem — usuwa go
+  zalozSchemat.
+*/
+create index if not exists pomoc_teryt_dzien on pomoc_publiczna(teryt, dzien);
 create index if not exists pomoc_nip on pomoc_publiczna(nip_beneficjenta);
 create unique index if not exists pomoc_klucz on pomoc_publiczna(klucz);
 
@@ -868,6 +874,13 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   if (kolumnyRegon.length && !kolumnyRegon.some((k) => k.name === 'rekordow')) {
     db.exec('alter table regon add column rekordow integer not null default 1');
     zrobione.push('dodano kolumne regon.rekordow');
+  }
+
+  // Przedrostek nowego indeksu (teryt, dzien) — zbedny, a zajmuje miejsce
+  // i spowalnia kazdy zapis pomocy.
+  if (db.prepare("select 1 from sqlite_master where type = 'index' and name = 'pomoc_teryt'").get()) {
+    db.exec('drop index pomoc_teryt');
+    zrobione.push('usunieto indeks pomoc_teryt (zastapiony przez pomoc_teryt_dzien)');
   }
 
   const bezDaty = db.prepare('select dzien, pobrano from pomoc_publiczna_dni where pobrano_dzien is null')

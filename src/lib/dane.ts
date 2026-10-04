@@ -2186,25 +2186,76 @@ export type PomocDoEksportu = {
   forma: string | null; wartosc_nominalna: number | null; wartosc_brutto: number | null; wartosc_brutto_eur: number | null;
 };
 
-/**
- * Przypadki pomocy gminy w tym samym zakresie co strona: cale pobranie gminy
- * albo — gdy go nie ma — tylko dni ustalone.
- */
-export function pomocDoEksportu(teryt: string): PomocDoEksportu[] {
-  return bezTabeli(() => {
-    const pelna = jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c;
-    const P = pelna ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
-    return wszystkie<PomocDoEksportu>(
-      `select z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta,
-              (select max(x.wartosc_brutto_eur) from ${P} x where x.teryt = z.teryt and x.nip_beneficjenta = z.nip_beneficjenta) as max_eur_beneficjenta,
-              (select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon,
+const KOLUMNY_EKSPORTU = `z.dzien, z.nip_beneficjenta, z.nazwa_beneficjenta`;
+const RESZTA_EKSPORTU = `(select typ from regon where regon.nip = z.nip_beneficjenta) as typ_regon,
               z.wielkosc, z.pkd, z.udzielajacy, z.przeznaczenie, z.forma,
-              z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur
-         from ${P} z where z.teryt = ?
-        order by z.dzien desc, z.wartosc_brutto desc`,
-      teryt,
-    );
-  }, []);
+              z.wartosc_nominalna, z.wartosc_brutto, z.wartosc_brutto_eur`;
+
+/**
+ * Przypadki pomocy gminy w tym samym zakresie co strona — PORCJAMI, dzien po
+ * dniu (od najnowszego), a nie jedna tablica.
+ *
+ * ZMIERZONE 04.10.2026 (pulapka 69): Krakow ma na serwerze 191 910 wierszy
+ * pomocy rozsianych po calym pliku bazy. Jedna tablica oznaczala dwie minuty
+ * zamrozonego serwisu (`node:sqlite` jest synchroniczny) i kilkaset MB
+ * obiektow JS — a do tego podzapytanie o najwieksza pomoc przy KAZDYM wierszu.
+ * Teraz trasa CSV bierze porcje po jednej i miedzy nimi oddaje sterowanie,
+ * wiec inni czytelnicy nie czekaja na koniec eksportu.
+ *
+ * Tryb dni: dni ze stanu sum (`pomoc_sumy_dni`) i najwieksza pojedyncza pomoc
+ * ze stanu (`pomoc_sumy_gmin_firmy`) — ten sam zbior, ktory pokazuje strona
+ * gminy, wiec plik nie odslania ani nie chowa niczego inaczej niz strona.
+ * Gmina pobrana w calosci (trzy pokazowe) idzie jedna porcja, jak dotad.
+ *
+ * `z.id` na koncu sortowania: przy tym samym dniu i tej samej kwocie kolejnosc
+ * zalezala od indeksu wybranego przez planer — po zmianie indeksu plik
+ * Belchatowa mial te same 34 815 wierszy w innym porzadku.
+ */
+export function* pomocDoEksportuPorcjami(teryt: string): Generator<PomocDoEksportu[]> {
+  const pelna = bezTabeli(
+    () => (jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c ?? 0) > 0,
+    false,
+  );
+  if (pelna) {
+    /*
+     * Najwieksza pomoc na NIP — JEDNO grupowanie i zlaczenie, nie podzapytanie
+     * przy kazdym wierszu. ZMIERZONE 04.10.2026: po dodaniu indeksu
+     * (teryt, dzien) planer (bez sqlite_stat1) wzial go do podzapytania zamiast
+     * indeksu po NIP-ie — 34 815 wierszy Belchatowa razy 34 815, eksport
+     * wisial ponad 5 minut zamiast 3,8 s. Ten zapis nie zalezy od wyboru
+     * planera. Wiersz bez NIP-u nie trafia w grupe NULL (NULL <> NULL), wiec
+     * dostaje NULL — jak w podzapytaniu.
+     */
+    yield bezTabeli(() => wszystkie<PomocDoEksportu>(
+      `with m as (
+         select nip_beneficjenta as nip, max(wartosc_brutto_eur) as max_eur
+           from pomoc_publiczna where teryt = ? group by nip_beneficjenta
+       )
+       select ${KOLUMNY_EKSPORTU}, m.max_eur as max_eur_beneficjenta, ${RESZTA_EKSPORTU}
+         from pomoc_publiczna z left join m on m.nip = z.nip_beneficjenta
+        where z.teryt = ?
+        order by z.dzien desc, z.wartosc_brutto desc, z.id`,
+      teryt, teryt,
+    ), []);
+    return;
+  }
+  const dni = bezTabeli(
+    () => wszystkie<{ dzien: string }>('select dzien from pomoc_sumy_dni order by dzien desc'),
+    [],
+  );
+  for (const { dzien } of dni) {
+    // Wiersz bez NIP-u nie trafia w zaden wpis stanu (NULL <> ''), wiec
+    // dostaje NULL — tak jak w podzapytaniu, ktore bylo tu wczesniej.
+    const porcja = bezTabeli(() => wszystkie<PomocDoEksportu>(
+      `select ${KOLUMNY_EKSPORTU}, f.max_eur as max_eur_beneficjenta, ${RESZTA_EKSPORTU}
+         from pomoc_publiczna z
+         left join pomoc_sumy_gmin_firmy f on f.teryt = z.teryt and f.nip = z.nip_beneficjenta
+        where z.teryt = ? and z.dzien = ?
+        order by z.wartosc_brutto desc, z.id`,
+      teryt, dzien,
+    ), []);
+    if (porcja.length) yield porcja;
+  }
 }
 
 export type ProjektGminy = {
@@ -2348,7 +2399,7 @@ export function organyPomocy(teryt: string): OrganyPomocy {
      * samej stronie mowilyby o innym swiecie.
      *
      * Liczenie na zywo jest tu tanie i NIE lamie pulapki 52: idzie indeksem
-     * pokrywajacym `pomoc_teryt` dla JEDNEJ gminy (sprawdzone planem
+     * po gminie (`pomoc_teryt_dzien`) dla JEDNEJ gminy (sprawdzone planem
      * zapytania: SEARCH USING COVERING INDEX), a nie przebiegiem po tabeli.
      * Takich gmin jest tyle, ile pelnych pobran — dzis trzy.
      */

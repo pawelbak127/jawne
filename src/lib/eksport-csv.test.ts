@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { doCsv, nazwaPliku } from './eksport-csv';
+import { doCsv, naglowekCsv, nazwaPliku, wierszeCsv } from './eksport-csv';
 
 describe('doCsv', () => {
   it('zaczyna sie od BOM, rozdziela srednikiem, konczy CRLF', () => {
@@ -19,6 +19,13 @@ describe('doCsv', () => {
 
   it('bierze w cudzyslow pola ze srednikiem, cudzyslowem i nowa linia', () => {
     expect(doCsv(['t'], [['a;b'], ['"U&B" s.c.'], ['x\ny']])).toBe('﻿t\r\n"a;b"\r\n"""U&B"" s.c."\r\n"x\ny"\r\n');
+  });
+
+  it('w kawalkach daje bajt w bajt to samo co w calosci — takze bez wierszy', () => {
+    const wiersze = [[1, 'a;b'], [null, 2.5], [0, 'x']] as const;
+    const kawalki = naglowekCsv(['k', 'l']) + wierszeCsv(wiersze.slice(0, 1)) + wierszeCsv([]) + wierszeCsv(wiersze.slice(1));
+    expect(kawalki).toBe(doCsv(['k', 'l'], wiersze));
+    expect(naglowekCsv(['k'])).toBe(doCsv(['k'], []));
   });
 });
 

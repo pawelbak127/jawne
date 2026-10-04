@@ -848,6 +848,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     od TERYT-u, `src/lib/pomoc-gminy.ts`); zgodność sprawdzona na 2 441
     gminach i w `sudo jawne sumy`. Zmiana zakresu stanu podnosi
     `WERSJA_SUM` i stan liczy się raz od zera sam, bez flagi.
+    CSV gminy (`/gmina/…/csv/pomoc`) idzie STRUMIENIEM, dzień po dniu, z
+    `setImmediate` przed każdą porcją — bez tej przerwy strumień nie oddaje
+    sterowania i nic nie zyskujemy. Nowy indeks `(teryt, dzien)` przestawił
+    przy okazji plan podzapytania (bez `sqlite_stat1`): eksport Bełchatowa
+    z 3,8 s zrobił się dłuższy niż 5 minut. **Po dodaniu indeksu sprawdź plany
+    zapytań, które go nie dotyczą.**
     Przy okazji: `max(a, b)` z dwoma argumentami to w SQLite funkcja
     skalarna, która oddaje NULL, gdy KTÓRYKOLWIEK argument jest NULL-em —
     upsert nazwy firmy kasował nią nazwę po dniu z pustym wpisem.

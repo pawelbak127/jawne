@@ -1,8 +1,8 @@
 import { KONTAKT } from '@/lib/adres';
 import {
-  bazaDostepna, budzetDoEksportu, gminaPelna, pomocDoEksportu, projektyDoEksportu, TERYT_WARSZAWY,
+  bazaDostepna, budzetDoEksportu, gminaPelna, pomocDoEksportuPorcjami, projektyDoEksportu, TERYT_WARSZAWY,
 } from '@/lib/dane';
-import { doCsv, nazwaPliku, type Komorka } from '@/lib/eksport-csv';
+import { doCsv, naglowekCsv, nazwaPliku, wierszeCsv, type Komorka } from '@/lib/eksport-csv';
 import { nazwaDoPokazania } from '@/lib/prywatnosc';
 
 /**
@@ -43,10 +43,55 @@ export async function GET(_req: Request, ctx: RouteContext<'/gmina/[teryt]/csv/[
       ]),
     );
   } else {
-    const progAktywny = Boolean(KONTAKT);
-    csv = doCsv(
-      ['dzien_udzielenia', 'nip_beneficjenta', 'beneficjent', 'wielkosc', 'pkd', 'udzielajacy', 'przeznaczenie', 'forma', 'wartosc_nominalna_zl', 'wartosc_brutto_zl', 'wartosc_brutto_eur'],
-      pomocDoEksportu(zrodlo).map((w): Komorka[] => {
+    return new Response(strumienPomocy(zrodlo), { headers: naglowki(nazwaGminy, teryt, zestaw) });
+  }
+
+  return new Response(csv, { headers: naglowki(nazwaGminy, teryt, zestaw) });
+}
+
+function naglowki(nazwaGminy: string, teryt: string, zestaw: string): HeadersInit {
+  return {
+    'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': `attachment; filename="${nazwaPliku('jawne', nazwaGminy, teryt, zestaw)}"`,
+    // Plik do pobrania, nie strona — nie ma czego szukac w wyszukiwarce.
+    'X-Robots-Tag': 'noindex',
+  };
+}
+
+const NAGLOWKI_POMOCY = [
+  'dzien_udzielenia', 'nip_beneficjenta', 'beneficjent', 'wielkosc', 'pkd', 'udzielajacy', 'przeznaczenie', 'forma',
+  'wartosc_nominalna_zl', 'wartosc_brutto_zl', 'wartosc_brutto_eur',
+];
+
+/**
+ * Pomoc publiczna jako STRUMIEN, dzien po dniu.
+ *
+ * ZMIERZONE 04.10.2026 (pulapka 69): Krakow to 191 910 wierszy rozsianych po
+ * pliku bazy, a `node:sqlite` jest synchroniczny — plik skladany naraz
+ * zamrazal caly serwis na minuty. Przed KAZDA porcja oddajemy sterowanie
+ * (`setImmediate`), wiec zadania innych czytelnikow przechodza miedzy
+ * porcjami. Bez tej przerwy strumien nie pomoglby niczym: gdy gniazdo
+ * przyjmuje dane szybko, kolejne `pull` ida w tej samej turze petli.
+ */
+function strumienPomocy(teryt: string): ReadableStream<Uint8Array> {
+  const progAktywny = Boolean(KONTAKT);
+  const porcje = pomocDoEksportuPorcjami(teryt);
+  const kod = new TextEncoder();
+  let naglowek = true;
+  return new ReadableStream<Uint8Array>({
+    async pull(sterownik) {
+      if (naglowek) {
+        naglowek = false;
+        sterownik.enqueue(kod.encode(naglowekCsv(NAGLOWKI_POMOCY)));
+        return;
+      }
+      await new Promise((gotowe) => setImmediate(gotowe));
+      const nastepna = porcje.next();
+      if (nastepna.done) {
+        sterownik.close();
+        return;
+      }
+      sterownik.enqueue(kod.encode(wierszeCsv(nastepna.value.map((w): Komorka[] => {
         // Eksport musi chowac i odslaniac DOKLADNIE to samo, co strona —
         // inaczej plik CSV omija regule, ktorej strona pilnuje.
         const nazwa = nazwaDoPokazania(w.nazwa_beneficjenta, {
@@ -57,16 +102,11 @@ export async function GET(_req: Request, ctx: RouteContext<'/gmina/[teryt]/csv/[
           w.dzien, nazwa.pominieta ? null : w.nip_beneficjenta, nazwa.tekst, w.wielkosc, w.pkd,
           udzielajacy.tekst, w.przeznaczenie, w.forma, w.wartosc_nominalna, w.wartosc_brutto, w.wartosc_brutto_eur,
         ];
-      }),
-    );
-  }
-
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${nazwaPliku('jawne', nazwaGminy, teryt, zestaw)}"`,
-      // Plik do pobrania, nie strona — nie ma czego szukac w wyszukiwarce.
-      'X-Robots-Tag': 'noindex',
+      }))));
+    },
+    cancel() {
+      // Czytelnik przerwal pobieranie — nie czytamy dalszych dni na prozno.
+      porcje.return(undefined);
     },
   });
 }
