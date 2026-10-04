@@ -170,7 +170,14 @@ EOF
   for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted; do
     if systemctl is-enabled --quiet "jawne-$zadanie.timer" 2>/dev/null; then timery+=("jawne-$zadanie.timer"); fi
     systemctl stop "jawne-$zadanie.timer" 2>/dev/null || true
-    if systemctl is-active --quiet "jawne-$zadanie.service" 2>/dev/null; then
+    # Stan, nie `is-active --quiet`: zadanie Type=oneshot W TRAKCIE pracy ma
+    # stan „activating", a `--quiet` uznaje za dzialajace tylko „active".
+    # ZMIERZONE 04.10.2026: timery wylaczone, a sudop-historia pisala do bazy
+    # dalej — razem z migracjami i z budowa, czyli dokladnie to, przed czym
+    # ten krok mial chronic.
+    local stan
+    stan=$(systemctl is-active "jawne-$zadanie.service" 2>/dev/null || true)
+    if [[ "$stan" == active || "$stan" == activating || "$stan" == reloading ]]; then
       echo "   przerywam trwajace zadanie: $zadanie"
       systemctl stop "jawne-$zadanie.service" 2>/dev/null || true
     fi

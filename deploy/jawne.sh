@@ -219,7 +219,9 @@ wgraj() {
     echo "i noc zapyta o nie urzad ponownie. Jesli na pewno: sudo jawne wgraj $paczka --nadpisz"
     exit 1
   fi
-  if systemctl is-active --quiet jawne-sudop-dzien jawne-sudop-historia; then
+  # Stan, nie `is-active --quiet`: oneshot w trakcie pracy jest „activating",
+  # czego `--quiet` nie uznaje za dzialanie (zmierzone 04.10.2026 w instaluj.sh).
+  if systemctl is-active jawne-sudop-dzien jawne-sudop-historia 2>/dev/null | grep -qE '^(active|activating|reloading)$'; then
     echo "Trwa pobieranie z SUDOP — nie przerywam go. Sprobuj po jego koncu (sudo jawne stan)."
     exit 1
   fi
