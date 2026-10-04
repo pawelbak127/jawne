@@ -22,10 +22,16 @@ export const metadata: Metadata = {
 export default async function StronaSali({
   searchParams,
 }: {
-  searchParams: Promise<{ glosowanie?: string }>;
+  searchParams: Promise<{ glosowanie?: string; posel?: string }>;
 }) {
   if (!bazaDostepna()) return <BrakDanych />;
-  const { glosowanie: zadane } = await searchParams;
+  const { glosowanie: zadane, posel: zadanyPosel } = await searchParams;
+  /*
+   * ?posel=ID — przejscie ze strony posla „pokaz na planie" (04.10.2026).
+   * Tylko liczba i tylko posel, ktory na planie jest; inaczej zaznaczenie
+   * nie ma czego pokazac i plan wyglada normalnie.
+   */
+  const idPosla = /^\d{1,4}$/.test(zadanyPosel ?? '') ? Number(zadanyPosel) : undefined;
 
   const { miejsca: bezGlosow, bezPosla } = polaczPlan(MIEJSCA, listaPoslow());
   const zNumerem = bezGlosow.filter((m) => m.numer !== null).length;
@@ -153,6 +159,7 @@ export default async function StronaSali({
       <div className="mt-6">
         <PlanSali
           miejsca={miejsca}
+          wyroznionyId={idPosla !== undefined && miejsca.some((m) => m.id === idPosla) ? idPosla : undefined}
           szerokosc={PLAN_SZEROKOSC}
           wysokosc={PLAN_WYSOKOSC}
           stan={dataSlownie(STAN_PLANU)}
@@ -178,9 +185,14 @@ export default async function StronaSali({
             <span className="liczby">
               {zNumerem} z {miejsca.length}
             </span>{' '}
-            posłów. Przy pozostałych numer na rysunku daje się przypisać do dwóch nazwisk
-            naraz — wolimy nie podać go wcale, niż postawić przy kimś cudzy. Ław rządowych,
-            lóż i miejsc dla gości nie pokazujemy: rysunek nie podpisuje ich nazwiskami.
+            posłów.
+            {/* Zdanie o brakujacych tylko wtedy, gdy ktos jest bez numeru — od
+                04.10.2026 numer maja wszyscy, a stale zdanie mowiloby o „pozostalych",
+                ktorych nie ma. */}
+            {zNumerem < miejsca.length
+              ? ' Przy pozostałych numer na rysunku daje się przypisać do dwóch nazwisk naraz — wolimy nie podać go wcale, niż postawić przy kimś cudzy.'
+              : ''}{' '}
+            Ław rządowych, lóż i miejsc dla gości nie pokazujemy: rysunek nie podpisuje ich nazwiskami.
             {bezPosla > 0
               ? ` ${bezPosla} ${bezPosla === 1 ? 'miejsce należy' : 'miejsca należą'} do posłów, których nie ma już w rejestrze — plan jest starszy niż skład izby.`
               : ''}

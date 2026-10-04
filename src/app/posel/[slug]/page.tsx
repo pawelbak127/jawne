@@ -17,9 +17,8 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { KartaGlosowania } from '@/components/KartaGlosowania';
-import { PlanSaliMiejsce } from '@/components/PlanSaliMiejsce';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
-import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU, ZRODLO_PLANU } from '@/lib/plan-sali';
+import { MIEJSCA } from '@/lib/plan-sali';
 import { miejscePosla } from '@/lib/sala';
 
 export function generateStaticParams() {
@@ -115,6 +114,24 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 <dd className="font-medium">{p.wyksztalcenie}</dd>
               </div>
             ) : null}
+            {/*
+              MIEJSCE NA SALI jako jedna pozycja (04.10.2026, prosba Pawla:
+              „duzo miejsca zajmuje, moze po prostu gdzie siedzi"). Do tego dnia
+              strona posla rysowala cala sale — teraz cala sala jest na /sala,
+              z tym poslem zaznaczonym.
+            */}
+            {miejsce ? (
+              <div className="flex gap-2">
+                <dt className="text-atrament-2">Miejsce na sali:</dt>
+                <dd className="font-medium">
+                  {miejsce[1] === null ? 'numer nieodczytany' : `nr ${miejsce[1]}`}
+                  {' · '}
+                  <Link href={`/sala?posel=${p.id}`} className="font-normal text-akcent underline underline-offset-4 hover:no-underline">
+                    pokaż na planie
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
             {p.email ? (
               <div className="flex min-w-0 gap-2">
                 <dt className="text-atrament-2">E-mail:</dt>
@@ -133,34 +150,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
         </div>
       </header>
 
-      {miejsce ? (
-        <section className="mt-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="szryft text-2xl font-semibold">Gdzie siedzi w sali</h2>
-            <Zrodlo adres={ZRODLO_PLANU} etykieta="plan sali, Kancelaria Sejmu" />
-          </div>
-          <p className="mt-2 text-sm text-atrament-2">
-            {miejsce[1] === null
-              ? `Zaznaczone miejsce pochodzi z rysunku sali ze stanem na ${dataSlownie(STAN_PLANU)}. Numeru tego miejsca nie dało się odczytać jednoznacznie, więc go nie podajemy.`
-              : `Miejsce nr ${miejsce[1]}, według rysunku sali ze stanem na ${dataSlownie(STAN_PLANU)}.`}{' '}
-            <Link href="/sala" className="text-akcent underline underline-offset-4">
-              Cała sala
-            </Link>
-          </p>
-          <div className="mt-4 max-w-3xl">
-            <PlanSaliMiejsce
-              plan={MIEJSCA}
-              wyroznionyId={p.id}
-              barwa={k?.barwa ?? '#9a958c'}
-              barwaCiemna={k?.barwaCiemna ?? '#8e8a95'}
-              szerokosc={PLAN_SZEROKOSC}
-              wysokosc={PLAN_WYSOKOSC}
-              opis={`Plan sali posiedzeń Sejmu ze stanem na ${dataSlownie(STAN_PLANU)}; zaznaczone miejsce posła ${p.imie_nazwisko}.`}
-            />
-          </div>
-        </section>
-      ) : null}
-
+      
       {/* Mandat wygasl — pokazujemy SUROWY powod z rejestru, bez interpretacji. */}
       {p.aktywny === 0 && p.przyczyna_wygasniecia ? (
         <p className="mt-6 rounded-xl border border-kreska bg-papier-3 px-4 py-3 text-sm text-atrament-2">
