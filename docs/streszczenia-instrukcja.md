@@ -49,6 +49,14 @@ politycznego — nawet jeśli są powszechnie znane.
   „długo oczekiwany”). Serwis nie ocenia (zasada 6 w CLAUDE.md).
 - Nie podawaj, kto zgłosił projekt i z jakiego klubu — strona pokazuje to
   osobno, z rejestru.
+- **Tytuł druku też jest z rejestru** i stoi na tej samej stronie, więc fakt
+  z tytułu wolno użyć (np. „ratyfikacja traktatu” w druku 2840). Uwaga:
+  kontrola liczb sprawdza tylko OPIS — liczby z samego tytułu odpadną.
+- **Opis bez treści merytorycznej** (np. „projekt dotyczy m.in. regulacji
+  określających tymczasowe aresztowanie”): streszczenie pisz, jeśli coś
+  upraszcza — wyjaśnia pojęcie albo porządkuje listę — i zakończ zdaniem
+  „Opis z rejestru nie podaje szczegółów”. Nie pisz go, jeśli byłoby tylko
+  powtórzeniem opisu innymi słowami (decyzja z 04.10.2026).
 
 **Liczby.** Każdy ciąg cyfr ze streszczenia musi dosłownie występować
 w opisie — automatyczna kontrola odrzuci każdą inną liczbę.
