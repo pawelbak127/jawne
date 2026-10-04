@@ -1,59 +1,50 @@
+/*
+  I „Plakat” (w rundzie 1 „Naklejka”) — plakat: czarno-biały, ciężkie wersaliki, grube kreski;
+  jedna „naklejka” z twardym cieniem to „W liczbach”, a żółć pojawia się tylko pod tym,
+  co właśnie wskazujesz albo naciskasz. Archivo 400/700.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
+*/
 @font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-ext-700-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-/*
-  Kierunek I „Naklejka” — neobrutalizm. Nakładka na styl.css.
-  Grube czarne ramki, twarde cienie bez rozmycia, płaskie mocne kolory,
-  wszystko, co się klika, wygląda jak przycisk, który da się wcisnąć.
-  Archivo. Najbardziej „klikalny” i najmniej urzędowy z dziesięciu.
-*/
 :root {
-  --papier: #fffaf0; --papier-2: #ffffff; --papier-3: #ffd84d;
-  --atrament: #111111; --atrament-2: #333333; --atrament-3: #4d4d4d;
-  --kreska: #111111; --kreska-2: #111111; --akcent: #111111; --akcent-slaby: #ffd84d;
-  --mieta: #9be7c4; --liliowy: #cbb7ff; --cien: 5px 5px 0 #111111;
+  --papier: #fbfaf5; --papier-2: #ffffff; --papier-3: #efede4; --atrament: #111111;
+  --atrament-2: #333333; --atrament-3: #4d4d4d; --kreska: #111111; --kreska-2: #111111;
+  --akcent: #111111; --akcent-slaby: #ffd84d; --ostrzezenie: #111111;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
-  --papier: #141414; --papier-2: #1e1e1e; --papier-3: #5c4a00;
-  --atrament: #fafafa; --atrament-2: #d6d6d6; --atrament-3: #bdbdbd;
-  --kreska: #fafafa; --kreska-2: #fafafa; --akcent: #fafafa; --akcent-slaby: #5c4a00;
-  --mieta: #0b4434; --liliowy: #3d2c7a; --cien: 5px 5px 0 #fafafa; } }
+  --papier: #141414; --papier-2: #1c1c1c; --papier-3: #262626; --atrament: #fafafa;
+  --atrament-2: #d6d6d6; --atrament-3: #bdbdbd; --kreska: #fafafa; --kreska-2: #fafafa;
+  --akcent: #fafafa; --akcent-slaby: #ffd84d; --ostrzezenie: #fafafa;
+  color-scheme: dark; } }
 :root[data-motyw="ciemny"] {
-  --papier: #141414; --papier-2: #1e1e1e; --papier-3: #5c4a00;
-  --atrament: #fafafa; --atrament-2: #d6d6d6; --atrament-3: #bdbdbd;
-  --kreska: #fafafa; --kreska-2: #fafafa; --akcent: #fafafa; --akcent-slaby: #5c4a00;
-  --mieta: #0b4434; --liliowy: #3d2c7a; --cien: 5px 5px 0 #fafafa; }
-
-body, h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "Archivo", system-ui, sans-serif; letter-spacing: -0.01em; }
-h1 { font-weight: 700; font-size: clamp(2.2rem, 7vw, 3.6rem); }
-h2 { font-weight: 700; }
-.marka b { font-weight: 700; background: var(--papier-3); border: 3px solid var(--atrament); padding: 0 8px; box-shadow: 3px 3px 0 var(--atrament); }
-.naglowek { border-bottom: 3px solid var(--atrament); }
-.szukaj input, .pole { border: 3px solid var(--atrament); box-shadow: var(--cien); }
-
-/* nagłówek działu jak naklejka */
-.dzial { border-bottom: 0; }
-.dzial .tytul h2 { display: inline-block; background: var(--mieta); border: 3px solid var(--atrament); padding: 4px 12px; box-shadow: var(--cien); }
-.dzial > .nr { font-weight: 700; font-size: 2rem; }
-
-.w-liczbach { background: var(--papier-3); border: 3px solid var(--atrament); box-shadow: 8px 8px 0 var(--atrament); }
-.wiersze { border-top: 3px solid var(--atrament); }
-.wiersz { border-bottom: 2px solid var(--atrament); }
-.wiersz .ile { font-weight: 700; font-size: 1.6rem; }
-.wiersz.duzy .ile { font-size: 2.2rem; }
-.w-liczbach .wiersz .z-czego { color: var(--atrament); }
-
-/* odnośnik do rejestru jak przycisk */
-a.zrodlo { background: var(--liliowy); color: var(--atrament); border: 2px solid var(--atrament); padding: 3px 10px; box-shadow: 3px 3px 0 var(--atrament); font-weight: 500; transition: transform .08s, box-shadow .08s; }
-a.zrodlo .data { color: var(--atrament); }
-a.zrodlo:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--atrament); text-decoration: none; }
-a { text-decoration-thickness: 2px; }
-.drzwi a { border: 3px solid var(--atrament) !important; box-shadow: var(--cien); margin: 0 10px 14px 0; padding: 16px !important; background: var(--papier-2); transition: transform .08s, box-shadow .08s; }
-.drzwi a:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--atrament); }
-.drzwi { border-top: 0; }
-.uwaga { border: 3px solid var(--atrament); background: var(--mieta); padding: 10px 14px; box-shadow: var(--cien); }
-.pasek { height: 12px; border: 2px solid var(--atrament); background: var(--papier-2); }
-.pasek i { background: var(--atrament); }
-details.metoda > summary::before { border-width: 2px; background: var(--papier-3); }
-.tabela th { border-bottom-width: 3px; }
+  --papier: #141414; --papier-2: #1c1c1c; --papier-3: #262626; --atrament: #fafafa;
+  --atrament-2: #d6d6d6; --atrament-3: #bdbdbd; --kreska: #fafafa; --kreska-2: #fafafa;
+  --akcent: #fafafa; --akcent-slaby: #ffd84d; --ostrzezenie: #fafafa;
+  color-scheme: dark; }
+:root { --f-tekst: "Archivo", system-ui, sans-serif; --f-naglowek: var(--f-tekst); --f-liczba: var(--f-tekst); --f-znak: var(--f-tekst);
+  --w-naglowek: 700; --w-liczba: 700; --linia-mocna: 3px; --cien: 8px 8px 0 var(--atrament); --miara: 30em; }
+h1 { font-size: 2.4rem; text-transform: uppercase; letter-spacing: -.01em; line-height: 1; }
+@media (min-width: 1024px) { h1 { font-size: 3.4rem; } }
+h1.dlugi { font-size: 1.3rem; text-transform: none; }
+@media (min-width: 1024px) { h1.dlugi { font-size: 1.7rem; } }
+h2 { text-transform: uppercase; }
+.naglowek { border-bottom-width: 4px; }
+.marka b { text-transform: uppercase; }
+/* odnośnik: gruba kreska; żółć tylko przy wskazaniu i fokusie — stan, nie ozdoba (F4) */
+a { color: var(--atrament); text-decoration-thickness: 3px; text-underline-offset: .15em; }
+a:hover, a:focus-visible { background: var(--akcent-slaby); color: #111111; text-decoration-thickness: 3px; }
+:focus-visible { outline: 3px solid #111111; outline-offset: 0; }
+/* jedyna naklejka na ekranie: „W liczbach” z twardym cieniem (F6) */
+.w-liczbach { border: 3px solid var(--atrament); box-shadow: var(--cien); margin-right: 8px; }
+.wiersz { border-bottom: 3px solid var(--atrament); }
+.wiersz .ile { font-size: 1.7rem; }
+.wiersz.duzy .ile { font-size: 2.1rem; }
+.dzial { border-bottom: 4px solid var(--atrament); }
+.dzial > .nr { font-size: 2.2rem; color: var(--atrament); }
+a.zrodlo { color: var(--atrament); font-weight: 700; }
+a.zrodlo .nazwa { text-decoration-thickness: 3px; }
+.zgadnij button[data-sprawdz] { box-shadow: 4px 4px 0 var(--atrament); background: var(--papier-2); color: var(--atrament); border: 3px solid var(--atrament); font-weight: 700; }
+.zgadnij button[data-sprawdz]:hover { background: var(--akcent-slaby); color: #111111; transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--atrament); }
+.drzwi b { color: var(--atrament); text-transform: uppercase; text-decoration-thickness: 3px; }

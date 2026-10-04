@@ -1,7 +1,7 @@
 /*
-  Kierunek F „Reportaż” — dziennikarstwo danych. Nakładka na styl.css.
-  Newsreader do nagłówków i liczb, Public Sans do tekstu, dużo powietrza,
-  liczba duża, ale zawsze z mianownikiem tuż pod nią; mało linii.
+  F „Reportaż” — dziennikarstwo danych: dużo powietrza, liczba duża i szeryfowa nad opisem,
+  „W liczbach” w dwóch kolumnach. Newsreader 400/600 + Public Sans 400/600.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
 */
 @font-face { font-family: "Newsreader"; font-weight: 400; font-display: swap; src: url(fonty/newsreader-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Newsreader"; font-weight: 400; font-display: swap; src: url(fonty/newsreader-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
@@ -12,41 +12,35 @@
 @font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 :root {
-  --papier: #f7f5f2; --papier-2: #ffffff; --papier-3: #ece8e1;
-  --atrament: #1d1b19; --atrament-2: #57524b; --atrament-3: #665f57;
-  --kreska: #e2ddd4; --kreska-2: #c4bdb1; --akcent: #8f3b1f; --akcent-slaby: #f4e3dc;
+  --papier: #f7f5f2; --papier-2: #fdfcfa; --papier-3: #ebe7e1; --atrament: #1d1b19;
+  --atrament-2: #4a4540; --atrament-3: #665f57; --kreska: #ddd6cc; --kreska-2: #a99e90;
+  --akcent: #8f3b1f; --akcent-slaby: #f4e2da; --ostrzezenie: #8f3b1f;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
-  --papier: #161412; --papier-2: #1e1b18; --papier-3: #282420;
-  --atrament: #f1ece4; --atrament-2: #c7bfb3; --atrament-3: #aaa296;
-  --kreska: #34302a; --kreska-2: #4f483e; --akcent: #f0a07e; --akcent-slaby: #3a2219; } }
+  --papier: #161412; --papier-2: #1d1a17; --papier-3: #28241f; --atrament: #f1ece4;
+  --atrament-2: #c9c1b5; --atrament-3: #aaa196; --kreska: #3a342d; --kreska-2: #5d554b;
+  --akcent: #f0a07e; --akcent-slaby: #3a2219; --ostrzezenie: #f0a07e;
+  color-scheme: dark; } }
 :root[data-motyw="ciemny"] {
-  --papier: #161412; --papier-2: #1e1b18; --papier-3: #282420;
-  --atrament: #f1ece4; --atrament-2: #c7bfb3; --atrament-3: #aaa296;
-  --kreska: #34302a; --kreska-2: #4f483e; --akcent: #f0a07e; --akcent-slaby: #3a2219; }
-
-body { font-family: "Public Sans", system-ui, sans-serif; font-size: 16.5px; line-height: 1.6; }
-h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "Newsreader", Georgia, serif; font-weight: 600; letter-spacing: -0.015em; }
-h1 { font-size: clamp(2.4rem, 8vw, 4rem); font-weight: 400; }
-h2 { font-size: 2rem; font-weight: 400; }
-.naglowek { border-bottom: 1px solid var(--kreska-2); }
-.dzial { border-bottom: 0; padding-top: 64px; }
-.dzial > .nr { font-weight: 400; font-size: 2rem; }
-.dzial .wstep { font-size: 1.1rem; }
-
-/* liczby: duże, szeryfowe, mianownik pod spodem — bez kart */
-.w-liczbach { border: 0; background: none; padding: 0; }
-.w-liczbach > h2 { font-size: 1.1rem; font-family: "Public Sans", sans-serif; font-weight: 600; color: var(--atrament-2); }
-@media (min-width: 900px) { .w-liczbach .wiersze { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; } }
-.wiersze { border-top: 0; }
-.wiersz { grid-template-columns: minmax(0, 1fr); border-bottom: 1px solid var(--kreska); padding: 20px 0; }
-.wiersz .ile { order: 1; text-align: left; font-family: "Newsreader", serif; font-weight: 400; font-size: 2.4rem; line-height: 1.1; }
-.wiersz.duzy .ile { font-size: clamp(2.6rem, 8vw, 3.4rem); }
-.wiersz .co { order: 2; font-weight: 600; }
-.wiersz .z-czego { order: 3; grid-column: 1; }
-.wiersz .podstawa { order: 4; grid-column: 1 !important; grid-row: auto !important; border: 0 !important; padding: 0 !important; }
-a.zrodlo { font-family: "Public Sans", sans-serif; font-weight: 400; font-size: 13px; }
-.uwaga { border-left: 3px solid var(--akcent); background: var(--akcent-slaby); padding: 10px 14px; }
-details.metoda { border-top: 0; }
-.pasek { height: 10px; border-radius: 0; }
-.pasek i { background: var(--atrament-2); }
+  --papier: #161412; --papier-2: #1d1a17; --papier-3: #28241f; --atrament: #f1ece4;
+  --atrament-2: #c9c1b5; --atrament-3: #aaa196; --kreska: #3a342d; --kreska-2: #5d554b;
+  --akcent: #f0a07e; --akcent-slaby: #3a2219; --ostrzezenie: #f0a07e;
+  color-scheme: dark; }
+:root { --f-tekst: "Public Sans", system-ui, sans-serif; --f-naglowek: "Newsreader", Georgia, serif;
+  --f-liczba: "Newsreader", Georgia, serif; --f-znak: "Public Sans", system-ui, sans-serif; --w-naglowek: 600; --w-liczba: 400; }
+h1 { font-size: 2.3rem; font-weight: 400; letter-spacing: -.01em; }
+@media (min-width: 1024px) { h1 { font-size: 3rem; } }
+h2 { font-weight: 600; }
+/* bez ramki: „W liczbach” to rozkładówka liczb, nie pudełko */
+.w-liczbach { border: 0; border-top: 1px solid var(--atrament); background: none; padding-inline: 0; }
+.wiersz { grid-template-columns: minmax(0, 1fr); border-bottom: 0; padding: 14px 0 10px; }
+.wiersz .ile { order: -1; text-align: left; font-size: 2.1rem; line-height: 1.05; }
+.wiersz.duzy .ile { font-size: 2.4rem; }
+.wiersz .co { font-weight: 600; }
+@media (min-width: 900px) {
+  .w-liczbach .wiersze { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+  .wiersz .z-czego, .wiersz .porownanie, .wiersz .podstawa { grid-column: 1; grid-row: auto; border: 0; padding: 0; }
+}
+.wiersz .porownanie { font-family: var(--f-naglowek); font-style: italic; font-size: 1.05rem; }
+.dzial { padding-top: 48px; border-bottom: 0; }
+.dzial > .nr { color: var(--akcent); }

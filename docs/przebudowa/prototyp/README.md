@@ -1,10 +1,20 @@
-# Prototyp — dziesięć motywów na tych samych stronach
+# Prototyp — runda 2: dziesięć motywów na jednym fundamencie
 
 Otwórz `index.html` w przeglądarce (dwuklik wystarczy, nic nie trzeba
-budować). Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno
-albo narzędzia deweloperskie, 390 px.
+budować). Motyw wybierasz paskiem „Motyw” nad nagłówkiem albo przez
+`?k=a` … `?k=j` w adresie; wybór zostaje zapamiętany. Jasny i ciemny
+przełącza przycisk z półkolem w nagłówku. Telefon: wąskie okno albo
+narzędzia deweloperskie, 390 px.
 
-| plik | strona | dane (z `tekst/*.txt`) |
+| plik | co to jest |
+|---|---|
+| `styl.css` | **fundament** F1–F14 (`../runda-2.md`): struktura, kolejność, rozmiary minimalne, neutralna paleta |
+| `skora-a.css` … `skora-j.css` | **motywy**: własne fonty, paleta jasna i ciemna, linie, rysunek liczby i źródła |
+| `motyw.js` | wybór motywu, jasny/ciemny, „Jak myślisz, ile…?”, podświetlenie działu w spisie |
+| `pomiar.cjs` | pomiar F1–F14 w Playwright: `node pomiar.cjs` (ok. 10 min) albo `node pomiar.cjs gmina,posel a,j`; tabela na ekranie, surowe dane w `pomiar.json` (poza repozytorium) |
+| `fonty/` | pliki woff2 z `@fontsource/*` 5.3.0 (latin + latin-ext), licencja SIL OFL 1.1 (`OFL-*.txt`) |
+
+| strona | trasa | dane (z `tekst/*.txt`) |
 |---|---|---|
 | `glowna.html` | `/` | glowna |
 | `gmina.html` | `/gmina/126101` — Kraków | gmina-krakow |
@@ -16,50 +26,45 @@ albo narzędzia deweloperskie, 390 px.
 | `pomoc-publiczna.html` | `/pomoc-publiczna` | pomoc-publiczna |
 | `firmy.html` | `/firmy` — **nowa trasa** | firmy z `szukaj` |
 | `szukaj.html` | `/szukaj?q=krak` | szukaj |
-| `kierunki.html` | porównanie 10 motywów | — |
-
-**Motywy:** każda strona działa w każdym z dziesięciu motywów (A–J) —
-pasek „Motyw” nad nagłówkiem albo `?k=a` … `?k=j` w adresie (wybór
-zapamiętany w przeglądarce). Styl B–J to nakładka `skora-*.css`
-na `styl.css`; HTML jest jeden. `?k=ab` to dodatek do A (margines
-z „Jak to liczymy”), poza paskiem. Opisy motywów: `../kierunek.md`,
-badania, na których stoją wspólne zasady: `../badania.md`. Ramki z napisem „PROTOTYP:” to notki
-projektowe: pokazują miejsce na coś, czego dziś strona nie podaje.
+| `kierunki.html`, `index.html` | porównanie motywów, spis | — |
 
 **Skąd liczby:** przepisane dosłownie z wyrenderowanego tekstu stron na
 gałęzi `przebudowa-zrzuty` (lokalna budowa `main` @ 414bc5d, 04.10.2026).
-Na zrejestru.pl mogą być inne — serwer pobiera SUDOP co godzinę, a lokalnie
-próg jawności nazw był wyłączony. Jedyna liczba policzona przez prototyp to
-grupowanie przypadków PGE GiEK (50 → 4 wiersze: liczba przypadków
-i rozpiętość kwot w grupie, tak jak je pokazuje strona; bez sum, bo kwoty
-na stronie są zaokrąglone).
+Na zrejestru.pl mogą być inne. Policzone przez prototyp są tylko:
+- zdania porównawcze (rachunek w `../kierunek.md`);
+- kwoty na mieszkańca z sum i ludności GUS;
+- grupowanie przypadków PGE GiEK (50 → 4 wiersze).
 
-**Czego prototyp nie ma:** list w pełnej długości (pokazuje 3–5 pozycji
-i „pokaż wszystkie N”), wykresów lat FE, mapy, planu sali, zdjęć.
-Dlatego wysokość nie jest uczciwym porównaniem z dzisiejszą stroną —
-porównywalny jest układ: odpowiedź na pierwszym ekranie, metodologia
-zwinięta, warunki UOKiK przy danych.
+Ramki „PROTOTYP:” to notki projektowe — nie wchodzą do serwisu, a pomiar
+je usuwa.
 
-| strona (kierunek A, bez paska wyboru kierunku) | prototyp, telefon | dziś, telefon |
-|---|---|---|
-| główna | 3 704 px | 6 186 px |
-| Kraków | 8 566 px | 27 046 px |
-| poseł | 4 682 px | 9 387 px |
-| firma | 3 046 px | 17 005 px |
+**Czego prototyp nie ma:** list w pełnej długości (3–5 pozycji i „pokaż
+wszystkie N”), mapy, półkola sali, zdjęć posłów.
 
-Sprawdzone w Chromium (Playwright), 15 stron × 10 motywów (A–J) × 390/1280 px × jasny/ciemny = 600 renderów:
-szerokość dokumentu = szerokość okna (spis działów przewija się w bok
-wewnątrz własnego paska, tak ma być), 0 błędów konsoli, fonty z `fonty/`,
-żaden cel dotykowy poza tekstem ciągłym poniżej 24 px.
+**Sprawdzone 04.10.2026 w Chromium (Playwright):**
+- F1–F14 we wszystkich 10 motywach na 13 stronach, przy 390 i 1280 px —
+  tabela w `../kierunek.md`;
+- 600 renderów (15 stron × 10 motywów × 390/1280 × jasny/ciemny): bez
+  przepełnienia i bez błędów konsoli;
+- cele dotykowe ≥ 24 px;
+- kontrast palet ≥ 4,5:1 (najsłabsza para: odnośnik J na szarym pasku,
+  4,6:1);
+- „Jak myślisz, ile…?” z JavaScriptem i bez niego.
 
-`fonty/`: A — Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex Mono 500
-(141 kB); B — Półtawski Nowy 400/600 (81 kB); C — Archivo 400/700 (55 kB);
-D — fonty A bez Brygady; E — Source Serif 4 i Public Sans 400/600 (128 kB);
-F — Newsreader i Public Sans 400/600 (126 kB); G — Archivo 400/700
-i IBM Plex Mono 500 (84 kB); H — Newsreader kursywa 400 i 600, Public
-Sans 400/600 (129 kB); I — Archivo 400/700 (55 kB); J — Public Sans
-400/600 (50 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
-OFL 1.1 (pliki `OFL-*.txt`).
+Fonty, zmierzone na załadowanej stronie (dziś serwis: 221 kB):
+
+| motyw | kB |
+|---|---|
+| A | 142 |
+| B | 81 |
+| C | 55 |
+| D | 108 |
+| E | 128 |
+| F | 126 |
+| G | 84 |
+| H | 129 |
+| I | 55 |
+| J | 50 |
 
 Pliki CSS i JS są tylko dla prototypu — kod strony przebuduje główna sesja
 w `src/` (Tailwind 4, te same nazwy zmiennych co w `globals.css`).

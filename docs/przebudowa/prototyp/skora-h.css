@@ -1,6 +1,10 @@
-@font-face { font-family: "Newsreader"; font-weight: 400; font-display: swap; src: url(fonty/newsreader-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+/*
+  H „Atlas” — mapa i jej legenda: nazwy miejsc kursywą szeryfową, „W liczbach” jako legenda
+  w podwójnej ramce, paski z podziałką jak skala mapy. Bez ozdobnych warstwic (F14).
+  Newsreader 400 kursywa / 600 + Public Sans 400/600.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
+*/
 @font-face { font-family: "Newsreader"; font-weight: 400; font-style: italic; font-display: swap; src: url(fonty/newsreader-latin-400-italic.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family: "Newsreader"; font-weight: 400; font-display: swap; src: url(fonty/newsreader-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Newsreader"; font-weight: 400; font-style: italic; font-display: swap; src: url(fonty/newsreader-latin-ext-400-italic.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Newsreader"; font-weight: 600; font-display: swap; src: url(fonty/newsreader-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Newsreader"; font-weight: 600; font-display: swap; src: url(fonty/newsreader-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
@@ -8,49 +12,36 @@
 @font-face { font-family: "Public Sans"; font-weight: 400; font-display: swap; src: url(fonty/public-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-/*
-  Kierunek H „Atlas” — mapa i jej legenda. Nakładka na styl.css.
-  Warstwice w nagłówku strony, nazwy miejsc kursywą szeryfową jak na mapie,
-  „W liczbach” jako legenda z kluczem, kreskowanie zamiast pełnych pasków.
-  Public Sans + Newsreader.
-*/
 :root {
-  --papier: #f6f3ea; --papier-2: #fcfaf4; --papier-3: #ebe5d4;
-  --atrament: #1f2d3a; --atrament-2: #45525f; --atrament-3: #5a6672;
-  --kreska: #d8cfb8; --kreska-2: #b9ac8c; --akcent: #1d5a8c; --akcent-slaby: #dde9f3;
+  --papier: #f6f3ea; --papier-2: #fcfaf4; --papier-3: #ebe5d4; --atrament: #1f2d3a;
+  --atrament-2: #3f4c59; --atrament-3: #55616d; --kreska: #d8cfb8; --kreska-2: #9d978a;
+  --akcent: #1d5a8c; --akcent-slaby: #dde9f3; --ostrzezenie: #7a4a10;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
-  --papier: #121a21; --papier-2: #18222b; --papier-3: #22303b;
-  --atrament: #e9e4d6; --atrament-2: #b8b3a5; --atrament-3: #9d998c;
-  --kreska: #2c3a46; --kreska-2: #4a5866; --akcent: #7fb6e6; --akcent-slaby: #17324a; } }
+  --papier: #121a21; --papier-2: #18222b; --papier-3: #22303b; --atrament: #e9e4d6;
+  --atrament-2: #bdb8aa; --atrament-3: #a29e91; --kreska: #2c3a46; --kreska-2: #4a5866;
+  --akcent: #7fb6e6; --akcent-slaby: #17324a; --ostrzezenie: #e8b46a;
+  color-scheme: dark; } }
 :root[data-motyw="ciemny"] {
-  --papier: #121a21; --papier-2: #18222b; --papier-3: #22303b;
-  --atrament: #e9e4d6; --atrament-2: #b8b3a5; --atrament-3: #9d998c;
-  --kreska: #2c3a46; --kreska-2: #4a5866; --akcent: #7fb6e6; --akcent-slaby: #17324a; }
-
-body { font-family: "Public Sans", system-ui, sans-serif; }
-h1 { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(2.4rem, 8vw, 4rem); letter-spacing: 0; }
-h2, h3, .drzwi b { font-family: "Public Sans", sans-serif; font-weight: 600; letter-spacing: .01em; }
-.marka b { font-family: "Newsreader", serif; font-style: italic; font-weight: 400; font-size: 1.6rem; }
-
-/* warstwice pod nagłówkiem strony */
-.wypis { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120' viewBox='0 0 240 120'%3E%3Cg fill='none' stroke='%23b9ac8c' stroke-width='1' opacity='.55'%3E%3Cpath d='M0 90 C40 70 80 110 120 88 S200 60 240 82'/%3E%3Cpath d='M0 70 C40 50 80 90 120 68 S200 40 240 62'/%3E%3Cpath d='M0 50 C40 30 80 70 120 48 S200 20 240 42'/%3E%3Cpath d='M0 30 C40 10 80 50 120 28 S200 0 240 22'/%3E%3C/g%3E%3C/svg%3E"); background-size: 240px 120px; }
-.wypis .sygnatura { background: var(--papier); display: inline-flex; padding: 2px 6px; }
-
-/* numer działu jak oznaczenie arkusza mapy */
-.dzial > .nr { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border: 1.5px solid var(--atrament); font-family: "Public Sans", sans-serif; font-size: 1rem; color: var(--atrament); }
-.dzial { border-bottom: 1px dashed var(--kreska-2); }
-
-/* legenda: klucz przed każdą etykietą */
-.w-liczbach { border: 1.5px solid var(--atrament); outline: 1px solid var(--atrament); outline-offset: 3px; margin: 26px 4px 0; }
-.w-liczbach > h2 { text-transform: uppercase; letter-spacing: .12em; font-size: .85rem; }
-.wiersz .co::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; border: 1.5px solid var(--atrament); background: repeating-linear-gradient(45deg, var(--atrament) 0 1.5px, transparent 1.5px 4px); }
-.wiersz .ile { font-family: "Newsreader", serif; font-weight: 600; font-size: 1.5rem; }
-.wiersz { border-bottom: 1px dotted var(--kreska-2); }
-.wiersze { border-top: 1px solid var(--atrament); }
-
-/* kreskowanie zamiast pełnych pasków */
-.pasek { background: transparent; border: 1px solid var(--kreska-2); height: 10px; }
-.pasek i { background: repeating-linear-gradient(45deg, var(--atrament) 0 2px, transparent 2px 5px); }
-.uwaga { border-left: 0; border: 1px solid var(--atrament); background: var(--papier-2); padding: 8px 12px; }
-a.zrodlo { font-family: "Public Sans", sans-serif; font-weight: 400; }
+  --papier: #121a21; --papier-2: #18222b; --papier-3: #22303b; --atrament: #e9e4d6;
+  --atrament-2: #bdb8aa; --atrament-3: #a29e91; --kreska: #2c3a46; --kreska-2: #4a5866;
+  --akcent: #7fb6e6; --akcent-slaby: #17324a; --ostrzezenie: #e8b46a;
+  color-scheme: dark; }
+:root { --f-tekst: "Public Sans", system-ui, sans-serif; --f-naglowek: "Public Sans", system-ui, sans-serif;
+  --f-liczba: "Newsreader", Georgia, serif; --f-znak: "Public Sans", system-ui, sans-serif; --w-naglowek: 600; --w-liczba: 600; }
+/* nazwy miejsc kursywą, jak na arkuszu mapy */
+h1, .marka b { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 400; }
+h1 { font-size: 2.4rem; }
+@media (min-width: 1024px) { h1 { font-size: 3rem; } }
+h1.dlugi { font-size: 1.35rem; }
+@media (min-width: 1024px) { h1.dlugi { font-size: 1.7rem; } }
+h2 { letter-spacing: .02em; }
+.dzial h2, .w-liczbach > h2 { font-variant-caps: all-small-caps; letter-spacing: .08em; font-size: 1.25rem; }
+/* legenda: podwójna ramka jak w ramce legendy mapy */
+.w-liczbach { border: 4px double var(--atrament); }
+.wiersz .ile { font-size: 1.5rem; }
+/* paski jak podziałka skali: kreski co 25% na wspólnej osi (F11) */
+.lista-paskow .pasek { background: var(--papier-3) linear-gradient(to right, var(--kreska-2) 1px, transparent 1px) 0 0 / 25% 100%; height: 10px; }
+.lista-paskow { border-bottom: 1px solid var(--atrament); padding-bottom: 6px; }
+.stan-danych { font-variant-caps: all-small-caps; letter-spacing: .06em; font-size: 1.05rem; }
+.dzial > .nr { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 400; }

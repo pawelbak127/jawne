@@ -1,46 +1,42 @@
 /*
-  Kierunek D „Kartoteka” — karta katalogowa i przekładki segregatora.
-  Nakładka na styl.css. Fonty jak A bez Brygady (Plex Sans + Plex Mono),
-  karton zamiast bieli, liniatura karty, działy jako przekładki z zakładką.
+  D „Kartoteka” — szafa z kartoteką: działy jak przekładki z zakładką, sygnatury i liczby
+  pismem maszynowym, źródło jak pieczątka. IBM Plex Mono 500 + Plex Sans 400/600.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
 */
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url(fonty/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url(fonty/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url(fonty/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url(fonty/ibm-plex-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 :root {
-  --papier: #f4efe2; --papier-2: #fbf8f0; --papier-3: #e9e1cd;
-  --atrament: #1b1f24; --atrament-2: #434951; --atrament-3: #575d66;
-  --kreska: #c9d4de; --kreska-2: #93a7ba; --akcent: #155e75; --akcent-slaby: #d8e9ee;
+  --papier: #f4efe2; --papier-2: #faf7ef; --papier-3: #e7dfcb; --atrament: #1b1f24;
+  --atrament-2: #41464d; --atrament-3: #575d66; --kreska: #cfc6ae; --kreska-2: #9c9688;
+  --akcent: #155e75; --akcent-slaby: #d8e8ee; --ostrzezenie: #8a4b00;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
-  --papier: #14171a; --papier-2: #1b1f23; --papier-3: #252a2f;
-  --atrament: #e8e4da; --atrament-2: #b9b4a8; --atrament-3: #9e9a8f;
-  --kreska: #2b3a48; --kreska-2: #3e5266; --akcent: #67c3db; --akcent-slaby: #163640; } }
+  --papier: #14171a; --papier-2: #1b1f23; --papier-3: #262b31; --atrament: #e8e4da;
+  --atrament-2: #bdb7aa; --atrament-3: #a39d90; --kreska: #353b42; --kreska-2: #555c65;
+  --akcent: #67c3db; --akcent-slaby: #15313a; --ostrzezenie: #f0b85a;
+  color-scheme: dark; } }
 :root[data-motyw="ciemny"] {
-  --papier: #14171a; --papier-2: #1b1f23; --papier-3: #252a2f;
-  --atrament: #e8e4da; --atrament-2: #b9b4a8; --atrament-3: #9e9a8f;
-  --kreska: #2b3a48; --kreska-2: #3e5266; --akcent: #67c3db; --akcent-slaby: #163640; }
-
-h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; letter-spacing: -0.02em; }
-h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); }
-.marka b { font-size: 1.3rem; }
-.naglowek { border-bottom: 1px solid var(--kreska-2); }
-
-/* dział = przekładka segregatora z zakładką */
-.dzial { border-bottom: 0; padding-top: 44px; }
-.dzial > .nr { font-size: 1rem; padding-top: 10px; color: var(--atrament-2); }
-.dzial .tytul { border-bottom: 2px solid var(--atrament); }
-.dzial .tytul h2 { display: inline-block; background: var(--papier-3); border: 2px solid var(--atrament); border-bottom: 0; padding: 6px 16px 4px; font-size: 1.15rem; text-transform: uppercase; margin-bottom: -2px; }
-
-/* karta katalogowa: podwójna linia nagłówka karty */
-.w-liczbach { background: var(--papier-2); border: 1px solid var(--kreska-2); border-top: 6px double var(--atrament); }
-.w-liczbach > h2 { font-size: 1rem; text-transform: uppercase; }
-.wiersze { border-top: 1px solid var(--kreska-2); }
-.wiersz { border-bottom: 1px solid var(--kreska); }
-.wiersz .co { font-weight: 400; font-family: "IBM Plex Mono", monospace; font-size: 13px; text-transform: uppercase; letter-spacing: .02em; }
-.wiersz .ile { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
-
+  --papier: #14171a; --papier-2: #1b1f23; --papier-3: #262b31; --atrament: #e8e4da;
+  --atrament-2: #bdb7aa; --atrament-3: #a39d90; --kreska: #353b42; --kreska-2: #555c65;
+  --akcent: #67c3db; --akcent-slaby: #15313a; --ostrzezenie: #f0b85a;
+  color-scheme: dark; }
+:root { --f-tekst: "IBM Plex Sans", system-ui, sans-serif; --f-naglowek: "IBM Plex Mono", ui-monospace, monospace;
+  --f-liczba: "IBM Plex Mono", ui-monospace, monospace; --f-znak: "IBM Plex Mono", ui-monospace, monospace; --w-naglowek: 500; --w-liczba: 500; }
+h1 { letter-spacing: -.02em; }
+h2 { font-size: 1.15rem; }
+/* przekładka segregatora: zakładka z nazwą działu nad grubą kreską */
+.dzial { border-bottom: 0; border-top: 3px solid var(--atrament); padding-top: 0; margin-top: 30px; }
+.dzial .tytul h2 { display: inline-block; background: var(--papier-3); padding: 8px 14px 6px; }
+.dzial > .nr { padding-top: 8px; font-size: 1.1rem; }
+.w-liczbach > h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; }
+.wiersz .co { font-family: var(--f-tekst); }
 /* źródło jak pieczątka */
-a.zrodlo { border: 1.5px solid currentColor; padding: 3px 8px; }
-a.zrodlo::before { display: none; }
-a.zrodlo { grid-template-columns: auto; }
-a.zrodlo .data { grid-column: 1; }
-
-.uwaga { border-left: 0; border: 1.5px dashed var(--atrament); padding: 8px 12px; }
-.pasek { height: 8px; background: repeating-linear-gradient(to right, var(--kreska) 0 1px, transparent 1px 10%); }
+a.zrodlo { font-family: var(--f-znak); border: 1.5px solid currentColor; padding: 3px 8px; text-transform: uppercase; letter-spacing: .02em; display: inline-flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
+a.zrodlo::before { align-self: center; }
+a.zrodlo .nazwa { text-decoration: none; }
+a.zrodlo:hover { background: var(--akcent-slaby); }
+.stan-danych { font-family: var(--f-znak); }
