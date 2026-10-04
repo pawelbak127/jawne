@@ -629,6 +629,15 @@ na serwerze, obok danych.
   której dziś nie ma.
 - **Oświadczenia majątkowe i rejestr korzyści posłów** — w dużej części skany,
   więc to praca ręczna z podwójną kontrolą. Wysoka wartość, wysoki koszt.
+  Zatwierdzone przez Pawła 03.10.2026 („wprowadzamy”). Lista oświadczeń na
+  `orka.sejm.gov.pl` stoi za ochroną Imperva i jej NIE obchodzimy (decyzja
+  z 01.10). **04.10.2026 Paweł wysłał wniosek do Kancelarii Sejmu**
+  (listy@sejm.gov.pl, cis@sejm.gov.pl) według `docs/pismo-kancelaria-oswiadczenia.md`
+  — termin odpowiedzi na wniosek o informację publiczną: 14 dni, czyli do
+  18.10.2026. Do tego czasu: próba OCR na kilku oświadczeniach pobranych
+  ręcznie w przeglądarce (Tesseract 5.5 z polskim słownikiem jest na
+  komputerze Pawła; część oświadczeń jest pisana ręcznie — tam porównać
+  z odczytem przez model).
 - **Rolnictwo: SRPP i dopłaty ARiMR.** Gminy wiejskie mają dziś mało treści:
   funduszy UE niewiele, pomocy publicznej też. Tam idą pieniądze rolne.
   Uwaga: to dane osobowe rolników — ta sama reguła progu.
