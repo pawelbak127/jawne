@@ -98,17 +98,22 @@ przewijania na 390 px — najwyżej 4 rzeczy), **Działy** (kolejność),
 ### Strona główna `/`
 
 - **Na górze:** jedno zdanie, czym jest serwis („Sejm i publiczne
-  pieniądze — liczba po liczbie, z odnośnikiem do rejestru”); pole szukania
+  pieniądze — z rejestrów, liczba po liczbie”); pole szukania
   z podpowiedzią; trzy drzwi: **Moja gmina · Mój poseł · Firma**.
-- **Działy:** 1. Ostatnie głosowania nad całością (6, jak dziś) ·
-  2. Układ izby (plan sali, jak dziś) · 3. Co mamy w rejestrach (4 liczby
-  z mianownikiem i podstawą; dziś stoją nad głosowaniami) ·
-  4. Skąd to wiadomo (lista rejestrów, zamiast karty „Skąd to wiadomo?”).
-- **Usunąć:** sześć kart-pytań (zastępują je trzy drzwi i menu), siatkę-tło,
-  pigułki przykładów (zostają jako zwykły tekst „np. Kraków, Zakopane,
-  podatek”).
-- **Jak to liczymy:** „Głosowania nad całością — co to znaczy” (dziś
-  akapit) i uwaga o barwach klubów (dziś pełny akapit pod salą).
+- **Działy:** 1. **Ostatnio uchwalone — po ludzku** (3 ustawy ze
+  streszczeniem i zdaniem „uchwalenie przez Sejm to jeszcze nie wejście
+  w życie”; dziś streszczenia są tylko na stronie ustawy) · 2. Ostatnie
+  głosowania nad całością (3, jak dziś) · 3. **Pieniądze publiczne**
+  (pomoc publiczna z okresem przy liczbie i warunkami UOKiK; dziś
+  pieniądze są na głównej tylko w kartach-pytaniach) · 4. Układ izby —
+  **jeden pasek klubów zamiast planu sali** (plan zostaje na `/sala`; dziś
+  zajmuje większość drugiego ekranu) · 5. Co mamy w rejestrach.
+- **Usunąć:** sześć kart-pytań (zastępują je trzy drzwi i widoczne menu),
+  siatkę-tło, pigułki przykładów (zostają jako zwykły tekst „np. Kraków,
+  Zakopane, podatek”).
+- **Jak to liczymy:** „Głosowania nad całością — co to znaczy” i uwaga
+  o barwach klubów — po jednym zdaniu przy dziale.
+- Prototyp: `prototyp/glowna.html`.
 
 ### Gmina `/gmina/[teryt]`
 
