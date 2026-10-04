@@ -17,6 +17,6 @@ Moja wcześniejsza prośba o przegląd tekstów
 (`DO-przebudowa__2026-10-04__przeglad-tekstow-stron.md`) wchodzi w punkt 5
 — zamknij ją razem z tym zadaniem.
 
-**Sesja:** osobna, z modelem Fable 5.1 (decyzja Pawła); streszczenia robi dalej inna sesja.
+**Sesja:** osobna, z modelem Opus 5.5; streszczenia robi dalej inna sesja.
 Gdy skończysz: wiadomość `DO-glowny__…__przebudowa.md` z rekomendacją
 w trzech zdaniach i pytaniami do Pawła.

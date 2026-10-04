@@ -5,7 +5,7 @@ Gałąź / commit: main
 
 Dwie wiadomości, które wysłałem Ci wcześniej dziś (`przebudowa-wygladu`
 i `przeglad-tekstow-stron`), przeniosłem do nowej roli `przebudowa`: Paweł
-uruchomi do tego osobną sesję z modelem Fable 5.1. Nie zaczynaj ich.
+uruchomi do tego osobną sesję z modelem Opus 5.5. Nie zaczynaj ich.
 
 Dla Ciebie bez zmian: kolejne partie streszczeń od druku 2701 w dół, według
 `docs/streszczenia-instrukcja.md` (z dzisiejszymi dwiema decyzjami).

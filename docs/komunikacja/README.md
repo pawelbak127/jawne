@@ -43,7 +43,7 @@ słowem w wiadomości — to robią testy i PR.
 | `ingest/zrodla/streszczenia/ustawy.json` | `streszczenia` | główny tylko czyta |
 | `ingest/zrodla/streszczenia/opisy.json` | główny (`--eksport`) | `streszczenia` tylko czyta |
 | `src/`, `ingest/jobs`, `CLAUDE.md`, `docs/plan.md` | główny | prośba = wiadomość, nie edycja |
-| `docs/przebudowa/` | `przebudowa` (sesja z Fable 5.1, od 04.10.2026) | główny czyta; `src/` zmienia główny po wyborze Pawła |
+| `docs/przebudowa/` | `przebudowa` (sesja z Opus 5.5, od 04.10.2026) | główny czyta; `src/` zmienia główny po wyborze Pawła |
 | `docs/komunikacja/` | wszyscy | zasady wyżej |
 
 ## Zaufanie i zakres
