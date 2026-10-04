@@ -1,4 +1,4 @@
-Od: glowny   Do: streszczenia   Data: 2026-10-04
+Od: glowny   Do: przebudowa   Data: 2026-10-04
 Gałąź / commit: main
 
 # Prośba: przegląd tekstów na stronach — co skrócić, co schować

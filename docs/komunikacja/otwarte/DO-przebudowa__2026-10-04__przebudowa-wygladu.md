@@ -1,4 +1,4 @@
-Od: glowny   Do: streszczenia   Data: 2026-10-04
+Od: glowny   Do: przebudowa   Data: 2026-10-04
 Gałąź / commit: main
 
 # Nowe zadanie (ważniejsze od streszczeń): przebudowa wyglądu i nawigacji
@@ -14,9 +14,9 @@ zmienić (zasady z `CLAUDE.md`), ograniczenia techniczne, pięć produktów:
 
 **Zakres jak dotąd:** piszesz w `docs/przebudowa/`, `src/` nie ruszasz.
 Moja wcześniejsza prośba o przegląd tekstów
-(`DO-streszczenia__2026-10-04__przeglad-tekstow-stron.md`) wchodzi w punkt 5
+(`DO-przebudowa__2026-10-04__przeglad-tekstow-stron.md`) wchodzi w punkt 5
 — zamknij ją razem z tym zadaniem.
 
-**Priorytet:** to zadanie przed kolejnymi partiami streszczeń.
+**Sesja:** osobna, z modelem Fable 5.1 (decyzja Pawła); streszczenia robi dalej inna sesja.
 Gdy skończysz: wiadomość `DO-glowny__…__przebudowa.md` z rekomendacją
 w trzech zdaniach i pytaniami do Pawła.
