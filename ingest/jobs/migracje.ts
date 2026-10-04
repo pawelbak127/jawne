@@ -78,7 +78,17 @@ function main(): void {
      */
     try {
       const przed = rozmiarWal();
+      /*
+       * Najwyzej minuta czekania, nie 30. TRUNCATE czeka, az ZADEN inny
+       * proces nie trzyma starszego obrazu bazy — a polaczenie ma
+       * busy_timeout 30 min (pulapka 56), dobrany dla zapisow, nie dla
+       * czynnosci opcjonalnej. ZMIERZONE 04.10.2026: migracje staly ponad
+       * godzine, nic nie czytajac i nic nie piszac, gdy obok chodzila
+       * historia SUDOP. Skladanie, ktore sie nie uda, zrobi kolejne wdrozenie.
+       */
+      db.exec('pragma busy_timeout = 60000');
       const r = db.prepare('pragma wal_checkpoint(truncate)').get() as { busy: number } | undefined;
+      db.exec('pragma busy_timeout = 1800000');
       if (przed !== null) {
         log(`   dziennik WAL: ${mb(przed)} -> ${mb(rozmiarWal())}`
           + (r?.busy ? '  (zajety przez czytelnika — zlozy sie przy nastepnym przebiegu)' : ''));

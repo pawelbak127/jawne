@@ -144,6 +144,42 @@ EOF
     exit 0
   fi
 
+  # Migracje i budowa NIE dziela maszyny z zadaniami danych.
+  #
+  # ZMIERZONE 04.10.2026: do tego dnia zadania zatrzymywalismy dopiero przed
+  # budowa, czyli PO migracjach. Od 03.10 migracje sa ciezkie (sumy, skladanie
+  # dziennika WAL), a historia SUDOP pisala w tym samym czasie do tej samej
+  # 4,8 GB bazy: historia dostala „database is locked", a migracje staly
+  # ponad godzine, nic nie czytajac i nic nie piszac — czekaly na proces,
+  # ktory i tak mial byc zatrzymany kilka minut pozniej.
+  #
+  #
+  # ZMIERZONE 30.09.2026: wdrozenie o 17:52 zostalo zabite przez jadro
+  # („Killed" w fazie kompilacji). O :07 kazdej godziny startuje
+  # jawne-sudop-historia, ktore czeka na kolejke urzedu DO 57 MINUT — wiec
+  # w czasie budowy zyl drugi proces Node, trzymajacy pamiec i baze.
+  # Na maszynie z 2 GB przegrywa ten wiekszy, czyli build.
+  #
+  # Zatrzymanie pobierania SUDOP kosztuje najwyzej jedno zapytanie: zakres,
+  # ktorego kolejka nie oddala, wraca w nastepnym przebiegu, a blokada
+  # (.blokada) jest zdejmowana na SIGTERM. Timery wracaja ZAWSZE — takze
+  # po nieudanej budowie, przez pulapke nizej.
+  krok "Zatrzymanie zadan danych na czas migracji i budowy"
+  local timery=()
+  local zadanie
+  for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted; do
+    if systemctl is-enabled --quiet "jawne-$zadanie.timer" 2>/dev/null; then timery+=("jawne-$zadanie.timer"); fi
+    systemctl stop "jawne-$zadanie.timer" 2>/dev/null || true
+    if systemctl is-active --quiet "jawne-$zadanie.service" 2>/dev/null; then
+      echo "   przerywam trwajace zadanie: $zadanie"
+      systemctl stop "jawne-$zadanie.service" 2>/dev/null || true
+    fi
+  done
+  # shellcheck disable=SC2064
+  trap "systemctl start ${timery[*]:-} 2>/dev/null || true" EXIT
+  echo "   wylaczone na czas migracji i budowy: ${#timery[@]} timerow"
+  free -m | sed 's/^/   /'
+
   krok "Migracje bazy"
   # Przed budowa, nie po: strona czyta kolumny wprost, a brakujaca kolumna
   # nie jest lapana jak brakujaca tabela — wywrocilaby strone gminy.
@@ -164,33 +200,6 @@ EOF
 # na domyslnym limicie.
   jako env NODE_OPTIONS=--max-old-space-size=1400 node_modules/.bin/tsx ingest/jobs/migracje.ts
 
-  # Budowa NIE dzieli maszyny z zadaniami danych.
-  #
-  # ZMIERZONE 30.09.2026: wdrozenie o 17:52 zostalo zabite przez jadro
-  # („Killed" w fazie kompilacji). O :07 kazdej godziny startuje
-  # jawne-sudop-historia, ktore czeka na kolejke urzedu DO 57 MINUT — wiec
-  # w czasie budowy zyl drugi proces Node, trzymajacy pamiec i baze.
-  # Na maszynie z 2 GB przegrywa ten wiekszy, czyli build.
-  #
-  # Zatrzymanie pobierania SUDOP kosztuje najwyzej jedno zapytanie: zakres,
-  # ktorego kolejka nie oddala, wraca w nastepnym przebiegu, a blokada
-  # (.blokada) jest zdejmowana na SIGTERM. Timery wracaja ZAWSZE — takze
-  # po nieudanej budowie, przez pulapke nizej.
-  krok "Zatrzymanie zadan danych na czas budowy"
-  local timery=()
-  local zadanie
-  for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted; do
-    if systemctl is-enabled --quiet "jawne-$zadanie.timer" 2>/dev/null; then timery+=("jawne-$zadanie.timer"); fi
-    systemctl stop "jawne-$zadanie.timer" 2>/dev/null || true
-    if systemctl is-active --quiet "jawne-$zadanie.service" 2>/dev/null; then
-      echo "   przerywam trwajace zadanie: $zadanie"
-      systemctl stop "jawne-$zadanie.service" 2>/dev/null || true
-    fi
-  done
-  # shellcheck disable=SC2064
-  trap "systemctl start ${timery[*]:-} 2>/dev/null || true" EXIT
-  echo "   wylaczone na czas budowy: ${#timery[@]} timerow"
-  free -m | sed 's/^/   /'
 
   # Budujemy OBOK i podmieniamy dopiero po sukcesie. Przedtem bylo odwrotnie:
   # najpierw `stop`, potem budowa w `.next` w miejscu — wiec nieudana budowa
