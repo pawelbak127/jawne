@@ -5,10 +5,16 @@
     ['a', 'A „Wypis z rejestru”', null],
     ['b', 'B „Monitor”', 'skora-b.css'],
     ['c', 'C „Tablica”', 'skora-c.css'],
-    ['ab', 'A+B „Wypis z marginesem”', 'skora-ab.css'],
     ['d', 'D „Kartoteka”', 'skora-d.css'],
     ['e', 'E „Rocznik”', 'skora-e.css'],
     ['f', 'F „Reportaż”', 'skora-f.css'],
+    ['g', 'G „Dyżur nocny”', 'skora-g.css'],
+    ['h', 'H „Atlas”', 'skora-h.css'],
+    ['i', 'I „Naklejka”', 'skora-i.css'],
+    ['j', 'J „Usługa publiczna”', 'skora-j.css'],
+    // A+B (margines z „Jak to liczymy”) nie jest osobnym motywem, tylko
+    // dodatkiem do A — zostaje dostępny jako ?k=ab, poza paskiem.
+    ['ab', 'A+B „Wypis z marginesem”', 'skora-ab.css', true],
   ];
   var czytaj = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var zapisz = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -42,7 +48,7 @@
       var pasek = document.createElement('div');
       pasek.className = 'kierunki-pasek';
       var plik = location.pathname.split('/').pop() || 'index.html';
-      pasek.innerHTML = '<div class="obszar"><b>Kierunek:</b> ' + KIERUNKI.map(function (x) {
+      pasek.innerHTML = '<div class="obszar"><b>Motyw:</b> ' + KIERUNKI.filter(function (x) { return !x[3]; }).map(function (x) {
         return '<a href="' + plik + '?k=' + x[0] + location.hash + '"' + (x[0] === k ? ' aria-current="page"' : '') + '>' + x[1] + '</a>';
       }).join(' · ') + ' · <a href="kierunki.html">porównanie</a></div>';
       naglowek.parentNode.insertBefore(pasek, naglowek);

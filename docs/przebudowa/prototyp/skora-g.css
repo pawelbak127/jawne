@@ -1,0 +1,59 @@
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-ext-700-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+/*
+  Kierunek G „Dyżur nocny” — ciemny pulpit danych. Nakładka na styl.css.
+  Ciemny jako podstawowy (jasny też jest), menu w bocznym pasku na szerokim
+  ekranie, działy jako panele, liczby pismem maszynowym. Archivo + Plex Mono.
+*/
+:root {
+  --papier: #eef1f4; --papier-2: #ffffff; --papier-3: #e3e8ee;
+  --atrament: #0d1117; --atrament-2: #3b4652; --atrament-3: #505c69;
+  --kreska: #cdd5de; --kreska-2: #9aa7b5; --akcent: #00609e; --akcent-slaby: #d9ebf7; --bursztyn: #8a5a00;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #0d1117; --papier-2: #151b23; --papier-3: #1f2630;
+  --atrament: #e6edf3; --atrament-2: #a9b4c0; --atrament-3: #8b96a3;
+  --kreska: #2a3340; --kreska-2: #3d4a5a; --akcent: #4cc2ff; --akcent-slaby: #10283a; --bursztyn: #f2b84b; } }
+:root[data-motyw="ciemny"] {
+  --papier: #0d1117; --papier-2: #151b23; --papier-3: #1f2630;
+  --atrament: #e6edf3; --atrament-2: #a9b4c0; --atrament-3: #8b96a3;
+  --kreska: #2a3340; --kreska-2: #3d4a5a; --akcent: #4cc2ff; --akcent-slaby: #10283a; --bursztyn: #f2b84b; }
+
+body, h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "Archivo", system-ui, sans-serif; letter-spacing: 0; }
+h1 { font-weight: 700; font-size: clamp(1.8rem, 5vw, 2.6rem); }
+h2 { font-weight: 700; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .06em; }
+.marka b { font-weight: 700; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .12em; }
+
+/* menu w bocznym pasku od 1100 px */
+@media (min-width: 1100px) {
+  body { display: grid; grid-template-columns: 16rem minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; }
+  .prototyp, .kierunki-pasek { grid-column: 1 / -1; }
+  .naglowek { grid-column: 1; grid-row: 3 / span 2; position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; border-bottom: 0; border-right: 1px solid var(--kreska); background: var(--papier-2); }
+  .naglowek .gora { flex-direction: column; align-items: stretch; gap: 10px; padding: 18px 16px; min-height: 0; }
+  .naglowek .marka span { display: block; margin-top: 4px; }
+  .naglowek .marka { flex-direction: column; align-items: flex-start; }
+  .naglowek .szukaj { display: block; max-width: none; margin: 0; }
+  .naglowek .gora > .przycisk { align-self: flex-start; }
+  .menu-grupy { flex-direction: column; gap: 18px; padding: 8px 16px 24px; border-top: 1px solid var(--kreska); }
+  .menu-grupy div { flex-direction: column; align-items: stretch; gap: 0; }
+  .menu-grupy .podpis { margin: 0 0 4px; color: var(--atrament-3); }
+  .menu-grupy a { border-bottom: 0; border-left: 3px solid transparent; padding: 7px 10px; }
+  .menu-grupy a[aria-current="page"] { border-left-color: var(--akcent); background: var(--papier-3); }
+  main { grid-column: 2; grid-row: 3; }
+  .stopka { grid-column: 2; grid-row: 4; }
+}
+
+/* działy jako panele pulpitu */
+.dzial { background: var(--papier-2); border: 1px solid var(--kreska); padding: 20px; margin-top: 18px; border-radius: 4px; }
+.dzial > .nr { font-family: "IBM Plex Mono", monospace; font-size: .95rem; color: var(--atrament-3); }
+.w-liczbach { border: 1px solid var(--kreska); border-top: 3px solid var(--akcent); background: var(--papier-2); border-radius: 4px; }
+.wiersze { border-top: 1px solid var(--kreska); }
+.wiersz { border-bottom: 1px solid var(--kreska); }
+.wiersz .co { font-weight: 400; color: var(--atrament-2); text-transform: uppercase; font-size: 12.5px; letter-spacing: .05em; }
+.wiersz .ile { font-family: "IBM Plex Mono", monospace; font-weight: 500; color: var(--atrament); }
+.uwaga { border-left-color: var(--bursztyn); background: var(--papier-3); padding: 10px 14px; }
+.pasek { background: var(--papier-3); }
+.pasek i { background: var(--akcent); }
+.spis { background: var(--papier); }

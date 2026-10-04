@@ -1,11 +1,14 @@
-# Kierunek stylu — siedem propozycji i jedna rekomendacja
+# Kierunek stylu — dziesięć motywów i jedna rekomendacja
 
-Wspólne dla wszystkich trzech (to treść, nie styl — nie podlega wyborowi):
+Wspólne dla wszystkich dziesięciu (to treść, nie styl — nie podlega wyborowi):
 odnośnik do rejestru przy liczbie, mianownik, półpauza ≠ zero, brak ocen,
 reguły jawności, warunki UOKiK, kontrast AA w obu motywach, cele ≥ 24 px,
 390 px, `latin-ext`. Nazwy zmiennych CSS zostają (`--papier`, `--atrament`,
 `--akcent` …), więc `src/lib/kontrast.test.ts` sprawdzi każdą paletę bez
 zmian w teście. Kontrast policzony tym samym wzorem co w teście.
+
+Dlaczego te wspólne zasady i jak motywy wypadają na tle badań
+nad wiarygodnością i klikalnością: `badania.md`.
 
 Wagi fontów zmierzone na plikach `@fontsource/*` 5.3.0 (woff2, podzbiory
 `latin` + `latin-ext`, które przeglądarka i tak pobiera na polskiej stronie).
@@ -107,6 +110,10 @@ Na telefonie marginalia zamieniają się w przypisy rozwijane po dotknięciu.
 („Gmina wydała na inwestycje 12,4 mln zł, czyli 1 690 zł na mieszkańca —
 mediana w województwie 1 210 zł.”). Źródło w marginesie na wysokości zdania.
 
+**W prototypie mocniej (04.10).** Od 1024 px winieta pośrodku jak tytuł
+gazety, pod nią szukanie i menu; akapity wyjustowane z dzieleniem wyrazów;
+listy (głosowania, ustawy) w dwóch łamach z linią między nimi.
+
 **Czym różni się od AI.** Łamy i marginalia zamiast kart; antykwa zamiast
 groteski; tekst ciągły zamiast siatki kafli.
 
@@ -173,7 +180,7 @@ się częściej; trzeba trzymać mono tylko w krótkich etykietach.
 **Pomysł.** Strona jak tablica z „Rocznika Statystycznego”: liczby w tabeli
 drukowanej (gruba linia, cienkie, gruba), „Dział N” na marginesie,
 mianownik kursywą pod liczbą. Najbliższy temu, jak dziennikarz i radny
-czytają dane urzędowe; najmniej „stylizowany” z siedmiu.
+czytają dane urzędowe; najmniej „stylizowany” z dziesięciu.
 
 **Typografia.** Source Serif 4 400/600 do tekstu i liczb (ten sam krój co
 dziś w nagłówkach — znany, z cyframi tablicowymi), Public Sans 400/600 do
@@ -195,7 +202,7 @@ zaproszenia niż A czy F.
 
 **Pomysł.** Jak duże redakcje piszą o danych: dużo powietrza, liczba duża
 i szeryfowa, a tuż pod nią opis i mianownik; „W liczbach” w dwóch
-kolumnach. Najcieplejszy z siedmiu, najbardziej dla mieszkańca.
+kolumnach. Najcieplejszy z dziesięciu, najbardziej dla mieszkańca.
 
 **Typografia.** Newsreader 400/600 do nagłówków i liczb, Public Sans
 400/600 do tekstu. Ok. **126 kB**.
@@ -213,11 +220,122 @@ i jest w tym samym bloku. Strona dłuższa o 15–25% niż w A (zmierzone na Kra
 
 ---
 
+## G. „Dyżur nocny” — pulpit danych
+
+**Pomysł.** Serwis jako narzędzie pracy: na szerokim ekranie menu stoi
+w bocznym pasku (przyklejone), działy to panele, liczby pismem maszynowym,
+uwagi w bursztynie. Zaprojektowany najpierw jako ciemny — dla dziennikarza
+i radnego, który siedzi nad danymi wieczorem. Ma też pełną wersję jasną
+i jak wszystkie idzie za ustawieniem systemu.
+
+**Typografia.** Archivo 400/700 w tekście i nagłówkach (nagłówki działów
+wersalikami), IBM Plex Mono 500 w liczbach. Ok. **84 kB**.
+
+**Paleta.** Ciemna: `#0d1117` / `#e6edf3` (16,0:1), `--atrament-3`
+`#8b96a3` (6,3:1), akcent cyjan `#4cc2ff` (9,4:1), bursztyn `#f2b84b`
+(10,6:1). Jasna: `#eef1f4` / `#0d1117` (16,7:1), `--atrament-3` `#505c69`
+(6,0:1), akcent `#00609e` (5,8:1), bursztyn `#8a5a00` (5,2:1; na
+najciemniejszym tle 4,8:1).
+
+**Czym różni się od AI.** Gęstość narzędzia zamiast „przewiewnej” strony
+reklamowej; boczne menu jak w programie, nie hamburger.
+
+**Ryzyko.** Najmniej typowy układ z dziesięciu (badania: pierwsze wrażenie
+wygrywają układy typowe). Dla mieszkańca może wyglądać jak narzędzie
+„nie dla mnie”. Na telefonie menu wraca na górę — bocznego paska tam nie ma.
+
+---
+
+## H. „Atlas” — mapa i legenda
+
+**Pomysł.** Serwis o miejscach (2 479 gmin, 41 okręgów) mówi językiem mapy:
+pod nazwą gminy delikatne warstwice, nazwa miejsca kursywą szeryfową jak
+na arkuszu mapy, numer działu jak oznaczenie arkusza, „W liczbach” jako
+legenda w podwójnej ramce z kluczem przed każdą etykietą, paski
+kreskowane zamiast pełnych.
+
+**Typografia.** Newsreader kursywa 400 (nazwy miejsc, marka) i 600
+(liczby), Public Sans 400/600 w tekście. Ok. **129 kB** — kursywa jest
+prawdziwym krojem, nie pochyleniem dorobionym przez przeglądarkę.
+
+**Paleta.** Jasna: papier mapy `#f6f3ea`, atrament granatowy `#1f2d3a`
+(12,7:1), `--atrament-3` `#5a6672` (5,3:1; na najciemniejszym tle
+4,7:1), akcent błękit wody `#1d5a8c` (6,5:1). Ciemna: `#121a21` /
+`#e9e4d6` (13,8:1), `--atrament-3` `#9d998c` (6,2:1), akcent `#7fb6e6`
+(8,1:1).
+
+**Czym różni się od AI.** Ozdobnik wynika z treści (to są miejsca), a nie
+z mody; legenda zamiast kart z ikonami.
+
+**Ryzyko.** Strony posła i ustawy nie są „miejscami” — tam warstwice
+i kursywa nazw są dekoracją. Ozdobnik pod nazwą może rozpraszać przy
+pierwszym spojrzeniu (badania: wygrywa niska złożoność).
+
+---
+
+## I. „Naklejka” — neobrutalizm
+
+**Pomysł.** Grube czarne ramki (3 px), twarde cienie bez rozmycia, płaskie
+mocne kolory: żółć na „W liczbach”, mięta na nagłówkach działów, liliowy
+na źródłach. **Wszystko, co się klika, wygląda jak przycisk**, który da się
+wcisnąć — przy najechaniu unosi się i cień rośnie. Odpowiedź na pytanie
+o klikalność wprost: badania NN/g pokazują, że słabe sygnały klikalności
+kosztują ok. 22% czasu.
+
+**Typografia.** Archivo 400/700, nic więcej. Ok. **55 kB** — razem z C
+najlżejszy.
+
+**Paleta.** Jasna: krem `#fffaf0` / `#111111` (18,1:1), `--atrament-3`
+`#4d4d4d` (8,1:1), żółć `#ffd84d`, mięta `#9be7c4` (atrament na niej
+13,1:1), liliowy `#cbb7ff` (10,6:1). Ciemna: `#141414` / `#fafafa`
+(17,7:1), żółć przyciemniona do `#5c4a00`, mięta `#0b4434`, liliowy
+`#3d2c7a` — tekst na każdym z nich ≥ 4,6:1.
+
+**Czym różni się od AI.** Typowa strona z AI ma miękkie cienie,
+zaokrąglenia i gradienty — tu wszystko jest ostre i płaskie. Charakter
+jak z plakatu, nie z szablonu.
+
+**Ryzyko.** Najmniej urzędowy z dziesięciu: dla części czytelników
+„zabawny” wygląd może podważać powagę liczb przy nazwiskach (zasada:
+wiarygodność jest produktem). Mocne barwy trzeba trzymać z dala od barw
+klubów w wykresach.
+
+---
+
+## J. „Usługa publiczna” — w duchu GOV.UK
+
+**Pomysł.** Najlepiej przebadany wzorzec stron publicznych: czarny pasek
+z nazwą serwisu i niebieską kreską, szary pasek menu z podkreślonymi
+niebieskimi odnośnikami, duże pismo (19 px od 640 px), żółte tło fokusu
+z czarną kreską, „W liczbach” jako lista podsumowania (klucz · wartość ·
+źródło) bez ramek, uwaga z wykrzyknikiem w kółku. Zero ozdobników.
+
+**Typografia.** Public Sans 400/600 — krój zrobiony dla administracji
+USA (U.S. Web Design System), otwarty. Ok. **50 kB**, najlżejszy
+z dziesięciu.
+
+**Paleta.** Jasna: biel / `#0b0c0c` (19,6:1), `--atrament-3` `#505a5f`
+(7,1:1), odnośnik `#1d70b8` (5,2:1; na szarym pasku 4,6:1), fokus
+`#ffdd00` z `#0b0c0c`. Ciemna: `#0b0c0c` / `#f3f2f1` (17,5:1), odnośnik
+`#79b4ec` (8,9:1).
+
+**Czym różni się od AI.** Nie ma w nim niczego „zaprojektowanego na
+pokaz”; wygląda jak usługa, z której się korzysta.
+
+**Ryzyko.** Najmniej charakteru: łatwo wziąć zrejestru za stronę urzędu,
+a serwis jest niezależny. Trzeba by odróżnić go marką i barwą paska —
+nie kopiować GOV.UK jeden do jednego.
+
+---
+
 ## Jak oglądać i mieszać
 
-Każdy kierunek działa na **każdej** stronie prototypu: pasek „Kierunek” nad
-nagłówkiem albo `?k=a|b|c|ab|d|e|f` w adresie (wybór zostaje zapamiętany).
-Przegląd w `prototyp/kierunki.html`. Kierunki dają się łączyć jak A+B:
+Każdy motyw działa na **każdej** stronie prototypu: pasek „Motyw” nad
+nagłówkiem albo `?k=a` … `?k=j` w adresie (wybór zostaje zapamiętany).
+Przegląd w `prototyp/kierunki.html`. Jasny i ciemny przełącza przycisk
+w nagłówku. A+B nie jest osobnym motywem, tylko dodatkiem do A
+(„Jak to liczymy” na marginesie od 1200 px) — jest pod `?k=ab`, poza
+paskiem. Kierunki dają się łączyć jak A+B:
 z jednego bierze się litery i barwy, z drugiego sposób pokazania liczby
 albo marginesu — np. „E z marginesem A+B” albo „D z liczbami F”.
 
@@ -225,7 +343,7 @@ albo marginesu — np. „E z marginesem A+B” albo „D z liczbami F”.
 
 ## Rekomendacja
 
-**A, „Wypis z rejestru”.** Jako jedyny z trzech przekuwa najważniejszą
+**A, „Wypis z rejestru”.** Jako jedyny z dziesięciu przekuwa najważniejszą
 cechę serwisu — „każda liczba ma podstawę w rejestrze” — w formę strony,
 zamiast opisywać ją akapitami. Wiersz rejestru (etykieta · wartość ·
 mianownik · podstawa) jest jednym wzorem dla gminy, posła, firmy i ustawy,
@@ -233,6 +351,11 @@ więc przebudowa to jeden komponent zamiast siedemnastu kart. I jest
 najtańszy w obsłudze: działa w jednej kolumnie na telefonie, nie wymaga
 JavaScriptu, a fonty kosztują ok. 40 kB więcej niż dziś.
 
-Prototyp: `prototyp/` — 13 stron, każda w każdym kierunku;
+**Po przeglądzie badań (`badania.md`)** dodałbym do A sygnały klikalności
+z J: odnośniki wyraźnie podkreślone i żółte tło fokusu. I i J mają
+najmocniejsze oparcie w badaniach nad klikalnością, a A najlepiej oddaje
+to, czym serwis jest — dlatego na drugą rundę proponuję A, I i J.
+
+Prototyp: `prototyp/` — 15 stron, każda w każdym motywie;
 porównanie w `prototyp/kierunki.html`.
 Decyzje Pawła: `decyzje.md`.

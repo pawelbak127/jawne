@@ -62,3 +62,16 @@ details.metoda > summary::before { border-radius: 50%; }
 .tabela .l, .pozycje .kwota, .lista-paskow .opis span:last-child { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
 .pasek { height: 4px; }
 .stopka { border-top: 4px double var(--atrament); }
+
+/* gazeta mocniej: winieta pośrodku, tekst wyjustowany, listy w dwóch łamach */
+@media (min-width: 1024px) {
+  .naglowek .gora { flex-wrap: wrap; justify-content: center; padding-top: 10px; }
+  .naglowek .marka { flex-basis: 100%; flex-direction: column; align-items: center; gap: 0; border-bottom: 1px solid var(--atrament); padding-bottom: 6px; }
+  .naglowek .marka b { font-size: 3.2rem; line-height: 1; }
+  .naglowek .marka span { display: block; font-style: italic; font-size: 14px; }
+  .naglowek .szukaj { margin: 4px 0 8px; }
+  .menu-grupy { justify-content: center; }
+  .pozycje { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--kreska); }
+  .pozycje li { break-inside: avoid; }
+}
+.wstep, .wiersz .z-czego, .uwaga, details.metoda .tresc, .pozycje p { text-align: justify; hyphens: auto; }

@@ -1,4 +1,4 @@
-# Prototyp — kierunek A „Wypis z rejestru”
+# Prototyp — dziesięć motywów na tych samych stronach
 
 Otwórz `index.html` w przeglądarce (dwuklik wystarczy, nic nie trzeba
 budować). Motyw: przycisk z półkolem w nagłówku albo ustawienie systemu. Telefon: wąskie okno
@@ -16,12 +16,14 @@ albo narzędzia deweloperskie, 390 px.
 | `pomoc-publiczna.html` | `/pomoc-publiczna` | pomoc-publiczna |
 | `firmy.html` | `/firmy` — **nowa trasa** | firmy z `szukaj` |
 | `szukaj.html` | `/szukaj?q=krak` | szukaj |
-| `kierunki.html` | porównanie 7 kierunków stylu | — |
+| `kierunki.html` | porównanie 10 motywów | — |
 
-**Kierunki stylu:** każda strona działa w każdym z siedmiu kierunków —
-pasek „Kierunek” nad nagłówkiem albo `?k=a|b|c|ab|d|e|f` w adresie
-(wybór zapamiętany w przeglądarce). Styl B–F to nakładka `skora-*.css`
-na `styl.css`; HTML jest jeden. Ramki z napisem „PROTOTYP:” to notki
+**Motywy:** każda strona działa w każdym z dziesięciu motywów (A–J) —
+pasek „Motyw” nad nagłówkiem albo `?k=a` … `?k=j` w adresie (wybór
+zapamiętany w przeglądarce). Styl B–J to nakładka `skora-*.css`
+na `styl.css`; HTML jest jeden. `?k=ab` to dodatek do A (margines
+z „Jak to liczymy”), poza paskiem. Opisy motywów: `../kierunek.md`,
+badania, na których stoją wspólne zasady: `../badania.md`. Ramki z napisem „PROTOTYP:” to notki
 projektowe: pokazują miejsce na coś, czego dziś strona nie podaje.
 
 **Skąd liczby:** przepisane dosłownie z wyrenderowanego tekstu stron na
@@ -45,7 +47,7 @@ zwinięta, warunki UOKiK przy danych.
 | poseł | 4 682 px | 9 387 px |
 | firma | 3 046 px | 17 005 px |
 
-Sprawdzone w Chromium (Playwright), 15 stron × 6 kierunków (A–F) × 390/1280 px × jasny/ciemny = 360 renderów:
+Sprawdzone w Chromium (Playwright), 15 stron × 10 motywów (A–J) × 390/1280 px × jasny/ciemny = 600 renderów:
 szerokość dokumentu = szerokość okna (spis działów przewija się w bok
 wewnątrz własnego paska, tak ma być), 0 błędów konsoli, fonty z `fonty/`,
 żaden cel dotykowy poza tekstem ciągłym poniżej 24 px.
@@ -53,7 +55,10 @@ wewnątrz własnego paska, tak ma być), 0 błędów konsoli, fonty z `fonty/`,
 `fonty/`: A — Brygada 1918 600, IBM Plex Sans 400/600, IBM Plex Mono 500
 (141 kB); B — Półtawski Nowy 400/600 (81 kB); C — Archivo 400/700 (55 kB);
 D — fonty A bez Brygady; E — Source Serif 4 i Public Sans 400/600 (128 kB);
-F — Newsreader i Public Sans 400/600 (126 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
+F — Newsreader i Public Sans 400/600 (126 kB); G — Archivo 400/700
+i IBM Plex Mono 500 (84 kB); H — Newsreader kursywa 400 i 600, Public
+Sans 400/600 (129 kB); I — Archivo 400/700 (55 kB); J — Public Sans
+400/600 (50 kB). Podzbiory latin i latin-ext z `@fontsource/*` 5.3.0, licencja SIL
 OFL 1.1 (pliki `OFL-*.txt`).
 
 Pliki CSS i JS są tylko dla prototypu — kod strony przebuduje główna sesja

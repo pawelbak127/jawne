@@ -4,10 +4,10 @@ Gałąź / commit: claude/add-project-summaries-9fumtv (PR pawelbak127/jawne#2)
 # Przebudowa wyglądu i nawigacji — gotowe do wyboru (wersja po zrzutach)
 
 **W `docs/przebudowa/`:** `przeglad.md` (dział 0: zmierzone na Twoich
-zrzutach), `kierunek.md` (7 kierunków), `nawigacja.md` (menu, okruszek,
+zrzutach), `kierunek.md` (10 motywów), `badania.md` (co przyciąga i co się dobrze klika — źródła), `nawigacja.md` (menu, okruszek,
 szablony wszystkich stron), `teksty.md` (10 zmian + błędy w tekście), `prototyp/`
-na prawdziwych liczbach: 13 stron, każda w 7 kierunkach stylu
-(`prototyp/kierunki.html`).
+na prawdziwych liczbach: 15 stron, każda w 10 motywach
+(`prototyp/kierunki.html`). Paweł wybierze z nich kilka do doprecyzowania.
 
 **Rekomendacja.** Kierunek A „Wypis z rejestru”: strona jako wypis
 z ponumerowanymi działami i „podstawą” przy każdej liczbie — forma mówi
@@ -28,7 +28,8 @@ dział 0):
 6. `/stan` pokazuje notatki importu („nie licze od nowa”, „368846929288 zl”).
 
 **Decyzje Pawła** (`docs/przebudowa/decyzje.md`): nagłówek „zrejestru”,
-nowa trasa `/firmy`; waga fontów — prośba do Ciebie w
-`DO-glowny__2026-10-04__decyzje-pawla.md`. Czeka: wybór kierunku
+nowa trasa `/firmy`; najpierw 10 zupełnie różnych motywów, potem wybór
+kilku; waga fontów — prośba do Ciebie w
+`DO-glowny__2026-10-04__decyzje-pawla.md`. Czeka: wybór motywów
 i warunki UOKiK (pełna treść czy jedna linia z rozwinięciem — zależy od
 instrukcji UOKiK, zbiór 6068).
