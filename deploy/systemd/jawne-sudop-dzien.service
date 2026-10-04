@@ -11,7 +11,14 @@ WorkingDirectory=/srv/jawne
 EnvironmentFile=/etc/jawne/jawne.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh sudop-dzien
-TimeoutStartSec=6h
+# 24h, nie 6h. ZMIERZONE 04.10.2026: zadanie.sh kaze czekac na blokade SUDOP
+# do 22 godzin (historia w trybie ciaglym trzyma ja przez ~17-21 h — tak to
+# opisuje CLAUDE.md), a ta jednostka zabijala proces juz po 6 h czekania.
+# Dwa razy w 10 dni (30.09 i 04.10, oba o 04:00 po starcie o 22:00) zadanie
+# dzienne padlo na tym limicie, nie wyslawszy ani jednego zapytania.
+# 22 h czekania + do ~2 h pobierania (1-2 zapytania po ~52 min) = 24 h.
+# Nastepny start z timera o 22:00 jest pomijany, jesli to jeszcze trwa.
+TimeoutStartSec=24h
 Nice=10
 NoNewPrivileges=true
 PrivateTmp=true
