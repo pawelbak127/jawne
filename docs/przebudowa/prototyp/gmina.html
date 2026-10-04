@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Przykładowo — gmina · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Nazwy i liczby na tej stronie są przykładowe — nie pochodzą z rejestru · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="#"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw">◐</button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html" aria-current="page">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Pieniądze publiczne</a><i aria-hidden="true">›</i></span><span class="wielokropek" aria-hidden="true">…<i>›</i></span><span class="srodek"><a href="#">Gminy</a><i aria-hidden="true">›</i></span><span class="srodek"><a href="#">woj. przykładowe</a><i aria-hidden="true">›</i></span><span class=""><a href="#">pow. przykładowski</a><i aria-hidden="true">›</i></span><span aria-current="page">Przykładowo</span></nav>
+  <header class="wypis">
+    <p class="sygnatura mono"><span>gmina miejska</span><span>TERYT 999901</span><span>okręg wyborczy nr 99</span></p>
+    <h1>Przykładowo</h1>
+    <p class="podtytul">Gmina miejska w powiecie przykładowskim, 17 412 mieszkańców.</p>
+    <p class="mono szary" style="margin-top:10px">stan danych: GUS 2025 · fundusze UE 12.09.2026 · SUDOP 17.09.2026 · TED 01.10.2026</p>
+  </header>
+</div>
+<nav class="spis" aria-label="Działy tej strony"><div class="obszar"><ol><li><a href="#liczby"><span class="mono">1</span>W liczbach</a></li><li><a href="#budzet"><span class="mono">2</span>Budżet</a></li><li><a href="#fundusze"><span class="mono">3</span>Fundusze UE</a></li><li><a href="#pomoc"><span class="mono">4</span>Pomoc publiczna</a></li><li><a href="#zamowienia"><span class="mono">5</span>Zamówienia</a></li><li><a href="#dane"><span class="mono">6</span>Dane</a></li></ol></div></nav>
+<div class="obszar">
+  <section class="w-liczbach" id="liczby" aria-labelledby="liczby-t">
+    <h2 id="liczby-t">Przykładowo w liczbach</h2>
+    <div class="wiersze">
+      <div class="wiersz duzy"><p class="co">Dochody gminy na mieszkańca</p><p class="ile">9 214 zł</p><p class="z-czego">160,4 mln zł ÷ 17 412 mieszkańców · mediana w województwie (177 gmin): 8 105 zł <a class="do-dzialu" href="#budzet">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">GUS BDL</span><span class="data">2025</span></a></p></div>
+      <div class="wiersz duzy"><p class="co">Dofinansowanie z UE na mieszkańca, 2021–2027</p><p class="ile">1 386 zł</p><p class="z-czego">24,1 mln zł w 31 projektach realizowanych tylko tutaj · mediana w województwie: 902 zł <a class="do-dzialu" href="#fundusze">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">lista projektów FE</span><span class="data">12.09.2026</span></a></p></div>
+      <div class="wiersz duzy"><p class="co">Pomoc publiczna dla firm stąd</p><p class="ile">3,8 mln zł</p><p class="z-czego"><b>tylko z 631 pobranych dni</b>, nie z całych 10 lat · 412 przypadków, 188 beneficjentów <a class="do-dzialu" href="#pomoc">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span><span class="data">17.09.2026</span></a></p></div>
+      <div class="wiersz"><p class="co">Posłowie z okręgu nr 99</p><p class="ile">7</p>
+        <div class="z-czego"><ul class="osoby"><li><a href="posel.html">Anna Przykładowa</a></li><li><a href="#">Jan Wzorcowy</a></li><li><a href="#">Ewa Modelowa</a></li><li><a href="#">Piotr Testowy</a></li><li><a href="#">Maria Szablonowa</a></li><li><a href="#">Adam Próbny</a></li><li><a href="#">Zofia Makietowa</a></li></ul></div>
+        <p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">PKW, wybory 2023</span></a></p></div>
+    </div>
+  </section>
+
+  <section class="dzial" id="budzet" aria-labelledby="budzet-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="budzet-t"><span class="nr-tel">2. </span>Budżet gminy — 2025</h2></div>
+  
+    <p class="wstep">Ile gmina miała pieniędzy, skąd je miała i na co je wydała.</p>
+    <div class="wiersze">
+      <div class="wiersz "><p class="co">Dochody ogółem</p><p class="ile">160,4 mln zł</p><p class="z-czego">w tym dochody własne 61% (97,8 mln zł) · mediana w województwie: 48%</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">GUS BDL</span><span class="data">2025</span></a></p></div>
+      <div class="wiersz "><p class="co">Wydatki majątkowe na mieszkańca</p><p class="ile">1 690 zł</p><p class="z-czego">29,4 mln zł, z tego na inwestycje 27,1 mln zł · 18% wydatków · mediana w województwie: 1 210 zł</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">GUS BDL</span><span class="data">2025</span></a></p></div>
+    </div>
+    <h3 style="margin-top:28px">Z czego składają się dochody</h3>
+    <ul class="lista-paskow">
+      <li><div class="opis"><span>Dochody własne</span><span>61,0% · 97,8 mln zł</span></div><div class="pasek"><i style="width:61%"></i></div></li>
+      <li style="padding-left:18px"><div class="opis"><span class="szary">w tym udział w PIT</span><span>24,8% · 39,8 mln zł</span></div><div class="pasek"><i style="width:24.8%;opacity:.45"></i></div></li>
+      <li style="padding-left:18px"><div class="opis"><span class="szary">w tym podatek od nieruchomości</span><span>12,1% · 19,4 mln zł</span></div><div class="pasek"><i style="width:12.1%;opacity:.45"></i></div></li>
+      <li><div class="opis"><span>Subwencja ogólna z budżetu państwa</span><span>22,6% · 36,3 mln zł</span></div><div class="pasek"><i style="width:22.6%"></i></div></li>
+      <li><div class="opis"><span>Dotacje</span><span>16,4% · 26,3 mln zł</span></div><div class="pasek"><i style="width:16.4%"></i></div></li>
+    </ul>
+    <h3 style="margin-top:28px">Na co gmina wydaje</h3>
+    <ul class="lista-paskow">
+      <li><div class="opis"><span>Oświata i wychowanie</span><span>31,2% · 52,1 mln zł · 2 992 zł na mieszkańca</span></div><div class="pasek"><i style="width:31.2%"></i></div></li>
+      <li><div class="opis"><span>Rodzina</span><span>14,0% · 23,4 mln zł · 1 344 zł na mieszkańca</span></div><div class="pasek"><i style="width:14%"></i></div></li>
+      <li><div class="opis"><span>Transport i łączność</span><span>11,5% · 19,2 mln zł · 1 103 zł na mieszkańca</span></div><div class="pasek"><i style="width:11.5%"></i></div></li>
+      <li><div class="opis"><span>Gospodarka komunalna</span><span>9,8% · 16,4 mln zł · 942 zł na mieszkańca</span></div><div class="pasek"><i style="width:9.8%"></i></div></li>
+      <li><div class="opis"><span class="szary">Pozostałe działy (różnica do wydatków ogółem)</span><span>33,5% · 55,9 mln zł</span></div><div class="pasek"><i style="width:33.5%;opacity:.35"></i></div></li>
+    </ul>
+    <h3 style="margin-top:28px">Rok po roku: dochody</h3>
+    <div class="slupki" role="img" aria-label="Dochody 2019–2025, od 112 do 160 mln zł">
+      <div style="height:70%"></div><div style="height:73%"></div><div style="height:79%"></div><div style="height:84%"></div><div style="height:90%"></div><div style="height:95%"></div><div style="height:100%"></div></div>
+    <div class="slupki-lata"><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span><span>2025</span></div>
+    <h3 style="margin-top:28px">Wskaźniki finansowe (SMUP)</h3>
+    <div class="wiersze">
+      <div class="wiersz "><p class="co">Dług do dochodów</p><p class="ile">21,4%</p><p class="z-czego">2024 · mediana w województwie (177 gmin): 18,9%</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SMUP, GUS</span><span class="data">2024</span></a></p></div>
+      <div class="wiersz "><p class="co">Nadwyżka operacyjna na mieszkańca</p><p class="ile">612 zł</p><p class="z-czego">2024 · mediana: 540 zł</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SMUP, GUS</span><span class="data">2024</span></a></p></div>
+      <div class="wiersz "><p class="co">Podatek od nieruchomości na mieszkańca</p><p class="ile">1 114 zł</p><p class="z-czego">2024 · mediana: 486 zł</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SMUP, GUS</span><span class="data">2024</span></a></p></div>
+      <div class="wiersz "><p class="co">Umorzenia podatku od nieruchomości — osoby prawne</p><p class="ile">—</p><p class="z-czego">rejestr nie podaje wartości (tajemnica statystyczna), to nie jest zero</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SMUP, GUS</span><span class="data">2024</span></a></p></div>
+    </div>
+    <p style="margin-top:10px"><a href="#">Pokaż wszystkie 15 wskaźników ↓</a></p>
+    <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><ul>
+      <li><b>Dochody</b> to wszystko, co wpłynęło do budżetu w roku: dochody własne (podatki lokalne, udział w PIT i CIT, majątek), subwencja i dotacje. Kredyty i obligacje nie są dochodem.</li>
+      <li><b>Kwoty w cenach bieżących</b>, bez korekty o inflację.</li>
+      <li><b>Wydatki majątkowe</b> obejmują też dotacje inwestycyjne (np. dla spółki miejskiej), dlatego są szersze niż inwestycje.</li>
+      <li><b>Mediana w województwie</b> — połowa gmin ma więcej, połowa mniej. To punkt odniesienia, nie ocena.</li>
+      <li>Wskaźniki SMUP podajemy z dokładnością rejestru; półpauza znaczy brak wartości, nie zero.</li></ul></div></details>
+  
+</div></section>
+
+  <section class="dzial" id="fundusze" aria-labelledby="fundusze-t"><div class="nr" aria-hidden="true">3</div><div>
+  <div class="tytul"><h2 id="fundusze-t"><span class="nr-tel">3. </span>Fundusze Europejskie</h2></div>
+  
+    <div class="wiersze">
+      <div class="wiersz "><p class="co">2021–2027: dofinansowanie z UE</p><p class="ile">24,1 mln zł</p><p class="z-czego">31 projektów realizowanych tylko w tej gminie, łączna wartość 38,7 mln zł · do tego 12 projektów wspólnych z innymi gminami — ich kwot nie przypisujemy</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">lista projektów 2021–2027</span><span class="data">12.09.2026</span></a></p></div>
+      <div class="wiersz "><p class="co">2014–2020</p><p class="ile">—</p><p class="z-czego">lista z tych lat podaje miejsce realizacji tylko do powiatu, więc nie da się uczciwie przypisać projektów gminie · 214 projektów wskazanych dla całego powiatu</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">lista projektów 2014–2020</span><span class="data">12.09.2026</span></a></p></div>
+    </div>
+    <h3 style="margin-top:28px">Największe projekty realizowane tylko tutaj</h3>
+    <ul class="pozycje">
+      <li><div><p><b>Przebudowa układu drogowego w centrum miasta wraz z budową węzła przesiadkowego</b></p><p class="meta">Gmina Przykładowo · 2021–2027 · 03.2024–12.2026</p></div><p class="kwota">8,9 mln zł<small>wartość 12,6 mln zł</small></p></li>
+      <li><div><p><b>Termomodernizacja budynków szkół podstawowych nr 2 i nr 4</b></p><p class="meta">Gmina Przykładowo · 2021–2027 · 09.2023–08.2025</p></div><p class="kwota">4,2 mln zł<small>wartość 6,0 mln zł</small></p></li>
+      <li><div><p><b>Rozwój usług opiekuńczych dla osób starszych</b></p><p class="meta">beneficjent niewymieniony z nazwy (może to być osoba fizyczna) · 2021–2027</p></div><p class="kwota">1,1 mln zł<small>wartość 1,3 mln zł</small></p></li>
+    </ul>
+    <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><p>Liczymy projekty realizowane wyłącznie w tej gminie. Projektów prowadzonych w kilku gminach nie dzielimy — podajemy tylko ich liczbę. Rok na wykresie to rok rozpoczęcia projektu, nie rok wydatku: rejestr podaje jedną kwotę na cały projekt.</p></div></details>
+  
+</div></section>
+
+  <section class="dzial" id="pomoc" aria-labelledby="pomoc-t"><div class="nr" aria-hidden="true">4</div><div>
+  <div class="tytul"><h2 id="pomoc-t"><span class="nr-tel">4. </span>Pomoc publiczna dla firm z tej gminy</h2><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">cała Polska →</span></a></div>
+  
+    <p class="wstep">Zwolnienia z podatków, dotacje, preferencyjne pożyczki i pomoc de minimis dla przedsiębiorców z siedzibą w gminie.</p>
+    <p class="uwaga"><b>Uwaga: to nie jest cała historia gminy.</b> Rejestr obejmuje 10 lat, a my mamy na razie 631 dni pobranych dla całego kraju (od 02.09.2024 do 17.09.2026). Sum nie da się porównywać z gminami, dla których mamy pełną historię. <a href="#">Co już pobraliśmy</a></p>
+    <div class="wiersze">
+      <div class="wiersz "><p class="co">Wartość pomocy brutto</p><p class="ile">3,8 mln zł</p><p class="z-czego">412 przypadków dla 188 beneficjentów, udzielonych od 02.09.2024 do 17.09.2026</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP</span><span class="data">17.09.2026</span></a></p></div>
+      <div class="wiersz "><p class="co">Największy pojedynczy beneficjent</p><p class="ile">31%</p><p class="z-czego">1,2 mln zł z 3,8 mln zł trafiło do jednego podmiotu: PRZYKŁADOWE ZAKŁADY MECHANICZNE S.A.</p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP</span><span class="data">17.09.2026</span></a></p></div>
+    </div>
+    <h3 style="margin-top:28px">Kto przyznał pomoc</h3>
+    <div class="tabela-przewijana"><table class="tabela">
+      <thead><tr><th>Organ</th><th>Rodzaj pomocy</th><th class="l">Decyzje</th><th class="l">Brutto</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="2"><a href="#">Burmistrz Przykładowa</a> <span class="mono blady">organ tej gminy</span></td><td>ulga lub zwolnienie w podatku</td><td class="l">96</td><td class="l">0,9 mln zł</td></tr>
+        <tr><td>rozłożenie na raty</td><td class="l">41</td><td class="l">0,1 mln zł</td></tr>
+        <tr><td><a href="#">Zakład Ubezpieczeń Społecznych</a></td><td>rozłożenie na raty</td><td class="l">58</td><td class="l">0,2 mln zł</td></tr>
+        <tr><td><a href="#">Powiatowy Urząd Pracy w Przykładowie</a></td><td>dotacja</td><td class="l">77</td><td class="l">1,6 mln zł</td></tr>
+        <tr><td colspan="2" class="szary">3 organy, których nazw nie pokazujemy, bo rejestr wskazuje osoby fizyczne</td><td class="l">11</td><td class="l">0,04 mln zł</td></tr>
+      </tbody></table></div>
+    <p class="szary" style="margin-top:10px;font-size:13.5px">Rodzajów pomocy nie sumujemy w jedną liczbę: dotacja to wydatek, ulga — dochód, którego nie pobrano, a raty — tylko korzyść z odsetek. <a href="#">Co znaczy każdy rodzaj</a></p>
+    <h3 style="margin-top:28px">Największe podmioty, które otrzymały pomoc</h3>
+    <ul class="pozycje">
+      <li><div><a class="tytul-poz" href="firma.html">PRZYKŁADOWE ZAKŁADY MECHANICZNE S.A.</a><p class="meta">9 przypadków</p></div><p class="kwota">1,2 mln zł</p></li>
+      <li><div><a class="tytul-poz" href="#">PRZEDSIĘBIORSTWO KOMUNALNE PRZYKŁADOWO SP. Z O.O.</a><p class="meta">4 przypadki</p></div><p class="kwota">0,4 mln zł</p></li>
+      <li><div><a class="tytul-poz" href="#">SPÓŁDZIELNIA MLECZARSKA „WZÓR”</a><p class="meta">3 przypadki</p></div><p class="kwota">0,2 mln zł</p></li>
+    </ul>
+    <p class="szary" style="margin-top:10px;font-size:13.5px">124 z 188 beneficjentów nie wymieniamy z nazwy, bo może to być osoba prowadząca działalność na własne nazwisko. Ich pomoc jest w sumie powyżej. <a href="#">Zasady</a></p>
+    <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><p><b>Wartość brutto</b> to ekwiwalent dotacji: przy dotacji cała kwota, przy pożyczce lub gwarancji tylko korzyść z lepszych warunków.</p><p>Dzień wliczamy dopiero 14 dni po jego dacie — urzędy mają 7 dni na zgłoszenie pomocy.</p></div></details>
+    <p class="szary" style="margin-top:14px;font-size:12.5px;max-width:46rem;border-top:1px solid var(--kreska);padding-top:10px"><b>Źródło:</b> System Udostępniania Danych o Pomocy Publicznej (UOKiK), dane pobrane 17.09.2026. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.</p>
+  
+</div></section>
+
+  <section class="dzial" id="zamowienia" aria-labelledby="zamowienia-t"><div class="nr" aria-hidden="true">5</div><div>
+  <div class="tytul"><h2 id="zamowienia-t"><span class="nr-tel">5. </span>Zamówienia publiczne z tej gminy</h2></div>
+  
+    <p class="wstep">Ogłoszenia o udzieleniu zamówienia, w których zamawiający ma siedzibę w gminie — urząd, ale też szpital czy spółka komunalna. Tylko zamówienia powyżej progów unijnych.</p>
+    <div class="wiersze">
+      <div class="wiersz "><p class="co">Wartość ogłoszeń</p><p class="ile">47,3 mln zł</p><p class="z-czego">z 22 ogłoszeń z kwotą w złotych (1 bez kwoty — poza sumą) · <b>to wartości całych umów, często wieloletnich, nie wydatek jednego roku</b></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">TED</span><span class="data">01.10.2026</span></a></p></div>
+    </div>
+    <ul class="pozycje">
+      <li><div><p><b>Odbiór i zagospodarowanie odpadów komunalnych z terenu Gminy Przykładowo</b></p><p class="meta">Gmina Przykładowo · 14.03.2025 · ogłoszenie <span class="mono">171234-2025</span> · 1 wykonawca</p></div><p class="kwota">14,8 mln zł<small><a href="#">ogłoszenie (PDF)</a></small></p></li>
+      <li><div><p><b>Dostawa energii elektrycznej dla obiektów gminnych</b></p><p class="meta">Gmina Przykładowo · 02.12.2024 · ogłoszenie <span class="mono">740012-2024</span> · 1 wykonawca</p></div><p class="kwota">6,1 mln zł<small><a href="#">ogłoszenie (PDF)</a></small></p></li>
+    </ul>
+    <details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><p>Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON (GUS, licencja CC BY 4.0). Ogłoszenia od 13.11.2023. Kwot powyżej 10 mld zł nie wliczamy do sumy — to pomyłki w rejestrze; pokazujemy je osobno.</p></div></details>
+  
+</div></section>
+
+  <section class="dzial" id="dane" aria-labelledby="dane-t"><div class="nr" aria-hidden="true">6</div><div>
+  <div class="tytul"><h2 id="dane-t"><span class="nr-tel">6. </span>Dane do pobrania</h2></div>
+  <p class="wstep">Pliki CSV pod polskiego Excela: średnik, przecinek dziesiętny, UTF-8. Te same zakresy i reguły co na stronie.</p><p class="pliki" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 20px"><a href="#">budżet rok po roku (CSV)</a><a href="#">projekty unijne (CSV)</a><a href="#">pomoc publiczna (CSV)</a></p>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

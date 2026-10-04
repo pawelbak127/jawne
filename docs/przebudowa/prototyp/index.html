@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Spis · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu</b> · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="#"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw">◐</button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar" style="padding:40px 16px">
+  <p class="mono szary">docs/przebudowa/prototyp · kierunek A „Wypis z rejestru”</p>
+  <h1 style="margin-top:10px">Prototyp</h1>
+  <p class="podtytul szary" style="margin-top:10px;max-width:42rem">Statyczne strony do obejrzenia w przeglądarce — bez budowania, bez bazy. Motyw przełącza ◐ w nagłówku (albo ustawienie systemu). Na telefonie otwórz to samo w wąskim oknie.</p>
+  <div class="wiersze" style="margin-top:24px;max-width:46rem">
+    <div class="wiersz"><p class="co"><a href="glowna.html">Strona główna</a></p><p class="ile mono" style="font-size:12px">glowna.html</p><p class="z-czego">liczby w działach 2–3 z dokumentacji repozytorium (stan 30.09.2026); głosowania przykładowe</p></div>
+    <div class="wiersz"><p class="co"><a href="gmina.html">Gmina</a></p><p class="ile mono" style="font-size:12px">gmina.html</p><p class="z-czego">gmina zmyślona („Przykładowo”), liczby przykładowe</p></div>
+    <div class="wiersz"><p class="co"><a href="posel.html">Poseł</a></p><p class="ile mono" style="font-size:12px">posel.html</p><p class="z-czego">osoba zmyślona, liczby przykładowe</p></div>
+    <div class="wiersz"><p class="co"><a href="firma.html">Firma</a></p><p class="ile mono" style="font-size:12px">firma.html</p><p class="z-czego">firma zmyślona, liczby przykładowe</p></div>
+  </div>
+  <p class="uwaga" style="margin-top:24px"><b>Dlaczego nie prawdziwe liczby:</b> sesja w chmurze, która to zbudowała, nie miała dostępu do zrejestru.pl (polityka sieci środowiska). Wszystkie liczby stoją wprost w HTML-u — do podmiany jeden do jednego.</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

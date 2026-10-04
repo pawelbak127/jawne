@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Firma — pomoc publiczna i zamówienia · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Nazwy i liczby na tej stronie są przykładowe — nie pochodzą z rejestru · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="#"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw">◐</button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html" aria-current="page">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Pieniądze publiczne</a><i aria-hidden="true">›</i></span><span class=""><a href="#">Firmy</a><i aria-hidden="true">›</i></span><span aria-current="page">PRZYKŁADOWE ZAKŁADY MECHANICZNE S.A.</span></nav>
+  <header class="wypis">
+    <p class="sygnatura mono"><span>NIP 000 000 00 00</span><span>REGON: osoba prawna</span><span>siedziba: <a href="gmina.html">Przykładowo</a></span></p>
+    <h1>PRZYKŁADOWE ZAKŁADY MECHANICZNE S.A.</h1>
+    <p class="podtytul"><a href="gmina.html">Wszystkie publiczne pieniądze w gminie Przykładowo →</a></p>
+  </header>
+  <section class="w-liczbach" aria-labelledby="liczby-t">
+    <h2 id="liczby-t">W liczbach</h2>
+    <div class="wiersze">
+      <div class="wiersz duzy"><p class="co">Pomoc publiczna brutto</p><p class="ile">1,2 mln zł</p><p class="z-czego">9 przypadków od 14.01.2025 do 03.09.2026 · <b>tylko z 631 pobranych dni</b>, nie z pełnych 10 lat rejestru <a class="do-dzialu" href="#przypadki">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span><span class="data">17.09.2026</span></a></p></div>
+      <div class="wiersz duzy"><p class="co">Zamówienia publiczne, w których była jedynym wykonawcą</p><p class="ile">6,4 mln zł</p><p class="z-czego">3 ogłoszenia · do tego 2 ogłoszenia z kilkoma wykonawcami — ich kwoty dotyczą całości, więc ich nie sumujemy <a class="do-dzialu" href="#zamowienia">więcej ↓</a></p><p class="podstawa"><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">TED</span><span class="data">01.10.2026</span></a></p></div>
+    </div>
+  </section>
+  <section class="dzial" id="przypadki" aria-labelledby="przypadki-t"><div class="nr" aria-hidden="true">1</div><div>
+  <div class="tytul"><h2 id="przypadki-t"><span class="nr-tel">1. </span>Przypadki pomocy</h2><a class="zrodlo" href="#" target="_blank" rel="noreferrer"><span class="nazwa">wyszukiwarka SUDOP</span></a></div>
+  
+    <p class="wstep">9 przypadków, od najnowszego.</p>
+    <ul class="pozycje">
+      <li><div><p><b>Pomoc na szkolenia pracowników</b></p><p class="meta">03.09.2026 · <a href="#">Wojewódzki Urząd Pracy w Przykładowie</a> · dotacja</p><p class="meta">Podstawa prawna: rozporządzenie Komisji (UE) 2023/2831 (de minimis)</p></div><p class="kwota">212 400 zł<small>nominalnie 212 400 zł</small></p></li>
+      <li><div><p><b>Pomoc regionalna na inwestycje</b></p><p class="meta">17.06.2026 · <a href="#">Minister właściwy do spraw gospodarki</a> · zwolnienie z podatku</p><p class="meta">Podstawa prawna: ustawa o wspieraniu nowych inwestycji</p></div><p class="kwota">688 100 zł<small>nominalnie 688 100 zł</small></p></li>
+      <li><div><p><b>Rozłożenie na raty zaległości w składkach</b></p><p class="meta">14.01.2025 · <a href="#">Zakład Ubezpieczeń Społecznych</a> · raty</p></div><p class="kwota">2 140 zł<small>nominalnie 318 000 zł</small></p></li>
+    </ul>
+    <details class="metoda"><summary>Dlaczego dwie kwoty</summary><div class="tresc"><p>Brutto to ekwiwalent dotacji, czyli ile pomoc jest warta dla firmy. Przy rozłożeniu na raty firma dostaje tylko korzyść z odsetek, więc kwota brutto jest dużo niższa od nominalnej.</p></div></details>
+    <p class="szary" style="margin-top:14px;font-size:12.5px;max-width:46rem;border-top:1px solid var(--kreska);padding-top:10px"><b>Źródło:</b> System Udostępniania Danych o Pomocy Publicznej (UOKiK), dane pobrane 17.09.2026. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.</p>
+  
+</div></section>
+  <section class="dzial" id="zamowienia" aria-labelledby="zamowienia-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="zamowienia-t"><span class="nr-tel">2. </span>Zamówienia publiczne</h2></div>
+  
+    <ul class="pozycje">
+      <li><div><p><b>Dostawa części zamiennych do taboru tramwajowego</b></p><p class="meta">Miejskie Przedsiębiorstwo Komunikacyjne · 22.05.2026 · ogłoszenie <span class="mono">301877-2026</span></p></div><p class="kwota">4,1 mln zł<small>jedyny wykonawca</small></p></li>
+      <li><div><p><b>Modernizacja linii produkcyjnej stacji uzdatniania wody — części 1–3</b></p><p class="meta">Wodociągi Przykładowskie Sp. z o.o. · 08.11.2025 · ogłoszenie <span class="mono">688120-2025</span></p></div><p class="kwota">9,7 mln zł<small>całe ogłoszenie, 3 wykonawców</small></p></li>
+    </ul>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Strona główna · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby w działach 2–3 pochodzą z dokumentacji repozytorium (stan 30.09.2026); głosowania w dziale 1 są przykładowe · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="#"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw">◐</button>
+    <div class="tylko-tel">
+      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
+          <p>SEJM</p><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="posel.html">Posłowie</a><a href="#">Głosowania</a><a href="#">Ustawy</a><a href="#">Komisje</a><a href="#">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="#">Pomoc publiczna</a><a href="firma.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <section style="padding:40px 0 8px">
+    <p class="mono szary">Sejm X kadencji · 2 477 gmin · 8 rejestrów publicznych</p>
+    <h1 style="margin-top:12px;max-width:46rem">Sejm i publiczne pieniądze — z rejestrów, liczba po liczbie.</h1>
+    <p class="podtytul szary" style="margin-top:12px;max-width:40rem;font-size:1.05rem">Przy każdej liczbie jest odnośnik do rejestru, z którego pochodzi. Nie oceniamy i nie komentujemy.</p>
+    <form role="search" action="#" style="margin-top:22px;max-width:40rem"><label for="q2" style="display:block;font-weight:600;margin-bottom:6px">Czego szukasz?</label>
+      <input class="pole" id="q2" type="search" placeholder="Gmina, poseł, firma, NIP albo numer druku" style="min-height:52px;font-size:1.05rem"></form>
+    <p class="szary" style="margin-top:8px;font-size:14px">np. <a href="#">Kraków</a>, <a href="#">Zakopane</a>, <a href="#">podatek</a>, <a href="#">sygnaliści</a></p>
+    <nav class="drzwi" aria-label="Najczęstsze pytania">
+      <a href="gmina.html"><b>Moja gmina →</b><span>Budżet, fundusze UE, pomoc dla firm i posłowie z okręgu — 2 477 gmin, zawsze na mieszkańca.</span></a>
+      <a href="posel.html"><b>Mój poseł →</b><span>Jak głosuje i czy razem z klubem — 499 posłów, w tym 39 z wygasłym mandatem.</span></a>
+      <a href="firma.html"><b>Firma →</b><span>Czy dostała pomoc publiczną albo zamówienie — po nazwie albo NIP-ie.</span></a>
+    </nav>
+  </section>
+  <section class="dzial" id="glosowania" aria-labelledby="glosowania-t"><div class="nr" aria-hidden="true">1</div><div>
+  <div class="tytul"><h2 id="glosowania-t"><span class="nr-tel">1. </span>Ostatnie głosowania nad całością projektów</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">rejestr głosowań</span></a></div>
+  
+    <p class="wstep">Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je rejestr. Poprawek i spraw porządkowych tu nie ma.</p>
+    <ul class="pozycje"><li><div><a class="tytul-poz" href="#">Rządowy projekt ustawy o zmianie ustawy – Prawo farmaceutyczne</a>
+<p class="meta">druk nr 3002 · <span class="mono">[przykład] 18.09.2026, pos. 41, głos. 12</span></p>
+<div class="glosy" role="img" aria-label="za 248, przeciw 187, wstrzymało się 9, obecnych bez głosu 4"><i style="width:55.36%;background:var(--za)"></i><i style="width:41.74%;background:var(--przeciw)"></i><i style="width:2.01%;background:var(--wstrzymal)"></i><i style="width:0.89%;background:var(--brak)"></i></div>
+<p class="meta" style="margin-top:4px">za <b>248</b> · przeciw <b>187</b> · wstrzymało się <b>9</b> · obecni bez głosu <b>4</b></p></div>
+<p class="kwota">przyjęto</p></li><li><div><a class="tytul-poz" href="#">Rządowy projekt ustawy o zmianie ustawy – Prawo wodne</a>
+<p class="meta">druk nr 2866 · <span class="mono">[przykład] 18.09.2026, pos. 41, głos. 13</span></p>
+<div class="glosy" role="img" aria-label="za 402, przeciw 41, wstrzymało się 2, obecnych bez głosu 3"><i style="width:89.73%;background:var(--za)"></i><i style="width:9.15%;background:var(--przeciw)"></i><i style="width:0.45%;background:var(--wstrzymal)"></i><i style="width:0.67%;background:var(--brak)"></i></div>
+<p class="meta" style="margin-top:4px">za <b>402</b> · przeciw <b>41</b> · wstrzymało się <b>2</b> · obecni bez głosu <b>3</b></p></div>
+<p class="kwota">przyjęto</p></li><li><div><a class="tytul-poz" href="#">Poselski projekt ustawy o zmianie ustawy o podatkach i opłatach lokalnych oraz o zmianie niektórych innych ustaw</a>
+<p class="meta">druk nr 2872 · <span class="mono">[przykład] 18.09.2026, pos. 41, głos. 14</span></p>
+<div class="glosy" role="img" aria-label="za 231, przeciw 210, wstrzymało się 4, obecnych bez głosu 1"><i style="width:51.79%;background:var(--za)"></i><i style="width:47.09%;background:var(--przeciw)"></i><i style="width:0.90%;background:var(--wstrzymal)"></i><i style="width:0.22%;background:var(--brak)"></i></div>
+<p class="meta" style="margin-top:4px">za <b>231</b> · przeciw <b>210</b> · wstrzymało się <b>4</b> · obecni bez głosu <b>1</b></p></div>
+<p class="kwota">przyjęto</p></li></ul>
+    <p style="margin-top:12px"><a href="#">Wszystkie głosowania nad całością →</a></p>
+</div></section>
+  <section class="dzial" id="izba" aria-labelledby="izba-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="izba-t"><span class="nr-tel">2. </span>Układ izby</h2><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/clubs" target="_blank" rel="noreferrer"><span class="nazwa">rejestr klubów</span></a></div>
+  
+    <p class="wstep">460 mandatów według rejestru klubów. Pełny plan sali — kto na którym miejscu siedzi — jest na stronie <a href="#">Sala posiedzeń</a>.</p>
+    <div class="glosy" style="height:22px;margin-top:18px;max-width:46rem"><i style="width:33.913%;background:#2a78d6" title="KO: 156"></i><i style="width:31.739%;background:#4a3aa7" title="PiS: 146"></i><i style="width:8.913%;background:#eb6834" title="RozwojPlus: 41"></i><i style="width:6.957%;background:#008300" title="PSL-TD: 32"></i><i style="width:4.565%;background:#e34948" title="Lewica: 21"></i><i style="width:3.478%;background:#eda100" title="Konfederacja: 16"></i><i style="width:3.261%;background:#e87ba4" title="Polska2050: 15"></i><i style="width:3.261%;background:#1baf7a" title="Centrum: 15"></i><i style="width:1.522%;background:#9a958c" title="niez.: 7"></i><i style="width:0.870%;background:#b0407a" title="Razem: 4"></i><i style="width:0.870%;background:#5b4636" title="Demokracja: 4"></i><i style="width:0.652%;background:#8a6a4f" title="Konfederacja_KP: 3"></i></div>
+    <ul style="list-style:none;padding:0;margin:14px 0 0;max-width:46rem;columns:2;column-gap:28px;font-size:14px"><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#2a78d6"></span>KO</span><span>156</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#4a3aa7"></span>PiS</span><span>146</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#eb6834"></span>RozwojPlus</span><span>41</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#008300"></span>PSL-TD</span><span>32</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#e34948"></span>Lewica</span><span>21</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#eda100"></span>Konfederacja</span><span>16</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#e87ba4"></span>Polska2050</span><span>15</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#1baf7a"></span>Centrum</span><span>15</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#9a958c"></span>niez.</span><span>7</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#b0407a"></span>Razem</span><span>4</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#5b4636"></span>Demokracja</span><span>4</span></li><li style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--kreska)"><span><span class="kropka" style="background:#8a6a4f"></span>Konfederacja_KP</span><span>3</span></li></ul>
+    <details class="metoda"><summary>Skąd te barwy</summary><div class="tresc"><p>Barwy są nasze, dobrane pod rozróżnialność przy daltonizmie — to nie barwy partyjne. Loga klubów dają pięć podobnych czerwieni i trzy granaty.</p></div></details>
+</div></section>
+  <section class="dzial" id="mamy" aria-labelledby="mamy-t"><div class="nr" aria-hidden="true">3</div><div>
+  <div class="tytul"><h2 id="mamy-t"><span class="nr-tel">3. </span>Co mamy w rejestrach</h2></div>
+  <div class="wiersze"><div class="wiersz "><p class="co">Głosowania</p><p class="ile">4 641</p><p class="z-czego">od początku X kadencji (13.11.2023) do 30.09.2026</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/term10/votings" target="_blank" rel="noreferrer"><span class="nazwa">API Sejmu</span><span class="data">30.09.2026</span></a></p></div><div class="wiersz "><p class="co">Głosy imienne</p><p class="ile">2 128 618</p><p class="z-czego">każdy głos każdego posła w tych głosowaniach</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/openapi/" target="_blank" rel="noreferrer"><span class="nazwa">API Sejmu</span><span class="data">30.09.2026</span></a></p></div><div class="wiersz "><p class="co">Projekty ustaw i uchwał w Sejmie</p><p class="ile">1 692</p><p class="z-czego">procesy legislacyjne z etapami</p><p class="podstawa"><a class="zrodlo" href="https://api.sejm.gov.pl/sejm/openapi/" target="_blank" rel="noreferrer"><span class="nazwa">API Sejmu</span><span class="data">30.09.2026</span></a></p></div><div class="wiersz "><p class="co">Przypadki pomocy publicznej</p><p class="ile">4 190 306</p><p class="z-czego">z 631 dni pobranych dla całego kraju — rejestr obejmuje 10 lat, pobieramy go dzień po dniu</p><p class="podstawa"><a class="zrodlo" href="https://sudop.uokik.gov.pl" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span><span class="data">30.09.2026</span></a></p></div><div class="wiersz "><p class="co">Ogłoszenia o udzieleniu zamówienia</p><p class="ile">129 077</p><p class="z-czego">polskie ogłoszenia w TED od początku kadencji; tylko powyżej progów unijnych</p><p class="podstawa"><a class="zrodlo" href="https://ted.europa.eu" target="_blank" rel="noreferrer"><span class="nazwa">TED</span><span class="data">30.09.2026</span></a></p></div></div><p style="margin-top:12px"><a href="#">Stan danych: co i kiedy pobraliśmy →</a></p>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>
