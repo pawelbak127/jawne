@@ -37,7 +37,7 @@
   --kreska: #d6d0c2; --kreska-2: #b9b2a2;
   --akcent: #0b5a52; --akcent-slaby: #dcebe7;
   /* barwy głosów z src/lib/barwy-glosu.ts */
-  --za: #1b9e63; --przeciw: #d2453f; --wstrzymal: #e0a021; --brak: #cfcbc0;
+  --za: #1b9e63; --przeciw: #d2453f; --wstrzymal: #e0a021; --brak: #cfcbc0; --inne: #8b8794;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -46,7 +46,7 @@
     --atrament: #efece4; --atrament-2: #bdb8ab; --atrament-3: #a39e91;
     --kreska: #38362f; --kreska-2: #57544a;
     --akcent: #6fd3c3; --akcent-slaby: #173a35;
-    --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866;
+    --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866; --inne: #9d99a8;
     color-scheme: dark;
   }
 }
@@ -55,7 +55,7 @@
   --atrament: #efece4; --atrament-2: #bdb8ab; --atrament-3: #a39e91;
   --kreska: #38362f; --kreska-2: #57544a;
   --akcent: #6fd3c3; --akcent-slaby: #173a35;
-  --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866;
+  --za: #34b87c; --przeciw: #e2635d; --wstrzymal: #d9a52e; --brak: #5a5866; --inne: #9d99a8;
   color-scheme: dark;
 }
 
@@ -146,7 +146,7 @@ details.panel[open] .panel-tresc { display: block; }
 .spis a.biezacy { color: var(--atrament); border-bottom-color: var(--atrament); }
 
 /* ---------- działy ---------- */
-.dzial { display: grid; grid-template-columns: 1fr; gap: 0 28px; padding: 36px 0 8px; border-bottom: 1px solid var(--kreska); }
+.dzial { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 28px; padding: 36px 0 8px; border-bottom: 1px solid var(--kreska); }
 @media (min-width: 900px) { .dzial { grid-template-columns: 3rem minmax(0, 1fr); } }
 .dzial > .nr { font-family: "Brygada 1918", Georgia, serif; font-weight: 600; font-size: 1.6rem; line-height: 1.2; color: var(--atrament-3); }
 @media (max-width: 899px) { .dzial > .nr { display: none; } }
@@ -267,3 +267,23 @@ details.metoda ul { margin: 6px 0 0; padding-left: 18px; }
 .portret { width: 112px; height: 140px; background: var(--papier-3); border: 1px solid var(--kreska); display: grid; place-items: center; color: var(--atrament-3); font-size: 12px; flex: none; }
 .glowa-posla { display: flex; gap: 20px; align-items: flex-start; }
 @media (max-width: 639px) { .glowa-posla { gap: 14px; } .portret { width: 72px; height: 90px; } }
+
+/* legenda klubów, warunki UOKiK, podpisy słupków */
+.legenda { list-style: none; padding: 0; margin: 14px 0 0; max-width: 46rem; columns: 2; column-gap: 28px; font-size: 14px; }
+.legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--kreska); break-inside: avoid; }
+.warunki { margin-top: 14px; font-size: 12.5px; max-width: 46rem; border-top: 1px solid var(--kreska); padding-top: 10px; }
+.w-liczbach .warunki { max-width: none; margin-bottom: 8px; }
+.slupki-lata { line-height: 1.3; padding-top: 4px; }
+.slupki-lata b { font-weight: 600; color: var(--atrament); font-size: 11px; }
+
+/* tabele na telefonie: wiersz jako blok, bez przewijania w bok */
+@media (max-width: 639px) {
+  .tabela thead { display: none; }
+  .tabela, .tabela tbody { display: block; }
+  .tabela tr { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--kreska); }
+  .tabela td { border: 0; padding: 0; }
+  .tabela td:not(.l) { flex: 1 1 100%; }
+  .tabela td.l:last-child { margin-left: auto; font-weight: 600; }
+  .tabela.decyzje td.l:nth-last-child(2)::before { content: "decyzje: "; color: var(--atrament-2); }
+  .tabela.przypadki td.l:nth-last-child(2)::before { content: "przypadki: "; color: var(--atrament-2); }
+}

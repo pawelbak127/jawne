@@ -126,10 +126,14 @@ przewijania na 390 px — najwyżej 4 rzeczy), **Działy** (kolejność),
 - **Działy:** 1. W liczbach · 2. Budżet (skład dochodów, na co wydaje,
   rok po roku) · 3. Wskaźniki finansowe SMUP (4 widoczne + „pokaż
   wszystkie 15”) · 4. Fundusze UE (dwie perspektywy, największe projekty) ·
-  5. Pomoc publiczna (suma, lata, na co, kto udzielił, największe podmioty,
-  **kto przyznał** — dziś „Kto to postanowił”, jako tabela organ × rodzaj
-  pomocy, objaśnienia rodzajów raz, w legendzie) · 6. Zamówienia ·
-  7. Dane do pobrania.
+  5. Pomoc publiczna (suma, na co, największe podmioty i **„Kto przyznał
+  pomoc”** — jedna tabela organ × rodzaj pomocy zamiast dzisiejszych dwóch
+  sekcji „Kto udzielił” i „Kto to postanowił”, które pokazują te same
+  organy; 5 największych + „pokaż wszystkie 43”; objaśnienia rodzajów raz,
+  w legendzie, zamiast 47 razy) · 6. Zamówienia · 7. Dane do pobrania.
+- **Wykres lat tylko przy co najmniej dwóch latach** — dziś pomoc publiczna
+  Krakowa ma wykres z jednym słupkiem („2026: 22,2 mln zł”).
+- **Posłowie okręgu z nazwiskami** w tekście, nie tylko w `title` portretu.
 - **Jak to liczymy (jedno na dział):** definicja dochodu; ceny bieżące;
   „wydatki majątkowe ≠ inwestycyjne”; „projekty tylko tutaj”; wartość brutto
   pomocy; dni ustalone; reguła jawności nazw; progi TED.
@@ -147,8 +151,10 @@ przewijania na 390 px — najwyżej 4 rzeczy), **Działy** (kolejność),
   2. udział w głosowaniach: `y%` = `c z d`,
   3. usprawiedliwione dni nieobecności: `e z f dni`.
 - **Działy:** 1. W liczbach · 2. Głosowania inaczej niż klub (lista 8) ·
-  3. Jak głosował(a) (rozkład) · 4. Ostatnie głosowania (przeniesione
-  wyżej — dziś są na samym końcu, za interpelacjami) · 5. Wystąpienia ·
+  3. Ostatnie głosowania (przeniesione wyżej — dziś są na samym końcu, za
+  interpelacjami; **przy każdym rodzaj**: nad całością / poprawka / sprawa
+  porządkowa, bo u A. Adamczyka pierwsze cztery to kworum, przerwa
+  i odroczenie) · 4. Jak głosował (rozkład) · 5. Wystąpienia ·
   6. Komisje · 7. Interpelacje i zapytania (jedna sekcja z dwoma
   zakładkami-kotwicami zamiast dwóch powtórzonych sekcji).
 - **Dane osobowe (zawód, wykształcenie, e-mail, głosy w wyborach, miejsce
@@ -165,9 +171,12 @@ przewijania na 390 px — najwyżej 4 rzeczy), **Działy** (kolejność),
 - **Na górze:** nazwa, NIP (mono), gmina siedziby (odnośnik), typ z REGON;
   wiersze: wartość pomocy brutto · liczba przypadków · zakres dat ·
   zamówienia (suma z ogłoszeń z jednym wykonawcą).
-- **Działy:** 1. W liczbach · 2. Przypadki pomocy (50 najnowszych, z
-  odnośnikiem do decyzji i podstawy prawnej) · 3. Zamówienia publiczne ·
-  4. Warunki UOKiK.
+- **Zaraz pod „W liczbach”:** warunki UOKiK z datą pobrania (dziś stoją
+  po 50 przypadkach, kilkanaście ekranów pod kwotą — zasada 10).
+- **Działy:** 1. W liczbach · 2. Przypadki pomocy — **zgrupowane**: ta sama
+  data, organ i rodzaj pomocy = jeden wiersz z liczbą przypadków
+  i rozpiętością kwot (PGE GiEK: 50 przypadków → 4 wiersze), podstawa
+  prawna raz pod tabelą, „pokaż wszystkie osobno” · 3. Zamówienia publiczne.
 - **Powrót:** okruszek + „Wszystkie publiczne pieniądze w gminie X” na
   górze, nie na dole.
 

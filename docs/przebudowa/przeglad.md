@@ -1,10 +1,76 @@
-# Przegląd serwisu — stan na 04.10.2026 (`main` @ b48538a)
+# Przegląd serwisu — stan na 04.10.2026
 
-**Na czym to stoi.** Na kodzie z `src/`. Żywej strony nie dało się obejrzeć:
-polityka sieci środowiska w chmurze odrzuca `zrejestru.pl` (HTTP 403 na
-CONNECT, ten sam wynik dla WebFetch). Wysokości stron (45 000 / 37 000 /
-30 000 px) są z pomiaru z 03.10 opisanego w `zadanie.md`, nie moje. Wszystko
-inne poniżej ma plik i cytat.
+**Na czym to stoi.** Na kodzie z `src/` (`main` @ b48538a) i na **zrzutach
+z lokalnej budowy `main` @ 414bc5d** (gałąź `przebudowa-zrzuty`: 21 stron,
+komputer 1280 px i telefon 390 px, wyrenderowany tekst każdej strony).
+Żywej zrejestru.pl ta sesja nie widzi (polityka sieci, HTTP 403). Wysokości
+i wagi stron poniżej są **zmierzone na tych zrzutach**; to nowszy kod niż
+na serwerze, a próg jawności nazw był lokalnie wyłączony.
+
+Wcześniejsze liczby z `zadanie.md` (45 000 / 37 000 / 30 000 px) były
+z innej próby: na zrzutach gmina Kraków ma 27 046 px, lista posłów 37 244 px,
+głosowanie 30 971 px, a strona firmy PGE GiEK — 17 005 px (telefon).
+
+## 0. Zmierzone na zrzutach — najważniejsze
+
+| strona | HTML | komputer | telefon |
+|---|---|---|---|
+| `/` | 256 kB | 3 529 px | 6 186 px |
+| `/gmina/126101` (Kraków) | 313 kB | 16 743 px | 27 046 px |
+| `/gmina/221301` (mała gmina) | 170 kB | 7 670 px | 13 134 px |
+| `/posel/andrzej-adamczyk` | 122 kB | 5 897 px | 9 387 px |
+| `/firma/7690502495` (PGE GiEK) | 170 kB | 10 256 px | 17 005 px |
+| `/glosowanie/64-40` | 489 kB | 12 050 px | 30 971 px |
+| `/poslowie` | 508 kB | 12 943 px | 37 244 px |
+| `/pomoc-publiczna` | 101 kB | 4 202 px | 8 544 px |
+
+Znaleziska, od najważniejszego (→ **gł.** = do poprawy w `src/` przez
+główną sesję, niezależnie od wyboru kierunku):
+
+1. **Odpowiedź stoi pod rozpisaniem.** Kraków na telefonie: pierwszy ekran to
+   liczba mieszkańców, kafel okręgu i 14 portretów. Pierwsza kwota to
+   „Z czego składają się te dochody — 9,67 mld zł razem” z sześcioma paskami,
+   a liczba, która odpowiada na pytanie — „11,8 tys. zł dochodów na
+   mieszkańca”, mediana 8288 zł — dopiero pod nią.
+2. **Posłowie okręgu bez nazwisk.** W wyrenderowanym tekście strony Krakowa
+   nie ma żadnego z 14 nazwisk — są tylko w `title` portretów, którego
+   telefon nie pokazuje.
+3. **Te same dane dwa razy, objaśnienie 47 razy.** „Kto udzielił” (6 organów
+   z kwotą) i „Kto to postanowił” (43 organy z decyzjami) to jeden zbiór —
+   ZUS: 2,76 mln zł w pierwszej, 1,86 + 0,905 mln zł w drugiej. Objaśnienie
+   rodzaju pomocy stoi przy każdym organie: 27 × „Dotacje, refundacje
+   i dopłaty…”, 11 × „Odroczenia i raty…”, 6 × „Pożyczki…”, 3 × „Zwolnienia…”.
+4. **Warunki UOKiK daleko od liczby** (zasada 10: „tuż przy liczbach”) → **gł.**
+   Na stronie firmy stoją w 631. wierszu tekstu z 672, po 50 przypadkach —
+   kilkanaście ekranów pod „12,8 mld zł”. Na `/pomoc-publiczna` — na samym
+   końcu strony.
+5. **Warunki UOKiK bez daty pobrania** na stronie Krakowa („Źródło: System
+   Udostępniania Danych o Pomocy Publicznej (UOKiK). Dane mogą…”), a na
+   stronie firmy jest „dane pobrane 17 września 2026”. Zasada 10 wymaga daty. → **gł.**
+6. **50 przypadków, z których 47 to jedno.** PGE GiEK: każdy przypadek ma
+   5 linii, a 47 z 50 to ta sama pomoc (rynek mocy, PSE S.A., ta sama
+   podstawa prawna) w trzech datach: 16 + 16 + 15. Stąd 17 005 px.
+7. **Dwie liczby gmin.** Strona główna: „2496 gmin”, `/gminy`: „dla każdej
+   z 2479 gmin”. → **gł.**
+8. **„jestw rejestrze”** — poseł, pod interpelacjami i pod zapytaniami
+   („pełny tekst interpelacji i odpowiedzi jestw rejestrze Sejmu”): brak
+   spacji między wyrażeniem `{…}` a tekstem w następnym wierszu JSX. → **gł.**
+9. **Dwa zapisy procentu i dywiz zamiast minusa.** Poseł: „0,7 %”, „52,4 %”;
+   gmina: „88,6%”, „89%”. SMUP: „-148 zł”, „-1168 zł” (dywiz zamiast
+   znaku minus „−”).
+10. **„Ostatnie głosowania” posła to procedura.** U A. Adamczyka pierwsze
+    cztery to „Wniosek o odroczenie posiedzenia”, „Głosowanie kworum —
+    obecny”, „Wniosek o przerwę” i wniosek o skrócenie terminu. Zasada 8
+    działa tylko na głównej; tu lista bez rodzaju głosowania wygląda jak
+    najważniejsze decyzje posła.
+11. **Wykres z jednym słupkiem**: „Według roku udzielenia — 2026: 22,2 mln zł”
+    (Kraków; wszystkie pobrane dni są z jednego roku).
+12. **Pusta karta na komputerze.** Poseł: karta „0,7% głosowań inaczej niż
+    reszta klubu” rozciąga się do wysokości listy 8 odstępstw — ok. 700 px
+    pustego miejsca w karcie (`posel--komputer--01.jpg`).
+13. **Na głównej sala przed liczbami.** Plan sali zajmuje większość
+    drugiego ekranu na komputerze, zaraz pod sześcioma kartami; „co mamy” i ostatnie głosowania
+    są dopiero pod nim (`glowna--komputer--01.jpg`).
 
 ---
 
@@ -64,7 +130,7 @@ Nie ma w menu: `/organ/[nip]` (wejście tylko z gminy i firmy) ani
    Trzy nazwy na jedno miejsce (pytanie do Pawła).
 6. **Kotwice na stronie gminy są, ale znikają po pierwszym ekranie.**
    Siedem odnośników (`Budżet · Finanse i podatki · Fundusze UE · …`) stoi
-   raz pod nagłówkiem. Na stronie o wysokości ok. 45 000 px po przewinięciu
+   raz pod nagłówkiem. Na stronie o wysokości 27 046 px (Kraków, telefon) po przewinięciu
    nie ma jak wrócić do spisu ani zobaczyć, w której sekcji się jest.
 
 ## 3. Ścieżki trzech czytelników (liczone kliknięcia, wg kodu)

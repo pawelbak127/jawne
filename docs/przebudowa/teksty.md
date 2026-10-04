@@ -226,3 +226,33 @@ sekcję) · **usunąć — powtarza X**.
 - „Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je
   rejestr. Wszystkich głosowań, łącznie z poprawkami i sprawami
   porządkowymi, jest {n}.” → zostaje, to mianownik (zasada 8).
+
+---
+
+## Błędy w tekście — zmierzone na zrzutach (lokalna budowa `main` @ 414bc5d)
+
+Tego nie widać w kodzie, tylko w wyrenderowanej stronie (wzorzec 5
+z `CLAUDE.md`). Do poprawy niezależnie od wyboru kierunku:
+
+- **„jestw rejestrze Sejmu”** — `posel/[slug]/page.tsx`, `PytaniaPosla`:
+  `{`…i odpowiedzi jest`}` i w następnym wierszu `w rejestrze Sejmu…` —
+  JSX zjada przejście do nowej linii po wyrażeniu. Na stronie posła
+  dwa razy (interpelacje i zapytania).
+- **Procent na dwa sposoby:** poseł „0,7 %”, „52,4 %”, „92,5 %” (funkcja
+  `procent()`), gmina „88,6%”, „89%”, „81%” (budowane w miejscu). Jeden
+  zapis w całym serwisie; w polskiej typografii oba są spotykane,
+  ważne, żeby był jeden.
+- **Dywiz zamiast minusa:** „-148 zł”, „-1168 zł” (SMUP). Znak minus to
+  „−” (U+2212); dywiz w kwocie łatwo przeoczyć i łamie się z liczbą.
+- **„2496 gmin”** na głównej wobec „2479 gmin” na `/gminy` — strona główna
+  sumuje gminy po okręgach (`okregi().reduce(... o.gmin)`), a `/gminy`
+  liczy wykaz gmin — skąd dokładnie 17 różnicy, nie sprawdzałem (nie mam
+  bazy). Jedna liczba w serwisie.
+- **Warunki UOKiK bez daty** na stronie Krakowa („Źródło: System
+  Udostępniania Danych o Pomocy Publicznej (UOKiK). Dane mogą…”), z datą
+  na stronie firmy. Zasada 10 wymaga daty pobrania.
+- **„zagłosował(a)”, „głosował(a)”, „należał(a)”** — dziś na każdej stronie
+  posła. Zamiast zgadywać rodzaj gramatyczny z imienia (rejestr go nie
+  podaje, a pomyłka przy czyimś nazwisku kosztuje więcej niż nawias), pisać
+  bezosobowo: „Głosowania inaczej niż reszta klubu”, „Rozkład głosów”,
+  „Kluby w tym czasie: …”.
