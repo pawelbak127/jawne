@@ -22,8 +22,14 @@ type Grupa = { etykieta: string; adres?: string; opis?: string; pozycje?: Pozycj
  * JavaScript dokłada tylko zamykanie: klikniecie obok, Escape i przejscie
  * na inna strone.
  */
+/*
+ * Dwie grupy zamiast trzech pozycji (04.10.2026, prosba Pawla: „moze te gminy
+ * gdzies przenies"). Strona gminy to w wiekszosci pieniadze — budzet,
+ * fundusze UE, pomoc dla firm, zamowienia — wiec „Gminy" sa teraz pierwsza
+ * pozycja w „Pieniadzach". Doszly „Firmy": wyszukiwarka juz szukala po nazwie
+ * i NIP-ie, ale z menu nie bylo do niej wejscia z ta obietnica.
+ */
 const MENU: Grupa[] = [
-  { etykieta: 'Gminy', adres: '/gminy', opis: 'budżet, Unia, pomoc dla firm' },
   {
     etykieta: 'Sejm',
     pozycje: [
@@ -38,7 +44,9 @@ const MENU: Grupa[] = [
   {
     etykieta: 'Pieniądze',
     pozycje: [
+      { adres: '/gminy', etykieta: 'Gminy', opis: 'budżet, fundusze UE, pomoc dla firm' },
       { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', opis: 'dotacje i ulgi dla firm (UOKiK)' },
+      { adres: '/szukaj', etykieta: 'Firmy', opis: 'czy firma dostała pomoc — szukaj po nazwie albo NIP' },
       // „Pieniadze w gminie" prowadzilo POD TEN SAM adres, co zakladka „Gminy"
       // obok (zgloszenie Pawla 30.09.2026). Dwa wejscia do jednej strony to
       // nie wybor, tylko zgadywanka — zostaje to widoczniejsze.
