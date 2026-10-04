@@ -1,0 +1,26 @@
+Adres: /o-serwisie
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+O serwisie
+
+jawne pokazuje dane publiczne o Sejmie: kto jak głosował, kto zasiada w izbie i co dzieje się z ustawami. Wszystko pochodzi z oficjalnych rejestrów Kancelarii Sejmu i przy każdej liczbie znajdziesz odnośnik do źródła.
+
+Na stronie każdej gminy łączymy to z publicznymi pieniędzmi: budżetem gminy i tym, na co go wydaje (GUS), projektami z Funduszy Europejskich (listy Ministerstwa Funduszy i Polityki Regionalnej), pomocą publiczną dla firm z bazy SUDOP prowadzonej przez UOKiK — dzień po dniu dla całego kraju, bo historię dociągamy nocami — oraz zamówieniami publicznymi z unijnego dziennika TED. Te same liczby można obejrzeć na mapie wszystkich gmin. Kwoty przeliczamy na mieszkańca według GUS, a przypisanie gminy do okręgu wyborczego bierzemy z wyników PKW z 2023 roku.
+
+Serwis prowadzi jedna osoba prywatnie. Nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim.
+
+Czego tu nie ma
+Ocen i rankingów „dobrych” posłów. Nie przyznajemy odznak ani punktów. Z tych samych danych da się ułożyć ranking pokazujący dokładnie przeciwne rzeczy, w zależności od tego, co się policzy — więc liczenie zostawiamy czytelnikowi.
+Powodów nieobecności. Rejestr ich nie podaje. Wyjazd służbowy, choroba i zwykła nieobecność wyglądają w danych identycznie, więc nie dopisujemy posłowi motywu, którego nie znamy.
+Nazwisk osób prywatnych. We wnioskach o uchylenie immunitetu z oskarżenia prywatnego nie powtarzamy nazwisk oskarżycieli ani ich pełnomocników. Rejestr Sejmu je podaje, ale to my sprawiamy, że da się je łatwo wyszukać. Nazwisko posła zostaje, a pełny tytuł jest pod odnośnikiem do rejestru.
+Nazw beneficjentów, które mogą być osobą. Dotacje i pomoc publiczną dostają też rolnicy i jednoosobowe firmy, których nazwą jest imię i nazwisko. Nazwę pokazujemy tylko wtedy, gdy widać w niej formę prawną albo instytucję (np. „sp. z o.o.”, „gmina”, „szpital”) i nie ma w niej imienia z rejestru PESEL. Pozostałych nie wymieniamy, ale zawsze podajemy, ilu ich jest, i wliczamy ich kwoty do sum.
+Barw partyjnych. Kolory na wykresach są nasze i służą wyłącznie rozróżnieniu bloków. Loga klubów dają pięć podobnych czerwieni i trzy granaty — na ich podstawie nie da się narysować czytelnego półkola izby.
+Jak nas sprawdzić
+
+Każda liczba ma obok mały odnośnik prowadzący wprost do rejestru, z którego pochodzi. Jeśli coś się nie zgadza, źródło rozstrzyga — nie my. Na stronie stanu danych piszemy też, czego jeszcze nie zaimportowaliśmy.

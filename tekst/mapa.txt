@@ -1,0 +1,60 @@
+Adres: /mapa
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Mapa gmin
+granice: PRG (GUGiK)
+
+Każda liczba na tej mapie jest w przeliczeniu na mieszkańca. Kliknij gminę, żeby zobaczyć, skąd te pieniądze pochodzą.
+
+Dochody gminy
+Fundusze europejskie
+Pomoc publiczna dla firm
+Gminy
+Powiaty
+
+Dochody budżetu gminy w przeliczeniu na mieszkańca, za ostatni rok z kompletem danych.
+
+Województwo
+cała Polska
+dolnośląskie
+kujawsko-pomorskie
+lubelskie
+lubuskie
+łódzkie
+małopolskie
+mazowieckie
+opolskie
+podkarpackie
+podlaskie
+pomorskie
+śląskie
+świętokrzyskie
+warmińsko-mazurskie
+wielkopolskie
+zachodniopomorskie
++
+−
+
+Dotknij gminy, żeby ją wybrać — potem przycisk przeniesie Cię na jej stronę. Przyciskiem + powiększysz mapę.
+
+Legenda — złote na mieszkańca
+
+poniżej 7698 zł
+7698 zł – 8379 zł
+8379 zł – 8986 zł
+8986 zł – 9799 zł
+9799 zł – 11,1 tys. zł
+powyżej 11,1 tys. zł
+brak danych (2 gminy)
+
+Sześć przedziałów po tyle samo gmin (kwantyle), a nie równe kwoty: kilka gmin z bardzo wysoką kwotą na mieszkańca sprawiłoby, że cała reszta kraju miałaby jeden kolor. Ciemniej nie znaczy „lepiej” — to tylko więcej złotych na mieszkańca.
+
+Podstawa: 2477 gmin z wartością. Źródło liczb: GUS, Bank Danych Lokalnych.
+
+Wolisz listę? Spis wszystkich gmin →

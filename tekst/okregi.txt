@@ -1,0 +1,157 @@
+Adres: /okregi
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Okręgi wyborcze
+PKW — wybory 2023
+
+Posłów wybiera się w 41 okręgach. Każdy okręg ma listę swoich gmin. Szukasz konkretnej gminy? Wpisz jej nazwę albo zajrzyj do spisu gmin.
+
+Szukaj
+
+Spis wszystkich gmin →
+
+WOJ. DOLNOŚLĄSKIE
+1
+Legnica
+12 posłów
+2
+Wałbrzych
+8 posłów
+3
+Wrocław
+14 posłów
+WOJ. KUJAWSKO-POMORSKIE
+4
+Bydgoszcz
+12 posłów
+5
+Toruń
+13 posłów
+WOJ. LUBELSKIE
+6
+Lublin
+15 posłów
+7
+Chełm
+12 posłów
+WOJ. LUBUSKIE
+8
+Zielona Góra
+12 posłów
+WOJ. ŁÓDZKIE
+9
+Łódź
+10 posłów
+10
+Piotrków Trybunalski
+9 posłów
+11
+Sieradz
+12 posłów
+WOJ. MAŁOPOLSKIE
+12
+Kraków
+8 posłów
+13
+Kraków
+14 posłów
+14
+Nowy Sącz
+10 posłów
+15
+Tarnów
+9 posłów
+WOJ. MAZOWIECKIE
+16
+Płock
+10 posłów
+17
+Radom
+9 posłów
+18
+Siedlce
+12 posłów
+19
+Warszawa
+20 posłów
+20
+Warszawa
+12 posłów
+WOJ. OPOLSKIE
+21
+Opole
+12 posłów
+WOJ. PODKARPACKIE
+22
+Krosno
+11 posłów
+23
+Rzeszów
+15 posłów
+WOJ. PODLASKIE
+24
+Białystok
+14 posłów
+WOJ. POMORSKIE
+25
+Gdańsk
+12 posłów
+26
+Słupsk
+14 posłów
+WOJ. ŚLĄSKIE
+27
+Bielsko-Biała
+9 posłów
+28
+Częstochowa
+7 posłów
+29
+Katowice
+9 posłów
+30
+Bielsko-Biała
+9 posłów
+31
+Katowice
+12 posłów
+32
+Katowice
+9 posłów
+WOJ. ŚWIĘTOKRZYSKIE
+33
+Kielce
+16 posłów
+WOJ. WARMIŃSKO-MAZURSKIE
+34
+Elbląg
+8 posłów
+35
+Olsztyn
+10 posłów
+WOJ. WIELKOPOLSKIE
+36
+Kalisz
+12 posłów
+37
+Konin
+9 posłów
+38
+Piła
+9 posłów
+39
+Poznań
+10 posłów
+WOJ. ZACHODNIOPOMORSKIE
+40
+Koszalin
+8 posłów
+41
+Szczecin
+12 posłów

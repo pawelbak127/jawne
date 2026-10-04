@@ -1,0 +1,97 @@
+Adres: /komisje
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Komisje sejmowe
+rejestr komisji
+
+Komisje przygotowują projekty ustaw, zanim trafią na salę. Opis zakresu każdej komisji pochodzi z rejestru Sejmu; skład jest bieżący (stan z 3 października 2026).
+
+Komisje stałe
+Komisja Administracji i Spraw Wewnętrznych
+ASW · 39 członków
+Komisja Cyfryzacji, Innowacyjności i Nowoczesnych Technologii
+CNT · 17 członków
+Komisja Edukacji i Nauki
+ENM · 35 członków
+Komisja Etyki Poselskiej
+EPS · 7 członków
+Komisja Finansów Publicznych
+FPB · 46 członków
+Komisja Gospodarki Morskiej i Żeglugi Śródlądowej
+GMZ · 18 członków
+Komisja Gospodarki i Rozwoju
+GOR · 36 członków
+Komisja Infrastruktury
+INF · 41 członków
+Komisja Kultury Fizycznej, Sportu i Turystyki
+KFS · 27 członków
+Komisja Kultury, Dziedzictwa Narodowego i Środków Przekazu
+KSP · 30 członków
+Komisja Mniejszości Narodowych i Etnicznych
+MNE · 18 członków
+Komisja Obrony Narodowej
+OBN · 51 członków
+Komisja Ochrony Środowiska, Zasobów Naturalnych i Leśnictwa
+OSZ · 40 członków
+Komisja Odpowiedzialności Konstytucyjnej
+ODK · 21 członków
+Komisja Polityki Senioralnej
+PSN · 16 członków
+Komisja Polityki Społecznej i Rodziny
+PSR · 37 członków
+Komisja Regulaminowa, Spraw Poselskich i Immunitetowych
+RSP · 19 członków
+Komisja Rolnictwa i Rozwoju Wsi
+RRW · 40 członków
+Komisja Samorządu Terytorialnego i Polityki Regionalnej
+STR · 26 członków
+Komisja Spraw Zagranicznych
+SZA · 31 członków
+Komisja Sprawiedliwości i Praw Człowieka
+SPC · 36 członków
+Komisja Ustawodawcza
+UST · 31 członków
+Komisja Zdrowia
+ZDR · 40 członków
+Komisja do Spraw Deregulacji
+DER · 15 członków
+Komisja do Spraw Dzieci i Młodzieży
+DIM · 17 członków
+Komisja do Spraw Energii, Klimatu i Aktywów Państwowych
+ESK · 30 członków
+Komisja do Spraw Kontroli Państwowej
+KOP · 14 członków
+Komisja do Spraw Petycji
+PET · 17 członków
+Komisja do Spraw Służb Specjalnych
+KSS · 8 członków
+Komisja do Spraw Unii Europejskiej
+SUE · 43 członków
+Komisja Łączności z Polakami za Granicą
+LPG · 35 członków
+Komisje nadzwyczajne
+Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących prawa do przerywania ciąży
+NPC · 26 członków
+Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących rynku pracy oraz cudzoziemców przebywających na terytorium Rzeczypospolitej Polskiej
+NZC · 30 członków
+Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących statusu osoby najbliższej w związku i umowy o wspólnym pożyciu
+NON · 16 członków
+Komisja Nadzwyczajna do spraw działań przeciwpowodziowych i usuwania skutków powodzi z roku 2024
+NSP · 25 członków
+Komisja Nadzwyczajna do spraw ochrony zwierząt
+NOZ · 18 członków
+Komisja Nadzwyczajna do spraw zmian w kodyfikacjach
+NKK · 24 członków
+Komisje śledcze
+Komisja Śledcza do zbadania legalności, prawidłowości oraz celowości czynności operacyjno-rozpoznawczych podejmowanych m.in. z wykorzystaniem oprogramowania Pegasus przez członków Rady Ministrów, służby specjalne, Policję, organy kontroli skarbowej oraz celno-skarbowej, organy powołane do ścigania przestępstw i prokuraturę w okresie od dnia 16 listopada 2015 r. do dnia 20 listopada 2023 r.
+SKPG · 9 członków
+Komisja Śledcza do zbadania legalności, prawidłowości oraz celowości działań podjętych w celu przygotowania i przeprowadzenia wyborów Prezydenta Rzeczypospolitej Polskiej w 2020 r. w formie głosowania korespondencyjnego
+SKGK · 11 członków
+Komisja Śledcza do zbadania legalności, prawidłowości oraz celowości działań, a także występowania nadużyć, zaniedbań i zaniechań w zakresie legalizacji pobytu cudzoziemców na terytorium Rzeczypospolitej Polskiej w okresie od dnia 12 listopada 2019 r. do dnia 20 listopada 2023 r.
+SKPC · 11 członków

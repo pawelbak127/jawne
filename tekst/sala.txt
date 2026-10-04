@@ -1,0 +1,68 @@
+Adres: /sala
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Sala posiedzeń
+plan sali, Kancelaria Sejmu
+
+Każda kropka to jedno miejsce w sali posiedzeń — w tym punkcie, w którym rysuje je Kancelaria Sejmu. Najedź, żeby zobaczyć, kto na nim siedzi; kliknięcie prowadzi na stronę posła.
+
+Pokaż na planie głosowanie
+bez głosowania — barwy klubów
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy - Prawo wodne…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o wykonywaniu orzeczeń…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy - Kodeks…
+4 września 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o związkach…
+4 września 2026 · Sprawozdanie Komisji o senackim projekcie ustawy o zmianie ustawy - Kodeks…
+4 września 2026 · Sprawozdanie Komisji o senackim projekcie ustawy o organach właściwych i…
+4 września 2026 · Sprawozdanie Komisji o poselskim projekcie ustawy o utworzeniu Uniwersytetu…
+4 września 2026 · Sprawozdanie Komisji o przedstawionym przez Prezydium Sejmu projekcie uchwały w…
+31 lipca 2026 · Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy - Prawo…
+Pokaż
+Mównica
+Stenografowie
+
+Najedź na miejsce, żeby zobaczyć, kto na nim siedzi. Na telefonie dotknięcie zaznacza posła, a przejście na jego stronę to osobny przycisk.
+
+KO
+156
+PiS
+147
+RozwojPlus
+40
+PSL-TD
+32
+Lewica
+21
+Konfederacja
+16
+Polska2050
+15
+Centrum
+15
+niez.
+7
+Demokracja
+4
+Razem
+4
+Konfederacja_KP
+3
+
+Skąd to wiemy
+
+API Sejmu nie podaje, kto gdzie siedzi. Jedynym źródłem jest rysunek sali wydawany przez Kancelarię Sejmu — ten, z którego korzysta prezydium w czasie obrad. Tutejszy plan pochodzi z rysunku ze stanem na 21 września 2026. Miejsca zmieniają się w trakcie kadencji, a my nie odświeżamy ich automatycznie: rysunek jest wydawany pod nowym adresem za każdym razem.
+
+Czego tu nie ma
+
+Numer miejsca podajemy przy 460 z 460 posłów. Ław rządowych, lóż i miejsc dla gości nie pokazujemy: rysunek nie podpisuje ich nazwiskami.
+
+Szukasz kogoś po nazwisku albo chcesz porównać kluby? Pełna lista posłów ma filtry i wyszukiwanie.

@@ -1,0 +1,48 @@
+Adres: /ustawa/3101
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Ustawy · druk nr 3101
+
+Rządowy projekt ustawy o zmianie ustawy - Prawo o ruchu drogowym oraz niektórych innych ustaw
+W toku
+projekt ustawy
+wpłynął 15 września 2026
+Po ludzku
+
+Co się zmienia: Kierowca, który popełni najgroźniejsze wykroczenia na przejeździe kolejowym, straciłby prawo jazdy od razu na 3 miesiące. Sądy surowiej orzekałyby też zakaz prowadzenia pojazdów za przestępstwa na przejazdach. Kogo dotyczy: kierowców.
+
+Streszczenie napisał automatycznie model językowy (Claude Opus 5.5) wyłącznie na podstawie opisu z rejestru, który jest niżej. Może zawierać błędy — rozstrzyga tekst rejestru. Każda liczba w streszczeniu została sprawdzona: musi występować w opisie rejestru.
+
+Czego dotyczy
+opis z rejestru Sejmu
+
+projekt dotyczy ograniczenia liczby zdarzeń drogowych na przejazdach kolejowych poprzez: 1) wprowadzenie instrumentu natychmiastowego zatrzymania na 3 miesiące prawa jazdy za najbardziej niebezpieczne naruszenia popełnione na przejazdach kolejowych, 2) zaostrzenie sądowego środka karnego w postaci zakazu prowadzenia pojazdów w przypadku przestępstw popełnionych na przejazdach kolejowych.
+
+Droga przez Sejm
+
+Nazwy etapów pochodzą z rejestru Sejmu. Nie dopisujemy do nich własnych wyjaśnień.
+
+Projekt wpłynął do Sejmu
+15 września 2026
+Druk nr 3101 (PDF)
+Skierowano do I czytania na posiedzeniu Sejmu
+15 września 2026
+Skierowanie
+15 września 2026
+I czytanie na posiedzeniu Sejmu
+18 września 2026
+posiedzenie 65
+Skierowanie
+18 września 2026
+komisja INF
+
+Źródło: rejestr procesów legislacyjnych Kancelarii Sejmu, druk nr 3101
+przebieg procesu w Sejmie
+
+Druki otwierają się prosto z API Sejmu. Zdarza mu się oddać błąd na poprawny adres — jeśli plik się nie otworzy, spróbuj ponownie za chwilę. Nie kopiujemy druków do siebie: to dokumenty Kancelarii Sejmu i mają pochodzić od niej.

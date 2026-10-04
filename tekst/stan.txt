@@ -1,0 +1,241 @@
+Adres: /stan
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Stan danych
+
+Ta strona istnieje po to, żeby dało się sprawdzić, czego jeszcze nie mamy. Serwis, który pokazuje tylko to, co mu wyszło, jest trudniejszy do zweryfikowania niż taki, który mówi wprost, gdzie ma dziury.
+
+agregaty(zbiór bez opisu)
+0
+
+zaimportowano 29 września 2026
+
+bez zmian (16:2026-08-19:2026-09-06) — nie licze od nowa; liczone 0 s
+
+Budżety gmin — dochody, dochody własne, wydatki (GUS, Bank Danych Lokalnych)
+2477
+
+zaimportowano 24 września 2026
+
+GUS BDL, lata 2025–2025; dochody 2025: 368846929288 zl
+
+Wydatki gmin według działów budżetu (GUS, Bank Danych Lokalnych)
+2477
+
+zaimportowano 1 października 2026
+
+GUS BDL temat P2920, lata 2021–2025
+
+Cechy głosowań (nad całością projektu, sprawy porządkowe)
+4641
+
+zaimportowano 3 października 2026
+
+nad caloscia: 698
+
+Projekty z Funduszy Europejskich 2014–2020
+103 824
+
+zaimportowano 17 września 2026
+
+plik z 2026-09-04; https://api.dane.gov.pl/media/resources/20260904/Lista_projektow_FE_2014_2020_01092026.xlsx; sha256 686dfe466fe85c1af565fbf05c653f1a3067885a43acb2647920b8312b4fc70e; gminy dopasowane 0/0
+
+Projekty z Funduszy Europejskich 2021–2027
+34 348
+
+zaimportowano 17 września 2026
+
+plik z 2026-09-04; https://api.dane.gov.pl/media/resources/20260904/Lista_projektow_FE_2021_2027_01092026.xlsx; sha256 d6a7e5a32d567a9e2f0a621b762decf127b2dcab2e31f4eb83acefc5cd8ed726; gminy dopasowane 55332/55413
+
+Głosowania (liczby zbiorcze)
+4641
+
+zaimportowano 17 września 2026
+
+Głosy imienne
+2 128 618
+
+zaimportowano 16 września 2026
+
+kluby historyczne: PSLx256, Nowa_Lewicax208, Kukiz15x2993, Republikaniex9604
+
+Sumy głosów klubów w każdym głosowaniu
+44 446
+
+zaimportowano 3 października 2026
+
+Interpelacje poselskie — metryczka (kto, do kogo, czy jest odpowiedź)
+20 191
+
+zaimportowano 3 października 2026
+
+36667 podpisow; bez odpowiedzi: 843
+
+Kluby i koła poselskie
+12
+
+zaimportowano 29 września 2026
+
+Kluby wskazane przez posłów, których nie ma w rejestrze klubów
+1
+
+zaimportowano 16 września 2026
+
+Polska2050-TD
+
+komisje(zbiór bez opisu)
+40
+
+zaimportowano 3 października 2026
+
+1051 czlonkostw, 408 poslow
+
+Ludność gmin (GUS, Bank Danych Lokalnych)
+2494
+
+zaimportowano 17 września 2026
+
+GUS BDL, zmienna 72305, rok 2025; suma 37319859
+
+obecnosc(zbiór bez opisu)
+74 853
+
+zaimportowano 28 września 2026
+
+499 poslow; bledow: 0
+
+Okręgi wyborcze i gminy (PKW, wybory 2023)
+41
+
+zaimportowano 16 września 2026
+
+gmin: 2494; zrodlo: PKW, wybory do Sejmu 2023
+
+Porównanie głosów posłów z resztą klubu
+499
+
+zaimportowano 3 października 2026
+
+Posłowie
+499
+
+zaimportowano 29 września 2026
+
+nieaktywnych: 39
+
+Procesy legislacyjne — droga ustaw przez Sejm
+1692
+
+zaimportowano 23 września 2026
+
+16136 etapow, 903 etapow z glosowaniem w bazie
+
+Rejestr REGON — kim jest podmiot o danym NIP-ie (GUS)
+2091
+
+zaimportowano 1 października 2026
+
+BIR 1.1, 2090 z TERYT-em
+
+Wskaźniki finansowe gmin (SMUP, GUS)
+364 119
+
+zaimportowano 22 września 2026
+
+15 miar, lata 2016–2025, gmin 2477
+
+streszczenia(zbiór bez opisu)
+112
+
+zaimportowano 4 października 2026
+
+Pomoc publiczna (SUDOP, UOKiK) — pełne dane wybranych gmin
+80 698
+
+zaimportowano 17 września 2026
+
+gmin: 3
+
+Pomoc publiczna (SUDOP) — dni pobrane dla całego kraju
+22
+
+zaimportowano 2 października 2026
+
+dni 2026-08-19..2026-09-24; ostatnio pobrano 2026-08-19..2026-08-25 (0 zapytan, 33403 przypadkow)
+
+Indeks wyszukiwania firm
+93 499
+
+zaimportowano 3 października 2026
+
+Indeks wyszukiwania głosowań
+4641
+
+zaimportowano 3 października 2026
+
+szukaj-ustawy(zbiór bez opisu)
+1692
+
+zaimportowano 3 października 2026
+
+wykaz-gmin(zbiór bez opisu)
+2
+
+zaimportowano 1 października 2026
+
+PRG 2479 gmin + wykaz jednostek GUS; dopisane: 120713 Szczawa (gmina, pow. limanowski, okreg 14, rodzaje BDL 2); 200216 Grabówka (gmina, pow. białostocki, okreg 24, rodzaje BDL 2)
+
+wystapienia(zbiór bez opisu)
+47 412
+
+zaimportowano 4 października 2026
+
+490 poslow; dni pobranych: 132
+
+Zamówienia publiczne (TED — dziennik zamówień UE)
+130 034
+
+zaimportowano 23 września 2026
+
+TED can-standard, 25145 NIP-ow wykonawcow
+
+zapytania(zbiór bez opisu)
+4049
+
+zaimportowano 3 października 2026
+
+5632 podpisow; bez odpowiedzi: 217
+
+Zdjęcia posłów
+499
+
+zaimportowano 16 września 2026
+
+bez zdjecia: 0
+
+Głosy imienne
+
+Mamy 2 128 618 głosów imiennych z 4632 głosowań. Dla 9 głosowań mamy na razie tylko liczby zbiorcze z nagłówka rejestru — na stronie takiego głosowania jest to napisane wprost.
+
+Skąd to pochodzi
+Posłowie, kluby, głosowania, głosy imienne i zdjęcia:
+API Sejmu RP
+Ludność i budżety gmin:
+GUS — Bank Danych Lokalnych
+Projekty z Funduszy Europejskich:
+MFiPR — lista 2021–2027
+MFiPR — lista 2014–2020
+Pomoc publiczna dla przedsiębiorców:
+SUDOP — UOKiK
+Plan sali posiedzeń (stan na 21 września 2026, odświeżany ręcznie):
+Kancelaria Sejmu — rysunek sali
+Przypisanie gmin do okręgów wyborczych:
+PKW — wyniki wyborów do Sejmu 2023 po gminach
+
+Dane trzymamy u siebie i odświeżamy według harmonogramu — nie pytamy rejestrów przy każdym wejściu na stronę.

@@ -1,0 +1,90 @@
+Adres: /organ/5251000810
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+Organ przyznający pomoc publiczną
+
+Prezes Zarządu Państwowego Funduszu Rehabilitacji Osób Niepełnosprawnych
+
+NIP 5251000810
+
+28 907
+
+decyzji o pomocy
+
+2066
+
+gmin, w których firmy je dostały
+
+liczone po siedzibie firmy, nie po miejscu inwestycji
+
+Rodzaje pomocy
+
+Kwot z różnych rodzajów nie sumujemy w jedną liczbę: dotacja jest wydatkiem budżetu, zwolnienie dochodem, którego nie pobrano, a rata tylko korzyścią z odsetek.
+
+wypłacone z budżetu
+
+28 897 decyzji · 211 mln zł
+
+Dotacje, refundacje i dopłaty — pieniądze, które wyszły z kasy i są w wydatkach budżetu.
+
+ulgi w terminie płatności
+
+9 decyzji · 239 tys. zł
+
+Odroczenia i raty. Rejestr podaje tu korzyść z odsetek, a nie odroczoną kwotę podatku — średnio około dwóch tysięcy złotych na sprawę.
+
+niepobrane albo odstąpione
+
+1 decyzja · 314 tys. zł
+
+Zwolnienia, umorzenia i obniżki — dochód, którego nie pobrano. Tej kwoty nie ma w wydatkach budżetu i nie będzie.
+
+Gdzie trafiła ta pomoc
+sprawdź w SUDOP
+
+Gminy z największymi kwotami — 12 pozycji z 2066. To rozkład decyzji tego organu po kraju, nie ocena gmin.
+
+Kraków
+pow. Kraków
+557 decyzji · 12,4 mln zł
+Wrocław
+pow. Wrocław
+304 decyzje · 12,1 mln zł
+Krotoszyn
+pow. krotoszyński
+40 decyzji · 9,02 mln zł
+Poznań
+pow. Poznań
+319 decyzji · 5,14 mln zł
+Piotrków Trybunalski
+pow. Piotrków Trybunalski
+103 decyzje · 4,92 mln zł
+Katowice
+pow. Katowice
+191 decyzji · 4,88 mln zł
+Łódź
+pow. Łódź
+529 decyzji · 4,61 mln zł
+Legnica
+pow. Legnica
+66 decyzji · 3,73 mln zł
+Zielona Góra
+pow. Zielona Góra
+498 decyzji · 3,59 mln zł
+Gorzów Wielkopolski
+pow. Gorzów Wielkopolski
+266 decyzji · 3,06 mln zł
+Bielsko-Biała
+pow. Bielsko-Biała
+216 decyzji · 2,80 mln zł
+Sosnowiec
+pow. Sosnowiec
+105 decyzji · 2,60 mln zł
+
+Źródło: System Udostępniania Danych o Pomocy Publicznej (UOKiK), dane pobrane 2 października 2026. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.

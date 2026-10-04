@@ -1,0 +1,182 @@
+Adres: /
+
+=== MENU / NAGLOWEK ===
+jawne
+SEJM X KADENCJI
+Sejm
+Pieniądze
+
+=== TRESC ===
+SEJM RP · X KADENCJA
+
+Kto Cię reprezentuje w Sejmie — i jak naprawdę głosuje.
+
+Wpisz swoją gminę: zobaczysz jej budżet, pieniądze z Unii, pomoc publiczną dla firm i zamówienia publiczne, a obok — posłów ze swojego okręgu i to, jak głosują. Przy każdej liczbie jest odnośnik do rejestru.
+
+Szukaj
+
+np.
+Kraków
+Zakopane
+podatek
+sygnaliści
+
+Co trafia do mojej gminy?
+
+2496 gmin: budżet, projekty unijne, pomoc publiczna dla firm i zamówienia publiczne — zawsze w przeliczeniu na mieszkańca.
+
+Gdzie w Polsce jest tych pieniędzy więcej?
+
+Mapa wszystkich gmin: dochody, fundusze europejskie i pomoc publiczna. Ciemniej znaczy więcej złotych na mieszkańca, nie „lepiej”.
+
+Czy mój poseł głosuje jak klub?
+
+Każdy głos porównany z resztą klubu — w 4641 głosowaniach, zawsze z mianownikiem.
+
+Co się stało z tą ustawą?
+
+Droga projektu przez Sejm etap po etapie — od wpłynięcia do podpisu Prezydenta. 602 uchwalonych w tej kadencji.
+
+Kto rozdaje publiczne pieniądze firmom?
+
+Dotacje, ulgi i pomoc de minimis w całej Polsce: kto udziela, na co i jakim firmom.
+
+Skąd to wiadomo?
+
+Z rejestrów Sejmu, PKW, GUS, ministerstwa funduszy, UOKiK i TED. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
+
+Układ izby
+rejestr klubów
+
+460 mandatów — każda kropka to jedno miejsce w sali posiedzeń. Najedź, żeby zobaczyć, kto na nim siedzi.
+
+Mównica
+Stenografowie
+
+Najedź na miejsce, żeby zobaczyć, kto na nim siedzi. Na telefonie dotknięcie zaznacza posła, a przejście na jego stronę to osobny przycisk.
+
+KO
+156
+PiS
+147
+RozwojPlus
+40
+PSL-TD
+32
+Lewica
+21
+Konfederacja
+16
+Polska2050
+15
+Centrum
+15
+niez.
+7
+Demokracja
+4
+Razem
+4
+Konfederacja_KP
+3
+
+Barwy są nasze, dobrane pod rozróżnialność przy daltonizmie — nie są barwami partyjnymi. Loga klubów dają pięć podobnych czerwieni i trzy granaty, więc na ich podstawie nie da się narysować czytelnego wykresu.
+
+4641
+
+głosowań
+
+od 13 listopada 2023
+
+rejestr
+
+499
+
+posłów w rejestrze
+
+w tym 39 z wygasłym mandatem
+
+rejestr
+
+2 128 618
+
+głosów imiennych
+
+z 4632 głosowań
+
+rejestr
+
+12
+
+klubów i kół
+
+stan na 17 września 2026
+
+rejestr
+Ostatnie głosowania nad całością projektów
+wszystkie 698
+
+Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je rejestr. Wszystkich głosowań, łącznie z poprawkami i sprawami porządkowymi, jest 4641.
+
+17 września 2026 · posiedzenie 65 · pkt 20
+nad całością projektu
+Sprawozdanie Komisji o poselskim projekcie uchwały o zmianie Regulaminu Sejmu Rzeczypospolitej Polskiej (druki nr 3071 i 3084)
+232
+za
+144
+przeciw
+51
+wstrzymało się
+33
+nie głosowało
+4 września 2026 · posiedzenie 64 · pkt 18
+nad całością projektu
+Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o szczególnych rozwiązaniach służących realizacji ustawy…
+417
+za
+21
+przeciw
+22
+nie głosowało
+4 września 2026 · posiedzenie 64 · pkt 14
+nad całością projektu
+Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o odnawialnych źródłach energii oraz niektórych innych ustaw…
+380
+za
+2
+przeciw
+53
+wstrzymało się
+25
+nie głosowało
+4 września 2026 · posiedzenie 64 · pkt 13
+nad całością projektu
+Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy - Prawo wodne (druki nr 2866, 3021 i 3021-A)
+273
+za
+24
+przeciw
+137
+wstrzymało się
+26
+nie głosowało
+4 września 2026 · posiedzenie 64 · pkt 10
+nad całością projektu
+Sprawozdanie Komisji o rządowym projekcie ustawy o zmianie ustawy o przeciwdziałaniu nieuczciwym praktykom rynkowym oraz ustawy o…
+236
+za
+199
+przeciw
+25
+nie głosowało
+4 września 2026 · posiedzenie 64 · pkt 7
+nad całością projektu
+Sprawozdanie Komisji o rządowym projekcie ustawy o wykonywaniu orzeczeń Europejskiego Trybunału Praw Człowieka (druki nr 2271…
+241
+za
+161
+przeciw
+38
+wstrzymało się
+20
+nie głosowało

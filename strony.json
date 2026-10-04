@@ -1,0 +1,679 @@
+[
+  {
+    "nazwa": "glowna",
+    "adres": "/",
+    "kB": 256,
+    "wyniki": [
+      {
+        "plik": "glowna--komputer--01.jpg",
+        "pliki": [
+          "glowna--komputer--01.jpg",
+          "glowna--komputer--02.jpg"
+        ],
+        "wys": 3529,
+        "ucieta": 3529,
+        "szerDok": 1280
+      },
+      {
+        "plik": "glowna--telefon--01.jpg",
+        "pliki": [
+          "glowna--telefon--01.jpg",
+          "glowna--telefon--02.jpg",
+          "glowna--telefon--03.jpg",
+          "glowna--telefon--04.jpg"
+        ],
+        "wys": 6186,
+        "ucieta": 6186,
+        "szerDok": 390
+      },
+      {
+        "plik": "glowna--komputer--ciemny--01.jpg",
+        "pliki": [
+          "glowna--komputer--ciemny--01.jpg",
+          "glowna--komputer--ciemny--02.jpg"
+        ],
+        "wys": 3529,
+        "ucieta": 3529,
+        "szerDok": 1280
+      }
+    ]
+  },
+  {
+    "nazwa": "gminy",
+    "adres": "/gminy",
+    "kB": 44,
+    "wyniki": [
+      {
+        "plik": "gminy--komputer--01.jpg",
+        "pliki": [
+          "gminy--komputer--01.jpg"
+        ],
+        "wys": 1427,
+        "ucieta": 1427,
+        "szerDok": 1280
+      },
+      {
+        "plik": "gminy--telefon--01.jpg",
+        "pliki": [
+          "gminy--telefon--01.jpg",
+          "gminy--telefon--02.jpg",
+          "gminy--telefon--03.jpg"
+        ],
+        "wys": 3288,
+        "ucieta": 3288,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "gmina-krakow",
+    "adres": "/gmina/126101",
+    "kB": 313,
+    "wyniki": [
+      {
+        "plik": "gmina-krakow--komputer--01.jpg",
+        "pliki": [
+          "gmina-krakow--komputer--01.jpg",
+          "gmina-krakow--komputer--02.jpg",
+          "gmina-krakow--komputer--03.jpg",
+          "gmina-krakow--komputer--04.jpg"
+        ],
+        "wys": 16743,
+        "ucieta": 7000,
+        "szerDok": 1280
+      },
+      {
+        "plik": "gmina-krakow--telefon--01.jpg",
+        "pliki": [
+          "gmina-krakow--telefon--01.jpg",
+          "gmina-krakow--telefon--02.jpg",
+          "gmina-krakow--telefon--03.jpg",
+          "gmina-krakow--telefon--04.jpg",
+          "gmina-krakow--telefon--05.jpg",
+          "gmina-krakow--telefon--06.jpg",
+          "gmina-krakow--telefon--07.jpg",
+          "gmina-krakow--telefon--08.jpg"
+        ],
+        "wys": 27046,
+        "ucieta": 12000,
+        "szerDok": 390
+      },
+      {
+        "plik": "gmina-krakow--komputer--ciemny--01.jpg",
+        "pliki": [
+          "gmina-krakow--komputer--ciemny--01.jpg",
+          "gmina-krakow--komputer--ciemny--02.jpg",
+          "gmina-krakow--komputer--ciemny--03.jpg",
+          "gmina-krakow--komputer--ciemny--04.jpg"
+        ],
+        "wys": 16743,
+        "ucieta": 7000,
+        "szerDok": 1280
+      }
+    ]
+  },
+  {
+    "nazwa": "gmina-mala",
+    "adres": "/gmina/221301",
+    "kB": 170,
+    "wyniki": [
+      {
+        "plik": "gmina-mala--komputer--01.jpg",
+        "pliki": [
+          "gmina-mala--komputer--01.jpg",
+          "gmina-mala--komputer--02.jpg",
+          "gmina-mala--komputer--03.jpg",
+          "gmina-mala--komputer--04.jpg"
+        ],
+        "wys": 7670,
+        "ucieta": 7000,
+        "szerDok": 1280
+      },
+      {
+        "plik": "gmina-mala--telefon--01.jpg",
+        "pliki": [
+          "gmina-mala--telefon--01.jpg",
+          "gmina-mala--telefon--02.jpg",
+          "gmina-mala--telefon--03.jpg",
+          "gmina-mala--telefon--04.jpg",
+          "gmina-mala--telefon--05.jpg",
+          "gmina-mala--telefon--06.jpg",
+          "gmina-mala--telefon--07.jpg",
+          "gmina-mala--telefon--08.jpg"
+        ],
+        "wys": 13134,
+        "ucieta": 12000,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "poslowie",
+    "adres": "/poslowie",
+    "kB": 508,
+    "wyniki": [
+      {
+        "plik": "poslowie--komputer--01.jpg",
+        "pliki": [
+          "poslowie--komputer--01.jpg",
+          "poslowie--komputer--02.jpg",
+          "poslowie--komputer--03.jpg",
+          "poslowie--komputer--04.jpg"
+        ],
+        "wys": 12943,
+        "ucieta": 7000,
+        "szerDok": 1280
+      },
+      {
+        "plik": "poslowie--telefon--01.jpg",
+        "pliki": [
+          "poslowie--telefon--01.jpg",
+          "poslowie--telefon--02.jpg",
+          "poslowie--telefon--03.jpg",
+          "poslowie--telefon--04.jpg",
+          "poslowie--telefon--05.jpg",
+          "poslowie--telefon--06.jpg",
+          "poslowie--telefon--07.jpg",
+          "poslowie--telefon--08.jpg"
+        ],
+        "wys": 37244,
+        "ucieta": 12000,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "posel",
+    "adres": "/posel/andrzej-adamczyk",
+    "kB": 122,
+    "wyniki": [
+      {
+        "plik": "posel--komputer--01.jpg",
+        "pliki": [
+          "posel--komputer--01.jpg",
+          "posel--komputer--02.jpg",
+          "posel--komputer--03.jpg",
+          "posel--komputer--04.jpg"
+        ],
+        "wys": 5897,
+        "ucieta": 5897,
+        "szerDok": 1280
+      },
+      {
+        "plik": "posel--telefon--01.jpg",
+        "pliki": [
+          "posel--telefon--01.jpg",
+          "posel--telefon--02.jpg",
+          "posel--telefon--03.jpg",
+          "posel--telefon--04.jpg",
+          "posel--telefon--05.jpg",
+          "posel--telefon--06.jpg"
+        ],
+        "wys": 9387,
+        "ucieta": 9387,
+        "szerDok": 390
+      },
+      {
+        "plik": "posel--komputer--ciemny--01.jpg",
+        "pliki": [
+          "posel--komputer--ciemny--01.jpg",
+          "posel--komputer--ciemny--02.jpg",
+          "posel--komputer--ciemny--03.jpg",
+          "posel--komputer--ciemny--04.jpg"
+        ],
+        "wys": 5897,
+        "ucieta": 5897,
+        "szerDok": 1280
+      }
+    ]
+  },
+  {
+    "nazwa": "glosowania",
+    "adres": "/glosowania",
+    "kB": 232,
+    "wyniki": [
+      {
+        "plik": "glosowania--komputer--01.jpg",
+        "pliki": [
+          "glosowania--komputer--01.jpg",
+          "glosowania--komputer--02.jpg",
+          "glosowania--komputer--03.jpg",
+          "glosowania--komputer--04.jpg"
+        ],
+        "wys": 5713,
+        "ucieta": 5713,
+        "szerDok": 1280
+      },
+      {
+        "plik": "glosowania--telefon--01.jpg",
+        "pliki": [
+          "glosowania--telefon--01.jpg",
+          "glosowania--telefon--02.jpg",
+          "glosowania--telefon--03.jpg",
+          "glosowania--telefon--04.jpg",
+          "glosowania--telefon--05.jpg",
+          "glosowania--telefon--06.jpg",
+          "glosowania--telefon--07.jpg"
+        ],
+        "wys": 10704,
+        "ucieta": 10704,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "glosowanie",
+    "adres": "/glosowanie/64-40",
+    "kB": 489,
+    "wyniki": [
+      {
+        "plik": "glosowanie--komputer--01.jpg",
+        "pliki": [
+          "glosowanie--komputer--01.jpg",
+          "glosowanie--komputer--02.jpg",
+          "glosowanie--komputer--03.jpg",
+          "glosowanie--komputer--04.jpg"
+        ],
+        "wys": 12050,
+        "ucieta": 7000,
+        "szerDok": 1280
+      },
+      {
+        "plik": "glosowanie--telefon--01.jpg",
+        "pliki": [
+          "glosowanie--telefon--01.jpg",
+          "glosowanie--telefon--02.jpg",
+          "glosowanie--telefon--03.jpg",
+          "glosowanie--telefon--04.jpg",
+          "glosowanie--telefon--05.jpg",
+          "glosowanie--telefon--06.jpg",
+          "glosowanie--telefon--07.jpg",
+          "glosowanie--telefon--08.jpg"
+        ],
+        "wys": 30971,
+        "ucieta": 12000,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "ustawy",
+    "adres": "/ustawy",
+    "kB": 130,
+    "wyniki": [
+      {
+        "plik": "ustawy--komputer--01.jpg",
+        "pliki": [
+          "ustawy--komputer--01.jpg",
+          "ustawy--komputer--02.jpg",
+          "ustawy--komputer--03.jpg",
+          "ustawy--komputer--04.jpg"
+        ],
+        "wys": 6750,
+        "ucieta": 6750,
+        "szerDok": 1280
+      },
+      {
+        "plik": "ustawy--telefon--01.jpg",
+        "pliki": [
+          "ustawy--telefon--01.jpg",
+          "ustawy--telefon--02.jpg",
+          "ustawy--telefon--03.jpg",
+          "ustawy--telefon--04.jpg",
+          "ustawy--telefon--05.jpg",
+          "ustawy--telefon--06.jpg",
+          "ustawy--telefon--07.jpg"
+        ],
+        "wys": 9996,
+        "ucieta": 9996,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "ustawa",
+    "adres": "/ustawa/3101",
+    "kB": 40,
+    "wyniki": [
+      {
+        "plik": "ustawa--komputer--01.jpg",
+        "pliki": [
+          "ustawa--komputer--01.jpg",
+          "ustawa--komputer--02.jpg"
+        ],
+        "wys": 1861,
+        "ucieta": 1861,
+        "szerDok": 1280
+      },
+      {
+        "plik": "ustawa--telefon--01.jpg",
+        "pliki": [
+          "ustawa--telefon--01.jpg",
+          "ustawa--telefon--02.jpg"
+        ],
+        "wys": 2739,
+        "ucieta": 2739,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "komisje",
+    "adres": "/komisje",
+    "kB": 62,
+    "wyniki": [
+      {
+        "plik": "komisje--komputer--01.jpg",
+        "pliki": [
+          "komisje--komputer--01.jpg",
+          "komisje--komputer--02.jpg"
+        ],
+        "wys": 3355,
+        "ucieta": 3355,
+        "szerDok": 1280
+      },
+      {
+        "plik": "komisje--telefon--01.jpg",
+        "pliki": [
+          "komisje--telefon--01.jpg",
+          "komisje--telefon--02.jpg",
+          "komisje--telefon--03.jpg",
+          "komisje--telefon--04.jpg"
+        ],
+        "wys": 5740,
+        "ucieta": 5740,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "okregi",
+    "adres": "/okregi",
+    "kB": 73,
+    "wyniki": [
+      {
+        "plik": "okregi--komputer--01.jpg",
+        "pliki": [
+          "okregi--komputer--01.jpg",
+          "okregi--komputer--02.jpg"
+        ],
+        "wys": 2515,
+        "ucieta": 2515,
+        "szerDok": 1280
+      },
+      {
+        "plik": "okregi--telefon--01.jpg",
+        "pliki": [
+          "okregi--telefon--01.jpg",
+          "okregi--telefon--02.jpg",
+          "okregi--telefon--03.jpg"
+        ],
+        "wys": 4396,
+        "ucieta": 4396,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "okreg",
+    "adres": "/okreg/14",
+    "kB": 141,
+    "wyniki": [
+      {
+        "plik": "okreg--komputer--01.jpg",
+        "pliki": [
+          "okreg--komputer--01.jpg",
+          "okreg--komputer--02.jpg"
+        ],
+        "wys": 2971,
+        "ucieta": 2971,
+        "szerDok": 1280
+      },
+      {
+        "plik": "okreg--telefon--01.jpg",
+        "pliki": [
+          "okreg--telefon--01.jpg",
+          "okreg--telefon--02.jpg",
+          "okreg--telefon--03.jpg"
+        ],
+        "wys": 4698,
+        "ucieta": 4698,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "sala",
+    "adres": "/sala",
+    "kB": 212,
+    "wyniki": [
+      {
+        "plik": "sala--komputer--01.jpg",
+        "pliki": [
+          "sala--komputer--01.jpg",
+          "sala--komputer--02.jpg"
+        ],
+        "wys": 2058,
+        "ucieta": 2058,
+        "szerDok": 1280
+      },
+      {
+        "plik": "sala--telefon--01.jpg",
+        "pliki": [
+          "sala--telefon--01.jpg",
+          "sala--telefon--02.jpg"
+        ],
+        "wys": 2784,
+        "ucieta": 2784,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "pomoc-publiczna",
+    "adres": "/pomoc-publiczna",
+    "kB": 101,
+    "wyniki": [
+      {
+        "plik": "pomoc-publiczna--komputer--01.jpg",
+        "pliki": [
+          "pomoc-publiczna--komputer--01.jpg",
+          "pomoc-publiczna--komputer--02.jpg",
+          "pomoc-publiczna--komputer--03.jpg"
+        ],
+        "wys": 4202,
+        "ucieta": 4202,
+        "szerDok": 1280
+      },
+      {
+        "plik": "pomoc-publiczna--telefon--01.jpg",
+        "pliki": [
+          "pomoc-publiczna--telefon--01.jpg",
+          "pomoc-publiczna--telefon--02.jpg",
+          "pomoc-publiczna--telefon--03.jpg",
+          "pomoc-publiczna--telefon--04.jpg",
+          "pomoc-publiczna--telefon--05.jpg",
+          "pomoc-publiczna--telefon--06.jpg"
+        ],
+        "wys": 8544,
+        "ucieta": 8544,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "firma",
+    "adres": "/firma/7690502495",
+    "kB": 170,
+    "wyniki": [
+      {
+        "plik": "firma--komputer--01.jpg",
+        "pliki": [
+          "firma--komputer--01.jpg",
+          "firma--komputer--02.jpg",
+          "firma--komputer--03.jpg",
+          "firma--komputer--04.jpg"
+        ],
+        "wys": 10256,
+        "ucieta": 7000,
+        "szerDok": 1280
+      },
+      {
+        "plik": "firma--telefon--01.jpg",
+        "pliki": [
+          "firma--telefon--01.jpg",
+          "firma--telefon--02.jpg",
+          "firma--telefon--03.jpg",
+          "firma--telefon--04.jpg",
+          "firma--telefon--05.jpg",
+          "firma--telefon--06.jpg",
+          "firma--telefon--07.jpg",
+          "firma--telefon--08.jpg"
+        ],
+        "wys": 17005,
+        "ucieta": 12000,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "organ",
+    "adres": "/organ/5251000810",
+    "kB": 46,
+    "wyniki": [
+      {
+        "plik": "organ--komputer--01.jpg",
+        "pliki": [
+          "organ--komputer--01.jpg",
+          "organ--komputer--02.jpg"
+        ],
+        "wys": 2307,
+        "ucieta": 2307,
+        "szerDok": 1280
+      },
+      {
+        "plik": "organ--telefon--01.jpg",
+        "pliki": [
+          "organ--telefon--01.jpg",
+          "organ--telefon--02.jpg",
+          "organ--telefon--03.jpg"
+        ],
+        "wys": 3537,
+        "ucieta": 3537,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "mapa",
+    "adres": "/mapa",
+    "kB": 114,
+    "wyniki": [
+      {
+        "plik": "mapa--komputer--01.jpg",
+        "pliki": [
+          "mapa--komputer--01.jpg",
+          "mapa--komputer--02.jpg"
+        ],
+        "wys": 1900,
+        "ucieta": 1900,
+        "szerDok": 1280
+      },
+      {
+        "plik": "mapa--telefon--01.jpg",
+        "pliki": [
+          "mapa--telefon--01.jpg",
+          "mapa--telefon--02.jpg"
+        ],
+        "wys": 2250,
+        "ucieta": 2250,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "szukaj",
+    "adres": "/szukaj?q=krak",
+    "kB": 50,
+    "wyniki": [
+      {
+        "plik": "szukaj--komputer--01.jpg",
+        "pliki": [
+          "szukaj--komputer--01.jpg",
+          "szukaj--komputer--02.jpg"
+        ],
+        "wys": 2419,
+        "ucieta": 2419,
+        "szerDok": 1280
+      },
+      {
+        "plik": "szukaj--telefon--01.jpg",
+        "pliki": [
+          "szukaj--telefon--01.jpg",
+          "szukaj--telefon--02.jpg",
+          "szukaj--telefon--03.jpg"
+        ],
+        "wys": 3614,
+        "ucieta": 3614,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "o-serwisie",
+    "adres": "/o-serwisie",
+    "kB": 32,
+    "wyniki": [
+      {
+        "plik": "o-serwisie--komputer--01.jpg",
+        "pliki": [
+          "o-serwisie--komputer--01.jpg",
+          "o-serwisie--komputer--02.jpg"
+        ],
+        "wys": 1885,
+        "ucieta": 1885,
+        "szerDok": 1280
+      },
+      {
+        "plik": "o-serwisie--telefon--01.jpg",
+        "pliki": [
+          "o-serwisie--telefon--01.jpg",
+          "o-serwisie--telefon--02.jpg"
+        ],
+        "wys": 2906,
+        "ucieta": 2906,
+        "szerDok": 390
+      }
+    ]
+  },
+  {
+    "nazwa": "stan",
+    "adres": "/stan",
+    "kB": 77,
+    "wyniki": [
+      {
+        "plik": "stan--komputer--01.jpg",
+        "pliki": [
+          "stan--komputer--01.jpg",
+          "stan--komputer--02.jpg"
+        ],
+        "wys": 3553,
+        "ucieta": 3553,
+        "szerDok": 1280
+      },
+      {
+        "plik": "stan--telefon--01.jpg",
+        "pliki": [
+          "stan--telefon--01.jpg",
+          "stan--telefon--02.jpg",
+          "stan--telefon--03.jpg",
+          "stan--telefon--04.jpg",
+          "stan--telefon--05.jpg"
+        ],
+        "wys": 6677,
+        "ucieta": 6677,
+        "szerDok": 390
+      }
+    ]
+  }
+]
