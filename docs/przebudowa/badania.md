@@ -9,9 +9,16 @@ pochodzi ze streszczeń wyników wyszukiwarki dla wskazanych adresów, a nie
 z lektury całości. Liczby przepisuję tylko tam, gdzie streszczenie podawało
 je wprost. Przed cytowaniem na zewnątrz warto otworzyć oryginał.
 
+**Pełniejszy przegląd: `badania-ux.md`** (główna sesja, 04.10.2026 —
+20 źródeł, najważniejsze przeczytane w całości, z poziomem dowodu
+i działem „czego badania nie mówią”). **Gdzie się różnimy, rozstrzyga
+tamten plik.** Poprawki, które z niego wynikły, są niżej oznaczone
+„(popr.)”; wnioski z niego przeniesione do prototypu i te, które czekają
+na drugą rundę, są w ostatnim dziale.
+
 ---
 
-## 1. Wygląd jest częścią wiarygodności — i ocenia się go w ułamku sekundy
+## 1. Wygląd jest częścią wiarygodności, a pierwsze wrażenie estetyczne powstaje w ułamku sekundy
 
 - **Stanford, Fogg i in., 2002** — [How Do People Evaluate a Web Site's
   Credibility](http://credibility.stanford.edu/pdf/How_Do_People_Evaluate_a_Web_Site's_Credibility_v37.pdf).
@@ -24,7 +31,9 @@ je wprost. Przed cytowaniem na zewnątrz warto otworzyć oryginał.
 - **Google Research, Tuch i in., 2012** — [The role of visual complexity and
   prototypicality…](https://research.google/pubs/the-role-of-visual-complexity-and-prototypicality-regarding-first-impression-of-websites-working-towards-understanding-aesthetic-judgments/),
   [omówienie na blogu Google](https://research.google/blog/users-love-simple-and-familiar-designs-why-websites-need-to-make-a-great-first-impression/).
-  Pierwsze wrażenie powstaje w **17–50 ms**. Najlepiej oceniane były strony
+  Ocena **atrakcyjności wyglądu** powstaje w **17–50 ms** (popr.: to ocena
+  wyglądu, nie zaufania ani decyzji — tak samo „50 ms” u Lindgaard 2006,
+  zob. `badania-ux.md`, dział 1). Najlepiej oceniane były strony
   o **niskiej złożoności wizualnej** i **wysokiej prototypowości** — czyli
   takie, które wyglądają jak „typowa strona tego rodzaju”.
   *Dla nas:* oryginalność opłaca się w szczegółach (krój, barwa, sposób
@@ -146,8 +155,8 @@ Wpisane w prototyp niezależnie od motywu (to nie podlega wyborowi):
    kilka tysięcy pikseli niżej). Tak samo wygląda dziś `src/`: zdanie
    „Niezależny serwis obywatelski…” stoi tylko w stopce `layout.tsx`,
    a obok logo jest samo „Sejm X kadencji”, i to dopiero od 640 px.
-   Przegląd badań to wykazał, a ja w pierwszym podejściu tylko to
-   zapisałem, zamiast od razu poprawić prototyp.
+   Przegląd badań to wykazał, ale w pierwszym podejściu ustalenie trafiło
+   tylko do tego pliku, zamiast od razu do prototypu.
 
 ## Jak motywy wypadają na tle tych ustaleń
 
@@ -166,3 +175,34 @@ gdy zostaną 2–3 motywy.
 | H „Atlas” | wysoka | dobry | ozdobniki (warstwice) mogą rozpraszać |
 | I „Naklejka” | wysoka | **najmocniejszy** (wszystko jak przycisk) | najmniej „urzędowy” — może tracić na powadze |
 | J „Usługa publiczna” | **najwyższa** | **mocny** (wzorzec GOV.UK) | najmniej charakteru, „jak strona urzędu” |
+
+## Wnioski z `badania-ux.md` — co już jest w prototypie, a co czeka
+
+**Przeniesione do prototypu 04.10.2026:**
+
+- **Menu na telefonie nie jest już schowane w całości** (NN/g 2016: schowane
+  menu — ponad 20% gorsze znajdowanie, na telefonie 15% wolniej; widoczne
+  albo mieszane używano w 89% przypadków, schowane w 44%). Pod nazwą
+  serwisu stoi otwarte pole szukania, pod nim rząd sześciu głównych działów
+  (Posłowie, Głosowania, Ustawy | Gminy, Pomoc publiczna, Firmy), reszta
+  w „Menu”. Wcześniej na telefonie były tylko dwa przyciski: „Szukaj”
+  i „Menu” — sprzecznie z działem 4 tego pliku. Szczegóły i pomiar:
+  `nawigacja.md`, dział 2.
+- **G: „ciemny najpierw” wbrew badaniom polaryzacji** (Piepenbrock 2013:
+  ciemny tekst na jasnym tle lepszy u młodszych i starszych) — dopisane
+  do ryzyka G w `kierunek.md`. Prototyp i tak idzie za ustawieniem systemu.
+
+**Czeka na drugą rundę — bo to decyzje, a nie poprawki:**
+
+- **Większe pismo** (Rello 2016: zrozumienie spada przy małym piśmie;
+  autorzy zalecają 24 px na komputerze; czytelnicy serwisów obywatelskich
+  to w ponad 70% osoby po 45. roku życia). Prototyp ma 16 px w tekście
+  i 13–14,5 px w opisach pod liczbami; J ma 19 px od 640 px. Większe pismo
+  wydłuża stronę i spycha odpowiedź pod pierwszy ekran — zmierzyć na
+  wybranych motywach, nie zmieniać naraz we wszystkich dziesięciu.
+- **Tytuł wykresu u góry jako zdanie z wnioskiem** (Borkin 2016) —
+  prototyp ma mało wykresów; zasada dla głównej sesji przy przebudowie.
+- **Zdanie perspektywy przy dużej kwocie** (Barrio 2016) i **„Jak myślisz,
+  ile…?”** (Kim 2017) — nowe elementy treści; perspektywa tylko policzona
+  z naszych danych, nigdy wymyślona. Do decyzji Pawła.
+

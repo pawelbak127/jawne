@@ -331,3 +331,14 @@ details.metoda ul { margin: 6px 0 0; padding-left: 18px; }
 .skad { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--kreska); max-width: 44rem; font-size: 14.5px; line-height: 1.5; color: var(--atrament-2); }
 .skad b { color: var(--atrament); font-weight: 600; }
 .skad a { white-space: nowrap; }
+
+/* telefon: pole szukania i główne działy na wierzchu, reszta pod „Menu” (badania-ux.md, dział 6) */
+@media (max-width: 1023px) { .naglowek .gora { min-height: 50px; } }
+.tel { padding-bottom: 0; }
+.tel .pole { margin: 2px 0 4px; }
+.skroty { display: flex; align-items: stretch; overflow-x: auto; white-space: nowrap; scrollbar-width: none; margin: 0 -8px; }
+.skroty::-webkit-scrollbar { display: none; }
+.skroty a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 8px; font-size: 14.5px; color: var(--atrament); text-decoration: none; border-bottom: 3px solid transparent; }
+.skroty a[aria-current="page"] { border-bottom-color: var(--atrament); font-weight: 600; }
+.skroty .kreska { flex: none; width: 1px; margin: 10px 6px; background: var(--kreska-2); }
+@media (min-width: 1024px) { .tel { display: none; } }

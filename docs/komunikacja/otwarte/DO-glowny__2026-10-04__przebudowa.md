@@ -16,7 +16,9 @@ z ponumerowanymi działami i „podstawą” przy każdej liczbie — forma mów
 w ramce „W liczbach” na pierwszym ekranie, metodologia zwinięta. Menu bez
 rozwijania (Sejm | Pieniądze publiczne), stałe pole szukania, jeden okruszek,
 a w nagłówku każdej strony poza główną jedno zdanie, czym jest serwis
-(dziś stoi tylko w stopce; `nawigacja.md`, dział 3).
+(dziś stoi tylko w stopce; `nawigacja.md`, dział 3). Na telefonie pole
+szukania otwarte i sześć głównych działów na wierzchu, reszta pod „Menu”
+— po Twoim `badania-ux.md` (`nawigacja.md`, dział 2).
 
 **Do poprawy w `src/` niezależnie od kierunku** (szczegóły w `przeglad.md`,
 dział 0):

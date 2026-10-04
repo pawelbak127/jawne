@@ -58,3 +58,5 @@ a:not(.zrodlo):hover { background: var(--atrament); color: var(--papier); text-d
 details.metoda { border-top: 2px solid var(--atrament); }
 .stopka { border-top: 6px solid var(--atrament); }
 .prototyp { background: var(--atrament); }
+
+.skroty a[aria-current="page"] { background: var(--atrament); color: var(--papier); border-bottom-color: var(--atrament); }

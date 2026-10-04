@@ -17,15 +17,17 @@
       <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
     <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
     <div class="tylko-tel">
-      <a class="przycisk" href="#" aria-label="Szukaj">Szukaj</a>
       <details class="panel"><summary class="przycisk">Menu</summary>
         <div class="panel-tresc">
-          <input class="pole" type="search" placeholder="Gmina, poseł, firma, NIP…" aria-label="Szukaj">
           <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
           <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
         </div>
       </details>
     </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html" aria-current="page">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
   </div>
   <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html" aria-current="page">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
 </header>

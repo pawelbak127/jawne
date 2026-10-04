@@ -250,6 +250,9 @@ reklamowej; boczne menu jak w programie, nie hamburger.
 **Ryzyko.** Najmniej typowy układ z dziesięciu (badania: pierwsze wrażenie
 wygrywają układy typowe). Dla mieszkańca może wyglądać jak narzędzie
 „nie dla mnie”. Na telefonie menu wraca na górę — bocznego paska tam nie ma.
+„Ciemny najpierw” stoi wbrew badaniom polaryzacji (Piepenbrock 2013:
+ciemny tekst na jasnym tle czyta się lepiej w każdym wieku), a panele
+podnoszą złożoność wizualną (Reinecke 2013) — `badania-ux.md`.
 
 ---
 
@@ -362,6 +365,11 @@ JavaScriptu, a fonty ważą ok. 80 kB mniej niż dziś (141 wobec 221 kB).
 z J: odnośniki wyraźnie podkreślone i żółte tło fokusu. I i J mają
 najmocniejsze oparcie w badaniach nad klikalnością, a A najlepiej oddaje
 to, czym serwis jest — dlatego na drugą rundę proponuję A, I i J.
+Przegląd z pełnych tekstów (`badania-ux.md`) dochodzi do tego samego:
+badania nie rozstrzygają między A a J, a „A z widocznym menu i dużym
+pismem” mieści wszystkie jego dziesięć wniosków. Widoczne menu na
+telefonie jest już w prototypie; wielkość pisma to pierwsza rzecz do
+zmierzenia w drugiej rundzie.
 
 Prototyp: `prototyp/` — 15 stron, każda w każdym motywie;
 porównanie w `prototyp/kierunki.html`.

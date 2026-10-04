@@ -71,3 +71,8 @@ details.metoda > summary { color: var(--akcent); text-decoration: underline; fon
 details.metoda > summary::before { content: "▸"; border: 0; width: auto; }
 details.metoda[open] > summary::before { content: "▾"; }
 .stopka { border-top: 1px solid var(--kreska); background: var(--papier-3); }
+
+/* telefon: wiersz szukania i działów na szarym pasku, jak menu na komputerze */
+.naglowek .tel { background: var(--papier-3); color: var(--atrament); padding-top: 10px; }
+.skroty a { color: var(--akcent); text-decoration: underline; text-underline-offset: .15em; }
+.skroty a[aria-current="page"] { color: var(--atrament); text-decoration: none; border-bottom-color: var(--akcent); }

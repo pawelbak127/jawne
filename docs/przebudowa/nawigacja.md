@@ -50,11 +50,34 @@ albo NIP” i zdaniem, które wyjaśnia brak wyniku (niżej).
 - Bez `<details>` na komputerze: dziesięć odnośników mieści się w 1024 px
   przy 14 px tekstu. Rozwijane menu zostaje tylko na telefonie.
 
-**Telefon (< 1024 px).** Pasek: nazwa, lupa, przycisk **„Menu”** (słowo,
-nie same trzy kreski). Panel jak dziś (`<details>`, działa bez JS), ale:
-- „Szukaj” raz (dziś dwa razy razem z „Firmy”),
-- pierwsza pozycja: pole szukania wprost w panelu,
-- grupy podpisane tak samo jak na komputerze.
+**Telefon (< 1024 px): szukanie i główne działy na wierzchu, reszta pod
+„Menu”.** Schowane menu to ponad 20% gorsze znajdowanie treści, a na
+telefonie widoczne albo mieszane menu używano dwa razy częściej niż
+schowane (NN/g 2016, `badania-ux.md`, dział 6).
+
+```
+┌──────────────────────────────────────┐
+│ zrejestru  ◐                    Menu │
+│ [ Szukaj: gmina, poseł, firma, NIP ] │
+│ Posłowie Głosowania Ustawy │ Gminy P…│  ← przewija się w bok
+└──────────────────────────────────────┘
+```
+
+- Pole szukania **otwarte**, na całą szerokość — nie lupa ani przycisk.
+  Strona główna i wyniki szukania go nie powtarzają, bo mają własne duże
+  pole w treści.
+- Rząd sześciu najczęstszych działów (trzy z Sejmu, trzy z pieniędzy
+  publicznych, kreska między grupami); bieżący podkreślony.
+- **„Menu”** (słowo, nie same trzy kreski) otwiera pełną listę w dwóch
+  podpisanych grupach: Komisje, Okręgi, Sala, Mapa, Stan danych, O serwisie
+  i reszta. `<details>`, działa bez JS. „Szukaj” w panelu już nie ma — jest
+  na wierzchu.
+- Koszt: nagłówek jest wyższy o ok. 80 px. Zmierzone na 390 × 844
+  w 10 motywach na stronach gminy, posła, firmy i głosowania: pierwsza
+  liczba „W liczbach” nadal mieści się na pierwszym ekranie (najniżej
+  841 px). Wyjątek: strona ustawy w C, D i H, gdzie długi tytuł projektu
+  spycha koniec ramki „Po ludzku” 2–31 px pod pierwszy ekran (jej początek
+  jest widoczny).
 
 ## 3. Okruszek — na każdej stronie szczegółu, ten sam wzór
 
