@@ -2,7 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { zalozSchemat } from './baza.js';
 import { mapaZeSum, odswiezSumy, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
-import { policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
+import { DNI_USTALONE, policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
+import { policzPomocGminy, pomocGminyZeSum } from '../../src/lib/pomoc-gminy.js';
 
 /**
  * Kontrola, ze suma liczona dzien po dniu daje dokladnie to samo, co jedno
@@ -38,9 +39,12 @@ function wstawWiersze(dzien: string, wiersze: Partial<Record<string, unknown>>[]
   for (const [i, r] of wiersze.entries()) {
     w.run(
       (r.teryt as string) ?? '020101', dzien, (r.nip as string) ?? null, (r.nazwa as string) ?? null,
-      (r.wielkosc_kod as string) ?? '1', (r.wielkosc as string) ?? 'mikro', (r.udzielajacy as string) ?? 'Urząd A',
-      (r.przeznaczenie as string) ?? 'regionalna', (r.forma as string) ?? 'dotacja',
-      r.brutto === undefined ? 100 : (r.brutto as number | null), 25, `${dzien}-${i}-${Math.random()}`,
+      (r.wielkosc_kod as string) ?? '1', (r.wielkosc as string) ?? 'mikro',
+      // `in`, nie `??`: test musi umiec podac jawny NULL („brak w rejestrze”).
+      'udzielajacy' in r ? (r.udzielajacy as string | null) : 'Urząd A',
+      'przeznaczenie' in r ? (r.przeznaczenie as string | null) : 'regionalna', (r.forma as string) ?? 'dotacja',
+      r.brutto === undefined ? 100 : (r.brutto as number | null),
+      'eur' in r ? (r.eur as number | null) : 25, `${dzien}-${i}-${Math.random()}`,
     );
   }
 }
@@ -178,5 +182,91 @@ describe('sumy przyrostowe', () => {
     expect(policzPrzeglad(czytnik(), WARSZAWA)!.brutto).toBeNull();
     // Gmina bez zadnej kwoty nie trafia na mape jako zero.
     expect(mapaZeSum(db, WARSZAWA)).toEqual([]);
+  });
+});
+
+describe('pomoc w gminie ze stanu (strona gminy)', () => {
+  const ZRODLO = `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
+  const obie = (teryt: string) => ({
+    zeStanu: pomocGminyZeSum(czytnik(), teryt),
+    zTabeli: policzPomocGminy(czytnik(), ZRODLO, teryt),
+  });
+
+  beforeEach(() => {
+    // Typ z REGON wchodzi do wyniku — musi przejsc przez obie drogi tak samo.
+    db.prepare('insert into regon (nip, typ, nazwa, pobrano) values (?,?,?,?)').run('1111111111', 'P', 'ALFA', '2026-01-01');
+  });
+
+  it('daje to samo, co liczenie z tabeli — takze przy NULL-ach i powtorzonych firmach', () => {
+    dodajDzien('2025-12-30', 20, [
+      { nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 1000, eur: 230 },
+      { nip: '1111111111', nazwa: 'ALFA SP. Z O.O.', brutto: 5, eur: null },
+      { nip: null, nazwa: 'Jan Kowalski', brutto: 40, przeznaczenie: null },
+      { nip: '2222222222', nazwa: null, brutto: null, udzielajacy: null },
+    ]);
+    dodajDzien('2026-01-02', 20, [
+      { nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 7, eur: 400 },
+      { nip: null, nazwa: 'Anna Nowak', brutto: 3 },
+      { nip: '3333333333', nazwa: 'Gamma', teryt: '020102', brutto: 3, przeznaczenie: 'B+R' },
+    ]);
+    // Dzien jeszcze nieustalony nie wchodzi ANI do stanu, ANI do liczenia z tabeli.
+    dodajDzien('2026-02-01', 1, [{ nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 99999 }]);
+    odswiezSumy(db);
+
+    for (const teryt of ['020101', '020102', '140101']) {
+      const { zeStanu, zTabeli } = obie(teryt);
+      if (teryt === '140101') {
+        // Gmina bez pomocy: ze stanu brak danych, a nie zero przypadkow.
+        expect(zeStanu.razem).toBeNull();
+        continue;
+      }
+      expect(zeStanu).toEqual(zTabeli);
+    }
+    const k = obie('020101').zeStanu;
+    expect(k.razem).toMatchObject({ przypadkow: 6, beneficjentow: 2, pierwszy: '2025-12-30', ostatni: '2026-01-02' });
+    expect(k.lata.map((r) => r.rok)).toEqual(['2025', '2026']);
+    expect(k.beneficjenci.find((b) => b.nip === '1111111111')).toMatchObject({ przypadkow: 3, max_eur: 400, typ_regon: 'P' });
+    // Firma bez zadnej kwoty: suma to NULL, a nie zmierzone zero (regula 4).
+    expect(k.beneficjenci.find((b) => b.nip === '2222222222')?.brutto).toBeNull();
+    expect(k.przeznaczenia.map((g) => g.nazwa)).toContain('(brak w rejestrze)');
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+  });
+
+  it('nazwa z wczesniejszego dnia nie znika przez dzien z pusta nazwa (max z NULL-em)', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 1 }]);
+    dodajDzien('2026-01-02', 20, [{ nip: '1111111111', nazwa: null, brutto: 1 }]);
+    odswiezSumy(db);
+    expect(obie('020101').zeStanu.beneficjenci[0]!.nazwa).toBe('Alfa sp. z o.o.');
+    expect(sumyFirm(db).get('1111111111')?.nazwa).toBe('Alfa sp. z o.o.');
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+  });
+
+  it('stan z poprzedniej wersji liczy sie od zera — inaczej gmina mialaby tylko nowe dni', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 10 }]);
+    odswiezSumy(db);
+    // Udajemy stan sprzed 04.10.2026: bez tabel gminy i bez wersji.
+    for (const t of ['pomoc_sumy_gmin_lata', 'pomoc_sumy_gmin_firmy', 'pomoc_sumy_gmin_wymiar', 'pomoc_sumy_wersja']) {
+      db.prepare(`delete from ${t}`).run();
+    }
+    dodajDzien('2026-01-02', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 5 }]);
+    const w = odswiezSumy(db);
+    expect(w.odBudowy).toBe(true);
+    expect(w.opis).toMatch(/nowy zakres sum/);
+    expect(obie('020101').zeStanu.razem?.przypadkow).toBe(2);
+    // Kolejny przebieg nie buduje juz od zera.
+    expect(odswiezSumy(db)).toMatchObject({ dodanych: 0, odBudowy: false });
+  });
+
+  it('kontrola WYKRYWA rozjazd w stanie gminy — w kwocie, w nazwie i w progu jawnosci', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1111111111', nazwa: 'Alfa', brutto: 10, eur: 3 }]);
+    odswiezSumy(db);
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+    db.prepare("update pomoc_sumy_gmin_lata set brutto = brutto + 1 where teryt = '020101'").run();
+    expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/gmina\/020101\/2026/);
+    db.prepare("update pomoc_sumy_gmin_lata set brutto = brutto - 1 where teryt = '020101'").run();
+    db.prepare("update pomoc_sumy_gmin_firmy set max_eur = 999999 where nip = '1111111111'").run();
+    expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/max_eur/);
+    db.prepare("update pomoc_sumy_gmin_firmy set max_eur = 3, nazwa = 'Inna' where nip = '1111111111'").run();
+    expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/firma 1111111111 nazwa/);
   });
 });

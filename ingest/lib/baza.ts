@@ -389,6 +389,50 @@ create table if not exists pomoc_sumy_wymiar (
   brutto      real not null,
   primary key (wymiar, klucz)
 );
+/*
+  Pomoc w JEDNEJ gminie: lata, beneficjenci i dwie grupy (na co, kto udzielil).
+  ZMIERZONE 04.10.2026: strona Krakowa liczyla to z tabeli pomocy — 191 910
+  wierszy rozsianych po pliku 5,6 GB, osiem przebiegow, 2,5 GB odczytu i ponad
+  dwie minuty zamrozonego serwisu. Klucz glowny zaczyna sie od teryt, a tabele
+  sa WITHOUT ROWID, wiec wiersze jednej gminy leza obok siebie.
+  W pomoc_sumy_gmin_firmy wiersze bez NIP-u leza pod nip = '' (jedna grupa,
+  tak jak NULL w group by). Grupy maja klucz z rejestru albo
+  „(brak w rejestrze)” — tak jak strona gminy.
+*/
+create table if not exists pomoc_sumy_gmin_lata (
+  teryt       text not null,
+  rok         text not null,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  pierwszy    text not null,
+  ostatni     text not null,
+  primary key (teryt, rok)
+) without rowid;
+create table if not exists pomoc_sumy_gmin_firmy (
+  teryt       text not null,
+  nip         text not null,
+  nazwa       text,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  max_eur     real,                     -- najwieksza POJEDYNCZA pomoc, do progu jawnosci
+  primary key (teryt, nip)
+) without rowid;
+create table if not exists pomoc_sumy_gmin_wymiar (
+  teryt       text not null,
+  wymiar      text not null,          -- przeznaczenie | udzielajacy
+  klucz       text not null,
+  przypadkow  integer not null,
+  z_kwota     integer not null,
+  brutto      real not null,
+  primary key (teryt, wymiar, klucz)
+) without rowid;
+/* Wersja ZAKRESU stanu — gdy kod liczy wiecej niz stan, stan liczy sie od zera. */
+create table if not exists pomoc_sumy_wersja (
+  id          integer primary key check (id = 1),
+  wersja      integer not null
+);
 /* Czolowka najwiekszych przypadkow — po kazdym dniu przycinana do 50. */
 create table if not exists pomoc_sumy_naj (
   id            integer primary key,

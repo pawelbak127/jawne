@@ -10,6 +10,7 @@ import { kategoriaFormy, type KategoriaPomocy } from './formy-pomocy';
 import { nazwaOrganu, organWykonawczyGminy } from './organy';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
+import { policzPomocGminy, pomocGminyZeSum } from './pomoc-gminy';
 import { KONTAKT } from './adres';
 import { zwinDoPowiatow, type LudnoscGminy, type WartoscNaMapie } from './mapa';
 import {
@@ -2561,60 +2562,28 @@ export function pomocGminy(teryt: string): PomocGminy {
     // pokazujemy je, ale mowimy wprost, ze to nie jest cala historia.
     // Swieze dni sa niepelne (urzedy zglaszaja pomoc do 7 dni po fakcie),
     // wiec w trybie dni liczymy tylko dni ustalone — patrz DNI_DO_USTALENIA.
-    const dni = pobranie ? null : bezTabeli(
-      () => jeden<{ od: string; do: string; dni: number }>(
-        `select min(dzien) as od, max(dzien) as do, count(*) as dni from ${DNI_USTALONE}`,
+    if (pobranie) {
+      // Gmina pobrana w calosci: jej 10-letniej historii nie ma w stanie sum
+      // (pulapka 35), wiec liczymy z tabeli. To trzy gminy pokazowe.
+      const policzona = policzPomocGminy(czytnik, 'pomoc_publiczna', teryt);
+      return { zrodlo: { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }, pobranie, ...policzona };
+    }
+    /*
+     * Tryb dni ustalonych — ZE STANU SUM, nie z tabeli pomocy. ZMIERZONE
+     * 04.10.2026: liczenie z tabeli kosztowalo strone Krakowa 2,5 GB odczytu
+     * i ponad dwie minuty zamrozonego serwisu (`src/lib/pomoc-gminy.ts`).
+     * Zakres dni tez bierzemy ze stanu, nie z rejestru dni: liczby i podpis
+     * pod nimi musza opisywac ten sam zbior dni.
+     */
+    const dni = bezTabeli(
+      () => jeden<{ od: string | null; do: string | null; dni: number }>(
+        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_sumy_dni',
       ),
       null,
     );
-    // Pelne pobranie gminy obejmuje wszystkie jej wiersze; tryb dni — tylko
-    // dni ustalone. Jedna podkwerenda zamiast warunku w kazdym zapytaniu.
-    const P = pobranie ? 'pomoc_publiczna' : `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`;
-    const maWiersze = !pobranie && dni?.dni
-      ? (jeden<{ c: number }>(`select count(*) as c from ${P} where teryt = ?`, teryt)?.c ?? 0) > 0
-      : false;
-    if (!pobranie && !maWiersze) return pusto;
-    const zrodlo: ZrodloPomocy = pobranie
-      ? { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }
-      : { rodzaj: 'dni', od: dni!.od, do: dni!.do, dni: dni!.dni };
-    const razem = jeden<{ przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string }>(
-      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow, sum(wartosc_brutto) as brutto,
-              min(dzien) as pierwszy, max(dzien) as ostatni
-         from ${P} where teryt = ?`, teryt,
-    );
-    // Ta sama regula co przy `beneficjenci` — rejestr, nie heurystyka.
-    const nazwyBeneficjentow = wszystkie<{ nazwa: string | null; max_eur: number | null; typ_regon: string | null }>(
-      `select max(nazwa_beneficjenta) as nazwa, max(wartosc_brutto_eur) as max_eur,
-              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
-         from ${P} p where teryt = ? group by nip_beneficjenta`, teryt,
-    ).map((r) => ({ nazwa: r.nazwa ?? '', max_eur: r.max_eur, typ_regon: r.typ_regon }));
-    const lata = wszystkie<{ rok: string; przypadkow: number; brutto: number | null }>(
-      `select substr(dzien, 1, 4) as rok, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${P} where teryt = ? group by rok order by rok`, teryt,
-    );
-    const grupa = (kolumna: 'przeznaczenie' | 'udzielajacy') => wszystkie<{ nazwa: string; przypadkow: number; brutto: number | null }>(
-      `select coalesce(${kolumna}, '(brak w rejestrze)') as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
-         from ${P} where teryt = ? group by nazwa order by brutto desc nulls last limit 6`, teryt,
-    );
-    // Beneficjentow bierzemy szerzej niz pokazujemy — filtr nazw osob
-    // prywatnych dziala dopiero w widoku i czesc wierszy odpadnie.
-    /*
-     * `typ_regon` jest tu OBOWIAZKOWY, nie ozdobny. Od 24.09.2026 o jawnosci
-     * nazwy rozstrzyga rejestr, nie heurystyka — ale decyzja weszla tylko
-     * na strone firmy i do wyszukiwarki. ZMIERZONE 01.10.2026 na 93 287
-     * nazwach: bez tego strona gminy pokazywala 48 nazw, ktore `/firma`
-     * chowa, i chowala 350, ktore `/firma` pokazuje. Dwie strony tego samego
-     * serwisu odpowiadaly inaczej na to samo pytanie o te sama firme.
-     */
-    const beneficjenci = wszystkie<{
-      nazwa: string; nip: string | null; przypadkow: number; brutto: number | null;
-      max_eur: number | null; typ_regon: string | null;
-    }>(
-      `select max(nazwa_beneficjenta) as nazwa, nip_beneficjenta as nip, count(*) as przypadkow, sum(wartosc_brutto) as brutto,
-              max(wartosc_brutto_eur) as max_eur,
-              (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon
-         from ${P} p where teryt = ? group by nip_beneficjenta order by brutto desc nulls last limit 60`, teryt,
-    );
-    return { zrodlo, pobranie, razem, nazwyBeneficjentow, lata, przeznaczenia: grupa('przeznaczenie'), udzielajacy: grupa('udzielajacy'), beneficjenci };
+    if (!dni?.dni || !dni.od || !dni.do) return pusto;
+    const policzona = pomocGminyZeSum(czytnik, teryt);
+    if (!policzona.razem) return pusto;
+    return { zrodlo: { rodzaj: 'dni', od: dni.od, do: dni.do, dni: dni.dni }, pobranie: null, ...policzona };
   }, pusto);
 }
