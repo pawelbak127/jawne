@@ -106,7 +106,6 @@ type Wklad = {
   gminyFirmy: Map<string, Kubelek & { teryt: string; nip: string; nazwa: string | null; maxEur: number | null }>;
   /** Grupa w gminie: klucz `teryt NUL wymiar NUL klucz`. */
   gminyWymiar: Map<string, Kubelek & { teryt: string; wymiar: 'przeznaczenie' | 'udzielajacy'; klucz: string }>;
-  naj: WierszPomocy[];
 };
 
 const pustyWklad = (): Wklad => ({
@@ -119,7 +118,6 @@ const pustyWklad = (): Wklad => ({
   organy: new Map(),
   gminyFirmy: new Map(),
   gminyWymiar: new Map(),
-  naj: [],
 });
 
 /** Kody form, ktorych nie znamy — zbierane, zeby import mogl je ZGLOSIC. */
@@ -220,10 +218,6 @@ function dolozWiersz(w: Wklad, r: WierszPomocy): void {
     else w.gminyWymiar.set(kw, { teryt: r.teryt, wymiar, klucz, przypadkow: 1, zKwota: ma, brutto: ile });
   }
 
-  // Najwieksze: wystarczy trzymac czolowke KAZDEGO dnia — przypadek, ktory
-  // jest w pierwszej pietnastce kraju, jest tym bardziej w pierwszej
-  // piecdziesiatce swojego dnia.
-  w.naj.push(r);
 }
 
 function przytnijNaj(wiersze: WierszPomocy[]): WierszPomocy[] {
@@ -232,19 +226,39 @@ function przytnijNaj(wiersze: WierszPomocy[]): WierszPomocy[] {
     .slice(0, NAJWIEKSZYCH);
 }
 
+/*
+ * Najwieksze: wystarczy trzymac czolowke KAZDEGO dnia — przypadek, ktory
+ * jest w pierwszej pietnastce kraju, jest tym bardziej w pierwszej
+ * piecdziesiatce swojego dnia. Przycinamy NA BIEZACO, nie na koncu dnia:
+ * do 05.10.2026 tablica trzymala kazdy wiersz dnia (846 670 obiektow
+ * 17.12.2024). Sortowanie jest stabilne, wiec wynik jest ten sam co przy
+ * jednym przycieciu na koncu.
+ */
+function dolozNaj(naj: WierszPomocy[], r: WierszPomocy): WierszPomocy[] {
+  naj.push(r);
+  return naj.length >= 4 * NAJWIEKSZYCH ? przytnijNaj(naj) : naj;
+}
+
 const KOLUMNY = `teryt, dzien, nip_beneficjenta, nazwa_beneficjenta, nip_udzielajacego,
   forma_kod, wielkosc_kod, wielkosc, udzielajacy, przeznaczenie, forma,
   wartosc_brutto, wartosc_brutto_eur`;
 
-function wkladDnia(db: DatabaseSync, dzien: string): Wklad {
-  const w = pustyWklad();
-  for (const r of db.prepare(`select ${KOLUMNY} from pomoc_publiczna where dzien = ?`)
-    .iterate(dzien) as unknown as Iterable<WierszPomocy>) {
-    dolozWiersz(w, r);
-  }
-  w.naj = przytnijNaj(w.naj);
-  return w;
-}
+/**
+ * Ile wierszy dnia zbieramy w pamieci, zanim dopiszemy je do stanu.
+ *
+ * ZMIERZONE 05.10.2026 na serwerze: dzien 17.12.2024 ma **846 670
+ * przypadkow i 844 179 roznych par gmina–firma**. Wklad calego dnia naraz
+ * (mapy firm, par gmina–firma i czolowka ze wszystkimi wierszami) przekroczyl
+ * sterte — w migracjach przy wdrozeniu (1 400 MB) i w zadaniu historii
+ * (domyslna sterta). Stan stanal na 2024-12-16 i ani wdrozenie, ani zadanie
+ * nocne nie umialo go przeskoczyc. Lokalnie najwiekszy dzien ma ok. 20 tys.
+ * wierszy, wiec test tego nie widzial.
+ *
+ * Zapisy do stanu tylko DODAJA (upsert z sumowaniem, max bez NULL-i), wiec
+ * dzien moze wejsc kilkoma porcjami — w JEDNEJ transakcji, zeby stan nadal
+ * nigdy nie mial polowy dnia.
+ */
+export const PORCJA_DNIA = 20_000;
 
 /*
  * max(a, b) z DWOMA argumentami jest w SQLite funkcja skalarna i oddaje NULL,
@@ -255,8 +269,41 @@ function wkladDnia(db: DatabaseSync, dzien: string): Wklad {
  */
 const MAKS_BEZ_NULL = (a: string, b: string) => `max(coalesce(${a}, ${b}), coalesce(${b}, ${a}))`;
 
-/** Dopisuje wklad dnia do stanu. Jedna transakcja na dzien. */
-function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad): void {
+/**
+ * Liczy dzien i dopisuje go do stanu. Jedna transakcja na dzien, w srodku
+ * porcje po PORCJA_DNIA wierszy — pamiec nie zalezy od wielkosci dnia.
+ */
+function policzDzien(db: DatabaseSync, dzien: string, pobrano: string): void {
+  const zapisz = zapisWkladu(db, dzien);
+  wTransakcji(db, () => {
+    const razem = { przypadkow: 0, zKwota: 0, brutto: 0 };
+    let w = pustyWklad();
+    let naj: WierszPomocy[] = [];
+    let wPorcji = 0;
+    const zrzuc = () => {
+      zapisz.wklad(w);
+      razem.przypadkow += w.przypadkow;
+      razem.zKwota += w.zKwota;
+      razem.brutto += w.brutto;
+      w = pustyWklad();
+      wPorcji = 0;
+    };
+    for (const r of db.prepare(`select ${KOLUMNY} from pomoc_publiczna where dzien = ?`)
+      .iterate(dzien) as unknown as Iterable<WierszPomocy>) {
+      dolozWiersz(w, r);
+      naj = dolozNaj(naj, r);
+      if (++wPorcji >= PORCJA_DNIA) zrzuc();
+    }
+    zrzuc();
+    zapisz.naj(przytnijNaj(naj));
+    db.prepare(
+      'insert or replace into pomoc_sumy_dni (dzien, pobrano, przypadkow, z_kwota, brutto) values (?, ?, ?, ?, ?)',
+    ).run(dzien, pobrano, razem.przypadkow, razem.zKwota, razem.brutto);
+  });
+}
+
+/** Przygotowane zapisy do stanu dla jednego dnia (bez wlasnej transakcji). */
+function zapisWkladu(db: DatabaseSync, dzien: string) {
   const gmina = db.prepare(
     `insert into pomoc_sumy_gmin (teryt, przypadkow, z_kwota, brutto) values (?, ?, ?, ?)
        on conflict(teryt) do update set przypadkow = przypadkow + excluded.przypadkow,
@@ -319,33 +366,34 @@ function dopiszDzien(db: DatabaseSync, dzien: string, pobrano: string, w: Wklad)
   );
   const rok = dzien.slice(0, 4);
 
-  wTransakcji(db, () => {
-    for (const [teryt, s] of w.gminy) {
-      gmina.run(teryt, s.przypadkow, s.zKwota, s.brutto);
-      gminaRok.run(teryt, rok, s.przypadkow, s.zKwota, s.brutto, dzien, dzien);
-    }
-    for (const f of w.gminyFirmy.values()) {
-      gminaFirma.run(f.teryt, f.nip, f.nazwa, f.przypadkow, f.zKwota, f.brutto, f.maxEur);
-    }
-    for (const g of w.gminyWymiar.values()) {
-      gminaWymiar.run(g.teryt, g.wymiar, g.klucz, g.przypadkow, g.zKwota, g.brutto);
-    }
-    for (const [nip, s] of w.firmy) firma.run(nip, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
-    for (const s of w.wymiary.values()) wymiar.run(s.wymiar, s.klucz, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
-    for (const o of w.organy.values()) organ.run(o.teryt, o.nip, o.kategoria, o.nazwa, o.przypadkow, o.zKwota, o.brutto);
-    for (const r of w.naj) {
-      naj.run(r.dzien, r.teryt, r.nip_beneficjenta, r.nazwa_beneficjenta, r.wartosc_brutto,
-        r.wartosc_brutto_eur, r.przeznaczenie, r.udzielajacy);
-    }
-    // Czolowka nie ma rosnac z liczba dni: po kazdym dniu zostaje 50 najwiekszych.
-    db.prepare(
-      `delete from pomoc_sumy_naj where id not in (
-         select id from pomoc_sumy_naj order by brutto desc nulls last limit ?)`,
-    ).run(NAJWIEKSZYCH);
-    db.prepare(
-      'insert or replace into pomoc_sumy_dni (dzien, pobrano, przypadkow, z_kwota, brutto) values (?, ?, ?, ?, ?)',
-    ).run(dzien, pobrano, w.przypadkow, w.zKwota, w.brutto);
-  });
+  return {
+    wklad(w: Wklad): void {
+      for (const [teryt, s] of w.gminy) {
+        gmina.run(teryt, s.przypadkow, s.zKwota, s.brutto);
+        gminaRok.run(teryt, rok, s.przypadkow, s.zKwota, s.brutto, dzien, dzien);
+      }
+      for (const f of w.gminyFirmy.values()) {
+        gminaFirma.run(f.teryt, f.nip, f.nazwa, f.przypadkow, f.zKwota, f.brutto, f.maxEur);
+      }
+      for (const g of w.gminyWymiar.values()) {
+        gminaWymiar.run(g.teryt, g.wymiar, g.klucz, g.przypadkow, g.zKwota, g.brutto);
+      }
+      for (const [nip, s] of w.firmy) firma.run(nip, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
+      for (const s of w.wymiary.values()) wymiar.run(s.wymiar, s.klucz, s.nazwa, s.przypadkow, s.zKwota, s.brutto);
+      for (const o of w.organy.values()) organ.run(o.teryt, o.nip, o.kategoria, o.nazwa, o.przypadkow, o.zKwota, o.brutto);
+    },
+    naj(wiersze: WierszPomocy[]): void {
+      for (const r of wiersze) {
+        naj.run(r.dzien, r.teryt, r.nip_beneficjenta, r.nazwa_beneficjenta, r.wartosc_brutto,
+          r.wartosc_brutto_eur, r.przeznaczenie, r.udzielajacy);
+      }
+      // Czolowka nie ma rosnac z liczba dni: po kazdym dniu zostaje 50 najwiekszych.
+      db.prepare(
+        `delete from pomoc_sumy_naj where id not in (
+           select id from pomoc_sumy_naj order by brutto desc nulls last limit ?)`,
+      ).run(NAJWIEKSZYCH);
+    },
+  };
 }
 
 function wyczyscStan(db: DatabaseSync): void {
@@ -401,7 +449,7 @@ export function odswiezSumy(db: DatabaseSync, odNowa = false): WynikOdswiezenia 
   if (odbudowa || wersjaStanu(db) === null) wyczyscStan(db);
 
   const doPoliczenia = odbudowa ? ustalone : ustalone.filter((d) => !policzone.has(d.dzien));
-  for (const d of doPoliczenia) dopiszDzien(db, d.dzien, d.pobrano, wkladDnia(db, d.dzien));
+  for (const d of doPoliczenia) policzDzien(db, d.dzien, d.pobrano);
 
   const powod = odNowa ? ' (na zadanie)'
     : zmienione.length ? ` (${zmienione.length} dni pobrano od nowa)`
