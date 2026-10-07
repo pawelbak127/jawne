@@ -32,21 +32,39 @@ sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
 
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
-### Czeka na wdrożenie (stan 03.10.2026)
+### Stan na 07.10.2026
 
-**Serwer chodzi na buildzie z 02.10, 13:54 — dziewięć godzin i kilkanaście
-commitów wstecz**, bo `aktualizuj` padł po `git pull`, a przed budową.
-Dopóki Paweł nie uruchomi `sudo jawne aktualizuj`, na żywej stronie NIE MA:
+**Na serwerze działa `1665969`** (wdrożone 05.10): strona gminy ze stanu sum
+(pułapka 69), dzień SUDOP liczony porcjami (pułapka 70), CSV gminy strumieniem.
+**Czeka na `sudo jawne aktualizuj`:** strony gmin, firm, organów, głosowań
+i ustaw w pamięci podręcznej (`3cfec55`), limit 4 h dla `fundusze`
+(`484d3a8`), etap 1 przebudowy wyglądu (`5b11e0e`).
 
-- poprawnej domeny w mapie strony (50 000 adresów pod starą `sslip.io`),
-- działającego progu jawności (`JAWNE_KONTAKT` jest w pliku, ale proces
-  strony go nie widzi — pułapka 63),
-- administratora danych i adresu kontaktowego na `/prywatnosc`
-  (strona pokazuje „[do uzupełnienia]”),
-- `robots.txt`, sekcji „Czego dotyczy” przy ustawach, indeksu `ted_nabywca`
-  (pułapka 67 — to on kładł serwis), poprawionego kontrastu i celów dotykowych.
+**Bloker: poczta nie działa, a `JAWNE_KONTAKT` jest ustawiony** (sprawdzone
+07.10: zmienna w pliku i w procesie strony). Próg jawności z zasady 7 pokazuje
+więc nazwy powyżej 10 tys. EUR, choć adres do sprzeciwu nie odbiera poczty.
+Kolejność: albo `sudo jawne ustaw JAWNE_KONTAKT` (pusta wartość — próg się
+wyłącza), albo najpierw ImprovMX i test wysyłki. Decyzja Pawła.
 
-Po wdrożeniu `sudo jawne stan` sam powie, gdyby coś znowu się rozjechało.
+### Przebudowa wyglądu — etapy (decyzja Pawła z 07.10.2026)
+
+Dwie wersje z przełącznikiem „Wygląd”: Standardowy (J+G, domyślny) i Wypis
+z rejestru (A). Wzorzec: `docs/przebudowa/prototyp/`, fundament F1–F14
+w `docs/przebudowa/runda-2.md`, badania w `docs/przebudowa/badania-ux.md`.
+Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
+(przewijanie w bok, błędy konsoli, tekst < 15 px) i zrzuty.
+
+1. ~~Rama: barwy obu wersji, pismo 18/20 px, fonty, nagłówek z widocznym
+   menu, przełącznik, stopka~~ — **zrobione 07.10** (`5b11e0e`).
+2. Strona gminy według szablonu: „W liczbach” na pierwszym ekranie, działy
+   z nagłówkiem od treści, spis działów z boku od 1280 px, zdania porównawcze
+   (F9 — porównanie z MEDIANĄ województwa, nie ze średnią zawierającą samą
+   gminę), „Jak myślisz, ile…?” (F10), warunki UOKiK przy liczbie.
+3. Poseł i firma.
+4. Głosowanie, ustawa, pomoc publiczna, strona główna.
+5. Listy (posłowie, głosowania, ustawy, gminy), okręg, organ, szukanie,
+   nowa trasa `/firmy`, mapa, sala, stan, o serwisie; obrazki podglądu
+   linków z nazwą „zrejestru”.
 
 ### Kolejność przed zdjęciem `noindex` (ustalona 03.10.2026)
 
