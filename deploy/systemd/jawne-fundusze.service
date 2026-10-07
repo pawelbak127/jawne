@@ -11,7 +11,10 @@ WorkingDirectory=/srv/jawne
 EnvironmentFile=/etc/jawne/jawne.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh fundusze
-TimeoutStartSec=2h
+# 4h jak w jawne-sejm: oba koncza sie etapem „indeks firm”, ktory przy ciaglej
+# historii SUDOP trwa ok. 2 h. ZMIERZONE 05.10.2026: listy FE zaimportowane,
+# a zadanie zabite po 2 h w indeksie firm (stary indeks zostal — transakcja).
+TimeoutStartSec=4h
 Nice=10
 NoNewPrivileges=true
 PrivateTmp=true
