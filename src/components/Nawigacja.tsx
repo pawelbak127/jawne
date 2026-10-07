@@ -3,31 +3,22 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { PrzelacznikMotywu } from '@/components/PrzelacznikMotywu';
+import { Wyglad } from '@/components/Wyglad';
 
-type Pozycja = { adres: string; etykieta: string; opis: string };
-type Grupa = { etykieta: string; adres?: string; opis?: string; pozycje?: Pozycja[] };
+type Pozycja = { adres: string; etykieta: string; opis: string; skrot?: string };
+type Grupa = { etykieta: string; pozycje: Pozycja[] };
 
 /**
- * Menu serwisu.
+ * Naglowek serwisu: nazwa, szukanie, menu i przelacznik „Wyglad”.
  *
- * Grupy, nie plaska lista: przy czterech pozycjach dalo sie jeszcze zgadnac,
- * gdzie co jest, ale „Okregi wyborcze” obok „Pomocy publicznej” niczego nie
- * tlumaczy. Sejm to jedno, pieniadze to drugie — i tak samo beda wchodzic
- * nastepne strony (ustawy, zamowienia).
+ * Menu WIDOCZNE, nie rozwijane (F12, docs/przebudowa/runda-2.md; badania-ux.md
+ * §6: schowana nawigacja to o ponad 20% gorsze znajdowanie i o 39% wolniej
+ * na komputerze). Do 07.10.2026 obie grupy byly listami rozwijanymi „Sejm”
+ * i „Pieniadze”, czyli w praktyce menu schowanym.
  *
- * Rozwijane przez `<details>`, a nie przez stan Reacta: dziala bez
- * JavaScriptu (w przegladarce z wylaczonym JS menu nadal sie otwiera)
- * i nie ma ryzyka, ze serwer wyrenderuje inny stan niz przegladarka.
- * JavaScript dokłada tylko zamykanie: klikniecie obok, Escape i przejscie
- * na inna strone.
- */
-/*
- * Dwie grupy zamiast trzech pozycji (04.10.2026, prosba Pawla: „moze te gminy
- * gdzies przenies"). Strona gminy to w wiekszosci pieniadze — budzet,
- * fundusze UE, pomoc dla firm, zamowienia — wiec „Gminy" sa teraz pierwsza
- * pozycja w „Pieniadzach". Doszly „Firmy": wyszukiwarka juz szukala po nazwie
- * i NIP-ie, ale z menu nie bylo do niej wejscia z ta obietnica.
+ * Na telefonie szukanie i skroty obu grup sa na wierzchu, a pelna lista
+ * z opisami pod „Menu”. Panele to `<details>` — dzialaja bez JavaScriptu;
+ * skrypt doklada tylko zamykanie (Escape, klikniecie obok, zmiana strony).
  */
 const MENU: Grupa[] = [
   {
@@ -37,43 +28,43 @@ const MENU: Grupa[] = [
       { adres: '/glosowania', etykieta: 'Głosowania', opis: 'każdy głos imienny, z rejestru Sejmu' },
       { adres: '/ustawy', etykieta: 'Ustawy', opis: 'co się stało z projektem, etap po etapie' },
       { adres: '/komisje', etykieta: 'Komisje', opis: 'czym się zajmują i kto w nich zasiada' },
-      { adres: '/okregi', etykieta: 'Okręgi wyborcze', opis: 'gminy okręgu i posłowie z niego' },
-      { adres: '/sala', etykieta: 'Sala posiedzeń', opis: 'kto gdzie siedzi, z planu Kancelarii' },
+      { adres: '/okregi', etykieta: 'Okręgi', opis: 'gminy okręgu i posłowie z niego' },
+      { adres: '/sala', etykieta: 'Sala', opis: 'kto gdzie siedzi, z planu Kancelarii' },
     ],
   },
   {
-    etykieta: 'Pieniądze',
+    etykieta: 'Pieniądze publiczne',
     pozycje: [
       { adres: '/gminy', etykieta: 'Gminy', opis: 'budżet, fundusze UE, pomoc dla firm' },
-      { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', opis: 'dotacje i ulgi dla firm (UOKiK)' },
+      { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', skrot: 'Pomoc', opis: 'dotacje i ulgi dla firm (UOKiK)' },
       { adres: '/szukaj', etykieta: 'Firmy', opis: 'czy firma dostała pomoc — szukaj po nazwie albo NIP' },
-      // „Pieniadze w gminie" prowadzilo POD TEN SAM adres, co zakladka „Gminy"
-      // obok (zgloszenie Pawla 30.09.2026). Dwa wejscia do jednej strony to
-      // nie wybor, tylko zgadywanka — zostaje to widoczniejsze.
-      { adres: '/mapa', etykieta: 'Mapa gmin', opis: 'cała Polska, zawsze na mieszkańca' },
+      { adres: '/mapa', etykieta: 'Mapa', opis: 'cała Polska, zawsze na mieszkańca' },
     ],
   },
 ];
 
+/** Skroty na telefonie: najczestsze wejscia obu grup, reszta pod „Menu”. */
+const SKROTY_SEJM = ['/poslowie', '/glosowania', '/ustawy'];
+const SKROTY_PIENIADZE = ['/gminy', '/pomoc-publiczna', '/szukaj'];
+
 const NA_DOLE_PANELU: Pozycja[] = [
-  { adres: '/szukaj', etykieta: 'Szukaj', opis: 'gmina, poseł, głosowanie' },
   { adres: '/stan', etykieta: 'Stan danych', opis: 'co i kiedy pobraliśmy' },
   { adres: '/o-serwisie', etykieta: 'O serwisie', opis: 'skąd pochodzą liczby' },
 ];
 
-const SUMMARY =
-  'flex cursor-pointer list-none items-center gap-1 rounded-lg px-1 py-2 text-atrament-2 transition-colors select-none hover:bg-papier-3 hover:text-atrament [&::-webkit-details-marker]:hidden sm:px-3';
+function biezaca(sciezka: string, adres: string): boolean {
+  return sciezka === adres || sciezka.startsWith(`${adres}/`);
+}
 
 export function Nawigacja() {
   const korzen = useRef<HTMLElement>(null);
-  const sciezka = usePathname();
+  const sciezka = usePathname() ?? '/';
 
-  // Zamykanie. Samo `<details>` nie zamyka sie ani po kliknieciu obok, ani po
-  // przejsciu na inna strone (nawigacja Next nie przeladowuje dokumentu).
+  // Zamykanie paneli. Samo `<details>` nie zamyka sie ani po kliknieciu obok,
+  // ani po przejsciu na inna strone (nawigacja Next nie przeladowuje dokumentu).
   useEffect(() => {
-    const wszystkie = () => korzen.current?.querySelectorAll('details[open]') ?? [];
     const zamknij = (poza?: EventTarget | null) => {
-      for (const d of wszystkie()) {
+      for (const d of korzen.current?.querySelectorAll('details[open]') ?? []) {
         if (!(poza instanceof Node) || !d.contains(poza)) (d as HTMLDetailsElement).open = false;
       }
     };
@@ -97,98 +88,85 @@ export function Nawigacja() {
     }
   }, [sciezka]);
 
+  const wszystkie = MENU.flatMap((g) => g.pozycje);
+  const skrot = (adres: string) => wszystkie.find((p) => p.adres === adres)!;
+
   return (
-    <nav ref={korzen} aria-label="Menu serwisu" className="ml-auto flex min-w-0 items-center text-[13px] sm:gap-1 sm:text-sm">
-      {/* Na telefonie caly spis siedzi w jednym panelu — cztery pozycje obok
-          siebie zajmowaly 279 z 286 px i nie bylo gdzie dolozyc nastepnych. */}
-      <div className="hidden items-center sm:flex sm:gap-1">
-        {MENU.map((g) =>
-          g.pozycje ? (
-            <details key={g.etykieta} className="relative">
-              <summary className={SUMMARY}>
-                {g.etykieta}
-                <Strzalka />
-              </summary>
-              <div className="absolute right-0 z-50 mt-1 w-72 rounded-2xl border border-kreska bg-papier-2 p-2 shadow-karta-2">
-                {g.pozycje.map((p) => (
-                  <PozycjaPanelu key={`${g.etykieta}${p.adres}`} pozycja={p} />
-                ))}
-              </div>
-            </details>
-          ) : (
-            <Link
-              key={g.etykieta}
-              href={g.adres ?? '/'}
-              className="rounded-lg px-1 py-2 text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament sm:px-3"
-            >
-              {g.etykieta}
-            </Link>
-          ),
-        )}
+    <header ref={korzen} className="naglowek">
+      <div className="obszar gora relative">
+        <Link href="/" className="marka">
+          <b>zrejestru</b>
+          <span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span>
+        </Link>
+
+        <form action="/szukaj" method="get" role="search" className="szukaj-naglowek">
+          <label htmlFor="szukaj-naglowek" className="sr-only">Szukaj w serwisie</label>
+          <input id="szukaj-naglowek" name="q" type="search" className="pole" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku" />
+        </form>
+
+        <Wyglad />
+
+        <div className="tylko-tel">
+          <details className="panel">
+            <summary className="przycisk-naglowka">Menu</summary>
+            <nav aria-label="Menu serwisu" className="panel-tresc">
+              {MENU.map((g) => (
+                <div key={g.etykieta}>
+                  <p className="podpis">{g.etykieta}</p>
+                  {g.pozycje.map((p) => (
+                    <Link key={p.adres} href={p.adres} aria-current={biezaca(sciezka, p.adres) ? 'page' : undefined}>
+                      {p.etykieta}
+                      <span>{p.opis}</span>
+                    </Link>
+                  ))}
+                </div>
+              ))}
+              <p className="podpis">Serwis</p>
+              {NA_DOLE_PANELU.map((p) => (
+                <Link key={p.adres} href={p.adres}>
+                  {p.etykieta}
+                  <span>{p.opis}</span>
+                </Link>
+              ))}
+            </nav>
+          </details>
+        </div>
       </div>
 
-      <Link
-        href="/szukaj"
-        aria-label="Szukaj"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-atrament-2 transition-colors hover:bg-papier-3 hover:text-atrament"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-        </svg>
-      </Link>
-
-      <PrzelacznikMotywu />
-
-      <details className="sm:hidden">
-        <summary className={`${SUMMARY} h-11 w-11 justify-center`} aria-label="Menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-          </svg>
-        </summary>
-        {/* Panel na calej szerokosci ekranu, nie przy krawedzi przycisku:
-            przy 390 px kazde inne ustawienie wychodzi poza ekran. */}
-        <div className="absolute inset-x-0 top-full z-50 max-h-[80dvh] overflow-y-auto border-y border-kreska bg-papier-2 p-3 shadow-karta-2">
-          {/* Grupa jednoelementowa nie dostaje naglowka: „GMINY / Gminy” to
-              ta sama nazwa dwa razy pod rzad. */}
+      {/* Komputer: wszystkie dzialy w dwoch podpisanych grupach, bez rozwijania. */}
+      <nav aria-label="Działy serwisu" className="menu-grupy">
+        <div className="obszar rzad">
           {MENU.map((g) => (
-            <div key={g.etykieta} className="mb-2">
-              {g.pozycje ? (
-                <>
-                  <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wider text-atrament-3 uppercase">
-                    {g.etykieta}
-                  </p>
-                  {g.pozycje.map((p) => <PozycjaPanelu key={`${g.etykieta}${p.adres}`} pozycja={p} />)}
-                </>
-              ) : (
-                <PozycjaPanelu pozycja={{ adres: g.adres ?? '/', etykieta: g.etykieta, opis: g.opis ?? '' }} />
-              )}
+            <div key={g.etykieta} className="grupa">
+              <span className="podpis">{g.etykieta}</span>
+              {g.pozycje.map((p) => (
+                <Link key={p.adres} href={p.adres} aria-current={biezaca(sciezka, p.adres) ? 'page' : undefined}>
+                  {p.etykieta}
+                </Link>
+              ))}
             </div>
           ))}
-          <div className="mt-1 border-t border-kreska pt-2">
-            {NA_DOLE_PANELU.map((p) => (
-              <PozycjaPanelu key={p.adres} pozycja={p} />
-            ))}
-          </div>
         </div>
-      </details>
-    </nav>
-  );
-}
+      </nav>
 
-function PozycjaPanelu({ pozycja }: { pozycja: Pozycja }) {
-  return (
-    <Link href={pozycja.adres} className="block rounded-xl px-3 py-2 transition-colors hover:bg-papier-3">
-      <span className="block text-sm font-medium">{pozycja.etykieta}</span>
-      {pozycja.opis ? <span className="block text-xs text-atrament-3">{pozycja.opis}</span> : null}
-    </Link>
-  );
-}
-
-function Strzalka() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3 shrink-0" aria-hidden="true">
-      <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+      {/* Telefon: szukanie i skroty na wierzchu (F12). */}
+      <div className="tel">
+        <div className="obszar">
+          <form action="/szukaj" method="get" role="search">
+            <label htmlFor="szukaj-tel" className="sr-only">Szukaj w serwisie</label>
+            <input id="szukaj-tel" name="q" type="search" className="pole" placeholder="Szukaj: gmina, poseł, firma, NIP" />
+          </form>
+          <nav aria-label="Najczęstsze działy" className="skroty">
+            {SKROTY_SEJM.map((a) => (
+              <Link key={a} href={a} aria-current={biezaca(sciezka, a) ? 'page' : undefined}>{skrot(a).skrot ?? skrot(a).etykieta}</Link>
+            ))}
+            <span className="kreska" aria-hidden="true" />
+            {SKROTY_PIENIADZE.map((a) => (
+              <Link key={a} href={a} aria-current={biezaca(sciezka, a) ? 'page' : undefined}>{skrot(a).skrot ?? skrot(a).etykieta}</Link>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </header>
   );
 }

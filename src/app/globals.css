@@ -18,61 +18,137 @@
 }
 
 /*
-  Chromatyka serwisu jest CELOWO bezbarwna: papier, atrament, jeden akcent.
-  Kolor pojawia sie wylacznie w danych (barwy klubow w wykresach).
-  Powod jest merytoryczny, nie estetyczny — serwis w barwach jednej strony
-  sceny czyta sie jako jej publikacja. theyworkforyou trzyma te sama zasade
-  od dwudziestu lat.
-*/
-:root {
-  --papier:      #faf9f6;  /* cieple biel — czysta biel meczy przy tabelach */
-  --papier-2:    #ffffff;  /* karta uniesiona nad tlem */
-  --papier-3:    #f1efe9;  /* wypelnienia, paski skali */
-  --atrament:    #17161a;
-  --atrament-2:  #56535e;  /* tekst drugorzedny, podpisy */
-  --atrament-3:  #6c6878;  /* tekst objasniajacy i odnosniki do rejestru — patrz barwy.test */
-  --kreska:      #e3e0d8;
-  --kreska-2:    #cfcbc0;
-  --akcent:      #0a6b62;  /* glebokie morskie — zaden polski klub go nie uzywa */
-  --akcent-slaby:#e6f2f0;
-  --cien:        0 1px 2px rgb(23 22 26 / 0.04), 0 4px 16px -4px rgb(23 22 26 / 0.06);
-  --cien-2:      0 2px 4px rgb(23 22 26 / 0.05), 0 12px 32px -8px rgb(23 22 26 / 0.12);
+  DWIE WERSJE WYGLADU (decyzja Pawla z 07.10.2026, docs/przebudowa/kierunek.md):
+  Standardowy (`:root`, domyslny) i Wypis z rejestru (`[data-styl="a"]`).
+  Wybiera czytelnik przelacznikiem „Wyglad”; skrypt w <head> ustawia
+  `data-styl` z localStorage PRZED pierwszym malowaniem — nie ciasteczko,
+  bo odczyt ciasteczka zrobilby z kazdej strony trase dynamiczna.
 
+  Jasnosc jest osobna osia (`data-motyw`), wiec palet jest szesc: dwa style
+  × (jasny, ciemny za systemem, ciemny z przelacznika). Kolejnosc i
+  specyficznosc selektorow sa CELOWE: paleta Wypisu ma `[data-styl="a"]`
+  w selektorze, wiec wygrywa z Standardowym w kazdym trybie jasnosci.
+  Test: src/lib/kontrast.test.ts mierzy kontrast wszystkich szesciu.
+
+  Chromatyka zostaje bezbarwna: papier, atrament, jeden akcent. Kolor
+  w danych (kluby, glosy) — serwis w barwach jednej strony sceny czyta sie
+  jako jej publikacja.
+*/
+
+/* ---- Standardowy: jasny ---- */
+:root {
+  --papier:      #ffffff;
+  --papier-2:    #ffffff;
+  --papier-3:    #f3f2f1;
+  --atrament:    #0b0c0c;
+  --atrament-2:  #383f43;
+  --atrament-3:  #505a5f;
+  --kreska:      #b1b4b6;
+  --kreska-2:    #8a8f92;
+  --akcent:      #1d70b8;
+  --akcent-slaby:#e8f1f8;
+  --pasek:       #0b0c0c;  /* czarny pasek z nazwa serwisu */
+  --pasek-tekst: #ffffff;
+  --pasek-kreska:#1d70b8;
+  --f-tekst:     var(--font-public), ui-sans-serif, system-ui, sans-serif;
+  --f-naglowek:  var(--font-public), ui-sans-serif, system-ui, sans-serif;
+  --f-znak:      var(--font-public), ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;
 }
 
+/* ---- Standardowy: ciemny za systemem ---- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-motyw="jasny"]) {
-    --papier:      #0e0e12;
-    --papier-2:    #17171d;
-    --papier-3:    #212129;
-    --atrament:    #f2f1ee;
-    --atrament-2:  #a6a2b0;
-    --atrament-3:  #938f9e;
-    --kreska:      #2a2a33;
-    --kreska-2:    #3a3945;
-    --akcent:      #4fd1c0;
-    --akcent-slaby:#0f2a28;
-    --cien:        0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4);
-    --cien-2:      0 2px 4px rgb(0 0 0 / 0.35), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+    --papier:      #0b0c0c;
+    --papier-2:    #141516;
+    --papier-3:    #222324;
+    --atrament:    #f3f2f1;
+    --atrament-2:  #d0d0d0;
+    --atrament-3:  #b1b4b6;
+    --kreska:      #505a5f;
+    --kreska-2:    #6f777b;
+    --akcent:      #79b4ec;
+    --akcent-slaby:#14263a;
     color-scheme: dark;
   }
 }
 
+/* ---- Standardowy: ciemny z przelacznika ---- */
 :root[data-motyw="ciemny"] {
-  --papier:      #0e0e12;
-  --papier-2:    #17171d;
-  --papier-3:    #212129;
-  --atrament:    #f2f1ee;
-  --atrament-2:  #a6a2b0;
-  --atrament-3:  #938f9e;
-  --kreska:      #2a2a33;
-  --kreska-2:    #3a3945;
-  --akcent:      #4fd1c0;
-  --akcent-slaby:#0f2a28;
-  --cien:        0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4);
-  --cien-2:      0 2px 4px rgb(0 0 0 / 0.35), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+  --papier:      #0b0c0c;
+  --papier-2:    #141516;
+  --papier-3:    #222324;
+  --atrament:    #f3f2f1;
+  --atrament-2:  #d0d0d0;
+  --atrament-3:  #b1b4b6;
+  --kreska:      #505a5f;
+  --kreska-2:    #6f777b;
+  --akcent:      #79b4ec;
+  --akcent-slaby:#14263a;
   color-scheme: dark;
+}
+
+/* ---- Wypis z rejestru: jasny ---- */
+:root[data-styl="a"] {
+  --papier:      #f5f3ed;
+  --papier-2:    #fbfaf6;
+  --papier-3:    #ebe7dc;
+  --atrament:    #151412;
+  --atrament-2:  #46433c;
+  --atrament-3:  #5c5850;
+  --kreska:      #d6d0c2;
+  --kreska-2:    #a99f8b;
+  --akcent:      #0b5a52;
+  --akcent-slaby:#dcebe7;
+  --pasek:       var(--papier);
+  --pasek-tekst: var(--atrament);
+  --pasek-kreska:var(--atrament);
+  --f-tekst:     var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --f-naglowek:  var(--font-brygada), Georgia, ui-serif, serif;
+  --f-znak:      var(--font-mono), ui-monospace, monospace;
+  color-scheme: light;
+}
+
+/* ---- Wypis z rejestru: ciemny za systemem ---- */
+@media (prefers-color-scheme: dark) {
+  :root[data-styl="a"]:not([data-motyw="jasny"]) {
+    --papier:      #121210;
+    --papier-2:    #1a1a17;
+    --papier-3:    #24231f;
+    --atrament:    #efece4;
+    --atrament-2:  #bdb8ab;
+    --atrament-3:  #a39e91;
+    --kreska:      #38362f;
+    --kreska-2:    #57544a;
+    --akcent:      #6fd3c3;
+    --akcent-slaby:#173a35;
+    color-scheme: dark;
+  }
+}
+
+/* ---- Wypis z rejestru: ciemny z przelacznika ---- */
+:root[data-styl="a"][data-motyw="ciemny"] {
+  --papier:      #121210;
+  --papier-2:    #1a1a17;
+  --papier-3:    #24231f;
+  --atrament:    #efece4;
+  --atrament-2:  #bdb8ab;
+  --atrament-3:  #a39e91;
+  --kreska:      #38362f;
+  --kreska-2:    #57544a;
+  --akcent:      #6fd3c3;
+  --akcent-slaby:#173a35;
+  color-scheme: dark;
+}
+
+/*
+  Liczby pismem maszynowym — w Standardowym dopiero od 1280 px (dodatek z G
+  „Pulpit”: komputer to narzedzie dziennikarza), w Wypisie zawsze (sygnatury
+  i daty jak w odpisie). Plex Mono ma `preload: false`, wiec telefon
+  Standardowego go nie pobiera.
+*/
+@media (min-width: 1280px) {
+  :root { --f-znak: var(--font-mono), ui-monospace, monospace; }
 }
 
 @theme inline {
@@ -87,18 +163,47 @@
   --color-akcent:     var(--akcent);
   --color-akcent-slaby: var(--akcent-slaby);
 
-  --font-tekst:  var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-szryft: var(--font-serif), ui-serif, Georgia, serif;
+  --font-tekst:  var(--f-tekst);
+  --font-szryft: var(--f-naglowek);
+  --font-znak:   var(--f-znak);
 
-  --shadow-karta:   var(--cien);
-  --shadow-karta-2: var(--cien-2);
+  /*
+    Bez cieni i bez zaokraglen (F6, badania-ux.md §1: niska zlozonosc).
+    Obie wersje maja kanciaste bloki, a 25 plikow uzywa `rounded-2xl
+    shadow-karta` — zmiana tutaj przestawia je wszystkie naraz, zanim
+    strony dostana nowe szablony. `rounded-full` (kropki, portrety) zostaje.
+  */
+  --shadow-karta:   none;
+  --shadow-karta-2: none;
+  --radius-lg:  2px;
+
+  /*
+    F5: nic widocznego ponizej 15 px. `text-xs` (0,75rem) dawalo 13,5 px na
+    telefonie — zmierzone 07.10.2026: 1 397 elementow na /poslowie.
+    0,8333rem to 15 px przy 18 px i 16,7 px przy 20 px.
+  */
+  --text-xs: 0.8333rem;
+  --text-xs--line-height: 1.4;
+  --radius-xl:  0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
 }
 
 @layer base {
+  /*
+    F5 — pismo (badania-ux.md §5, Rello 2016): tekst ciagly 18 px na telefonie
+    i 20 px od 1024 px. Zmiana rozmiaru KORZENIA, nie `body`: wszystkie
+    rozmiary Tailwinda sa w rem, wiec `text-sm` daje 15,75/17,5 px zamiast
+    14, a szerokosci kolumn w rem rosna razem z pismem — dlugosc wiersza
+    w znakach zostaje ta sama.
+  */
   html {
+    font-size: 112.5%;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 1rem;
   }
+  @media (min-width: 1024px) { html { font-size: 125%; } }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after {
@@ -109,23 +214,39 @@
   body {
     background: var(--papier);
     color: var(--atrament);
-    font-family: var(--font-tekst);
+    font-family: var(--f-tekst);
+    line-height: 1.55;
     /* ZMIERZONE 22.09.2026 w ramce 390 px: „mikroprzedsiębiorstwa” nie mieściło
        się w kolumnie 107 px i rozpychało stronę do 479 px. Długie słowo ma się
        złamać, a nie przesuwać całej strony w bok. */
     overflow-wrap: break-word;
-    font-feature-settings: "cv05" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
   }
   /* Liczby w tabelach musza sie pionowo zgadzac — inaczej kolumna klamie okiem. */
   .liczby { font-variant-numeric: tabular-nums; }
 
+  /* Odnosniki w tresci podkreslone (badania-ux.md §6: sygnal klikalnosci). */
+  a { text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+
   ::selection { background: var(--akcent); color: var(--papier); }
 
   :focus-visible {
-    outline: 2px solid var(--akcent);
+    outline: 3px solid var(--akcent);
     outline-offset: 2px;
-    border-radius: 2px;
+  }
+  /*
+    Fokus w Standardowym jak w GOV.UK: zolte tlo i czarna kreska pod spodem —
+    widoczny na kazdym tle, takze na czarnym pasku i na niebieskim odnosniku.
+  */
+  :root:not([data-styl="a"]) a:focus-visible,
+  :root:not([data-styl="a"]) button:focus-visible,
+  :root:not([data-styl="a"]) summary:focus-visible,
+  :root:not([data-styl="a"]) input:focus-visible {
+    outline: 3px solid transparent;
+    background: #ffdd00;
+    color: #0b0c0c;
+    box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c;
+    text-decoration: none;
   }
 }
 
@@ -138,23 +259,121 @@
  * dokladnie ten rodzaj bledu, ktorego nie widac w kodzie, tylko w przegladarce.
  */
 @layer components {
-  /* Siatka tresci: jedna kolumna czytelna, marginesy 16px na telefonie. */
-  .obszar { width: 100%; margin-inline: auto; padding-inline: 1rem; max-width: 76rem; }
+  /* Siatka tresci: jedna kolumna czytelna, margines 1rem (18 px) na telefonie.
+     64rem przy 20 px to 1 280 px — ta sama szerokosc co dawne 76rem przy 16 px.
+     Margines W REM, nie w px: paski z `-mx-4` (= -1rem) maja wyjsc rowno do
+     krawedzi. ZMIERZONE 07.10.2026: przy 16 px marginesu i -18 px paska
+     /poslowie przewijalo sie w bok o 2 px. */
+  .obszar { width: 100%; margin-inline: auto; padding-inline: 1rem; max-width: 64rem; }
   @media (min-width: 640px) { .obszar { padding-inline: 1.5rem; } }
 }
 
-@layer utilities {
+/* ---------------------------------------------------------------------------
+   Rama serwisu: naglowek, menu, stopka, przelacznik „Wyglad”.
+   Przeniesione z docs/przebudowa/prototyp (styl.css + skora-jg.css + skora-a.css).
+   Klasy, nie Tailwind: obie wersje roznia sie tu wiecej niz barwa, a reguly
+   dla Wypisu dostaja przedrostek [data-styl="a"].
+   --------------------------------------------------------------------------- */
+@layer components {
+  .naglowek { background: var(--pasek); color: var(--pasek-tekst); border-bottom: 10px solid var(--pasek-kreska); }
+  [data-styl="a"] .naglowek { border-bottom-width: 1.5px; }
+  .naglowek .gora { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+  .marka { display: flex; align-items: baseline; gap: 12px; text-decoration: none; color: inherit; padding: 8px 0; }
+  .marka b { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.35rem; line-height: 1; }
+  .marka span { display: none; font-size: 0.85rem; opacity: 0.85; }
+  @media (min-width: 1280px) { .marka span { display: inline; } }
 
-  .szryft { font-family: var(--font-szryft); font-weight: 400; letter-spacing: -0.015em; }
-
-  /* Delikatna siatka pod naglowkiem — daje glebie bez obrazka. */
-  .siatka-tla {
-    background-image:
-      linear-gradient(to right, var(--kreska) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--kreska) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+  .szukaj-naglowek { flex: 1; display: none; }
+  @media (min-width: 1024px) { .szukaj-naglowek { display: block; max-width: 26rem; margin-left: auto; } }
+  .pole {
+    width: 100%; min-height: 46px; padding: 0 14px; border: 2px solid var(--atrament);
+    background: var(--papier-2); color: var(--atrament); font: inherit; font-size: 0.9rem; border-radius: 0;
   }
+  .naglowek .szukaj-naglowek .pole { border-color: var(--pasek-tekst); }
+  .pole::placeholder { color: var(--atrament-3); opacity: 1; }
+
+  .przycisk-naglowka {
+    min-height: 44px; min-width: 44px; padding: 0 10px; display: inline-flex; align-items: center; gap: 8px;
+    background: none; border: 2px solid transparent; color: inherit; font: inherit; font-size: 0.9rem; cursor: pointer; text-decoration: none;
+  }
+  .przycisk-naglowka:hover { border-color: currentColor; }
+  .tylko-tel { margin-left: auto; display: flex; gap: 4px; }
+  @media (min-width: 1024px) { .tylko-tel { display: none; } }
+
+  /* komputer: wszystkie dzialy w dwoch podpisanych grupach, bez rozwijania (F12) */
+  .menu-grupy { display: none; background: var(--papier-3); color: var(--atrament); }
+  [data-styl="a"] .menu-grupy { background: var(--papier); border-top: 1px solid var(--kreska); }
+  @media (min-width: 1024px) { .menu-grupy { display: block; } }
+  .menu-grupy .rzad { display: flex; flex-wrap: wrap; gap: 0 28px; }
+  .menu-grupy .grupa { display: flex; align-items: center; flex-wrap: wrap; }
+  .menu-grupy .podpis { font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--atrament-2); margin-right: 6px; font-weight: 600; }
+  .menu-grupy a { color: var(--akcent); text-decoration: underline; padding: 10px 8px; font-size: 0.9rem; border-bottom: 4px solid transparent; }
+  [data-styl="a"] .menu-grupy a { color: var(--atrament); text-decoration: none; }
+  .menu-grupy a:hover { text-decoration-thickness: 2px; }
+  .menu-grupy a[aria-current="page"] { color: var(--atrament); text-decoration: none; font-weight: 600; border-bottom-color: var(--pasek-kreska); }
+
+  /* telefon: szukanie i skroty obu grup na wierzchu, reszta pod „Menu” */
+  .tel { background: var(--papier-3); color: var(--atrament); padding-top: 10px; }
+  [data-styl="a"] .tel { background: var(--papier); border-top: 1px solid var(--kreska); }
+  @media (min-width: 1024px) { .tel { display: none; } }
+  .tel .pole { margin-bottom: 4px; }
+  .skroty { display: flex; align-items: stretch; overflow-x: auto; white-space: nowrap; scrollbar-width: none; margin: 0 -8px; }
+  .skroty::-webkit-scrollbar { display: none; }
+  .skroty a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 0.85rem; color: var(--akcent); text-decoration: underline; border-bottom: 4px solid transparent; }
+  [data-styl="a"] .skroty a { color: var(--atrament); text-decoration: none; }
+  .skroty a[aria-current="page"] { color: var(--atrament); text-decoration: none; font-weight: 600; border-bottom-color: var(--pasek-kreska); }
+  .skroty .kreska { flex: none; width: 1px; margin: 12px 6px; background: var(--kreska-2); }
+
+  /* panele rozwijane w naglowku: „Menu” na telefonie i „Wyglad” */
+  .panel > summary { list-style: none; }
+  .panel > summary::-webkit-details-marker { display: none; }
+  .panel-tresc {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 50; max-height: 80dvh; overflow-y: auto;
+    background: var(--papier-2); color: var(--atrament); border-bottom: 2px solid var(--atrament); padding: 8px 16px 16px;
+  }
+  .panel-tresc .podpis { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--atrament-2); margin: 14px 0 2px; }
+  .panel-tresc a { display: block; padding: 10px 0; color: var(--atrament); text-decoration: none; border-bottom: 1px solid var(--kreska); }
+  .panel-tresc a span { display: block; font-size: 0.85rem; color: var(--atrament-2); }
+
+  /*
+    „Wyglad”: bez JavaScriptu przelacznika nie widac (strona ma styl domyslny,
+    jasnosc idzie za systemem) — `data-js` ustawia skrypt w <head>.
+  */
+  .wyglad { display: none; }
+  :root[data-js] .wyglad { display: block; }
+  @media (min-width: 1024px) { .wyglad { position: relative; } }
+  .wyglad > summary .napis { display: none; }
+  @media (min-width: 640px) { .wyglad > summary .napis { display: inline; } }
+  .wyglad-panel {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 50; padding: 12px 16px 14px;
+    background: var(--papier-2); color: var(--atrament); border: 2px solid var(--atrament); font-size: 0.9rem;
+  }
+  @media (min-width: 1024px) { .wyglad-panel { left: auto; right: 0; top: calc(100% + 6px); width: 22rem; } }
+  .wyglad fieldset { border: 0; margin: 0; padding: 0; }
+  .wyglad fieldset + fieldset { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--kreska); }
+  .wyglad legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
+  .wyglad label { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; min-height: 44px; padding: 8px 0; cursor: pointer; }
+  .wyglad label input { margin: 2px 0 0; width: 24px; height: 24px; accent-color: var(--akcent); }
+  .wyglad label span { display: block; grid-column: 2; color: var(--atrament-2); font-size: 0.85rem; }
+  .wyglad .jasnosc { display: flex; flex-wrap: wrap; gap: 0 18px; }
+  .wyglad .jasnosc label { grid-template-columns: auto auto; }
+
+  /* stopka: kto za tym stoi i kontakt na kazdej stronie (F13, Stanford 2 i 5) */
+  .stopka { margin-top: 4rem; border-top: 2px solid var(--atrament); padding: 28px 0 40px; font-size: 0.9rem; color: var(--atrament-2); }
+  .stopka .kolumny { display: grid; gap: 24px; }
+  @media (min-width: 900px) { .stopka .kolumny { grid-template-columns: 1.3fr 1fr 1fr; } }
+  .stopka b { color: var(--atrament); }
+  .stopka p { margin-top: 6px; max-width: 30em; }
+  .stopka ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  .stopka li a { display: inline-flex; min-height: 32px; align-items: center; color: var(--akcent); }
+  .stopka .uwaga-koncowa { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--kreska); font-size: 0.85rem; }
+}
+
+@layer utilities {
+  /* Naglowki: Public Sans 600 w Standardowym, Brygada 1918 w Wypisie. */
+  .szryft { font-family: var(--f-naglowek); letter-spacing: -0.01em; }
+  /* Sygnatury, daty, liczby z rejestru — w Wypisie i na szerokim ekranie pismem maszynowym. */
+  .znak { font-family: var(--f-znak); }
 }
 
 /*
@@ -172,19 +391,4 @@
   }
   :root[data-motyw="ciemny"] .miejsce { fill: var(--bc); }
   :root[data-motyw="ciemny"] .miejsce-probka { background: var(--bc); }
-}
-
-/*
-  Ikona przelacznika motywu wybierana CSS-em, nie stanem Reacta — patrz
-  komentarz w PrzelacznikMotywu.tsx. Domyslnie (motyw jasny) widac ksiezyc,
-  czyli to, na co przelaczenie zmieni wyglad.
-*/
-@layer components {
-  .ikona-ciemny { display: none; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-motyw="jasny"]) .ikona-jasny { display: none; }
-    :root:not([data-motyw="jasny"]) .ikona-ciemny { display: block; }
-  }
-  :root[data-motyw="ciemny"] .ikona-jasny { display: none; }
-  :root[data-motyw="ciemny"] .ikona-ciemny { display: block; }
 }

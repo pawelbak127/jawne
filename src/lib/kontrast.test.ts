@@ -62,12 +62,17 @@ export function kontrast(a: string, b: string): number {
 const AA = 4.5;
 const TLA = ['papier', 'papier-2', 'papier-3'];
 const TEKSTY = ['atrament', 'atrament-2', 'atrament-3'];
-const NAZWY = ['jasny', 'ciemny (systemowy)', 'ciemny (przełącznik)'];
+// Dwie wersje wygladu × trzy tryby jasnosci (decyzja Pawla z 07.10.2026,
+// docs/przebudowa/kierunek.md). Kolejnosc jak w globals.css.
+const NAZWY = [
+  'Standardowy jasny', 'Standardowy ciemny (systemowy)', 'Standardowy ciemny (przełącznik)',
+  'Wypis jasny', 'Wypis ciemny (systemowy)', 'Wypis ciemny (przełącznik)',
+];
 
 describe('paleta w globals.css', () => {
-  it('ma dokładnie trzy motywy', () => {
-    // Czwarta paleta znaczy, ze ktos dodal motyw, ktorego ten test nie bada.
-    expect(PALETY).toHaveLength(3);
+  it('ma dokładnie sześć palet', () => {
+    // Siodma paleta znaczy, ze ktos dodal motyw, ktorego ten test nie bada.
+    expect(PALETY).toHaveLength(6);
   });
 });
 
@@ -96,7 +101,7 @@ describe.each(PALETY.map((p, i) => [NAZWY[i] ?? `paleta ${i}`, p] as const))(
   },
 );
 
-describe('oba motywy ciemne są identyczne', () => {
+describe.each([['Standardowy', 1, 2], ['Wypis', 4, 5]] as const)('%s: oba motywy ciemne są identyczne', (_styl, sys, przel) => {
   /*
    * Blok spod @media i blok spod [data-motyw] to dwie KOPIE tej samej palety
    * (Tailwind 4: `dark:` słucha tylko systemu, dopóki nie ma
@@ -105,6 +110,6 @@ describe('oba motywy ciemne są identyczne', () => {
    * nie zauważył, bo każdy ogląda serwis w jednym z tych dwóch trybów.
    */
   it.each([...TEKSTY, ...TLA, 'akcent', 'kreska', 'kreska-2'])('--%s', (n) => {
-    expect(PALETY[1]!.get(n)).toBe(PALETY[2]!.get(n));
+    expect(PALETY[sys]!.get(n)).toBe(PALETY[przel]!.get(n));
   });
 });

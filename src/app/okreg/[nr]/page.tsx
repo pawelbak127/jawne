@@ -75,7 +75,7 @@ export default async function StronaOkregu({
       ) : null}
 
       <header className="mt-6">
-        <p className="text-[11px] font-medium tracking-[0.2em] text-akcent uppercase">
+        <p className="text-xs font-medium tracking-[0.2em] text-akcent uppercase">
           {`Okręg wyborczy do Sejmu nr ${o.nr}`}
         </p>
         <h1 className="szryft mt-2 text-4xl font-semibold sm:text-5xl">{o.nazwa ?? `Okręg nr ${o.nr}`}</h1>

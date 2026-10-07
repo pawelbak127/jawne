@@ -1,33 +1,58 @@
 import type { Metadata } from 'next';
-import { Inter, Source_Serif_4 } from 'next/font/google';
+import { Brygada_1918, IBM_Plex_Mono, IBM_Plex_Sans, Public_Sans } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
 import { Nawigacja } from '@/components/Nawigacja';
-import { ADRES_SERWISU, KONTAKT } from '@/lib/adres';
+import { ADRES_SERWISU } from '@/lib/adres';
 import { INDEKSOWANIE_WLACZONE } from '@/lib/premiera';
 import { trybBezFiltra } from '@/lib/prywatnosc';
 
-// latin-ext jest OBOWIAZKOWE: szablon create-next-app ma tu samo "latin",
-// przy ktorym "ą", "ę", "ł", "ń", "ś", "ź", "ż" lecą na font zastepczy
-// i naglowek rozjezdza sie w polowie wyrazu.
-const inter = Inter({
+// latin-ext jest OBOWIAZKOWE: przy samym "latin" litery „ą", „ę", „ł", „ń",
+// „ś", „ź", „ż" leca na font zastepczy i naglowek rozjezdza sie w polowie
+// wyrazu (pulapka 6).
+//
+// Kroje dwoch wersji wygladu (docs/przebudowa/kierunek.md). Wstepnie ladowany
+// TYLKO Public Sans — pierwszy ekran Standardowego. Reszta ma `preload: false`:
+// przegladarka pobiera krój dopiero, gdy cos jest nim napisane, wiec czytelnik
+// Standardowego na telefonie nie sciaga Wypisu ani pisma maszynowego.
+const publicSans = Public_Sans({
   subsets: ['latin', 'latin-ext'],
-  variable: '--font-inter',
+  weight: ['400', '600'],
+  variable: '--font-public',
   display: 'swap',
 });
 
-const serif = Source_Serif_4({
+const plexMono = IBM_Plex_Mono({
   subsets: ['latin', 'latin-ext'],
-  variable: '--font-serif',
+  weight: ['500'],
+  variable: '--font-mono',
   display: 'swap',
+  preload: false,
+});
+
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin', 'latin-ext'],
   weight: ['400', '600'],
+  variable: '--font-plex',
+  display: 'swap',
+  preload: false,
+});
+
+const brygada = Brygada_1918({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['600'],
+  variable: '--font-brygada',
+  display: 'swap',
+  preload: false,
 });
 
 export const metadata: Metadata = {
   metadataBase: ADRES_SERWISU,
   title: {
-    default: 'jawne — Sejm bez komentarza',
-    template: '%s · jawne',
+    // Nazwa w naglowku i tytule: „zrejestru” (decyzja Pawla, 04.10.2026,
+    // docs/przebudowa/decyzje.md). „jawne” zostaje w kodzie i repozytorium.
+    default: 'zrejestru — Sejm i pieniądze publiczne z rejestrów',
+    template: '%s · zrejestru',
   },
   // Opis obiecuje dokladnie to, co serwis ma. Do 23.09.2026 mowil
   // o „co sie stalo z ustawa", czego wtedy nie bylo, i milczal o pieniadzach
@@ -59,22 +84,29 @@ const ZRODLA_STOPKI: [string, string][] = [
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pl" className={`${inter.variable} ${serif.variable}`} suppressHydrationWarning>
+    <html
+      lang="pl"
+      className={`${publicSans.variable} ${plexMono.variable} ${plexSans.variable} ${brygada.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/*
-          Motyw ustawiamy PRZED pierwszym malowaniem. Inaczej strona mignie
-          na bialo u kogos, kto wybral ciemny — to widac golym okiem.
+          Styl i jasnosc ustawiamy PRZED pierwszym malowaniem — inaczej strona
+          mignie na bialo albo w drugim stylu u kogos, kto wybral inaczej.
+          Z localStorage, nie z ciasteczka: odczyt ciasteczka w layoucie
+          zrobilby z kazdej strony trase dynamiczna (pulapki 39 i 52).
+          `data-js` odslania przelacznik „Wyglad”, ktory bez skryptu nie dziala.
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var m=localStorage.getItem('motyw');if(m)document.documentElement.dataset.motyw=m}catch(e){}`,
+            __html: `(function(){var d=document.documentElement;d.dataset.js='';try{var m=localStorage.getItem('motyw');if(m==='jasny'||m==='ciemny')d.dataset.motyw=m;if(localStorage.getItem('styl')==='a')d.dataset.styl='a'}catch(e){}})()`,
           }}
         />
       </head>
       <body className="min-h-dvh flex flex-col">
         <a
           href="#tresc"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-akcent focus:px-4 focus:py-2 focus:text-papier"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-akcent focus:px-4 focus:py-2 focus:text-papier"
         >
           Przejdź do treści
         </a>
@@ -84,77 +116,58 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ekranu z niego nie moze uchodzic za wersje publiczna.
         */}
         {trybBezFiltra() ? (
-          <div className="bg-akcent px-4 py-1.5 text-center text-xs font-medium text-papier">
+          <div className="bg-akcent px-4 py-1.5 text-center text-sm font-medium text-papier">
             Tryb lokalny: nazwy beneficjentów nie są filtrowane. W buildzie produkcyjnym filtr wraca sam.
           </div>
         ) : null}
 
-        <header className="sticky top-0 z-40 border-b border-kreska bg-papier/85 backdrop-blur-md">
-          <div className="obszar flex h-16 items-center gap-3 sm:gap-6">
-            {/* py-3: sam tekst daje 32 px, a to odnosnik „do strony glownej"
-                w nagłówku kazdej strony. Naglowek ma h-16 i items-center,
-                wiec 56 px nadal jest wysrodkowane i nic sie nie przesuwa. */}
-            <Link href="/" className="flex shrink-0 items-baseline gap-2 py-3">
-              <span className="szryft text-2xl font-semibold tracking-tight">jawne</span>
-              <span className="hidden text-[11px] uppercase tracking-[0.18em] text-atrament-3 sm:inline">
-                Sejm X kadencji
-              </span>
-            </Link>
-
-            <Nawigacja />
-          </div>
-        </header>
+        <Nawigacja />
 
         <main id="tresc" className="flex-1">
           {children}
         </main>
 
-        <footer className="mt-24 border-t border-kreska bg-papier-2">
-          <div className="obszar grid gap-8 py-12 sm:grid-cols-[1.4fr_1fr_1fr]">
-            <div>
-              <p className="szryft text-xl font-semibold">jawne</p>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-atrament-2">
-                Niezależny serwis obywatelski. Agregujemy dane z oficjalnych rejestrów
-                i zawsze pokazujemy, skąd pochodzi każda liczba. Nie oceniamy posłów
-                i nie przypisujemy im motywów.
-              </p>
+        <footer className="stopka">
+          <div className="obszar">
+            <div className="kolumny">
+              <div>
+                <b>zrejestru.pl</b>
+                <p>
+                  Niezależny serwis obywatelski. Dane z oficjalnych rejestrów, przy każdej
+                  liczbie jej źródło. Nie oceniamy posłów i nie przypisujemy im motywów.
+                </p>
+              </div>
+              <div>
+                <b>Skąd są dane</b>
+                <ul>
+                  {ZRODLA_STOPKI.map(([adres, nazwa]) => (
+                    <li key={adres}>
+                      <a href={adres} target="_blank" rel="noreferrer">{nazwa}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <b>Serwis</b>
+                <ul>
+                  <li><Link href="/o-serwisie">O serwisie i metodzie</Link></li>
+                  <li><Link href="/stan">Stan danych</Link></li>
+                  <li><Link href="/prywatnosc">Polityka prywatności</Link></li>
+                  {/*
+                    Kontakt prowadzi do strony, a nie do `mailto:` (07.10.2026):
+                    skrzynka nie odbiera poczty, a odnosnik z kazdej strony do
+                    adresu, ktory nie dziala, obiecuje kanal, ktorego nie ma.
+                    Sekcja polityki mowi, jak sie z nami skontaktowac i czy adres
+                    do sprzeciwu dziala (zasada 7).
+                  */}
+                  <li><Link href="/prywatnosc#kontakt">Kontakt i sprzeciw</Link></li>
+                </ul>
+              </div>
             </div>
-            <div className="text-sm">
-              <p className="font-medium">Dane</p>
-              <ul className="mt-2 space-y-1.5 text-atrament-2">
-                {ZRODLA_STOPKI.map(([adres, nazwa]) => (
-                  <li key={adres}>
-                    {/* min-h-6: 17 px nie spelnialo nawet progu 24 px (WCAG 2.5.8),
-                        a to osiem odnosnikow w stopce KAZDEJ strony. */}
-                    <a className="inline-flex min-h-6 items-center hover:text-akcent hover:underline" href={adres} target="_blank" rel="noreferrer">
-                      {nazwa}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="text-sm">
-              <p className="font-medium">Serwis</p>
-              <ul className="mt-2 space-y-1.5 text-atrament-2">
-                <li><Link className="hover:text-akcent hover:underline" href="/o-serwisie">O serwisie</Link></li>
-                <li><Link className="hover:text-akcent hover:underline" href="/stan">Stan danych</Link></li>
-                <li><Link className="hover:text-akcent hover:underline" href="/prywatnosc">Polityka prywatności</Link></li>
-                {/* Adres do sprzeciwu ma byc widoczny z KAZDEJ strony, nie tylko
-                    tam, gdzie regula kogos odslonila. Dopoki go nie ma, odsylamy
-                    do sekcji polityki, ktora mowi wprost, ze go brakuje. */}
-                <li>
-                  {KONTAKT ? (
-                    <a className="hover:text-akcent hover:underline" href={`mailto:${KONTAKT}`}>Kontakt</a>
-                  ) : (
-                    <Link className="hover:text-akcent hover:underline" href="/prywatnosc#kontakt">Kontakt</Link>
-                  )}
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="obszar border-t border-kreska py-5 text-xs text-atrament-3">
-            Dane pochodzą z rejestrów publicznych. Serwis nie jest powiązany z Kancelarią
-            Sejmu, z urzędami, których dane pokazuje, ani z żadnym klubem poselskim.
+            <p className="uwaga-koncowa">
+              Dane pochodzą z rejestrów publicznych. Serwis nie jest powiązany z Kancelarią
+              Sejmu, z urzędami, których dane pokazuje, ani z żadnym klubem poselskim.
+            </p>
           </div>
         </footer>
       </body>

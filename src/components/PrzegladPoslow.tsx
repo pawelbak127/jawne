@@ -62,7 +62,7 @@ export function PrzegladPoslow({
 
   return (
     <>
-      <div className="sticky top-16 z-20 -mx-4 bg-papier/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-20 -mx-4 bg-papier/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:px-6">
         <div className="flex flex-wrap items-center gap-3">
           <input
             value={fraza}
@@ -155,7 +155,7 @@ export function PrzegladPoslow({
                     </span>
                   </span>
                   {!p.aktywny ? (
-                    <span className="shrink-0 rounded-md bg-papier-3 px-1.5 py-0.5 text-[10px] text-atrament-3">
+                    <span className="shrink-0 rounded-md bg-papier-3 px-1.5 py-0.5 text-xs text-atrament-3">
                       mandat wygasł
                     </span>
                   ) : null}

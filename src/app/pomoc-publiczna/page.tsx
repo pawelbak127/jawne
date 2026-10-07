@@ -45,7 +45,7 @@ export default function StronaPomocy() {
 
   return (
     <div className="obszar py-10">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-akcent">Pomoc publiczna</p>
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-akcent">Pomoc publiczna</p>
       <h1 className="szryft mt-3 max-w-3xl text-4xl font-semibold text-balance sm:text-5xl">
         Kto rozdaje publiczne pieniądze firmom
       </h1>

@@ -34,9 +34,8 @@ export default function StronaGlowna() {
   return (
     <>
       <section className="relative">
-        <div className="siatka-tla pointer-events-none absolute inset-0 -z-10" aria-hidden />
         <div className="obszar pt-16 pb-12 sm:pt-24">
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-akcent">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-akcent">
             Sejm RP · X kadencja
           </p>
           {/* text-balance zamiast twardego <br>: przy <br> "Sejmie" zostawalo samo w linii. */}

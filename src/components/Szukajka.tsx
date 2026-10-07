@@ -240,7 +240,7 @@ export function Szukajka({
 function Grupa({ tytul, children }: { tytul: string; children: React.ReactNode }) {
   return (
     <div className="py-1">
-      <p className="px-4 pt-1 pb-1 text-[11px] font-medium tracking-wider text-atrament-3 uppercase">{tytul}</p>
+      <p className="px-4 pt-1 pb-1 text-xs font-medium tracking-wider text-atrament-3 uppercase">{tytul}</p>
       {children}
     </div>
   );

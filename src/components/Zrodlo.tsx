@@ -21,7 +21,7 @@ export function Zrodlo({
       target="_blank"
       rel="noreferrer"
       title={`Źródło: ${adres}`}
-      className={`inline-flex min-h-6 items-center gap-1 text-[11px] text-atrament-3 transition-colors hover:text-akcent ${className}`}
+      className={`inline-flex min-h-6 items-center gap-1 text-xs text-atrament-3 transition-colors hover:text-akcent ${className}`}
     >
       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
         <path d="M10 14 21 3M21 3h-6M21 3v6" strokeLinecap="round" strokeLinejoin="round" />
