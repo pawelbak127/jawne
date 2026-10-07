@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { zalozSchemat } from './baza.js';
-import { mapaZeSum, odswiezSumy, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
+import { mapaZeSum, odswiezSumy, PORCJA_DNIA, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
 import { DNI_USTALONE, policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
 import { policzPomocGminy, pomocGminyZeSum } from '../../src/lib/pomoc-gminy.js';
 
@@ -268,5 +268,36 @@ describe('pomoc w gminie ze stanu (strona gminy)', () => {
     expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/max_eur/);
     db.prepare("update pomoc_sumy_gmin_firmy set max_eur = 3, nazwa = 'Inna' where nip = '1111111111'").run();
     expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/firma 1111111111 nazwa/);
+  });
+});
+
+describe('dzien wiekszy niz porcja (17.12.2024: 846 670 przypadkow)', () => {
+  it('liczy dzien porcjami i daje to samo co SQL — takze pary rozrzucone po porcjach', () => {
+    const ile = Math.floor(PORCJA_DNIA * 2.5);
+    const wiersze = Array.from({ length: ile }, (_, i) => ({
+      // Ta sama para gmina–firma co 7 wierszy — trafia do kilku porcji naraz.
+      nip: String(1000000000 + (i % 7919)),
+      nazwa: i % 11 === 0 ? null : `Firma ${i % 7919} sp. z o.o.`,
+      teryt: i % 3 === 0 ? '020102' : '020101',
+      brutto: i === Math.floor(ile / 2) ? 9_999_999 : (i % 13 === 0 ? null : (i % 500) + 0.25),
+      eur: i % 17 === 0 ? null : i % 300,
+      przeznaczenie: i % 5 === 0 ? null : `cel ${i % 4}`,
+    }));
+    db.exec('begin');
+    dodajDzien('2024-12-17', 20, wiersze);
+    db.exec('commit');
+    odswiezSumy(db);
+
+    expect(sprawdzSumy(db, WARSZAWA)).toEqual([]);
+    for (const teryt of ['020101', '020102']) {
+      const zeStanu = pomocGminyZeSum(czytnik(), teryt);
+      const zTabeli = policzPomocGminy(czytnik(), `(select * from pomoc_publiczna where dzien in ${DNI_USTALONE})`, teryt);
+      expect(zeStanu.razem?.przypadkow).toBe(zTabeli.razem?.przypadkow);
+      expect(zeStanu.lata).toHaveLength(zTabeli.lata.length);
+      expect(zeStanu.beneficjenci.map((b) => b.nip)).toEqual(zTabeli.beneficjenci.map((b) => b.nip));
+    }
+    // Najwiekszy przypadek lezal w srodku dnia, w drugiej porcji.
+    expect(przegladZeSum(db, WARSZAWA)!.najwieksze[0]!.brutto).toBe(9_999_999);
+    expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(ile);
   });
 });

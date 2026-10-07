@@ -858,6 +858,22 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     skalarna, która oddaje NULL, gdy KTÓRYKOLWIEK argument jest NULL-em —
     upsert nazwy firmy kasował nią nazwę po dniu z pustym wpisem.
 
+70. **Jeden dzień SUDOP potrafi mieć 846 670 przypadków — i to on wywrócił
+    wdrożenie z pułapki 69.** ZMIERZONE 05.10.2026: dzień 17.12.2024 ma
+    846 670 wierszy i 844 179 różnych par gmina–firma (20.12.2024: 374 316).
+    Wkład dnia liczony naraz — nowa mapa par gmina–firma plus czołówka,
+    która trzymała KAŻDY wiersz dnia do końca — przekroczył stertę: migracje
+    przy wdrożeniu (1 400 MB) i zadanie historii (07:49, „heap out of
+    memory”). Przeliczanie od zera stanęło na 738 z 1 390 dni, budowa nie
+    ruszyła, a stara strona przez noc czytała organy z połowy stanu pod
+    podpisem pełnego zakresu. Lokalnie największy dzień ma ok. 20 tys. wierszy.
+    Dzień liczy się teraz porcjami po `PORCJA_DNIA` wierszy w jednej
+    transakcji (zapisy stanu tylko dodają), czołówka przycinana na bieżąco.
+    Zmierzone na syntetycznym dniu 850 tys. wierszy przy stercie 350 MB:
+    stary kod — ten sam błąd co na serwerze; nowy — 34 s, 115 MB.
+    **Zanim dołożysz do stanu nową mapę, policz ją dla NAJWIĘKSZEGO dnia
+    w bazie serwera, nie lokalnej** (`select dzien, count(*) … order by 2 desc`).
+
 ---
 
 ## Bezpieczeństwo
