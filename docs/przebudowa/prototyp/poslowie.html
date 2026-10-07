@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Posłowie · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp: dwie wersje wyglądu</b> (przełącznik „Wygląd” w nagłówku). Liczby przepisane ze zrzutów lokalnej budowy <span class="znak">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <details class="wyglad" hidden>
+      <summary class="przycisk" aria-label="Wygląd strony"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="napis">Wygląd</span></summary>
+      <div class="wyglad-panel">
+        <fieldset><legend>Styl strony</legend>
+          <label><input type="radio" name="styl" value="jg"><b>Standardowy</b><span>duże pismo, wszystko na wierzchu; na komputerze gęściej, ze spisem działów z boku</span></label>
+          <label><input type="radio" name="styl" value="a"><b>Wypis z rejestru</b><span>jak odpis z urzędu: ponumerowane działy, „podstawa” przy każdej liczbie</span></label>
+        </fieldset>
+        <fieldset><legend>Jasność</legend>
+          <label><input type="radio" name="jasnosc" value="system">jak w systemie</label>
+          <label><input type="radio" name="jasnosc" value="jasny">jasny</label>
+          <label><input type="radio" name="jasnosc" value="ciemny">ciemny</label>
+        </fieldset>
+      </div>
+    </details>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html" aria-current="page">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html" aria-current="page">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Sejm</a><i aria-hidden="true">›</i></span><span aria-current="page">Posłowie</span></nav>
+  <header class="wypis"><h1>Posłowie</h1><p class="podtytul">Cały skład kadencji, razem z tymi, których mandat wygasł — nikogo nie ukrywamy.</p><p class="skad"><b>zrejestru.pl</b> — niezależny serwis obywatelski: dane z oficjalnych rejestrów, przy każdej liczbie jej źródło, bez ocen. <a href="#">Jak to działa</a></p>
+  </header>
+  <form role="search" action="#" class="filtry"><label for="qp" class="sr">Znajdź posła</label><input class="pole" id="qp" type="search" placeholder="Nazwisko albo okręg">
+    <label for="klub" class="sr">Klub</label><select id="klub" class="pole"><option>wszystkie kluby</option><option>KO</option><option>PiS</option><option>RozwojPlus</option><option>PSL-TD</option><option>Lewica</option><option>Konfederacja</option><option>Polska2050</option><option>Centrum</option><option>niez.</option><option>Demokracja</option><option>Razem</option><option>Konfederacja_KP</option></select></form>
+  <nav class="zakladki" aria-label="Kto"><a href="#" aria-current="page">sprawujący mandat<span class="znak">460</span></a><a href="#">wszyscy w kadencji<span class="znak">499</span></a><a href="#">mandat wygasł<span class="znak">39</span></a></nav>
+  <nav class="litery" aria-label="Skocz do litery"><a href="#">A</a><a href="#">B</a><a href="#">C</a><a href="#">D</a><a href="#">F</a><a href="#">G</a><a href="#">H</a><a href="#">I</a><a href="#">J</a><a href="#">K</a><a href="#">L</a><a href="#">Ł</a><a href="#">M</a><a href="#">N</a><a href="#">O</a><a href="#">P</a><a href="#">R</a><a href="#">S</a><a href="#">Ś</a><a href="#">T</a><a href="#">U</a><a href="#">W</a><a href="#">Z</a><a href="#">Ż</a></nav>
+  <div class="tabela-przewijana"><table class="tabela osoby-tab"><thead><tr><th>Imię i nazwisko</th><th>Klub</th><th>Okręg</th></tr></thead><tbody><tr data-odpowiedz><td><a href="posel.html">Andrzej Adamczyk</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Kraków</td></tr><tr><td><a href="#">Piotr Adamowicz</a></td><td><span class="kropka" style="background:#2a78d6"></span>KO</td><td>Gdańsk</td></tr><tr><td><a href="#">Waldemar Andzel</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Katowice</td></tr><tr><td><a href="#">Dorota Arciszewska-Mielewczyk</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Słupsk</td></tr><tr><td><a href="#">Jan Krzysztof Ardanowski</a></td><td><span class="kropka" style="background:#5b4636"></span>Demokracja</td><td>Toruń</td></tr><tr><td><a href="#">Iwona Ewa Arent</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Olsztyn</td></tr><tr><td><a href="#">Marek Ast</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Zielona Góra</td></tr><tr><td><a href="#">Urszula Augustyn</a></td><td><span class="kropka" style="background:#2a78d6"></span>KO</td><td>Tarnów</td></tr><tr><td><a href="#">Piotr Babinetz</a></td><td><span class="kropka" style="background:#4a3aa7"></span>PiS</td><td>Krosno</td></tr><tr><td><a href="#">Anna Baluch</a></td><td><span class="kropka" style="background:#eb6834"></span>RozwojPlus</td><td>Lublin</td></tr><tr><td><a href="#">Ryszard Bartosik</a></td><td><span class="kropka" style="background:#eb6834"></span>RozwojPlus</td><td>Konin</td></tr><tr><td><a href="#">Władysław Bartoszewski</a></td><td><span class="kropka" style="background:#008300"></span>PSL-TD</td><td>Warszawa</td></tr></tbody></table></div>
+  <p class="drobny szary" style="margin-top:10px">Stan: rejestr posłów 29.09.2026.</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PGE GiEK — pomoc publiczna i zamówienia · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp: dwie wersje wyglądu</b> (przełącznik „Wygląd” w nagłówku). Liczby przepisane ze zrzutów lokalnej budowy <span class="znak">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <details class="wyglad" hidden>
+      <summary class="przycisk" aria-label="Wygląd strony"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="napis">Wygląd</span></summary>
+      <div class="wyglad-panel">
+        <fieldset><legend>Styl strony</legend>
+          <label><input type="radio" name="styl" value="jg"><b>Standardowy</b><span>duże pismo, wszystko na wierzchu; na komputerze gęściej, ze spisem działów z boku</span></label>
+          <label><input type="radio" name="styl" value="a"><b>Wypis z rejestru</b><span>jak odpis z urzędu: ponumerowane działy, „podstawa” przy każdej liczbie</span></label>
+        </fieldset>
+        <fieldset><legend>Jasność</legend>
+          <label><input type="radio" name="jasnosc" value="system">jak w systemie</label>
+          <label><input type="radio" name="jasnosc" value="jasny">jasny</label>
+          <label><input type="radio" name="jasnosc" value="ciemny">ciemny</label>
+        </fieldset>
+      </div>
+    </details>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html" aria-current="page">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html" aria-current="page">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Pieniądze publiczne</a><i aria-hidden="true">›</i></span><span class=""><a href="firmy.html">Firmy</a><i aria-hidden="true">›</i></span><span aria-current="page">PGE Górnictwo i Energetyka Konwencjonalna Spółka Akcyjna</span></nav>
+  <header class="wypis">
+    <h1 class="dlugi">PGE Górnictwo i Energetyka Konwencjonalna Spółka Akcyjna</h1>
+    <p class="podtytul">Wytwarzanie energii elektrycznej · siedziba: <a href="#">Bełchatów — publiczne pieniądze w gminie</a></p>
+  <p class="skad"><b>zrejestru.pl</b> — niezależny serwis obywatelski: dane z oficjalnych rejestrów, przy każdej liczbie jej źródło, bez ocen. <a href="#">Jak to działa</a></p>
+  </header>
+  <section class="w-liczbach" aria-labelledby="liczby-t">
+    <h2 id="liczby-t">W liczbach</h2>
+    <div class="wiersze">
+      <div class="wiersz duzy" data-odpowiedz><p class="co">Pomoc publiczna brutto</p><p class="ile">12,8 mld zł</p><p class="z-czego">1380 przypadków, 21.04.2017–18.08.2026 · pełna historia z rejestru <a class="do-dzialu" href="#przypadki">przypadki pomocy ↓</a></p><p class="porownanie">Średnio 9,3 mln zł na jeden przypadek pomocy.</p><p class="podstawa"><a class="zrodlo" href="https://sudop.uokik.gov.pl/search/aidBeneficiary" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span><span class="data">17.09.2026</span></a></p></div>
+      <div class="wiersz duzy" data-odpowiedz><p class="co">Zamówienia publiczne, w których była jedynym wykonawcą</p><p class="ile">19,4 mln zł</p><p class="z-czego">z 2 ogłoszeń · ogłoszeń z kilkoma wykonawcami: 0 <a class="do-dzialu" href="#zamowienia">zamówienia ↓</a></p><p class="podstawa"><a class="zrodlo" href="https://ted.europa.eu" target="_blank" rel="noreferrer"><span class="nazwa">TED</span><span class="data">23.09.2026</span></a></p></div>
+    </div>
+    <p class="warunki" id="warunki"><b>Źródło:</b> <a href="https://sudop.uokik.gov.pl">System Udostępniania Danych o Pomocy Publicznej (UOKiK)</a>, dane pobrane 17 września 2026. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.</p>
+  </section>
+  <p class="stan-danych" data-stan><span>NIP <span class="znak">7690502495</span></span><span>duży przedsiębiorca</span><span>PKD <span class="znak">35.11</span></span><span>stan danych: SUDOP 17.09.2026 · TED 23.09.2026</span></p>
+  <section class="dzial" id="przypadki" aria-labelledby="przypadki-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="przypadki-t"><span class="nr-tel">2. </span>Przypadki pomocy: 1380 od 2017 r., 50 najnowszych niżej</h2></div>
+  
+    <p class="wstep">50 najnowszych z 1380 — zgrupowane, gdy data, organ i rodzaj pomocy są te same.</p>
+    <div class="tabela-przewijana"><table class="tabela przypadki">
+      <thead><tr><th>Data</th><th>Na co · kto przyznał</th><th class="l">Przypadki</th><th class="l">Kwoty brutto</th></tr></thead>
+      <tbody><tr><td class="znak" style="white-space:nowrap">18.08.2026</td><td>pomoc na rzecz bezpieczeństwa dostaw energii elektrycznej (rynek mocy)<br><a href="#" class="drobny">Polskie Sieci Elektroenergetyczne S.A.</a></td><td class="l">16</td><td class="l">od 1,50 do 11,3 mln zł</td></tr><tr><td class="znak" style="white-space:nowrap">20.07.2026</td><td>pomoc na rzecz bezpieczeństwa dostaw energii elektrycznej (rynek mocy)<br><a href="#" class="drobny">Polskie Sieci Elektroenergetyczne S.A.</a></td><td class="l">16</td><td class="l">od 1,52 do 16,3 mln zł</td></tr><tr><td class="znak" style="white-space:nowrap">17–20.07.2026</td><td>pomoc de minimis (rozporządzenie KE 2023/2831)<br><a href="#" class="drobny">Starosta Powiatu Bełchatów</a></td><td class="l">3</td><td class="l">od 4480 zł do 13,1 tys. zł</td></tr><tr><td class="znak" style="white-space:nowrap">22.06.2026</td><td>pomoc na rzecz bezpieczeństwa dostaw energii elektrycznej (rynek mocy)<br><a href="#" class="drobny">Polskie Sieci Elektroenergetyczne S.A.</a></td><td class="l">15</td><td class="l">od 1,06 do 15,6 mln zł</td></tr></tbody></table></div>
+    <p style="margin-top:10px"><a href="#">Pokaż wszystkie 50 przypadków osobno ↓</a></p>
+    <details class="metoda"><summary>Podstawa prawna i jak to liczymy</summary><div class="tresc"><ul>
+      <li><b>Rynek mocy:</b> ustawa z dnia 8 grudnia 2017 r. o rynku mocy — art. 41 w zw. z art. 44 ust. 2; decyzja Komisji Europejskiej w sprawie SA.46100; forma: dotacja lub inne bezzwrotne świadczenie.</li>
+      <li><b>De minimis:</b> ustawa z dnia 20 marca 2025 r. o rynku pracy i służbach zatrudnienia — art. 125, 126.</li>
+      <li><b>Brutto</b> to ekwiwalent dotacji: przy dotacji cała kwota, przy pożyczce lub gwarancji tylko korzyść z lepszych warunków.</li>
+      <li><b>Średnia na przypadek</b> to 12,8 mld zł ÷ 1380 przypadków.</li></ul></div></details>
+  
+</div></section>
+  <section class="dzial" id="zamowienia" aria-labelledby="zamowienia-t"><div class="nr" aria-hidden="true">3</div><div>
+  <div class="tytul"><h2 id="zamowienia-t"><span class="nr-tel">3. </span>Zamówienia publiczne: 2 ogłoszenia, 19,4 mln zł</h2><a class="zrodlo" href="https://ted.europa.eu" target="_blank" rel="noreferrer"><span class="nazwa">TED — dziennik zamówień UE</span></a></div>
+  
+    <ul class="pozycje">
+      <li><div><p><b>Polska – Eksploatacja instalacji elektrycznych – Dzierżawa i eksploatacja sieci elektroenergetycznych na terenie Elektrowni Dolna…</b></p><p class="meta">PGE Dystrybucja S.A. · 24.06.2026 · ogłoszenie <span class="znak">428802-2026</span></p></div><p class="kwota">16,4 mln zł<small><a href="https://ted.europa.eu/pl/notice/428802-2026/pdf">ogłoszenie 428802-2026 (PDF)</a></small></p></li>
+      <li><div><p><b>Polska – Woda nienadająca się do picia – Dostawa wody demineralizowanej do PGE Gryfino 2050 sp. z o.o. w m. Nowe Czarnowo</b></p><p class="meta">PGE Gryfino 2050 sp. z o. o. · 28.10.2024 · ogłoszenie <span class="znak">654660-2024</span></p></div><p class="kwota">3,00 mln zł<small><a href="https://ted.europa.eu/pl/notice/654660-2024/pdf">ogłoszenie 654660-2024 (PDF)</a></small></p></li>
+    </ul>
+    <p class="drobny szary" style="margin-top:10px">Tylko zamówienia powyżej progów unijnych. Przy kilku wykonawcach kwota dotyczy całego ogłoszenia — nie wiadomo, ile przypadło tej firmie.</p>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

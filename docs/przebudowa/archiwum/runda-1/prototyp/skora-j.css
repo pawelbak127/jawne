@@ -1,0 +1,78 @@
+@font-face { font-family: "Public Sans"; font-weight: 400; font-display: swap; src: url(fonty/public-sans-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Public Sans"; font-weight: 400; font-display: swap; src: url(fonty/public-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+/*
+  Kierunek J „Usługa publiczna” — w duchu GOV.UK Design System: czarny pasek,
+  duże pismo, niebieskie podkreślone odnośniki, żółte zaznaczenie fokusu,
+  lista „klucz · wartość · źródło”, zero ozdobników. Public Sans.
+  Najlepiej przebadany wzorzec z dziesięciu; najmniej „charakteru”.
+*/
+:root {
+  --papier: #ffffff; --papier-2: #ffffff; --papier-3: #f3f2f1;
+  --atrament: #0b0c0c; --atrament-2: #383f43; --atrament-3: #505a5f;
+  --kreska: #b1b4b6; --kreska-2: #b1b4b6; --akcent: #1d70b8; --akcent-slaby: #e8f1f8;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #0b0c0c; --papier-2: #1a1b1c; --papier-3: #262728;
+  --atrament: #f3f2f1; --atrament-2: #d0d0d0; --atrament-3: #b1b4b6;
+  --kreska: #505a5f; --kreska-2: #6f777b; --akcent: #79b4ec; --akcent-slaby: #14263a; } }
+:root[data-motyw="ciemny"] {
+  --papier: #0b0c0c; --papier-2: #1a1b1c; --papier-3: #262728;
+  --atrament: #f3f2f1; --atrament-2: #d0d0d0; --atrament-3: #b1b4b6;
+  --kreska: #505a5f; --kreska-2: #6f777b; --akcent: #79b4ec; --akcent-slaby: #14263a; }
+
+body, h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "Public Sans", Arial, sans-serif; letter-spacing: 0; }
+body { font-size: 16px; }
+@media (min-width: 640px) { body { font-size: 19px; } }
+h1 { font-weight: 600; font-size: clamp(2rem, 6vw, 3rem); }
+h2 { font-weight: 600; font-size: clamp(1.4rem, 4vw, 1.9rem); }
+
+/* czarny pasek z nazwą serwisu */
+.naglowek { background: #0b0c0c; color: #ffffff; border-bottom: 10px solid var(--akcent); }
+.naglowek .marka, .naglowek .marka b, .naglowek .przycisk, .naglowek .tylko-tel .przycisk { color: #ffffff; }
+.naglowek .marka span { color: #dadada; }
+.naglowek .szukaj input { border: 2px solid #ffffff; background: #ffffff; color: #0b0c0c; }
+.menu-grupy { background: var(--papier-3); border-top: 0; }
+.menu-grupy .podpis { color: var(--atrament-2); }
+.menu-grupy a { color: var(--akcent); text-decoration: underline; text-underline-offset: .15em; }
+.menu-grupy a[aria-current="page"] { color: var(--atrament); text-decoration: none; border-bottom-color: var(--akcent); }
+@media (min-width: 1024px) { .menu-grupy { padding-left: max(1.5rem, calc((100% - 76rem) / 2 + 1.5rem)); } }
+
+/* odnośniki i fokus jak w GOV.UK */
+a { color: var(--akcent); text-decoration-thickness: 1px; text-underline-offset: .15em; }
+a:hover { text-decoration-thickness: 3px; }
+a:focus-visible, .pole:focus-visible, .szukaj input:focus-visible { outline: 3px solid transparent; background: #ffdd00; color: #0b0c0c; box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c; text-decoration: none; }
+.pole, .szukaj input { border: 2px solid var(--atrament); }
+
+/* lista podsumowania: klucz · wartość · źródło */
+.w-liczbach { border: 0; background: none; padding: 0; }
+.w-liczbach > h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); padding-top: 0; }
+.wiersze { border-top: 0; }
+.wiersz { border-bottom: 1px solid var(--kreska); padding: 12px 0; }
+.wiersz .co { font-weight: 600; }
+.wiersz .ile { font-weight: 600; font-size: 1.25rem; }
+.wiersz.duzy .ile { font-size: 1.6rem; }
+a.zrodlo { font-family: "Public Sans", sans-serif; font-weight: 400; font-size: 14px; text-decoration: underline; }
+a.zrodlo::before { display: none; }
+a.zrodlo { grid-template-columns: auto; }
+a.zrodlo .data { grid-column: 1; }
+@media (min-width: 900px) { .wiersz .podstawa { border-left: 0; } }
+
+/* „inset text” i ostrzeżenie */
+.uwaga { border-left: 10px solid var(--kreska); padding: 12px 16px; }
+.uwaga::before { content: "!"; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 10px; border-radius: 50%; background: var(--atrament); color: var(--papier); font-weight: 600; }
+.dzial { border-bottom: 0; }
+.dzial > .nr { display: none; }
+@media (min-width: 900px) { .dzial { grid-template-columns: minmax(0, 1fr); } }
+.pasek { background: var(--papier-3); height: 10px; }
+.pasek i { background: var(--akcent); }
+details.metoda > summary { color: var(--akcent); text-decoration: underline; font-weight: 400; }
+details.metoda > summary::before { content: "▸"; border: 0; width: auto; }
+details.metoda[open] > summary::before { content: "▾"; }
+.stopka { border-top: 1px solid var(--kreska); background: var(--papier-3); }
+
+/* telefon: wiersz szukania i działów na szarym pasku, jak menu na komputerze */
+.naglowek .tel { background: var(--papier-3); color: var(--atrament); padding-top: 10px; }
+.skroty a { color: var(--akcent); text-decoration: underline; text-underline-offset: .15em; }
+.skroty a[aria-current="page"] { color: var(--atrament); text-decoration: none; border-bottom-color: var(--akcent); }

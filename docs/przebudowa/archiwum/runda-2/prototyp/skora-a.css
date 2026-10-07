@@ -1,0 +1,40 @@
+/*
+  A „Wypis z rejestru” — strona jako wypis z rejestru: ponumerowane działy, sygnatury pismem
+  maszynowym, „podstawa” przy każdej liczbie. Brygada 1918 + IBM Plex Sans + Plex Mono.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
+*/
+@font-face { font-family: "Brygada 1918"; font-weight: 600; font-display: swap; src: url(fonty/brygada-1918-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Brygada 1918"; font-weight: 600; font-display: swap; src: url(fonty/brygada-1918-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url(fonty/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url(fonty/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url(fonty/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url(fonty/ibm-plex-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+:root {
+  --papier: #f5f3ed; --papier-2: #fbfaf6; --papier-3: #ebe7dc; --atrament: #151412;
+  --atrament-2: #46433c; --atrament-3: #5c5850; --kreska: #d6d0c2; --kreska-2: #a99f8b;
+  --akcent: #0b5a52; --akcent-slaby: #dcebe7; --ostrzezenie: #8a4b00;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #121210; --papier-2: #1a1a17; --papier-3: #24231f; --atrament: #efece4;
+  --atrament-2: #bdb8ab; --atrament-3: #a39e91; --kreska: #38362f; --kreska-2: #57544a;
+  --akcent: #6fd3c3; --akcent-slaby: #173a35; --ostrzezenie: #f0b85a;
+  color-scheme: dark; } }
+:root[data-motyw="ciemny"] {
+  --papier: #121210; --papier-2: #1a1a17; --papier-3: #24231f; --atrament: #efece4;
+  --atrament-2: #bdb8ab; --atrament-3: #a39e91; --kreska: #38362f; --kreska-2: #57544a;
+  --akcent: #6fd3c3; --akcent-slaby: #173a35; --ostrzezenie: #f0b85a;
+  color-scheme: dark; }
+:root { --f-tekst: "IBM Plex Sans", system-ui, sans-serif; --f-naglowek: "Brygada 1918", Georgia, serif;
+  --f-liczba: "IBM Plex Sans", system-ui, sans-serif; --f-znak: "IBM Plex Mono", ui-monospace, monospace;
+  --w-naglowek: 600; --w-liczba: 600; --linia-mocna: 1.5px; }
+/* sygnatury i daty pismem maszynowym — „to jest identyfikator z rejestru” */
+.stan-danych, .droga .kiedy, .spis a .znak { font-family: var(--f-znak); font-size: var(--drobny); }
+/* „podstawa”: źródło pismem maszynowym, jak adnotacja w wypisie */
+a.zrodlo { font-family: var(--f-znak); font-weight: 500; }
+a.zrodlo .nazwa::before { content: "podstawa: "; color: var(--atrament-2); }
+/* ponumerowane działy: „Dział 2” na marginesie */
+@media (min-width: 900px) { .dzial { grid-template-columns: 5rem minmax(0, 1fr); } .dzial > .nr::before { content: "Dział "; display: block; font-family: var(--f-znak); font-size: var(--drobny); font-weight: 500; } }
+.w-liczbach > h2 { font-family: var(--f-naglowek); }
+.naglowek { border-bottom-width: 1.5px; }

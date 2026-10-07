@@ -1,0 +1,79 @@
+/*
+  J+G „Standardowy” — J „Usługa publiczna” wszędzie, a od 1280 px dodatki z G „Pulpit”:
+  spis działów z boku, „W liczbach” podzielone na pola, etykieta nad liczbą, liczby pismem
+  maszynowym. Public Sans 400/600 + IBM Plex Mono 500 (ten tylko na komputerze).
+  Nakładka na fundament (styl.css): zmienia tylko styl, nie układ ani rozmiary.
+*/
+@font-face { font-family: "Public Sans"; font-weight: 400; font-display: swap; src: url(fonty/public-sans-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Public Sans"; font-weight: 400; font-display: swap; src: url(fonty/public-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Public Sans"; font-weight: 600; font-display: swap; src: url(fonty/public-sans-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonty/ibm-plex-mono-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+:root {
+  --papier: #ffffff; --papier-2: #ffffff; --papier-3: #f3f2f1; --atrament: #0b0c0c;
+  --atrament-2: #383f43; --atrament-3: #505a5f; --kreska: #b1b4b6; --kreska-2: #8a8f92;
+  --akcent: #1d70b8; --akcent-slaby: #e8f1f8; --ostrzezenie: #0b0c0c;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #0b0c0c; --papier-2: #141516; --papier-3: #222324; --atrament: #f3f2f1;
+  --atrament-2: #d0d0d0; --atrament-3: #b1b4b6; --kreska: #505a5f; --kreska-2: #6f777b;
+  --akcent: #79b4ec; --akcent-slaby: #14263a; --ostrzezenie: #f3f2f1;
+  color-scheme: dark; } }
+:root[data-motyw="ciemny"] {
+  --papier: #0b0c0c; --papier-2: #141516; --papier-3: #222324; --atrament: #f3f2f1;
+  --atrament-2: #d0d0d0; --atrament-3: #b1b4b6; --kreska: #505a5f; --kreska-2: #6f777b;
+  --akcent: #79b4ec; --akcent-slaby: #14263a; --ostrzezenie: #f3f2f1;
+  color-scheme: dark; }
+:root { --f-tekst: "Public Sans", system-ui, sans-serif; --f-naglowek: var(--f-tekst); --f-liczba: var(--f-tekst); --f-znak: var(--f-tekst);
+  --w-naglowek: 600; --w-liczba: 600; }
+/* czarny pasek z nazwą serwisu i niebieską kreską */
+.naglowek { background: #0b0c0c; color: #ffffff; border-bottom: 10px solid #1d70b8; }
+.naglowek .marka, .naglowek .marka b, .naglowek .przycisk { color: #ffffff; }
+.naglowek .marka span { color: #dadada; }
+.naglowek .szukaj input { border-color: #ffffff; }
+.naglowek .tel, .menu-grupy { background: var(--papier-3); color: var(--atrament); }
+.naglowek .tel { padding-top: 10px; }
+.menu-grupy .podpis { color: var(--atrament-2); }
+.menu-grupy a, .skroty a { color: var(--akcent); text-decoration: underline; }
+.menu-grupy a[aria-current="page"], .skroty a[aria-current="page"] { color: var(--atrament); text-decoration: none; border-bottom-color: #1d70b8; }
+@media (min-width: 1024px) { .menu-grupy { padding-left: max(24px, calc((100% - 72rem) / 2 + 24px)); } }
+/* fokus jak w GOV.UK: żółte tło i czarna kreska — widoczny na każdym tle */
+a:focus-visible, .pole:focus-visible, .szukaj input:focus-visible, button:focus-visible { outline: 3px solid transparent; background: #ffdd00; color: #0b0c0c; box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c; text-decoration: none; }
+/* lista podsumowania zamiast ramki */
+.w-liczbach { border: 0; background: none; padding-inline: 0; }
+.w-liczbach > h2 { font-size: 1.4rem; }
+.wiersz { border-bottom: 1px solid var(--kreska); }
+.wiersz .ile { font-size: 1.4rem; }
+.uwaga { border-left: 10px solid var(--kreska); padding-left: 16px; }
+.uwaga b::before { content: "!"; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-right: 10px; border-radius: 50%; background: #0b0c0c; color: #ffffff; font-weight: 700; }
+.dzial > .nr { display: none; }
+@media (min-width: 900px) { .dzial { grid-template-columns: minmax(0, 1fr); } }
+.zgadnij button[data-sprawdz] { background: var(--akcent); border-color: var(--akcent); color: var(--papier); box-shadow: 0 2px 0 var(--atrament); font-weight: 600; }
+
+/* ---- od 1280 px: dodatki z G „Pulpit” — gęściej, ale ta sama tożsamość ---- */
+@media (min-width: 1280px) {
+  :root { --f-liczba: "IBM Plex Mono", ui-monospace, monospace; --w-liczba: 500; }
+  /* „W liczbach”: jedna ramka podzielona liniami na pola (jedyna ramka na ekranie, F6) */
+  .w-liczbach { border: 1px solid var(--kreska-2); border-top: 4px solid var(--akcent); background: var(--papier-2); padding: 4px 24px 8px; }
+  .w-liczbach .wiersze { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .w-liczbach .wiersz { grid-template-columns: minmax(0, 1fr); padding: 14px 20px 14px 0; border-bottom: 1px solid var(--kreska); }
+  .w-liczbach .wiersz:nth-child(odd) { border-right: 1px solid var(--kreska); }
+  .w-liczbach .wiersz:nth-child(even) { padding-left: 20px; }
+  .w-liczbach .wiersz .z-czego, .w-liczbach .wiersz .porownanie, .w-liczbach .wiersz .podstawa { grid-column: 1; grid-row: auto; border: 0; padding: 0; }
+  /* etykieta wersalikami nad liczbą */
+  .wiersz .co { text-transform: uppercase; letter-spacing: .04em; font-size: var(--drobny); font-weight: 600; color: var(--atrament-2); }
+  .wiersz .ile { text-align: left; color: var(--atrament); }
+  .dzial .wiersz { grid-template-columns: minmax(0, 1fr) 14rem; }
+  .dzial .wiersz .ile { grid-column: 1; }
+  .dzial .wiersz .podstawa { grid-column: 2; grid-row: 1 / span 4; }
+  .dzial .wiersz .z-czego, .dzial .wiersz .porownanie { grid-column: 1; }
+  /* spis działów w bocznym pasku — dodatkowo do menu u góry (F2) */
+  main:has(> .spis) { display: grid; grid-template-columns: 15rem minmax(0, 1fr); column-gap: 8px; max-width: 80rem; margin-inline: auto; }
+  main:has(> .spis) > * { grid-column: 2; }
+  main > .spis { grid-column: 1; grid-row: 1 / span 9; align-self: start; position: sticky; top: 16px; margin-top: 22px; border: 0; border-right: 1px solid var(--kreska); background: none; }
+  main > .spis ol { flex-direction: column; }
+  main > .spis a { border-bottom: 0; border-left: 4px solid transparent; padding: 8px 12px; color: var(--akcent); text-decoration: underline; }
+  main > .spis a.biezacy { border-left-color: #1d70b8; background: var(--papier-3); color: var(--atrament); text-decoration: none; }
+  .stan-danych, a.zrodlo .data { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+}

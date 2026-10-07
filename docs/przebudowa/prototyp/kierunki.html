@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dwie wersje wyglądu · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp: dwie wersje wyglądu</b> · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <details class="wyglad" hidden>
+      <summary class="przycisk" aria-label="Wygląd strony"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="napis">Wygląd</span></summary>
+      <div class="wyglad-panel">
+        <fieldset><legend>Styl strony</legend>
+          <label><input type="radio" name="styl" value="jg"><b>Standardowy</b><span>duże pismo, wszystko na wierzchu; na komputerze gęściej, ze spisem działów z boku</span></label>
+          <label><input type="radio" name="styl" value="a"><b>Wypis z rejestru</b><span>jak odpis z urzędu: ponumerowane działy, „podstawa” przy każdej liczbie</span></label>
+        </fieldset>
+        <fieldset><legend>Jasność</legend>
+          <label><input type="radio" name="jasnosc" value="system">jak w systemie</label>
+          <label><input type="radio" name="jasnosc" value="jasny">jasny</label>
+          <label><input type="radio" name="jasnosc" value="ciemny">ciemny</label>
+        </fieldset>
+      </div>
+    </details>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar" style="padding:28px 16px 0">
+  <header class="wypis"><h1>Dwie wersje wyglądu</h1>
+  <p class="podtytul">Decyzja Pawła z 7 października 2026: obie zostają, a wybiera czytelnik — przełącznik „Wygląd” w nagłówku pamięta wybór. Pod tym samym przełącznikiem jest jasność: jak w systemie, jasny albo ciemny.</p></header>
+  <div class="tabela-przewijana"><table class="tabela" style="margin-top:24px">
+    <thead><tr><th>Wersja</th><th>Na czym polega</th><th>Kroje</th><th class="l">Fonty</th></tr></thead>
+    <tbody><tr><td><b>Standardowy — J+G</b><br><span class="szary">domyślny</span><br><a href="gmina.html?k=jg">Kraków</a> · <a href="posel.html?k=jg">poseł</a> · <a href="glowna.html?k=jg">główna</a></td><td>J „Usługa publiczna” na każdej szerokości: czarny pasek z nazwą, niebieskie podkreślone odnośniki, żółty fokus, „W liczbach” jako lista. Od 1280 px dodatki z G „Pulpit”: spis działów z boku, „W liczbach” w jednej ramce podzielonej na pola, etykieta nad liczbą, liczby pismem maszynowym.</td><td>Public Sans; IBM Plex Mono tylko na komputerze</td><td class="l">78 kB</td></tr><tr><td><b>Wypis z rejestru — A</b><br><span class="szary">do wyboru</span><br><a href="gmina.html?k=a">Kraków</a> · <a href="posel.html?k=a">poseł</a> · <a href="glowna.html?k=a">główna</a></td><td>Strona jak odpis z rejestru: „Dział N” na marginesie, sygnatury i daty pismem maszynowym, „podstawa:” przy każdej liczbie.</td><td>Brygada 1918 + IBM Plex Sans + Plex Mono</td><td class="l">142 kB</td></tr></tbody></table></div>
+  <p class="drobny szary" style="margin-top:12px">Fonty: woff2 latin + latin-ext z <span class="znak">@fontsource/*</span> 5.3.0, zmierzone na załadowanej stronie. Przeglądarka pobiera tylko fonty wybranej wersji; dziś serwis wysyła 221 kB.</p>
+  <h2 style="margin-top:36px">Archiwum: pozostałe motywy</h2>
+  <p class="wstep">Wszystko, co powstało po drodze, działa dalej w archiwum — z planszami prezentacyjnymi i opisem każdego motywu.</p>
+  <ul class="pozycje">
+    <li><div><a class="tytul-poz" href="../archiwum/runda-2/prototyp/kierunki.html">Runda 2: dziesięć motywów na fundamencie F1–F14</a><p class="meta">A–J, każdy zmierzony; opis i pomiar: <span class="znak">archiwum/runda-2/kierunek.md</span></p></div><p class="kwota"></p></li>
+    <li><div><a class="tytul-poz" href="../archiwum/runda-1/prototyp/kierunki.html">Runda 1: dziesięć zupełnie różnych motywów</a><p class="meta">A–J i A+B, sprzed fundamentu; opis: <span class="znak">archiwum/runda-1/kierunek.md</span></p></div><p class="kwota"></p></li>
+  </ul>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

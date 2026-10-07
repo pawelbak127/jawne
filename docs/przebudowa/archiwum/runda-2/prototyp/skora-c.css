@@ -1,0 +1,47 @@
+/*
+  C „Tablica” — oznakowanie publiczne: czerń i biel, wersaliki, wielkie cyfry, źródło jako
+  czarna etykieta. Archivo 400/700.
+  Nakładka na fundament (styl.css) — runda 2: zmienia tylko styl, nie układ ani rozmiary.
+*/
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 400; font-display: swap; src: url(fonty/archivo-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-weight: 700; font-display: swap; src: url(fonty/archivo-latin-ext-700-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+:root {
+  --papier: #ffffff; --papier-2: #ffffff; --papier-3: #efefef; --atrament: #000000;
+  --atrament-2: #333333; --atrament-3: #555555; --kreska: #c8c8c8; --kreska-2: #8a8a8a;
+  --akcent: #000000; --akcent-slaby: #efefef; --ostrzezenie: #000000;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #000000; --papier-2: #0a0a0a; --papier-3: #1c1c1c; --atrament: #ffffff;
+  --atrament-2: #d6d6d6; --atrament-3: #b0b0b0; --kreska: #3c3c3c; --kreska-2: #7a7a7a;
+  --akcent: #ffffff; --akcent-slaby: #1c1c1c; --ostrzezenie: #ffffff;
+  color-scheme: dark; } }
+:root[data-motyw="ciemny"] {
+  --papier: #000000; --papier-2: #0a0a0a; --papier-3: #1c1c1c; --atrament: #ffffff;
+  --atrament-2: #d6d6d6; --atrament-3: #b0b0b0; --kreska: #3c3c3c; --kreska-2: #7a7a7a;
+  --akcent: #ffffff; --akcent-slaby: #1c1c1c; --ostrzezenie: #ffffff;
+  color-scheme: dark; }
+:root { --f-tekst: "Archivo", system-ui, sans-serif; --f-naglowek: var(--f-tekst); --f-liczba: var(--f-tekst); --f-znak: var(--f-tekst);
+  --w-naglowek: 700; --w-liczba: 700; --linia-mocna: 3px; }
+h1, h2, .marka b, .w-liczbach > h2 { text-transform: uppercase; letter-spacing: .01em; }
+h1 { font-size: 2.2rem; }
+h1.dlugi { text-transform: none; font-size: 1.25rem; }
+@media (min-width: 1024px) { h1.dlugi { font-size: 1.7rem; } }
+:root { --miara: 30em; }
+.naglowek { border-bottom-width: 6px; }
+a { text-decoration-thickness: 2px; }
+/* odwrócenie zamiast koloru: tak wygląda „to się klika” na tablicy */
+.menu-grupy a[aria-current="page"], .skroty a[aria-current="page"], .zakladki a[aria-current="page"] { background: var(--atrament); color: var(--papier); }
+.w-liczbach { border-width: 4px; }
+.wiersz { grid-template-columns: minmax(0, 1fr); }
+.wiersz .ile { text-align: left; font-size: 2rem; order: -1; }
+.wiersz.duzy .ile { font-size: 2.4rem; }
+.wiersz .co { text-transform: uppercase; font-size: var(--drobny); letter-spacing: .04em; }
+@media (min-width: 900px) { .wiersz { grid-template-columns: minmax(0, 1fr) 14rem; } .wiersz .ile { grid-column: 1; } .wiersz .podstawa { grid-column: 2; grid-row: 1 / span 4; } .wiersz .z-czego, .wiersz .porownanie { grid-column: 1; } }
+/* źródło: czarna etykieta */
+a.zrodlo { background: var(--atrament); color: var(--papier); padding: 4px 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+a.zrodlo .data { color: var(--papier); font-weight: 400; }
+a.zrodlo .nazwa { text-decoration: none; }
+a.zrodlo:hover { outline: 3px solid var(--atrament); outline-offset: 2px; }
+.dzial { border-bottom-width: 3px; border-bottom-color: var(--atrament); }
