@@ -1,0 +1,77 @@
+/*
+  Kierunek B „Monitor” — gazeta urzędowa. Nakładka na styl.css (ta sama
+  treść HTML co kierunek A). Antykwa Półtawskiego do nagłówków i tekstu,
+  łamy z marginesem: źródła i definicje stoją na marginesie, nie w ramkach.
+*/
+@font-face { font-family: "Poltawski Nowy"; font-weight: 400; font-display: swap; src: url(fonty/poltawski-nowy-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Poltawski Nowy"; font-weight: 400; font-display: swap; src: url(fonty/poltawski-nowy-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Poltawski Nowy"; font-weight: 600; font-display: swap; src: url(fonty/poltawski-nowy-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Poltawski Nowy"; font-weight: 600; font-display: swap; src: url(fonty/poltawski-nowy-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+:root {
+  --papier: #fbf9f4; --papier-2: #ffffff; --papier-3: #f0ece2;
+  --atrament: #111111; --atrament-2: #3f3b35; --atrament-3: #5e584f;
+  --kreska: #cfc8b8; --kreska-2: #a99f8b; --akcent: #7a3f0c; --akcent-slaby: #f3e6d6;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-motyw="jasny"]) {
+  --papier: #171512; --papier-2: #1f1c18; --papier-3: #2a2620;
+  --atrament: #f1ebe0; --atrament-2: #c8bfb0; --atrament-3: #aba196;
+  --kreska: #3d372e; --kreska-2: #5c5446; --akcent: #e6a95e; --akcent-slaby: #3a2a17; } }
+:root[data-motyw="ciemny"] {
+  --papier: #171512; --papier-2: #1f1c18; --papier-3: #2a2620;
+  --atrament: #f1ebe0; --atrament-2: #c8bfb0; --atrament-3: #aba196;
+  --kreska: #3d372e; --kreska-2: #5c5446; --akcent: #e6a95e; --akcent-slaby: #3a2a17; }
+
+body { font-family: "Poltawski Nowy", Georgia, serif; font-size: 17px; line-height: 1.6; }
+h1, h2, h3, .marka b, .drzwi b, .dzial > .nr { font-family: "Poltawski Nowy", Georgia, serif; letter-spacing: 0; }
+h1 { font-size: clamp(2.2rem, 7vw, 3.6rem); font-weight: 600; }
+.marka b { font-size: 1.9rem; }
+.naglowek { border-bottom: 4px double var(--atrament); }
+.menu-grupy a, .menu-grupy .podpis, .spis a, .okruszek, .mono, a.zrodlo { font-variant-caps: normal; }
+.menu-grupy .podpis { font-family: "Poltawski Nowy", serif; font-variant-caps: all-small-caps; letter-spacing: .06em; font-size: 15px; }
+.wypis { text-align: left; border-bottom: 4px double var(--atrament); }
+.wypis .podtytul { font-style: italic; }
+
+/* sekcje jak działy gazety: podwójna linia nad nagłówkiem, bez kart */
+.dzial { border-bottom: 0; padding-top: 40px; }
+.dzial .tytul { border-top: 1px solid var(--atrament); padding-top: 10px; }
+.dzial > .nr { font-variant-caps: all-small-caps; font-size: 1rem; padding-top: 14px; }
+h2 { font-size: 1.85rem; }
+
+/* liczby w tekście: wartość jak pogrubione słowo, nie jak kafel */
+.wiersze { border-top: 0; }
+.wiersz { border-bottom: 1px dotted var(--kreska-2); }
+.wiersz .co { font-weight: 400; font-style: italic; }
+.wiersz .ile { font-family: "Poltawski Nowy", serif; font-weight: 600; font-size: 1.5rem; }
+.wiersz.duzy .ile { font-size: 2rem; }
+.wiersz .z-czego { font-size: 15px; }
+
+/* marginalia: źródło na marginesie, kursywą, z kreską */
+@media (min-width: 900px) {
+  .wiersz .podstawa { border-left: 2px solid var(--atrament); padding-left: 12px; }
+}
+a.zrodlo { font-family: "Poltawski Nowy", serif; font-style: italic; font-weight: 400; font-size: 14px; }
+a.zrodlo .data { font-style: normal; }
+
+.w-liczbach { border: 0; border-top: 4px double var(--atrament); border-bottom: 4px double var(--atrament); background: none; padding: 4px 0 10px; }
+.w-liczbach > h2 { font-variant-caps: all-small-caps; letter-spacing: .05em; font-size: 1.3rem; }
+.uwaga { border-left: 0; border-top: 1px solid var(--atrament); border-bottom: 1px solid var(--atrament); padding: 8px 0; font-style: italic; }
+details.metoda { border-top: 0; }
+details.metoda > summary { font-family: "Poltawski Nowy", serif; font-style: italic; font-weight: 400; }
+details.metoda > summary::before { border-radius: 50%; }
+.tabela, .lista-paskow, .pozycje { font-family: "IBM Plex Sans", sans-serif; font-size: 14px; }
+.tabela .l, .pozycje .kwota, .lista-paskow .opis span:last-child { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+.pasek { height: 4px; }
+.stopka { border-top: 4px double var(--atrament); }
+
+/* gazeta mocniej: winieta pośrodku, tekst wyjustowany, listy w dwóch łamach */
+@media (min-width: 1024px) {
+  .naglowek .gora { flex-wrap: wrap; justify-content: center; padding-top: 10px; }
+  .naglowek .marka { flex-basis: 100%; flex-direction: column; align-items: center; gap: 0; border-bottom: 1px solid var(--atrament); padding-bottom: 6px; }
+  .naglowek .marka b { font-size: 3.2rem; line-height: 1; }
+  .naglowek .marka span { display: block; font-style: italic; font-size: 14px; }
+  .naglowek .szukaj { margin: 4px 0 8px; }
+  .menu-grupy { justify-content: center; }
+  .pozycje { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--kreska); }
+  .pozycje li { break-inside: avoid; }
+}
+.wstep, .wiersz .z-czego, .uwaga, details.metoda .tresc, .pozycje p { text-align: justify; hyphens: auto; }

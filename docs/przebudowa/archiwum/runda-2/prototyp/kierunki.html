@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dziesięć motywów · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu, runda 2</b> — porównanie motywów · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Jasny albo ciemny"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar" style="padding:28px 16px 0">
+  <header class="wypis"><h1>Dziesięć motywów na jednym fundamencie</h1>
+  <p class="podtytul">Każdy motyw działa na każdej stronie prototypu: pasek „Motyw” nad nagłówkiem albo odnośniki niżej. Wybór zostaje zapamiętany; jasny i ciemny przełącza przycisk w nagłówku.</p></header>
+  <div class="tabela-przewijana"><table class="tabela" style="margin-top:24px">
+    <thead><tr><th>Motyw</th><th>Liczby, źródła, linie</th><th>Kroje</th><th>Barwy</th><th class="l">Fonty</th></tr></thead>
+    <tbody><tr><td><b>A „Wypis z rejestru”</b><br><a href="gmina.html?k=a">Kraków</a> · <a href="posel.html?k=a">poseł</a> · <a href="glowna.html?k=a">główna</a></td><td>odpis z rejestru: „Dział N”, sygnatury pismem maszynowym, „podstawa:” przy każdej liczbie</td><td>Brygada 1918 + IBM Plex Sans + Plex Mono</td><td>papier kancelaryjny, atrament, zieleń odnośników</td><td class="l">142 kB</td></tr><tr><td><b>B „Monitor”</b><br><a href="gmina.html?k=b">Kraków</a> · <a href="posel.html?k=b">poseł</a> · <a href="glowna.html?k=b">główna</a></td><td>gazeta urzędowa: podwójne linie, kapitaliki, źródła kursywą</td><td>Półtawski Nowy</td><td>biel gazety, czerń, sepia</td><td class="l">81 kB</td></tr><tr><td><b>C „Tablica”</b><br><a href="gmina.html?k=c">Kraków</a> · <a href="posel.html?k=c">poseł</a> · <a href="glowna.html?k=c">główna</a></td><td>oznakowanie publiczne: wersaliki, liczba nad etykietą, źródło jako czarna etykieta</td><td>Archivo</td><td>czerń i biel, bez akcentu</td><td class="l">55 kB</td></tr><tr><td><b>D „Kartoteka”</b><br><a href="gmina.html?k=d">Kraków</a> · <a href="posel.html?k=d">poseł</a> · <a href="glowna.html?k=d">główna</a></td><td>segregator: zakładka nad grubą kreską, liczby maszynowe, źródło jak pieczątka</td><td>IBM Plex Mono + Plex Sans</td><td>karton, grafit, petrol</td><td class="l">108 kB</td></tr><tr><td><b>E „Rocznik”</b><br><a href="gmina.html?k=e">Kraków</a> · <a href="posel.html?k=e">poseł</a> · <a href="glowna.html?k=e">główna</a></td><td>rocznik statystyczny: linia gruba–cienka–gruba, „Dział N”, mianownik kursywą</td><td>Source Serif 4 + Public Sans</td><td>biel, czerń, oliwka</td><td class="l">128 kB</td></tr><tr><td><b>F „Reportaż”</b><br><a href="gmina.html?k=f">Kraków</a> · <a href="posel.html?k=f">poseł</a> · <a href="glowna.html?k=f">główna</a></td><td>dziennikarstwo danych: liczba duża nad opisem, bez ramki, dwie kolumny</td><td>Newsreader + Public Sans</td><td>ciepła szarość, terakota</td><td class="l">126 kB</td></tr><tr><td><b>G „Pulpit”</b><br><a href="gmina.html?k=g">Kraków</a> · <a href="posel.html?k=g">poseł</a> · <a href="glowna.html?k=g">główna</a></td><td>narzędzie pracy: etykieta nad liczbą, jedna ramka dzielona na pola, spis działów z boku od 1280 px</td><td>Archivo + IBM Plex Mono</td><td>chłodna biel, grafit, błękit</td><td class="l">84 kB</td></tr><tr><td><b>H „Atlas”</b><br><a href="gmina.html?k=h">Kraków</a> · <a href="posel.html?k=h">poseł</a> · <a href="glowna.html?k=h">główna</a></td><td>mapa i legenda: nazwy miejsc kursywą, podwójna ramka legendy, paski z podziałką</td><td>Newsreader (kursywa) + Public Sans</td><td>papier mapy, granat, błękit wody</td><td class="l">129 kB</td></tr><tr><td><b>I „Plakat”</b><br><a href="gmina.html?k=i">Kraków</a> · <a href="posel.html?k=i">poseł</a> · <a href="glowna.html?k=i">główna</a></td><td>plakat: ciężkie wersaliki, grube kreski, jedna naklejka z twardym cieniem, żółć tylko pod wskazanym</td><td>Archivo</td><td>czerń i biel, żółć przy wskazaniu</td><td class="l">55 kB</td></tr><tr><td><b>J „Usługa publiczna”</b><br><a href="gmina.html?k=j">Kraków</a> · <a href="posel.html?k=j">poseł</a> · <a href="glowna.html?k=j">główna</a></td><td>w duchu GOV.UK: czarny pasek, niebieskie podkreślone odnośniki, żółty fokus, lista podsumowania</td><td>Public Sans</td><td>biel, czerń, błękit</td><td class="l">50 kB</td></tr></tbody></table></div>
+  <p class="drobny szary" style="margin-top:12px">Fonty: pliki woff2 latin + latin-ext z <span class="znak">@fontsource/*</span> 5.3.0, zmierzone na załadowanej stronie (pomiar.cjs). Dziś serwis wysyła 221 kB.</p>
+  <p class="uwaga" data-znaczenie>Wszystkie motywy mają ten sam fundament F1–F14 z badań (<span class="znak">docs/przebudowa/runda-2.md</span>): odpowiedź na pierwszym ekranie, typowy układ, jasny domyślnie, jeden akcent, pismo 18/20 px i nic poniżej 15 px, jedna ramka na ekran, nagłówki od odpowiedzi, kwoty na mieszkańca, zdania porównawcze, „Jak myślisz, ile…?”, tytuły wykresów z wnioskiem, menu widoczne, data stanu danych, fonty do 150 kB. Pomiar każdego punktu: <span class="znak">kierunek.md</span>.</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

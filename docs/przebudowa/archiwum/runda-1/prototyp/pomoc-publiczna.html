@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pomoc publiczna · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html" aria-current="page">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html" aria-current="page">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Pieniądze publiczne</a><i aria-hidden="true">›</i></span><span aria-current="page">Pomoc publiczna</span></nav>
+  <header class="wypis">
+    <h1>Pomoc publiczna dla firm</h1>
+    <p class="podtytul">Dotacje, ulgi, preferencyjne pożyczki i pomoc de minimis w całej Polsce — kto udziela, na co i jakim firmom.</p>
+    <p class="mono szary" style="margin-top:10px">stan danych: 16 dni (19.08–06.09.2026) z 10 lat rejestru · zestawienie z 04.10.2026</p>
+  <p class="skad"><b>zrejestru.pl</b> to niezależny serwis obywatelski: wypisuje dane z oficjalnych rejestrów, przy każdej liczbie podaje, skąd pochodzi, i nikogo nie ocenia. <a href="#">Jak to działa</a></p>
+  </header>
+  <form role="search" action="firmy.html" style="margin-top:18px;max-width:40rem"><label for="qf" style="display:block;font-weight:600;margin-bottom:6px">Sprawdź firmę</label><input class="pole" id="qf" type="search" placeholder="Nazwa firmy albo NIP"></form>
+  <section class="w-liczbach" aria-labelledby="liczby-t">
+    <h2 id="liczby-t">W 16 pobranych dniach</h2>
+    <div class="wiersze">
+      <div class="wiersz duzy"><p class="co">Wartość pomocy brutto</p><p class="ile">992 mln zł</p><p class="z-czego">w 16 dniach od 19.08 do 06.09.2026 — nie w całym roku</p><p class="podstawa"><a class="zrodlo" href="https://sudop.uokik.gov.pl" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span></a></p></div>
+      <div class="wiersz "><p class="co">Przypadki pomocy</p><p class="ile">78 868</p><p class="z-czego">w tych samych 16 dniach</p><p class="podstawa"><a class="zrodlo" href="https://sudop.uokik.gov.pl" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span></a></p></div>
+      <div class="wiersz "><p class="co">Beneficjenci</p><p class="ile">74 834</p><p class="z-czego">w 2429 gminach siedziby</p><p class="podstawa"><a class="zrodlo" href="https://sudop.uokik.gov.pl" target="_blank" rel="noreferrer"><span class="nazwa">SUDOP, UOKiK</span></a></p></div>
+    </div>
+    <p class="warunki szary" id="warunki"><b>Źródło:</b> <a href="https://sudop.uokik.gov.pl">System Udostępniania Danych o Pomocy Publicznej (UOKiK)</a>, dane pobrane 2 października 2026. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.</p>
+  </section>
+  <section class="dzial" id="kto" aria-labelledby="kto-t"><div class="nr" aria-hidden="true">2</div><div>
+  <div class="tytul"><h2 id="kto-t"><span class="nr-tel">2. </span>Kto udzielił najwięcej</h2></div>
+  <ul class="lista-paskow"><li><div class="opis"><span>Prezes Zarządu Państwowego Funduszu Rehabilitacji Osób Niepełnosprawnych</span><span>212 mln zł</span></div><div class="pasek"><i style="width:100%"></i></div></li><li><div class="opis"><span>Minister Infrastruktury</span><span>174 mln zł</span></div><div class="pasek"><i style="width:82.1%"></i></div></li><li><div class="opis"><span>Prezes Zarządu Narodowego Funduszu Ochrony Środowiska i Gospodarki Wodnej</span><span>92,8 mln zł</span></div><div class="pasek"><i style="width:43.8%"></i></div></li><li><div class="opis"><span>Prezes Banku Gospodarstwa Krajowego</span><span>92,5 mln zł</span></div><div class="pasek"><i style="width:43.6%"></i></div></li><li><div class="opis"><span>Prezes Zakładu Ubezpieczeń Społecznych</span><span>64,2 mln zł</span></div><div class="pasek"><i style="width:30.3%"></i></div></li></ul><p style="margin-top:6px"><a href="#">Pokaż 12 największych ↓</a></p>
+</div></section>
+  <section class="dzial" id="na-co" aria-labelledby="na-co-t"><div class="nr" aria-hidden="true">3</div><div>
+  <div class="tytul"><h2 id="na-co-t"><span class="nr-tel">3. </span>Na co</h2></div>
+  <ul class="lista-paskow"><li><div class="opis"><span>pomoc de minimis (rozporządzenie KE 2023/2831)</span><span>294 mln zł</span></div><div class="pasek"><i style="width:100%"></i></div></li><li><div class="opis"><span>rekompensata za usługi w ogólnym interesie gospodarczym…</span><span>242 mln zł</span></div><div class="pasek"><i style="width:82.3%"></i></div></li><li><div class="opis"><span>subsydiowanie wynagrodzeń pracowników niepełnosprawnych</span><span>202 mln zł</span></div><div class="pasek"><i style="width:68.7%"></i></div></li></ul>
+</div></section>
+  <section class="dzial" id="jakie" aria-labelledby="jakie-t"><div class="nr" aria-hidden="true">4</div><div>
+  <div class="tytul"><h2 id="jakie-t"><span class="nr-tel">4. </span>Jakie firmy dostają pomoc</h2></div>
+  
+    <div class="tabela-przewijana"><table class="tabela"><thead><tr><th>Wielkość</th><th class="l">Przypadki</th><th class="l">Brutto</th><th class="l">Udział</th></tr></thead><tbody>
+      <tr><td>mikroprzedsiębiorstwa</td><td class="l">67 240</td><td class="l">263 mln zł</td><td class="l">26%</td></tr>
+      <tr><td>małe</td><td class="l">7621</td><td class="l">155 mln zł</td><td class="l">16%</td></tr>
+      <tr><td>średnie</td><td class="l">2693</td><td class="l">149 mln zł</td><td class="l">15%</td></tr>
+      <tr><td>duże</td><td class="l">1314</td><td class="l">425 mln zł</td><td class="l">43%</td></tr>
+    </tbody></table></div>
+</div></section>
+  <section class="dzial" id="woj" aria-labelledby="woj-t"><div class="nr" aria-hidden="true">5</div><div>
+  <div class="tytul"><h2 id="woj-t"><span class="nr-tel">5. </span>Na mieszkańca według województwa siedziby</h2></div>
+  <ul class="lista-paskow"><li><div class="opis"><span>mazowieckie</span><span>58 zł</span></div><div class="pasek"><i style="width:100%"></i></div></li><li><div class="opis"><span>śląskie</span><span>35 zł</span></div><div class="pasek"><i style="width:60.3%"></i></div></li><li><div class="opis"><span>lubuskie</span><span>28 zł</span></div><div class="pasek"><i style="width:48.3%"></i></div></li></ul><p style="margin-top:6px"><a href="#">Wszystkie 16 województw ↓</a></p><details class="metoda"><summary>Jak to liczymy</summary><div class="tresc"><p>Liczy się siedziba firmy, nie miejsce inwestycji: duża firma z siedzibą w Warszawie podnosi wynik mazowieckiego, nawet gdy zakład ma gdzie indziej. Dzień wliczamy 14 dni po jego dacie — urzędy mają 7 dni na zgłoszenie pomocy; 6 świeżych dni pominięto. <b>Wartość brutto</b> to ekwiwalent dotacji.</p></div></details>
+</div></section>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

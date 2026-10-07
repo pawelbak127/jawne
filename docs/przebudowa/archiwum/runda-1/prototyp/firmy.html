@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Firmy · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="mono">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Zmień motyw"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html" aria-current="page">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html" aria-current="page">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar">
+  <nav class="okruszek" aria-label="Jesteś tutaj"><span class=""><a href="#">Pieniądze publiczne</a><i aria-hidden="true">›</i></span><span aria-current="page">Firmy</span></nav>
+  <header class="wypis"><h1>Firmy</h1><p class="podtytul">Czy firma dostała pomoc publiczną albo zamówienie publiczne. Szukaj po nazwie albo numerze NIP.</p><p class="skad"><b>zrejestru.pl</b> to niezależny serwis obywatelski: wypisuje dane z oficjalnych rejestrów, przy każdej liczbie podaje, skąd pochodzi, i nikogo nie ocenia. <a href="#">Jak to działa</a></p>
+  </header>
+  <form role="search" action="#" style="margin-top:18px;max-width:40rem"><label for="qn" style="display:block;font-weight:600;margin-bottom:6px">Nazwa firmy albo NIP</label><input class="pole" id="qn" type="search" value="krak" style="min-height:52px;font-size:1.05rem"></form>
+  <p class="szary" style="margin-top:14px;font-size:14px">Wyniki dla „krak”: beneficjenci pomocy publicznej z rejestru SUDOP, których nazwę wolno pokazać (propozycja: także wykonawcy zamówień z TED).</p>
+  <ul class="pozycje"><li><div><a class="tytul-poz" href="#">OCHRONA MIENIA KRAKÓW SP. Z O.O.</a><p class="meta">Kraków · 1 przypadek pomocy</p></div><p class="kwota">395 tys. zł</p></li><li><div><a class="tytul-poz" href="#">GEOKRAK SP. Z O.O.</a><p class="meta">Kraków · 1 przypadek pomocy</p></div><p class="kwota">350 tys. zł</p></li><li><div><a class="tytul-poz" href="#">SPOŁEM POWSZECHNA SPÓŁDZIELNIA SPOŻYWCÓW "NOWA HUTA" W KRAKOWIE</a><p class="meta">Kraków · 1 przypadek pomocy</p></div><p class="kwota">271 tys. zł</p></li><li><div><a class="tytul-poz" href="#">KRAKODLEW SPÓŁKA AKCYJNA</a><p class="meta">Kraków · 1 przypadek pomocy</p></div><p class="kwota">153 tys. zł</p></li></ul>
+  <div class="uwaga" style="margin-top:22px"><b>Nie ma firmy, której szukasz?</b> Nie pokazujemy podmiotów, których nazwa może być imieniem i nazwiskiem osoby — także przy szukaniu po NIP-ie. Ich pomoc jest wliczona w sumy gmin. <a href="#">Jak to działa</a></div>
+  <p class="notka-proj">nowa trasa /firmy (decyzja Pawła 04.10.2026). Dziś „Firmy” w menu prowadzi do ogólnej wyszukiwarki; tu ten sam mechanizm (szukajFirm), ale tylko firmy, z podpowiedzią „NIP” i zdaniem, które wyjaśnia brak wyniku.</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div><b>zrejestru</b><p style="margin-top:6px;max-width:28rem">Niezależny serwis obywatelski. Wypisujemy dane z oficjalnych rejestrów i przy każdej liczbie podajemy, skąd pochodzi. Nie oceniamy posłów i nie przypisujemy im motywów.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">wszystkie (8) →</a></li></ul></div>
+    <div><b>Serwis</b><ul><li><a href="#">O serwisie</a></li><li><a href="#">Stan danych</a></li><li><a href="#">Polityka prywatności</a></li><li><a href="#">Kontakt</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>

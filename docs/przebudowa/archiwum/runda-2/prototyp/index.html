@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Spis · prototyp zrejestru</title>
+<link rel="stylesheet" href="styl.css">
+<script src="motyw.js"></script>
+</head>
+<body>
+<div class="prototyp"><div class="obszar"><b>Prototyp układu, runda 2</b> · <a href="index.html">spis prototypu</a></div></div>
+<header class="naglowek">
+  <div class="obszar gora">
+    <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
+    <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
+      <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
+    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Jasny albo ciemny"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <div class="tylko-tel">
+      <details class="panel"><summary class="przycisk">Menu</summary>
+        <div class="panel-tresc">
+          <p>SEJM</p><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a><p>PIENIĄDZE PUBLICZNE</p><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a>
+          <p>SERWIS</p><a href="#">Stan danych</a><a href="#">O serwisie</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="obszar tel">
+    <form role="search" action="szukaj.html"><label class="sr" for="qt">Szukaj</label><input class="pole" id="qt" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP"></form>
+    <nav class="skroty" aria-label="Główne działy"><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><span class="kreska" aria-hidden="true"></span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a></nav>
+  </div>
+  <nav class="obszar menu-grupy" aria-label="Menu serwisu"><div><span class="podpis">SEJM</span><a href="poslowie.html">Posłowie</a><a href="glosowania.html">Głosowania</a><a href="ustawy.html">Ustawy</a><a href="#">Komisje</a><a href="okreg.html">Okręgi</a><a href="#">Sala</a></div><div><span class="podpis">PIENIĄDZE PUBLICZNE</span><a href="gmina.html">Gminy</a><a href="pomoc-publiczna.html">Pomoc publiczna</a><a href="firmy.html">Firmy</a><a href="#">Mapa</a></div></nav>
+</header>
+<main id="tresc">
+<div class="obszar" style="padding:28px 16px">
+  <header class="wypis"><h1>Prototyp — runda 2</h1>
+  <p class="podtytul">13 stron na prawdziwych liczbach, każda w każdym z 10 motywów. Fundament (układ, kolejność, rozmiary) jest wspólny; motyw zmienia tylko styl.</p></header>
+  <p style="margin-top:18px"><a href="kierunki.html"><b>Porównanie dziesięciu motywów →</b></a></p>
+  <ul class="pozycje"><li><div><a class="tytul-poz" href="glowna.html">Strona główna</a><p class="meta">/</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="gmina.html">Gmina: Kraków</a><p class="meta">/gmina/126101</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="posel.html">Poseł: Andrzej Adamczyk</a><p class="meta">/posel/andrzej-adamczyk</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="firma.html">Firma: PGE GiEK</a><p class="meta">/firma/7690502495</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="ustawa.html">Ustawa: druk 3101</a><p class="meta">/ustawa/3101</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="glosowanie.html">Głosowanie 64-40</a><p class="meta">/glosowanie/64-40</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="okreg.html">Okręg nr 14</a><p class="meta">/okreg/14</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="pomoc-publiczna.html">Pomoc publiczna</a><p class="meta">/pomoc-publiczna</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="ustawy.html">Ustawy</a><p class="meta">/ustawy</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="glosowania.html">Głosowania</a><p class="meta">/glosowania</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="poslowie.html">Posłowie</a><p class="meta">/poslowie</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="firmy.html">Firmy (nowa trasa)</a><p class="meta">/firmy</p></div><p class="kwota"></p></li><li><div><a class="tytul-poz" href="szukaj.html">Szukaj „krak”</a><p class="meta">/szukaj?q=krak</p></div><p class="kwota"></p></li></ul>
+  <p class="uwaga" data-znaczenie><b>Skąd liczby:</b> przepisane z wyrenderowanego tekstu stron (gałąź <span class="znak">przebudowa-zrzuty</span>, lokalna budowa <span class="znak">main@414bc5d</span>, 04.10.2026). Zdania porównawcze są policzone z tych liczb — rachunek przy każdym w <span class="znak">kierunek.md</span>.</p>
+</div>
+</main>
+<footer class="stopka"><div class="obszar">
+  <div class="kolumny">
+    <div data-kto><b>Kto za tym stoi</b><p>zrejestru.pl to niezależny serwis obywatelski. Prowadzi go jedna osoba prywatnie; nie jesteśmy powiązani z żadną instytucją publiczną ani z żadnym klubem poselskim. <a href="#">O serwisie i o tym, czego nie robimy</a></p></div>
+    <div data-kontakt><b>Kontakt</b><p>Błąd w liczbie albo sprzeciw wobec pokazania nazwy: <a href="#">adres e-mail do kontaktu</a> <span class="szary">(w serwisie z ustawienia JAWNE_KONTAKT)</span>.</p></div>
+    <div><b>Rejestry</b><ul>
+      <li><a href="https://api.sejm.gov.pl/sejm/openapi/">API Sejmu RP</a></li>
+      <li><a href="https://bdl.stat.gov.pl">GUS — Bank Danych Lokalnych</a></li>
+      <li><a href="https://sudop.uokik.gov.pl">SUDOP — pomoc publiczna (UOKiK)</a></li>
+      <li><a href="https://ted.europa.eu">TED — zamówienia publiczne UE</a></li>
+      <li><a href="#">Stan danych: co i kiedy pobraliśmy</a></li></ul></div>
+  </div>
+</div></footer>
+</body>
+</html>
