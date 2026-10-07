@@ -7,6 +7,16 @@ import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Zrodlo } from '@/components/Zrodlo';
 
+/*
+ * Pusta lista = strona generuje sie przy pierwszym wejsciu i zostaje w pamieci
+ * podrecznej na godzine (`revalidate` w layout.tsx). Bez tego Next renderowal
+ * ja przy KAZDYM zadaniu, a `node:sqlite` blokuje caly proces na ten czas:
+ * strona Warszawy to 1,5–2,4 s przy kazdym wejsciu (zmierzone 07.10.2026).
+ */
+export async function generateStaticParams(): Promise<{ numer: string }[]> {
+  return [];
+}
+
 const REJESTR = (numer: string) => `https://www.sejm.gov.pl/sejm10.nsf/PrzebiegProc.xsp?nr=${numer}`;
 
 /**

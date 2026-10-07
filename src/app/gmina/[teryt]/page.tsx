@@ -23,6 +23,16 @@ import { OPIS_KATEGORII } from '@/lib/formy-pomocy';
 import { SlupkiLat } from '@/components/SlupkiLat';
 import { Zestawienie } from '@/components/Zestawienie';
 
+/*
+ * Pusta lista = strona generuje sie przy pierwszym wejsciu i zostaje w pamieci
+ * podrecznej na godzine (`revalidate` w layout.tsx). Bez tego Next renderowal
+ * ja przy KAZDYM zadaniu, a `node:sqlite` blokuje caly proces na ten czas:
+ * strona Warszawy to 1,5–2,4 s przy kazdym wejsciu (zmierzone 07.10.2026).
+ */
+export async function generateStaticParams(): Promise<{ teryt: string }[]> {
+  return [];
+}
+
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
