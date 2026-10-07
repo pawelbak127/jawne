@@ -3,6 +3,9 @@ Gałąź / commit: claude/add-project-summaries-9fumtv (PR pawelbak127/jawne#2)
 
 # Runda 2 gotowa: 10 motywów na fundamencie F1–F14, każdy zmierzony
 
+> **07.10.2026: Paweł wybrał** dwie wersje z przełącznikiem — Standardowy (J+G) i Wypis z rejestru (A).
+> Szczegóły: `DO-glowny__2026-10-07__dwie-wersje.md`. Dziesięć motywów jest w `docs/przebudowa/archiwum/`.
+
 **Co powstało.**
 - `prototyp/styl.css` — fundament: struktura, kolejność, rozmiary.
 - `prototyp/skora-a…j.css` — 10 motywów jako sama warstwa stylu.

@@ -31,10 +31,15 @@ rozstrzyga ta lista — prototyp rundy 2 jest z nią zgodny:
 7. **Listy:** filtr (pole + wybór) w jednym rzędzie, litery w jednym
    przewijanym rzędzie, a liczba wyników w podtytule zamiast osobnego
    akapitu nad listą. Numer strony i data stanu danych stoją pod listą.
-8. **Stopka:** „Kto za tym stoi” (słowa ze strony „O serwisie”) i kontakt.
+8. **„Wygląd” w nagłówku** (od 07.10.2026) zamiast samego przycisku ◐.
+   Otwiera panel ze stylem strony (Standardowy albo Wypis z rejestru)
+   i jasnością (jak w systemie, jasny, ciemny). Wybór jest zapamiętany.
+   Na telefonie przycisk stoi obok nazwy serwisu, a panel ma szerokość
+   nagłówka. Szczegóły i to, jak to zbudować: `kierunek.md`.
+9. **Stopka:** „Kto za tym stoi” (słowa ze strony „O serwisie”) i kontakt.
    Adres e-mail pochodzi z ustawienia `JAWNE_KONTAKT`; w prototypie jest
    tylko opis.
-9. **Okręg** dostał własne „W liczbach”: posłowie z okręgu, gminy
+10. **Okręg** dostał własne „W liczbach”: posłowie z okręgu, gminy
    i uprawnieni do głosowania.
 
 ## 1. Mapa serwisu (bez zmian w adresach)
