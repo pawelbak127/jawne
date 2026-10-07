@@ -4,18 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Dziesięć motywów · prototyp zrejestru</title>
+<title>Dwie wersje wyglądu · prototyp zrejestru</title>
 <link rel="stylesheet" href="styl.css">
 <script src="motyw.js"></script>
 </head>
 <body>
-<div class="prototyp"><div class="obszar"><b>Prototyp układu, runda 2</b> — porównanie motywów · <a href="index.html">spis prototypu</a></div></div>
+<div class="prototyp"><div class="obszar"><b>Prototyp: dwie wersje wyglądu</b> · <a href="index.html">spis prototypu</a></div></div>
 <header class="naglowek">
   <div class="obszar gora">
     <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
     <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
       <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
-    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Jasny albo ciemny"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <details class="wyglad" hidden>
+      <summary class="przycisk" aria-label="Wygląd strony"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="napis">Wygląd</span></summary>
+      <div class="wyglad-panel">
+        <fieldset><legend>Styl strony</legend>
+          <label><input type="radio" name="styl" value="jg"><b>Standardowy</b><span>duże pismo, wszystko na wierzchu; na komputerze gęściej, ze spisem działów z boku</span></label>
+          <label><input type="radio" name="styl" value="a"><b>Wypis z rejestru</b><span>jak odpis z urzędu: ponumerowane działy, „podstawa” przy każdej liczbie</span></label>
+        </fieldset>
+        <fieldset><legend>Jasność</legend>
+          <label><input type="radio" name="jasnosc" value="system">jak w systemie</label>
+          <label><input type="radio" name="jasnosc" value="jasny">jasny</label>
+          <label><input type="radio" name="jasnosc" value="ciemny">ciemny</label>
+        </fieldset>
+      </div>
+    </details>
     <div class="tylko-tel">
       <details class="panel"><summary class="przycisk">Menu</summary>
         <div class="panel-tresc">
@@ -33,13 +46,18 @@
 </header>
 <main id="tresc">
 <div class="obszar" style="padding:28px 16px 0">
-  <header class="wypis"><h1>Dziesięć motywów na jednym fundamencie</h1>
-  <p class="podtytul">Każdy motyw działa na każdej stronie prototypu: pasek „Motyw” nad nagłówkiem albo odnośniki niżej. Wybór zostaje zapamiętany; jasny i ciemny przełącza przycisk w nagłówku.</p></header>
+  <header class="wypis"><h1>Dwie wersje wyglądu</h1>
+  <p class="podtytul">Decyzja Pawła z 7 października 2026: obie zostają, a wybiera czytelnik — przełącznik „Wygląd” w nagłówku pamięta wybór. Pod tym samym przełącznikiem jest jasność: jak w systemie, jasny albo ciemny.</p></header>
   <div class="tabela-przewijana"><table class="tabela" style="margin-top:24px">
-    <thead><tr><th>Motyw</th><th>Liczby, źródła, linie</th><th>Kroje</th><th>Barwy</th><th class="l">Fonty</th></tr></thead>
-    <tbody><tr><td><b>A „Wypis z rejestru”</b><br><a href="gmina.html?k=a">Kraków</a> · <a href="posel.html?k=a">poseł</a> · <a href="glowna.html?k=a">główna</a></td><td>odpis z rejestru: „Dział N”, sygnatury pismem maszynowym, „podstawa:” przy każdej liczbie</td><td>Brygada 1918 + IBM Plex Sans + Plex Mono</td><td>papier kancelaryjny, atrament, zieleń odnośników</td><td class="l">142 kB</td></tr><tr><td><b>B „Monitor”</b><br><a href="gmina.html?k=b">Kraków</a> · <a href="posel.html?k=b">poseł</a> · <a href="glowna.html?k=b">główna</a></td><td>gazeta urzędowa: podwójne linie, kapitaliki, źródła kursywą</td><td>Półtawski Nowy</td><td>biel gazety, czerń, sepia</td><td class="l">81 kB</td></tr><tr><td><b>C „Tablica”</b><br><a href="gmina.html?k=c">Kraków</a> · <a href="posel.html?k=c">poseł</a> · <a href="glowna.html?k=c">główna</a></td><td>oznakowanie publiczne: wersaliki, liczba nad etykietą, źródło jako czarna etykieta</td><td>Archivo</td><td>czerń i biel, bez akcentu</td><td class="l">55 kB</td></tr><tr><td><b>D „Kartoteka”</b><br><a href="gmina.html?k=d">Kraków</a> · <a href="posel.html?k=d">poseł</a> · <a href="glowna.html?k=d">główna</a></td><td>segregator: zakładka nad grubą kreską, liczby maszynowe, źródło jak pieczątka</td><td>IBM Plex Mono + Plex Sans</td><td>karton, grafit, petrol</td><td class="l">108 kB</td></tr><tr><td><b>E „Rocznik”</b><br><a href="gmina.html?k=e">Kraków</a> · <a href="posel.html?k=e">poseł</a> · <a href="glowna.html?k=e">główna</a></td><td>rocznik statystyczny: linia gruba–cienka–gruba, „Dział N”, mianownik kursywą</td><td>Source Serif 4 + Public Sans</td><td>biel, czerń, oliwka</td><td class="l">128 kB</td></tr><tr><td><b>F „Reportaż”</b><br><a href="gmina.html?k=f">Kraków</a> · <a href="posel.html?k=f">poseł</a> · <a href="glowna.html?k=f">główna</a></td><td>dziennikarstwo danych: liczba duża nad opisem, bez ramki, dwie kolumny</td><td>Newsreader + Public Sans</td><td>ciepła szarość, terakota</td><td class="l">126 kB</td></tr><tr><td><b>G „Pulpit”</b><br><a href="gmina.html?k=g">Kraków</a> · <a href="posel.html?k=g">poseł</a> · <a href="glowna.html?k=g">główna</a></td><td>narzędzie pracy: etykieta nad liczbą, jedna ramka dzielona na pola, spis działów z boku od 1280 px</td><td>Archivo + IBM Plex Mono</td><td>chłodna biel, grafit, błękit</td><td class="l">84 kB</td></tr><tr><td><b>H „Atlas”</b><br><a href="gmina.html?k=h">Kraków</a> · <a href="posel.html?k=h">poseł</a> · <a href="glowna.html?k=h">główna</a></td><td>mapa i legenda: nazwy miejsc kursywą, podwójna ramka legendy, paski z podziałką</td><td>Newsreader (kursywa) + Public Sans</td><td>papier mapy, granat, błękit wody</td><td class="l">129 kB</td></tr><tr><td><b>I „Plakat”</b><br><a href="gmina.html?k=i">Kraków</a> · <a href="posel.html?k=i">poseł</a> · <a href="glowna.html?k=i">główna</a></td><td>plakat: ciężkie wersaliki, grube kreski, jedna naklejka z twardym cieniem, żółć tylko pod wskazanym</td><td>Archivo</td><td>czerń i biel, żółć przy wskazaniu</td><td class="l">55 kB</td></tr><tr><td><b>J „Usługa publiczna”</b><br><a href="gmina.html?k=j">Kraków</a> · <a href="posel.html?k=j">poseł</a> · <a href="glowna.html?k=j">główna</a></td><td>w duchu GOV.UK: czarny pasek, niebieskie podkreślone odnośniki, żółty fokus, lista podsumowania</td><td>Public Sans</td><td>biel, czerń, błękit</td><td class="l">50 kB</td></tr></tbody></table></div>
-  <p class="drobny szary" style="margin-top:12px">Fonty: pliki woff2 latin + latin-ext z <span class="znak">@fontsource/*</span> 5.3.0, zmierzone na załadowanej stronie (pomiar.cjs). Dziś serwis wysyła 221 kB.</p>
-  <p class="uwaga" data-znaczenie>Wszystkie motywy mają ten sam fundament F1–F14 z badań (<span class="znak">docs/przebudowa/runda-2.md</span>): odpowiedź na pierwszym ekranie, typowy układ, jasny domyślnie, jeden akcent, pismo 18/20 px i nic poniżej 15 px, jedna ramka na ekran, nagłówki od odpowiedzi, kwoty na mieszkańca, zdania porównawcze, „Jak myślisz, ile…?”, tytuły wykresów z wnioskiem, menu widoczne, data stanu danych, fonty do 150 kB. Pomiar każdego punktu: <span class="znak">kierunek.md</span>.</p>
+    <thead><tr><th>Wersja</th><th>Na czym polega</th><th>Kroje</th><th class="l">Fonty</th></tr></thead>
+    <tbody><tr><td><b>Standardowy — J+G</b><br><span class="szary">domyślny</span><br><a href="gmina.html?k=jg">Kraków</a> · <a href="posel.html?k=jg">poseł</a> · <a href="glowna.html?k=jg">główna</a></td><td>J „Usługa publiczna” na każdej szerokości: czarny pasek z nazwą, niebieskie podkreślone odnośniki, żółty fokus, „W liczbach” jako lista. Od 1280 px dodatki z G „Pulpit”: spis działów z boku, „W liczbach” w jednej ramce podzielonej na pola, etykieta nad liczbą, liczby pismem maszynowym.</td><td>Public Sans; IBM Plex Mono tylko na komputerze</td><td class="l">78 kB</td></tr><tr><td><b>Wypis z rejestru — A</b><br><span class="szary">do wyboru</span><br><a href="gmina.html?k=a">Kraków</a> · <a href="posel.html?k=a">poseł</a> · <a href="glowna.html?k=a">główna</a></td><td>Strona jak odpis z rejestru: „Dział N” na marginesie, sygnatury i daty pismem maszynowym, „podstawa:” przy każdej liczbie.</td><td>Brygada 1918 + IBM Plex Sans + Plex Mono</td><td class="l">142 kB</td></tr></tbody></table></div>
+  <p class="drobny szary" style="margin-top:12px">Fonty: woff2 latin + latin-ext z <span class="znak">@fontsource/*</span> 5.3.0, zmierzone na załadowanej stronie. Przeglądarka pobiera tylko fonty wybranej wersji; dziś serwis wysyła 221 kB.</p>
+  <h2 style="margin-top:36px">Archiwum: pozostałe motywy</h2>
+  <p class="wstep">Wszystko, co powstało po drodze, działa dalej w archiwum — z planszami prezentacyjnymi i opisem każdego motywu.</p>
+  <ul class="pozycje">
+    <li><div><a class="tytul-poz" href="../archiwum/runda-2/prototyp/kierunki.html">Runda 2: dziesięć motywów na fundamencie F1–F14</a><p class="meta">A–J, każdy zmierzony; opis i pomiar: <span class="znak">archiwum/runda-2/kierunek.md</span></p></div><p class="kwota"></p></li>
+    <li><div><a class="tytul-poz" href="../archiwum/runda-1/prototyp/kierunki.html">Runda 1: dziesięć zupełnie różnych motywów</a><p class="meta">A–J i A+B, sprzed fundamentu; opis: <span class="znak">archiwum/runda-1/kierunek.md</span></p></div><p class="kwota"></p></li>
+  </ul>
 </div>
 </main>
 <footer class="stopka"><div class="obszar">

@@ -9,13 +9,26 @@
 <script src="motyw.js"></script>
 </head>
 <body>
-<div class="prototyp"><div class="obszar"><b>Prototyp układu, runda 2.</b> Liczby przepisane ze zrzutów lokalnej budowy <span class="znak">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
+<div class="prototyp"><div class="obszar"><b>Prototyp: dwie wersje wyglądu</b> (przełącznik „Wygląd” w nagłówku). Liczby przepisane ze zrzutów lokalnej budowy <span class="znak">main@414bc5d</span> (04.10.2026) — mogą się różnić od zrejestru.pl · <a href="index.html">spis prototypu</a></div></div>
 <header class="naglowek">
   <div class="obszar gora">
     <a class="marka" href="glowna.html"><b>zrejestru</b><span>Sejm i pieniądze publiczne — z rejestrów, liczba po liczbie</span></a>
     <form class="szukaj" role="search" action="szukaj.html"><label class="sr" for="q">Szukaj</label>
       <input id="q" type="search" placeholder="Szukaj: gmina, poseł, firma, NIP, nr druku"></form>
-    <button class="przycisk" type="button" data-przelacz-motyw aria-label="Jasny albo ciemny"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <details class="wyglad" hidden>
+      <summary class="przycisk" aria-label="Wygląd strony"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="napis">Wygląd</span></summary>
+      <div class="wyglad-panel">
+        <fieldset><legend>Styl strony</legend>
+          <label><input type="radio" name="styl" value="jg"><b>Standardowy</b><span>duże pismo, wszystko na wierzchu; na komputerze gęściej, ze spisem działów z boku</span></label>
+          <label><input type="radio" name="styl" value="a"><b>Wypis z rejestru</b><span>jak odpis z urzędu: ponumerowane działy, „podstawa” przy każdej liczbie</span></label>
+        </fieldset>
+        <fieldset><legend>Jasność</legend>
+          <label><input type="radio" name="jasnosc" value="system">jak w systemie</label>
+          <label><input type="radio" name="jasnosc" value="jasny">jasny</label>
+          <label><input type="radio" name="jasnosc" value="ciemny">ciemny</label>
+        </fieldset>
+      </div>
+    </details>
     <div class="tylko-tel">
       <details class="panel"><summary class="przycisk">Menu</summary>
         <div class="panel-tresc">

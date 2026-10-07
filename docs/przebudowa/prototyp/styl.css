@@ -69,14 +69,10 @@ a:hover { text-decoration-thickness: 2px; }
 @media (min-width: 640px) { .obszar { padding-inline: 24px; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---------- prototyp: pasek „Motyw” i ramka (nie wchodzą do serwisu, pomiar je usuwa) ---------- */
-.prototyp, .kierunki-pasek { font: 400 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+/* ---------- prototyp: ramka i notki projektowe (nie wchodzą do serwisu, pomiar je usuwa) ---------- */
+.prototyp { font: 400 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
 .prototyp { background: #1a1a1a; color: #fff; padding: 6px 0; }
 .prototyp a { color: inherit; display: inline-flex; align-items: center; min-height: 24px; }
-.kierunki-pasek { background: #eeeeee; color: #1a1a1a; border-bottom: 1px solid #cccccc; }
-.kierunki-pasek .obszar { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-height: 40px; padding-block: 4px; }
-.kierunki-pasek a { color: #1a1a1a; padding: 4px 2px; }
-.kierunki-pasek a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 3px; }
 .notka-proj { margin-top: 12px; padding: 8px 12px; border: 1.5px dashed #999; font: 400 14px/1.45 ui-sans-serif, system-ui, sans-serif; color: #555; max-width: 46rem; }
 .notka-proj::before { content: "PROTOTYP: "; font-weight: 700; color: #1a1a1a; }
 
@@ -332,3 +328,21 @@ details.metoda li + li { margin-top: 4px; }
 .stopka li a { display: inline-flex; min-height: 30px; align-items: center; }
 .pliki { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
 .pliki a { display: inline-flex; align-items: center; min-height: 36px; }
+
+/* ---------- „Wygląd”: styl strony i jasność — wybór czytelnika, zapamiętany ---------- */
+.wyglad { position: relative; }
+/* telefon: panel na szerokość nagłówka, przypięty do jego wiersza, nie do przycisku */
+@media (max-width: 1023px) { .naglowek .gora { position: relative; } .wyglad { position: static; } .wyglad-panel { left: 0; right: 0; width: auto !important; top: 100% !important; } }
+.wyglad > summary { list-style: none; gap: 8px; grid-auto-flow: column; }
+.wyglad > summary::-webkit-details-marker { display: none; }
+.wyglad > summary .napis { display: none; }
+@media (min-width: 640px) { .wyglad > summary .napis { display: inline; } }
+@media (min-width: 1024px) { .wyglad { order: 3; } }
+.wyglad-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: min(22rem, calc(100vw - 32px)); padding: 12px 16px 14px;
+  background: var(--papier-2); color: var(--atrament); border: var(--linia-mocna) solid var(--atrament); font-size: var(--sredni); }
+.wyglad fieldset { border: 0; margin: 0; padding: 0; }
+.wyglad fieldset + fieldset { margin-top: 12px; padding-top: 10px; border-top: var(--linia) solid var(--kreska); }
+.wyglad legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
+.wyglad label { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; min-height: 44px; padding: 8px 0; cursor: pointer; }
+.wyglad label input { margin: 2px 0 0; width: 24px; height: 24px; accent-color: var(--akcent); }
+.wyglad label span { display: block; grid-column: 2; color: var(--atrament-2); font-size: var(--drobny); }

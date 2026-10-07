@@ -1,8 +1,9 @@
 // Pomiar fundamentu F1–F14 (docs/przebudowa/runda-2.md) na każdej stronie prototypu,
 // w każdym motywie, na 390 i 1280 px. Wynik: pomiar.json (surowe) i tabela na stdout.
 //
-//   node pomiar.cjs                 wszystko (ok. 10 min)
-//   node pomiar.cjs gmina,posel a,j tylko wybrane strony i motywy
+//   node pomiar.cjs                  obie wersje: Standardowy (jg) i Wypis z rejestru (a), ok. 3 min
+//   node pomiar.cjs gmina,posel jg   tylko wybrane strony i wersje
+// Pomiar dziesięciu motywów rundy 2: docs/przebudowa/archiwum/runda-2/prototyp/pomiar.cjs.
 //
 // Wymaga Playwrighta z Chromium. Mierzy stronę BEZ elementów, których na prawdziwej
 // stronie nie będzie: paska „Motyw”, ramki „Prototyp” i notek projektowych.
@@ -16,7 +17,7 @@ const WSZYSTKIE = ['glowna', 'gmina', 'posel', 'firma', 'ustawa', 'glosowanie', 
   'ustawy', 'glosowania', 'poslowie', 'firmy', 'szukaj'];
 const SZCZEGOL = new Set(['gmina', 'posel', 'firma', 'ustawa', 'glosowanie', 'okreg']);
 const strony = (process.argv[2] || WSZYSTKIE.join(',')).split(',');
-const motywy = (process.argv[3] || 'a,b,c,d,e,f,g,h,i,j').split(',');
+const motywy = (process.argv[3] || 'jg,a').split(',');
 
 // Wszystko, co liczymy w przeglądarce. Jedna funkcja, żeby ten sam kod mierzył każdy przypadek.
 function zmierz({ szer, wys, szczegol }) {

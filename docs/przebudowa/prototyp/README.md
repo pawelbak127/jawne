@@ -1,18 +1,24 @@
-# Prototyp — runda 2: dziesięć motywów na jednym fundamencie
+# Prototyp — dwie wersje wyglądu i przełącznik „Wygląd”
 
 Otwórz `index.html` w przeglądarce (dwuklik wystarczy, nic nie trzeba
-budować). Motyw wybierasz paskiem „Motyw” nad nagłówkiem albo przez
-`?k=a` … `?k=j` w adresie; wybór zostaje zapamiętany. Jasny i ciemny
-przełącza przycisk z półkolem w nagłówku. Telefon: wąskie okno albo
-narzędzia deweloperskie, 390 px.
+budować). Przycisk **„Wygląd”** w nagłówku zmienia:
+- styl strony: **Standardowy** (domyślny) albo **Wypis z rejestru**;
+- jasność: jak w systemie, jasny albo ciemny.
+
+Wybór zostaje zapamiętany. `?k=jg` albo `?k=a` w adresie otwiera wybraną
+wersję. Telefon: wąskie okno albo narzędzia deweloperskie, 390 px.
+
+Pozostałe motywy obu rund — działające, z planszami — są
+w `../archiwum/`.
 
 | plik | co to jest |
 |---|---|
-| `styl.css` | **fundament** F1–F14 (`../runda-2.md`): struktura, kolejność, rozmiary minimalne, neutralna paleta |
-| `skora-a.css` … `skora-j.css` | **motywy**: własne fonty, paleta jasna i ciemna, linie, rysunek liczby i źródła |
-| `motyw.js` | wybór motywu, jasny/ciemny, „Jak myślisz, ile…?”, podświetlenie działu w spisie |
-| `pomiar.cjs` | pomiar F1–F14 w Playwright: `node pomiar.cjs` (ok. 10 min) albo `node pomiar.cjs gmina,posel a,j`; tabela na ekranie, surowe dane w `pomiar.json` (poza repozytorium) |
-| `fonty/` | pliki woff2 z `@fontsource/*` 5.3.0 (latin + latin-ext), licencja SIL OFL 1.1 (`OFL-*.txt`) |
+| `styl.css` | **fundament** F1–F14 (`../runda-2.md`): struktura, kolejność, rozmiary minimalne, panel „Wygląd” |
+| `skora-jg.css` | **Standardowy**: J „Usługa publiczna” wszędzie, od 1280 px dodatki z G „Pulpit” |
+| `skora-a.css` | **Wypis z rejestru** (A) |
+| `motyw.js` | przełącznik „Wygląd”, „Jak myślisz, ile…?”, podświetlenie działu w spisie |
+| `pomiar.cjs` | pomiar F1–F14 w Playwright: `node pomiar.cjs` (obie wersje, ok. 3 min); surowe dane w `pomiar.json` (poza repozytorium) |
+| `fonty/` | woff2 z `@fontsource/*` 5.3.0 (latin + latin-ext): Public Sans, IBM Plex Sans i Mono, Brygada 1918; licencja SIL OFL 1.1 (`OFL-*.txt`) |
 
 | strona | trasa | dane (z `tekst/*.txt`) |
 |---|---|---|
@@ -26,45 +32,30 @@ narzędzia deweloperskie, 390 px.
 | `pomoc-publiczna.html` | `/pomoc-publiczna` | pomoc-publiczna |
 | `firmy.html` | `/firmy` — **nowa trasa** | firmy z `szukaj` |
 | `szukaj.html` | `/szukaj?q=krak` | szukaj |
-| `kierunki.html`, `index.html` | porównanie motywów, spis | — |
+| `kierunki.html`, `index.html` | obie wersje i odnośniki do archiwum, spis | — |
 
 **Skąd liczby:** przepisane dosłownie z wyrenderowanego tekstu stron na
 gałęzi `przebudowa-zrzuty` (lokalna budowa `main` @ 414bc5d, 04.10.2026).
-Na zrejestru.pl mogą być inne. Policzone przez prototyp są tylko:
+Na zrejestru.pl mogą być inne. Prototyp sam liczy tylko trzy rzeczy:
 - zdania porównawcze (rachunek w `../kierunek.md`);
-- kwoty na mieszkańca z sum i ludności GUS;
-- grupowanie przypadków PGE GiEK (50 → 4 wiersze).
+- kwoty na mieszkańca;
+- grupowanie przypadków PGE GiEK.
 
 Ramki „PROTOTYP:” to notki projektowe — nie wchodzą do serwisu, a pomiar
 je usuwa.
 
-**Czego prototyp nie ma:** list w pełnej długości (3–5 pozycji i „pokaż
-wszystkie N”), mapy, półkola sali, zdjęć posłów.
-
-**Sprawdzone 04.10.2026 w Chromium (Playwright):**
-- F1–F14 we wszystkich 10 motywach na 13 stronach, przy 390 i 1280 px —
-  tabela w `../kierunek.md`;
-- 600 renderów (15 stron × 10 motywów × 390/1280 × jasny/ciemny): bez
-  przepełnienia i bez błędów konsoli;
+**Sprawdzone 07.10.2026 w Chromium (Playwright):**
+- F1–F14 w obu wersjach, na 13 stronach, przy 390 i 1280 px — tabela
+  w `../kierunek.md`;
+- 120 renderów bez przepełnienia i bez błędów konsoli;
 - cele dotykowe ≥ 24 px;
-- kontrast palet ≥ 4,5:1 (najsłabsza para: odnośnik J na szarym pasku,
-  4,6:1);
-- „Jak myślisz, ile…?” z JavaScriptem i bez niego.
+- przełącznik „Wygląd”: zmiana od razu, zapamiętanie między stronami,
+  ukryty bez JavaScriptu.
 
-Fonty, zmierzone na załadowanej stronie (dziś serwis: 221 kB):
-
-| motyw | kB |
-|---|---|
-| A | 142 |
-| B | 81 |
-| C | 55 |
-| D | 108 |
-| E | 128 |
-| F | 126 |
-| G | 84 |
-| H | 129 |
-| I | 55 |
-| J | 50 |
+Fonty:
+- Standardowy: 50 kB na telefonie, 79 kB na komputerze;
+- Wypis z rejestru: 142 kB;
+- dziś serwis wysyła 221 kB.
 
 Pliki CSS i JS są tylko dla prototypu — kod strony przebuduje główna sesja
-w `src/` (Tailwind 4, te same nazwy zmiennych co w `globals.css`).
+w `src/` (`../kierunek.md`, „Dla głównej sesji”).

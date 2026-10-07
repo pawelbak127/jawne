@@ -1,57 +1,58 @@
-// Prototyp: wybór motywu (?k=…), jasny/ciemny, podświetlenie działu w spisie
-// i „Jak myślisz, ile…?” (F10). Strona działa bez tego pliku: fundament bez motywu,
-// jasny albo za systemem, a „Jak myślisz” od razu pokazuje liczbę.
+// Prototyp: przełącznik „Wygląd” dla czytelnika (styl strony i jasność), „Jak myślisz, ile…?” (F10)
+// i podświetlenie działu w spisie. Strona działa bez tego pliku: styl domyślny, jasność za systemem,
+// „Jak myślisz” od razu pokazuje liczbę, a przełącznik jest ukryty.
+//
+// Dwa style (decyzja Pawła 07.10.2026): „jg” — Standardowy (J „Usługa publiczna”, od 1280 px dodatki
+// z G „Pulpit”), domyślny; „a” — Wypis z rejestru. Pozostałe motywy: docs/przebudowa/archiwum/.
 (function () {
-  var MOTYWY = [
-    ['a', 'A „Wypis z rejestru”'],
-    ['b', 'B „Monitor”'],
-    ['c', 'C „Tablica”'],
-    ['d', 'D „Kartoteka”'],
-    ['e', 'E „Rocznik”'],
-    ['f', 'F „Reportaż”'],
-    ['g', 'G „Pulpit”'],
-    ['h', 'H „Atlas”'],
-    ['i', 'I „Plakat”'],
-    ['j', 'J „Usługa publiczna”'],
-  ];
+  var STYLE = { jg: 'Standardowy', a: 'Wypis z rejestru' };
+  var DOMYSLNY = 'jg';
   var czytaj = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  var zapisz = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
+  var zapisz = function (k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
 
-  var m = czytaj('motyw');
-  if (m) document.documentElement.dataset.motyw = m;
+  // Jasność: zapisany wybór albo nic (= za systemem).
+  var jasnosc = czytaj('motyw');
+  if (jasnosc === 'jasny' || jasnosc === 'ciemny') document.documentElement.dataset.motyw = jasnosc;
 
-  // ?k=b w adresie wygrywa i zostaje zapamiętany; inaczej ostatni wybór; domyślnie A.
+  // Styl: ?k= w adresie (odnośniki porównania) wygrywa i zostaje zapamiętany; inaczej ostatni wybór.
   var zAdresu = new URLSearchParams(location.search).get('k');
-  var k = zAdresu || czytaj('kierunek') || 'a';
-  var wpis = MOTYWY.filter(function (x) { return x[0] === k; })[0] || MOTYWY[0];
-  k = wpis[0];
-  if (zAdresu) zapisz('kierunek', k);
+  var styl = STYLE[zAdresu] ? zAdresu : (STYLE[czytaj('styl')] ? czytaj('styl') : DOMYSLNY);
+  if (STYLE[zAdresu]) zapisz('styl', styl);
+  document.documentElement.dataset.styl = styl;
   // document.write w <head>: arkusz wchodzi przed pierwszym malowaniem, bez mignięcia fundamentu.
-  document.write('<link rel="stylesheet" href="skora-' + k + '.css">');
-
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-przelacz-motyw]');
-    if (!b) return;
-    var teraz = document.documentElement.dataset.motyw
-      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'ciemny' : 'jasny');
-    var nowy = teraz === 'ciemny' ? 'jasny' : 'ciemny';
-    document.documentElement.dataset.motyw = nowy;
-    zapisz('motyw', nowy);
-  });
+  document.write('<link rel="stylesheet" id="skora" href="skora-' + styl + '.css">');
 
   addEventListener('DOMContentLoaded', function () {
-    var naglowek = document.querySelector('.naglowek');
-    if (naglowek) {
-      var pasek = document.createElement('div');
-      pasek.className = 'kierunki-pasek';
-      var plik = location.pathname.split('/').pop() || 'index.html';
-      pasek.innerHTML = '<div class="obszar"><b>Motyw:</b> ' + MOTYWY.map(function (x) {
-        return '<a href="' + plik + '?k=' + x[0] + location.hash + '"' + (x[0] === k ? ' aria-current="page"' : '') + '>' + x[1] + '</a>';
-      }).join(' · ') + ' · <a href="kierunki.html">porównanie</a></div>';
-      naglowek.parentNode.insertBefore(pasek, naglowek);
+    // ---- „Wygląd”: styl strony i jasność ----
+    var w = document.querySelector('.wyglad');
+    if (w) {
+      w.hidden = false;
+      var zaznacz = function () {
+        var j = document.documentElement.dataset.motyw || 'system';
+        w.querySelectorAll('input[name=styl]').forEach(function (i) { i.checked = i.value === document.documentElement.dataset.styl; });
+        w.querySelectorAll('input[name=jasnosc]').forEach(function (i) { i.checked = i.value === j; });
+      };
+      zaznacz();
+      w.addEventListener('change', function (e) {
+        var i = e.target;
+        if (i.name === 'styl' && STYLE[i.value]) {
+          document.documentElement.dataset.styl = i.value;
+          document.getElementById('skora').href = 'skora-' + i.value + '.css';
+          zapisz('styl', i.value);
+          // adres bez ?k=, żeby odświeżenie nie cofnęło wyboru
+          if (zAdresu) history.replaceState(null, '', location.pathname + location.hash);
+        }
+        if (i.name === 'jasnosc') {
+          if (i.value === 'system') { delete document.documentElement.dataset.motyw; zapisz('motyw', null); }
+          else { document.documentElement.dataset.motyw = i.value; zapisz('motyw', i.value); }
+        }
+      });
+      // zamknij po kliknięciu poza panelem albo klawiszem Escape
+      document.addEventListener('click', function (e) { if (w.open && !w.contains(e.target)) w.open = false; });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && w.open) { w.open = false; w.querySelector('summary').focus(); } });
     }
 
-    // „Jak myślisz, ile…?” — pytanie zamiast liczby; „Pomiń” pokazuje ją od razu.
+    // ---- „Jak myślisz, ile…?” — pytanie zamiast liczby; „Pomiń” pokazuje ją od razu ----
     document.querySelectorAll('.zgadnij').forEach(function (z) {
       var pytanie = z.querySelector('.pytanie'), odp = z.querySelector('[data-prawda]');
       var suwak = z.querySelector('input[type=range]'), wyj = z.querySelector('output');
@@ -72,15 +73,16 @@
       z.querySelector('[data-pomin]').addEventListener('click', function () { pokaz(false); });
     });
 
+    // ---- podświetlenie bieżącego działu w spisie ----
     var linki = document.querySelectorAll('.spis a[href^="#"]');
     if (!linki.length || !('IntersectionObserver' in window)) return;
     var mapa = {};
     linki.forEach(function (a) { mapa[a.getAttribute('href').slice(1)] = a; });
     var obs = new IntersectionObserver(function (wpisy) {
-      wpisy.forEach(function (w) {
-        if (!w.isIntersecting) return;
+      wpisy.forEach(function (x) {
+        if (!x.isIntersecting) return;
         linki.forEach(function (a) { a.classList.remove('biezacy'); a.removeAttribute('aria-current'); });
-        var a = mapa[w.target.id];
+        var a = mapa[x.target.id];
         if (a) { a.classList.add('biezacy'); a.setAttribute('aria-current', 'location'); a.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
       });
     }, { rootMargin: '-20% 0px -70% 0px' });
