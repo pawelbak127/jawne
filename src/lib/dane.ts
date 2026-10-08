@@ -1746,6 +1746,35 @@ export function medianaUeNaMieszkanca(wojewodztwo: string, okres: string): Media
   return { mediana, jednostek: wiersze.length, grupa: miasta ? 'miasta-na-prawach-powiatu' : 'wojewodztwo' };
 }
 
+/**
+ * Mediana pomocy publicznej na mieszkanca w gminach wojewodztwa — punkt
+ * odniesienia dla strony gminy (zasada 9, F9 przebudowy).
+ *
+ * Ze STANU sum (`pomoc_sumy_gmin`), czyli z tych samych dni ustalonych, co
+ * liczba na stronie gminy. Gmina bez zadnego przypadku w tych dniach dostaje
+ * ZERO, nie wypada: dni sa pobrane dla calego kraju, wiec brak wiersza to
+ * zmierzone zero, a grupa porownawcza musi miec te same szanse na niezerowa
+ * wartosc. Sesja przebudowy porownywala ze srednia wojewodztwa, ktora
+ * zawiera sama gmine — mediana gmin tego nie robi.
+ */
+export function medianaPomocyNaMieszkanca(wojewodztwo: string): MedianaUe | null {
+  const wiersze = bezTabeli(
+    () => wszystkie<{ na_osobe: number }>(
+      `select coalesce(case when s.z_kwota > 0 then s.brutto end, 0) * 1.0 / j.osob as na_osobe
+         from (${JEDNOSTKI_FE}) j
+         left join pomoc_sumy_gmin s on s.teryt = j.teryt
+        where j.wojewodztwo = ? and j.osob > 0
+        order by na_osobe`,
+      wojewodztwo,
+    ),
+    [],
+  );
+  if (!wiersze.length) return null;
+  const s = Math.floor(wiersze.length / 2);
+  const mediana = wiersze.length % 2 ? wiersze[s]!.na_osobe : (wiersze[s - 1]!.na_osobe + wiersze[s]!.na_osobe) / 2;
+  return { mediana, jednostek: wiersze.length, grupa: 'wojewodztwo' };
+}
+
 export type BudzetGminy = {
   rok: number;
   dochody: number | null;

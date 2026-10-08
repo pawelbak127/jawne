@@ -9,10 +9,10 @@ export const ZRODLO_SUDOP = 'https://sudop.uokik.gov.pl';
  */
 export function WarunkiSudop({ pobrano }: { pobrano?: string | null }) {
   return (
-    <div className="mt-4 rounded-xl border border-kreska bg-papier-3 px-4 py-3 text-xs leading-relaxed text-atrament-2">
+    <div className="warunki">
       <p>
-        <span className="font-medium text-atrament">Źródło:</span>{' '}
-        <a href={ZRODLO_SUDOP} className="underline underline-offset-2 hover:text-akcent" target="_blank" rel="noreferrer">
+        <b className="font-semibold text-atrament">Źródło:</b>{' '}
+        <a href={ZRODLO_SUDOP} target="_blank" rel="noreferrer">
           System Udostępniania Danych o Pomocy Publicznej (UOKiK)
         </a>
         {`${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. Dane mogą ulec zmianie. Za ich kompletność, prawidłowość i aktualność odpowiadają wyłącznie podmioty udzielające pomocy. Dane mają charakter pomocniczy i są drugorzędne wobec zaświadczeń oraz oświadczeń beneficjenta. Baza zawiera dane osobowe przetwarzane zgodnie z RODO.`}

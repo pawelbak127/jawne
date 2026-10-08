@@ -56,10 +56,12 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
 
 1. ~~Rama: barwy obu wersji, pismo 18/20 px, fonty, nagłówek z widocznym
    menu, przełącznik, stopka~~ — **zrobione 07.10** (`5b11e0e`).
-2. Strona gminy według szablonu: „W liczbach” na pierwszym ekranie, działy
-   z nagłówkiem od treści, spis działów z boku od 1280 px, zdania porównawcze
-   (F9 — porównanie z MEDIANĄ województwa, nie ze średnią zawierającą samą
-   gminę), „Jak myślisz, ile…?” (F10), warunki UOKiK przy liczbie.
+2. ~~Strona gminy według szablonu~~ — **zrobione 08.10**: wspólne części
+   szablonu (`src/components/Szablon.tsx`, `SpisDzialow`, `Zgadnij`), zdania
+   porównawcze z medianą (`src/lib/porownanie.ts`, `medianaPomocyNaMieszkanca`),
+   długie listy zwinięte pod „Pokaż wszystkie N ↓”. Kraków na telefonie
+   31,8 → 18,0 tys. px, Bełchatów 53,4 → 18,8 tys. px; wszystkie 228 kwot
+   starej strony Krakowa są na nowej.
 3. Poseł i firma.
 4. Głosowanie, ustawa, pomoc publiczna, strona główna.
 5. Listy (posłowie, głosowania, ustawy, gminy), okręg, organ, szukanie,

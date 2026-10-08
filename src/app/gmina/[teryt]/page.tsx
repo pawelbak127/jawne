@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
-  medianaUeNaMieszkanca, najwiekszeProjektyGminy, organyPomocy, pomocGminy, porownanieBudzetu,
+  medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, organyPomocy, pomocGminy, porownanieBudzetu,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type ZamowieniaGminy,
@@ -22,6 +22,10 @@ import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { OPIS_KATEGORII } from '@/lib/formy-pomocy';
 import { SlupkiLat } from '@/components/SlupkiLat';
 import { Zestawienie } from '@/components/Zestawienie';
+import { Dzial, ListaPaskow, Okruszek, Podstawa, Uwaga, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
+import { SpisDzialow } from '@/components/SpisDzialow';
+import { Zgadnij } from '@/components/Zgadnij';
+import { zdaniePorownania } from '@/lib/porownanie';
 
 /*
  * Pusta lista = strona generuje sie przy pierwszym wejsciu i zostaje w pamieci
@@ -33,15 +37,20 @@ export async function generateStaticParams(): Promise<{ teryt: string }[]> {
   return [];
 }
 
+/*
+ * Ile pozycji listy widac od razu; reszta pod „Pokaż wszystkie N ↓”.
+ * ZMIERZONE 08.10.2026: z pelnymi listami (organy, dzialy wydatkow, SMUP,
+ * projekty, zamowienia) strona Krakowa miala na telefonie 31,8 tys. px,
+ * a Belchatowa 53 tys. px — badania-ux.md §5: 74% uwagi na dwoch ekranach.
+ */
+const NA_WIERZCHU = 5;
+
 const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
 const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
 const ZRODLO_SMUP = 'https://smup.gov.pl';
 const ZRODLO_GUS_INFLACJA = 'https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/';
-
-// py-3, nie py-2: przy tekscie `text-sm` py-2 daje 36 px, a potrzebne 44.
-const KOTWICA = 'rounded px-1 py-3 hover:text-akcent hover:underline';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
   const { teryt } = await params;
@@ -102,205 +111,317 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const importTed = zrodloImportu('zamowienia');
   const importRegon = zrodloImportu('regon');
 
+  /* ---- liczby do „W liczbach” i do naglowkow dzialow (F1, F7, F8, F9) ---- */
+  const dochodyNaOsobe = budzet ? naMieszkanca(budzet.dochody, ludnoscDoPrzeliczen) : null;
+  const medianaBudzetu = budzet && ludnoscDoPrzeliczen ? porownanieBudzetu(g.wojewodztwo, budzet.rok) : null;
+  const ue2127 = fundusze.find((f) => f.okres === '2021-2027') ?? null;
+  const ueNaOsobe = ue2127 ? naMieszkanca(ue2127.tylko_tu_ue ?? 0, ludnoscDoPrzeliczen) : null;
+  const medianaUe = ue2127 && ludnoscDoPrzeliczen ? medianaUeNaMieszkanca(g.wojewodztwo, '2021-2027') : null;
+  const jestPomoc = Boolean(pomoc.zrodlo && pomoc.razem);
+  const pomocNaOsobe = jestPomoc ? naMieszkanca(pomoc.razem!.brutto, ludnoscDoPrzeliczen) : null;
+  // Porownanie tylko w trybie dni: gmina z pelna 10-letnia historia nie ma
+  // z kim sie porownac — reszta kraju ma kilkanascie dni (pulapka 35).
+  const medianaPomocy = jestPomoc && pomoc.zrodlo!.rodzaj === 'dni' && ludnoscDoPrzeliczen
+    ? medianaPomocyNaMieszkanca(g.wojewodztwo)
+    : null;
+  const miasto = /miasto/.test(g.rodzaj) || dzielnica;
+  /*
+   * KONCENTRACJA w „W liczbach”, nie dopiero w dziale. Uwaga z przegladu
+   * 24.09.2026: „13,2 mld zl” w Belchatowie to w 97% jedna elektrownia,
+   * a liczba „na mieszkanca” czyta sie jak opis calej gminy. Udzial liczony
+   * z NAJWIEKSZEGO beneficjenta (a nie pierwszego z nazwa do pokazania);
+   * nazwa tylko wtedy, gdy wolno ja pokazac (zasada 7).
+   */
+  const najwiekszy = jestPomoc ? pomoc.beneficjenci[0] ?? null : null;
+  const udzialNajwiekszego = najwiekszy?.brutto && pomoc.razem?.brutto ? najwiekszy.brutto / pomoc.razem.brutto : 0;
+  const nazwaNajwiekszego = najwiekszy && !nazwaDoPokazania(najwiekszy.nazwa, {
+    pomocEur: najwiekszy.max_eur, progAktywny: Boolean(KONTAKT), typRegon: najwiekszy.typ_regon,
+  }).pominieta ? najwiekszy.nazwa : null;
+  const zdanieKoncentracji = udzialNajwiekszego >= 0.25
+    ? `${Math.round(100 * udzialNajwiekszego)}% tej kwoty trafiło do jednego podmiotu${nazwaNajwiekszego ? `: ${skroc(nazwaNajwiekszego, 70)}` : ''}`.replace(/…?$/, (k) => k || '.')
+    : null;
+  const czyje = miasto ? 'miasta' : 'gminy';
+
+  const pliki = ([
+    ['budzet', 'budżet rok po roku', Boolean(budzet)],
+    ['fundusze', 'projekty unijne', fundusze.some((f) => f.tylko_tu || f.wspolnych)],
+    ['pomoc', 'pomoc publiczna', jestPomoc],
+  ] as const).filter(([, , jest]) => jest);
+
+  const dzialy: { id: string; nazwa: string }[] = [
+    ...(budzet ? [{ id: 'budzet', nazwa: 'Budżet' }] : []),
+    ...(smup.length ? [{ id: 'finanse', nazwa: 'Finanse i podatki' }] : []),
+    { id: 'fundusze', nazwa: 'Fundusze UE' },
+    { id: 'pomoc', nazwa: 'Pomoc publiczna' },
+    ...(zamowienia.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
+    { id: 'dane', nazwa: 'Dane do pobrania' },
+  ];
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+
+  const dlug = smup.find((w) => w.klucz === 'dlug' && w.wartosc !== null && w.jednostka === 'zl_na_mieszkanca');
+
   return (
-    <div className="obszar py-10">
-      <p className="text-sm text-atrament-2">
-        <Link href={`/gminy/${adresWojewodztwa(g.wojewodztwo)}`} className="hover:text-akcent">{`woj. ${g.wojewodztwo}`}</Link>
-        {' · '}
-        <span>{miastoPowiat || dzielnica ? g.powiat : `powiat ${g.powiat}`}</span>
-      </p>
-
-      <header className="mt-3">
-        <h1 className="szryft text-4xl font-semibold sm:text-5xl">{nazwaWlasna(g)}</h1>
-        <p className="mt-2 text-atrament-2">{opisGminy(g)}</p>
-      </header>
-
-      {/*
-        Strona ma pięć ciężkich sekcji. Bez kotwic zejście do pomocy publicznej
-        na telefonie to kilkanaście ekranów, a linku do konkretnej liczby nie
-        dało się wysłać. Zwykłe odnośniki — działają bez JavaScriptu.
-      */}
-      {/*
-        Kotwice sa narzedziem ZROBIONYM POD TELEFON (strona Zakopanego ma
-        44 tys. px wysokosci), a mialy 20 px wysokosci — czyli byly na telefonie
-        trudne do trafienia. `py-2` daje 44 px przy zachowanym wygladzie.
-      */}
-      <nav aria-label="Sekcje tej strony" className="-mx-1 mt-4 flex flex-wrap gap-x-3 text-sm text-atrament-2">
-        {budzet ? <a href="#budzet" className={KOTWICA}>Budżet</a> : null}
-        {smup.length ? <a href="#finanse" className={KOTWICA}>Finanse i podatki</a> : null}
-        <a href="#fundusze" className={KOTWICA}>Fundusze UE</a>
-        <a href="#pomoc" className={KOTWICA}>Pomoc publiczna</a>
-        <a href="#kto" className={KOTWICA}>Kto to postanowił</a>
-        {zamowienia.ogloszen ? <a href="#zamowienia" className={KOTWICA}>Zamówienia</a> : null}
-        <a href="#dane" className={KOTWICA}>Dane do pobrania</a>
-      </nav>
-
-      <section className="mt-8 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{g.ludnosc ? liczba(g.ludnosc) : '—'}</p>
-          <p className="mt-1 text-sm font-medium">mieszkańców</p>
-          <p className="mt-0.5 text-xs text-atrament-2">{g.ludnosc_rok ? `GUS, stan na koniec ${g.ludnosc_rok} r.` : 'GUS nie podaje'}</p>
-          <Zrodlo adres={ZRODLO_GUS} etykieta="Bank Danych Lokalnych" className="mt-3" />
-        </div>
-        <Link href={`/okreg/${g.okreg_nr}?gmina=${g.teryt}`} className="group rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta transition-all hover:border-kreska-2">
-          <p className="szryft text-3xl font-semibold">{`Okręg nr ${g.okreg_nr}`}</p>
-          <p className="mt-1 text-sm font-medium group-hover:text-akcent">{`${g.okreg_nazwa ?? ''} →`}</p>
-          <p className="mt-0.5 text-xs text-atrament-2">okręg wyborczy do Sejmu (PKW, wybory 2023)</p>
-        </Link>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="text-sm font-medium">{zOdmiana(poslowie.length, 'poseł z tego okręgu', 'posłów z tego okręgu', 'posłów z tego okręgu')}</p>
-          <ul className="mt-3 flex flex-wrap gap-1.5">
-            {poslowie.map((p) => {
-              const k = listaKlubow.find((x) => x.id === p.klub_id);
-              return (
-                <li key={p.slug}>
-                  <Link href={`/posel/${p.slug}`} title={`${p.imie_nazwisko} (${p.klub_id ?? 'bez klubu'})`} className="relative block">
-                    <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="maly" />
-                    <span
-                      className="miejsce-probka absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-papier-2"
-                      style={{ '--b': k?.barwa ?? '#9a958c', '--bc': k?.barwaCiemna ?? '#8e8a95' } as React.CSSProperties}
-                    />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {budzet ? (
-        <Budzet teryt={terytFunduszy} budzet={budzet} ludnosc={ludnoscDoPrzeliczen} wojewodztwo={g.wojewodztwo} dzielnica={dzielnica} />
-      ) : null}
-
-      {/* ------------------------------------------------------------------ */}
-      {smup.length ? <Smup wartosci={smup} dzielnica={dzielnica} /> : null}
-
-      {/* ------------------------------------------------------------------ */}
-      <section id="fundusze" className="mt-14 scroll-mt-20">
-        <h2 className="szryft text-3xl font-semibold">Fundusze Europejskie</h2>
-        <p className="mt-2 max-w-3xl text-atrament-2">
-          {dzielnica
-            ? 'Lista ministerstwa nie rozpisuje projektów na dzielnice, więc pokazujemy całą Warszawę.'
-            : 'Liczymy projekty realizowane wyłącznie w tej gminie. Projektów prowadzonych w kilku miejscach nie dzielimy między gminy — podajemy tylko ich liczbę.'}
-        </p>
-
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          {fundusze.map((f) => (
-            <KartaOkresu
-              key={f.okres}
-              f={f}
-              lata={funduszeLata.filter((l) => l.okres === f.okres)}
-              ludnosc={ludnoscDoPrzeliczen}
-              wojewodztwo={g.wojewodztwo}
-              tylkoPowiat={f.okres === '2014-2020' && !miastoPowiat && !dzielnica}
-            />
-          ))}
-        </div>
-
-        {projekty.length ? (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium">Największe projekty realizowane tylko tutaj</h3>
-            <ul className="mt-3 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
-              {projekty.map((p) => {
-                const b = nazwaDoPokazania(p.beneficjent);
-                return (
-                  <li key={p.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
-                    <div className="min-w-0 flex-1">
-                      <p className="leading-snug font-medium">{skroc(p.tytul, 160)}</p>
-                      <p className={`mt-1 text-sm ${b.pominieta ? 'text-atrament-3 italic' : 'text-atrament-2'}`}>{b.tekst}</p>
-                      <p className="mt-1 text-xs text-atrament-3">
-                        {`${p.okres}${p.program ? ` · ${skroc(p.program, 70)}` : ''}${p.poczatek ? ` · ${dataKrotko(p.poczatek)}–${dataKrotko(p.koniec)}` : ''}`}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-left sm:text-right">
-                      <p className="liczby font-semibold">{zlote(p.dofinansowanie_ue)}</p>
-                      <p className="liczby text-xs text-atrament-2">{`z UE, wartość ${zlote(p.wartosc)}`}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
-
-        <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
-          <span>{`Źródło: listy projektów Ministerstwa Funduszy i Polityki Regionalnej${importFe ? `, pobrane ${dataSlownie(importFe.kiedy)}` : ''}.`}</span>
-          <Zrodlo adres={ZRODLO_FE_2127} etykieta="lista 2021–2027" />
-          <Zrodlo adres={ZRODLO_FE_1420} etykieta="lista 2014–2020" />
-        </p>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      <section id="pomoc" className="mt-14 scroll-mt-20">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="szryft text-3xl font-semibold">Pomoc publiczna dla firm z tej gminy</h2>
-          <Link href="/pomoc-publiczna" className="inline-flex min-h-11 items-center text-sm text-akcent underline underline-offset-4 hover:no-underline">
-            cała Polska →
-          </Link>
-        </div>
-        <p className="mt-2 max-w-3xl text-atrament-2">
-          Zwolnienia z podatków, dopłaty, preferencyjne pożyczki i pomoc de minimis udzielone
-          przedsiębiorcom, którzy mają tu siedzibę — według systemu SUDOP prowadzonego przez UOKiK.
-          {dzielnica ? ' Rejestr nie dzieli firm na dzielnice — pokazujemy całą Warszawę.' : ''}
-        </p>
-        {pomoc.zrodlo && pomoc.razem ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {organy.organy.length || organy.bezNazwy ? (
-        <section id="kto" className="mt-14 scroll-mt-20">
-          <h2 className="szryft text-3xl font-semibold">Kto to postanowił</h2>
-          <p className="mt-2 max-w-3xl text-atrament-2">
-            Każda pomoc z rejestru ma organ, który ją przyznał. Poniżej organy, które
-            podjęły decyzje wobec firm z tej gminy — z liczbą decyzji i kwotą, osobno dla
-            każdego rodzaju pomocy, bo te rodzaje znaczą dla budżetu różne rzeczy.
-          </p>
-          <p className="mt-2 max-w-3xl text-sm text-atrament-2">
-            {organy.pelna
-              ? 'Liczone z pełnej historii tej gminy w rejestrze — z tego samego zbioru, co sekcja wyżej.'
-              : 'Liczone z tych samych dni, co sekcja wyżej, czyli z dni już ustalonych.'}
-          </p>
-          <OrganyDecyzji organy={organy} />
-        </section>
-      ) : null}
-
-      {zamowienia.ogloszen ? (
-        <ZamowieniaWGminie
-          z={zamowienia}
-          dzielnica={dzielnica}
-          pobrano={importTed?.kiedy ?? null}
-          pobranoRegon={importRegon?.kiedy ?? null}
+    <>
+      <div className="obszar">
+        <Okruszek
+          ogniwa={[
+            { nazwa: 'Pieniądze publiczne' },
+            { adres: '/gminy', nazwa: 'Gminy', srodek: true },
+            { adres: `/gminy/${adresWojewodztwa(g.wojewodztwo)}`, nazwa: `woj. ${g.wojewodztwo}` },
+            { nazwa: nazwaWlasna(g) },
+          ]}
         />
-      ) : null}
+        <Wypis
+          tytul={nazwaWlasna(g)}
+          podtytul={`${opisGminy(g)}${g.ludnosc ? ` · ${liczba(g.ludnosc)} mieszkańców (GUS, koniec ${g.ludnosc_rok} r.)` : ''}`}
+        >
+          {/* Liczba mieszkancow tez ma zrodlo (zasada 1) — jest mianownikiem
+              kazdej kwoty „na mieszkanca” nizej. */}
+          {g.ludnosc ? <p className="mt-1"><Podstawa adres={ZRODLO_GUS} nazwa="ludność: GUS BDL" data={g.ludnosc_rok ? String(g.ludnosc_rok) : null} /></p> : null}
+        </Wypis>
 
-      {/*
-        Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
-        zakresy i ta sama regula nazw (src/app/gmina/[teryt]/csv/[zestaw]).
-      */}
-      <section id="dane" className="mt-14 scroll-mt-20 rounded-2xl border border-kreska bg-papier-2 p-6">
-        <h2 className="text-lg font-medium">Pobierz dane tej gminy</h2>
-        <p className="mt-1 text-sm text-atrament-2">
-          Pliki CSV przygotowane pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.
+        <WLiczbach
+          tytul={`${nazwaWlasna(g)} w liczbach`}
+          stopka={jestPomoc ? <WarunkiSudop pobrano={pomoc.pobranie?.pobrano ?? null} /> : null}
+        >
+          {budzet ? (
+            <Wiersz
+              duzy
+              co={`Dochody ${czyje} na mieszkańca`}
+              ile={zlote(dochodyNaOsobe)}
+              zCzego={
+                <>
+                  {`${budzet.rok} r. · ${ludnoscDoPrzeliczen ? `${zlote(budzet.dochody)} ÷ ${liczba(ludnoscDoPrzeliczen)} mieszkańców` : `w sumie ${zlote(budzet.dochody)}`}`}
+                  {medianaBudzetu ? ` · mediana w województwie (${zOdmiana(medianaBudzetu.gmin, 'gmina', 'gminy', 'gmin')}): ${zlote(medianaBudzetu.dochodyNaOsobe)}` : ''}
+                  {dzielnica ? ' · cała Warszawa' : ''}
+                  {' '}
+                  <a href="#budzet">budżet ↓</a>
+                </>
+              }
+              porownanie={zdaniePorownania(dochodyNaOsobe, medianaBudzetu?.dochodyNaOsobe ?? null, 'mediana w województwie')}
+              podstawa={<Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="GUS BDL" data={String(budzet.rok)} />}
+            />
+          ) : null}
+          {ue2127 ? (
+            <Wiersz
+              duzy
+              co="Dofinansowanie z UE na mieszkańca, 2021–2027"
+              ile={ueNaOsobe === null ? null : zlote(ueNaOsobe)}
+              zCzego={
+                <>
+                  {`${zlote(ue2127.tylko_tu_ue ?? 0)} w ${zOdmiana(ue2127.tylko_tu, 'projekcie realizowanym', 'projektach realizowanych', 'projektach realizowanych')} tylko tutaj`}
+                  {medianaUe ? ` · ${opisMediany(medianaUe)}: ${zlote(medianaUe.mediana)}` : ''}
+                  {' '}
+                  <a href="#fundusze">fundusze UE ↓</a>
+                </>
+              }
+              porownanie={zdaniePorownania(ueNaOsobe, medianaUe?.mediana ?? null, 'mediana w województwie')}
+              podstawa={<Podstawa adres={ZRODLO_FE_2127} nazwa="lista projektów FE" data={importFe ? dataKrotko(importFe.kiedy) : null} />}
+            />
+          ) : null}
+          {jestPomoc ? (
+            <Wiersz
+              duzy
+              co="Pomoc publiczna dla firm stąd, na mieszkańca"
+              ile={pomocNaOsobe === null ? zlote(pomoc.razem!.brutto) : zlote(pomocNaOsobe)}
+              zCzego={
+                <>
+                  {pomoc.zrodlo!.rodzaj === 'dni'
+                    ? <b>{`tylko z ${zOdmiana(pomoc.zrodlo!.dni, 'dnia pobranego', 'dni pobranych', 'dni pobranych')} dla całego kraju`}</b>
+                    : <b>pełna historia z rejestru</b>}
+                  {pomoc.zrodlo!.rodzaj === 'dni'
+                    ? ` (${dataKrotko(pomoc.zrodlo!.od)}–${dataKrotko(pomoc.zrodlo!.do)}), nie z 10 lat`
+                    : ` od ${dataKrotko(pomoc.zrodlo!.od)}`}
+                  {` · ${zlote(pomoc.razem!.brutto)}${ludnoscDoPrzeliczen ? ` ÷ ${liczba(ludnoscDoPrzeliczen)} mieszkańców` : ''}`}
+                  {` · ${zOdmiana(pomoc.razem!.przypadkow, 'przypadek', 'przypadki', 'przypadków')}`}
+                  {medianaPomocy ? ` · mediana w województwie (${zOdmiana(medianaPomocy.jednostek, 'gmina', 'gminy', 'gmin')}): ${zlote(medianaPomocy.mediana)}` : ''}
+                  {' '}
+                  <a href="#pomoc">pomoc publiczna ↓</a>
+                </>
+              }
+              porownanie={[zdaniePorownania(pomocNaOsobe, medianaPomocy?.mediana ?? null, 'mediana gmin województwa w tych samych dniach'), zdanieKoncentracji]
+                .filter(Boolean).join(' ') || null}
+              podstawa={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={pomoc.pobranie?.pobrano ? dataKrotko(pomoc.pobranie.pobrano) : null} />}
+            />
+          ) : null}
+          <Wiersz
+            co={`Posłowie z okręgu nr ${g.okreg_nr}${g.okreg_nazwa ? ` ${g.okreg_nazwa}` : ''}`}
+            ile={liczba(poslowie.length)}
+            zCzego={
+              <>
+                <span className="mb-2 flex flex-wrap gap-1.5">
+                  {poslowie.map((p) => {
+                    const k = listaKlubow.find((x) => x.id === p.klub_id);
+                    return (
+                      <Link key={p.slug} href={`/posel/${p.slug}`} title={`${p.imie_nazwisko} (${p.klub_id ?? 'bez klubu'})`} className="relative block">
+                        <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="maly" />
+                        <span
+                          className="miejsce-probka absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-papier-2"
+                          style={{ '--b': k?.barwa ?? '#9a958c', '--bc': k?.barwaCiemna ?? '#8e8a95' } as React.CSSProperties}
+                        />
+                      </Link>
+                    );
+                  })}
+                </span>
+                <Link href={`/okreg/${g.okreg_nr}?gmina=${g.teryt}`}>{`wszyscy na stronie okręgu nr ${g.okreg_nr}`}</Link>
+              </>
+            }
+            podstawa={<Podstawa adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach" nazwa="PKW, wybory 2023" />}
+          />
+        </WLiczbach>
+
+        {/* Stan danych i sygnatura — zaraz pod odpowiedzia (F13, Stanford 8). */}
+        <p className="stan-danych">
+          <span>{`TERYT ${g.teryt}`}</span>
+          <span>{`okręg wyborczy nr ${g.okreg_nr}`}</span>
+          <span>
+            {'stan danych: '}
+            {[
+              g.ludnosc_rok ? `GUS ${budzet?.rok ?? g.ludnosc_rok}` : null,
+              importFe ? `fundusze UE ${dataKrotko(importFe.kiedy)}` : null,
+              pomoc.zrodlo?.rodzaj === 'dni' ? `SUDOP ${zOdmiana(pomoc.zrodlo.dni, 'dzień', 'dni', 'dni')} do ${dataKrotko(pomoc.zrodlo.do)}` : null,
+              importTed ? `TED ${dataKrotko(importTed.kiedy)}` : null,
+              importRegon ? `REGON ${dataKrotko(importRegon.kiedy)}` : null,
+            ].filter(Boolean).join(' · ')}
+          </span>
         </p>
-        <ul className="mt-3 flex flex-wrap gap-2 text-sm">
-          {[
-            ['budzet', 'budżet rok po roku', Boolean(budzet)],
-            ['fundusze', 'projekty unijne', fundusze.some((f) => f.tylko_tu || f.wspolnych)],
-            ['pomoc', 'pomoc publiczna', Boolean(pomoc.zrodlo && pomoc.razem)],
-          ].filter(([, , jest]) => jest).map(([zestaw, opis]) => (
-            <li key={String(zestaw)}>
-              <a
-                href={`/gmina/${g.teryt}/csv/${String(zestaw)}`}
-                className="inline-block rounded-full border border-kreska-2 px-3 py-1 text-atrament-2 transition-colors hover:border-akcent hover:text-akcent"
-              >
-                {`${String(opis)} (CSV)`}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+      </div>
+
+      <div className="obszar z-spisem">
+        <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
+        <div className="dzialy">
+          {budzet ? (
+            <Budzet
+              nr={nr('budzet')}
+              teryt={terytFunduszy}
+              budzet={budzet}
+              ludnosc={ludnoscDoPrzeliczen}
+              mediana={medianaBudzetu}
+              dzielnica={dzielnica}
+              czyje={czyje}
+            />
+          ) : null}
+
+          {smup.length ? <Smup nr={nr('finanse')} wartosci={smup} dzielnica={dzielnica} dlug={dlug ?? null} /> : null}
+
+          <Dzial
+            id="fundusze"
+            nr={nr('fundusze')}
+            tytul={ue2127 && ueNaOsobe !== null
+              ? `Fundusze UE: ${zlote(ueNaOsobe)} na mieszkańca w latach 2021–2027`
+              : 'Fundusze Europejskie'}
+            metoda={
+              <p>
+                Liczymy projekty realizowane wyłącznie w tej gminie; projektów prowadzonych w kilku
+                gminach nie dzielimy — podajemy ich liczbę. Dla lat 2014–2020 porównujemy z miastami
+                na prawach powiatu, bo lista z tych lat podaje miejsce realizacji tylko do powiatu.
+                Wykres lat pokazuje rok rozpoczęcia projektu, nie rok wydatku: rejestr podaje jedną
+                kwotę na cały projekt.
+              </p>
+            }
+          >
+            {dzielnica ? (
+              <p className="wstep">Lista ministerstwa nie rozpisuje projektów na dzielnice, więc pokazujemy całą Warszawę.</p>
+            ) : null}
+            <div className="mt-6 grid gap-8 lg:grid-cols-2">
+              {fundusze.map((f) => (
+                <KartaOkresu
+                  key={f.okres}
+                  f={f}
+                  lata={funduszeLata.filter((l) => l.okres === f.okres)}
+                  ludnosc={ludnoscDoPrzeliczen}
+                  wojewodztwo={g.wojewodztwo}
+                  tylkoPowiat={f.okres === '2014-2020' && !miastoPowiat && !dzielnica}
+                />
+              ))}
+            </div>
+
+            {projekty.length ? (
+              <>
+                <h3>{`${zlote(projekty[0]!.dofinansowanie_ue)} z UE na największy projekt realizowany tylko tutaj`}</h3>
+                <ListaProjektow projekty={projekty.slice(0, 3)} />
+                {projekty.length > 3 ? (
+                  <Wiecej napis={`Pokaż ${zOdmiana(projekty.length, 'największy projekt', 'największe projekty', 'największych projektów')}`}>
+                    <ListaProjektow projekty={projekty.slice(3)} />
+                  </Wiecej>
+                ) : null}
+              </>
+            ) : null}
+
+            <p className="podpis-wykresu flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>{`Źródło: listy projektów Ministerstwa Funduszy i Polityki Regionalnej${importFe ? `, pobrane ${dataSlownie(importFe.kiedy)}` : ''}.`}</span>
+              <Podstawa adres={ZRODLO_FE_2127} nazwa="lista 2021–2027" />
+              <Podstawa adres={ZRODLO_FE_1420} nazwa="lista 2014–2020" />
+            </p>
+          </Dzial>
+
+          <Dzial
+            id="pomoc"
+            nr={nr('pomoc')}
+            tytul={jestPomoc
+              ? `Pomoc publiczna: ${pomocNaOsobe === null ? zlote(pomoc.razem!.brutto) : `${zlote(pomocNaOsobe)} na mieszkańca`} ${pomoc.zrodlo!.rodzaj === 'dni' ? `w ${zOdmiana(pomoc.zrodlo!.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')}` : 'w pełnej historii'}`
+              : 'Pomoc publiczna dla firm z tej gminy'}
+            obok={<Podstawa adres="/pomoc-publiczna" nazwa="cała Polska" />}
+            metoda={
+              <ul>
+                <li><b>Wartość brutto</b> to ekwiwalent dotacji: przy dotacji cała kwota, przy pożyczce lub gwarancji tylko korzyść z lepszych warunków — nie cała pożyczona suma.</li>
+                <li>Dzień wliczamy dopiero wtedy, gdy pobraliśmy go co najmniej 14 dni po jego dacie — urzędy mają 7 dni na zgłoszenie pomocy.</li>
+                <li>Mediana w województwie: pomoc dla firm z siedzibą w każdej gminie województwa ÷ jej mieszkańcy, w tych samych dniach. Gmina bez żadnego przypadku liczy się jako zero — dni są pobrane dla całego kraju.</li>
+                <li>Rodzajów pomocy (dotacje, zwolnienia, ulgi w terminie, pożyczki) nie sumujemy w jedną kwotę organu — znaczą dla budżetu różne rzeczy.</li>
+              </ul>
+            }
+          >
+            <p className="wstep">
+              Zwolnienia z podatków, dopłaty, preferencyjne pożyczki i pomoc de minimis udzielone
+              przedsiębiorcom, którzy mają tu siedzibę — według systemu SUDOP prowadzonego przez UOKiK.
+              {dzielnica ? ' Rejestr nie dzieli firm na dzielnice — pokazujemy całą Warszawę.' : ''}
+            </p>
+            {jestPomoc ? <PomocPubliczna pomoc={pomoc} /> : <BrakPomocy />}
+
+            {organy.organy.length || organy.bezNazwy ? (
+              <>
+                <h3>{`Kto przyznał pomoc: ${zOdmiana(organy.organy.length + organy.bezNazwy, 'organ', 'organy', 'organów')}`}</h3>
+                <p className="wstep">
+                  Każda pomoc z rejestru ma organ, który ją przyznał — z liczbą decyzji i kwotą,
+                  osobno dla każdego rodzaju pomocy.{' '}
+                  {organy.pelna
+                    ? 'Liczone z pełnej historii tej gminy w rejestrze — z tego samego zbioru, co liczby wyżej.'
+                    : 'Liczone z tych samych dni, co liczby wyżej, czyli z dni już ustalonych.'}
+                </p>
+                <OrganyDecyzji organy={organy} />
+              </>
+            ) : null}
+          </Dzial>
+
+          {zamowienia.ogloszen ? (
+            <ZamowieniaWGminie
+              nr={nr('zamowienia')}
+              z={zamowienia}
+              dzielnica={dzielnica}
+              pobrano={importTed?.kiedy ?? null}
+              pobranoRegon={importRegon?.kiedy ?? null}
+            />
+          ) : null}
+
+          {/*
+            Dane do pobrania. Plik pokazuje dokladnie to, co strona: te same
+            zakresy i ta sama regula nazw (src/app/gmina/[teryt]/csv/[zestaw]).
+          */}
+          <Dzial
+            id="dane"
+            nr={nr('dane')}
+            tytul={`Dane do pobrania: ${zOdmiana(pliki.length, 'plik CSV', 'pliki CSV', 'plików CSV')}`}
+          >
+            <p className="wstep">Pliki pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.</p>
+            <p className="pliki">
+              {pliki.map(([zestaw, opis]) => (
+                <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`}>{`${opis} (CSV)`}</a>
+              ))}
+            </p>
+          </Dzial>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -351,71 +472,75 @@ const GRUPY_SMUP: { tytul: string; opis: string; klucze: string[] }[] = [
  * mowia, jak jej idzie. Kazda z mediana w wojewodztwie (zasada 9) i z rokiem,
  * bo zrodlo publikuje poszczegolne wskazniki w roznym tempie.
  */
-function Smup({ wartosci, dzielnica }: { wartosci: WartoscSmup[]; dzielnica: boolean }) {
+function Smup({ nr, wartosci, dzielnica, dlug }: { nr: number; wartosci: WartoscSmup[]; dzielnica: boolean; dlug: WartoscSmup | null }) {
   const poKluczu = new Map(wartosci.map((w) => [w.klucz, w]));
   const brakujace = wartosci.some((w) => w.wartosc === null);
   return (
-    <section id="finanse" className="mt-14 scroll-mt-20">
-      <h2 className="szryft text-3xl font-semibold">Finanse i podatki — jak gminie idzie</h2>
-      <p className="mt-2 max-w-3xl text-atrament-2">
+    <Dzial
+      id="finanse"
+      nr={nr}
+      tytul={dlug ? `Finanse i podatki: dług ${liczbaSmup(dlug.wartosc, dlug.jednostka, dlug.precyzja, dlug.flaga)} na mieszkańca (${dlug.rok})` : 'Finanse i podatki'}
+      obok={<Podstawa adres={ZRODLO_SMUP} nazwa="SMUP, GUS" />}
+      metoda={
+        <p>
+          Wartości podane tak, jak publikuje je rejestr — z jego własną dokładnością.
+          {brakujace ? ' Półpauza znaczy, że źródło nie podaje wartości (brak informacji albo tajemnica statystyczna), a nie że wynosi zero.' : ''}
+          {' Mediana w województwie: połowa gmin ma więcej, połowa mniej — punkt odniesienia, nie ocena.'}
+        </p>
+      }
+    >
+      <p className="wstep">
         {dzielnica
           ? 'Dzielnice nie mają osobnych finansów — pokazujemy całą Warszawę.'
           : 'Te liczby mówią co innego niż budżet: nie ile gmina wydała, tylko czy ją na to stać i ile własnego podatku odpuszcza.'}
       </p>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        {GRUPY_SMUP.map((grupa) => {
-          const wiersze = grupa.klucze.map((k) => poKluczu.get(k)).filter((w): w is WartoscSmup => Boolean(w));
-          if (!wiersze.length) return null;
-          return (
-            <div key={grupa.tytul} className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-              <p className="font-medium">{grupa.tytul}</p>
-              <p className="mt-1 text-xs text-atrament-2">{grupa.opis}</p>
-              <ul className="mt-4 divide-y divide-kreska">
-                {wiersze.map((w) => (
-                  <li key={w.klucz} className="py-3">
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-0 flex-1 text-sm leading-snug" title={w.nazwy ?? undefined}>
-                        {w.etykieta}
-                      </span>
-                      <span className="liczby shrink-0 text-right font-medium">
-                        {liczbaSmup(w.wartosc, w.jednostka, w.precyzja, w.flaga)}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-atrament-3">
-                      {`${w.rok} r.`}
-                      {w.mediana !== null
-                        ? ` · mediana w województwie (${zOdmiana(w.gmin, 'gmina', 'gminy', 'gmin')}): ${liczbaSmup(w.mediana, w.jednostka, w.precyzja)}`
-                        : ''}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-relaxed text-atrament-3">
-        <span>
-          Wartości podane tak, jak publikuje je rejestr — z jego własną dokładnością.
-          {brakujace ? ' Półpauza znaczy, że źródło nie podaje wartości (brak informacji albo tajemnica statystyczna), a nie że wynosi zero.' : ''}
-        </span>
-        <Zrodlo adres={ZRODLO_SMUP} etykieta="System Monitorowania Usług Publicznych (GUS)" />
-      </p>
-    </section>
+      {GRUPY_SMUP.map((grupa) => {
+        const wiersze = grupa.klucze.map((k) => poKluczu.get(k)).filter((w): w is WartoscSmup => Boolean(w));
+        if (!wiersze.length) return null;
+        return (
+          <div key={grupa.tytul}>
+            <h3>{grupa.tytul}</h3>
+            <p className="wstep">{grupa.opis}</p>
+            <WierszeSmup wiersze={wiersze.slice(0, 3)} />
+            {wiersze.length > 3 ? (
+              <Wiecej napis={`Pokaż wszystkie ${zOdmiana(wiersze.length, 'wskaźnik', 'wskaźniki', 'wskaźników')}`}>
+                <WierszeSmup wiersze={wiersze.slice(3)} />
+              </Wiecej>
+            ) : null}
+          </div>
+        );
+      })}
+    </Dzial>
   );
 }
 
-function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
+function WierszeSmup({ wiersze }: { wiersze: WartoscSmup[] }) {
+  return (
+    <Wiersze>
+      {wiersze.map((w) => (
+        <Wiersz
+          key={w.klucz}
+          co={<span title={w.nazwy ?? undefined}>{w.etykieta}</span>}
+          ile={liczbaSmup(w.wartosc, w.jednostka, w.precyzja, w.flaga)}
+          zCzego={`${w.rok} r.${w.mediana !== null
+            ? ` · mediana w województwie (${zOdmiana(w.gmin, 'gmina', 'gminy', 'gmin')}): ${liczbaSmup(w.mediana, w.jednostka, w.precyzja)}`
+            : ''}`}
+        />
+      ))}
+    </Wiersze>
+  );
+}
+
+function Budzet({ nr, teryt, budzet, ludnosc, mediana, dzielnica, czyje }: {
+  nr: number;
   teryt: string;
   budzet: BudzetGminy;
   ludnosc: number | null;
-  wojewodztwo: string;
+  mediana: ReturnType<typeof porownanieBudzetu>;
   dzielnica: boolean;
+  czyje: string;
 }) {
   const naOsobe = naMieszkanca(budzet.dochody, ludnosc);
-  const mediana = ludnosc ? porownanieBudzetu(wojewodztwo, budzet.rok) : null;
   const historia = historiaBudzetu(teryt);
   const dzialy = wydatkiDzialami(teryt);
   const majatkoweNaOsobe = naMieszkanca(budzet.wydatki_majatkowe, ludnosc);
@@ -425,115 +550,91 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
   const udzialMajatkowych = budzet.wydatki && budzet.wydatki_majatkowe !== null
     ? (100 * budzet.wydatki_majatkowe) / budzet.wydatki
     : null;
+  const oswiata = dzialy?.pozycje.find((p) => p.dzial === '801') ?? null;
+  const podstawaGus = <Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="GUS BDL" data={String(budzet.rok)} />;
   return (
-    <section id="budzet" className="mt-14 scroll-mt-20">
-      <h2 className="szryft text-3xl font-semibold">{`Budżet gminy — ${budzet.rok}`}</h2>
-      <p className="mt-2 max-w-3xl text-atrament-2">
-        {dzielnica
-          ? 'Dzielnice nie mają osobnych budżetów — pokazujemy budżet całej Warszawy.'
-          : 'Ile gmina miała pieniędzy, ile z tego wypracowała sama i ile przeznaczyła na inwestycje.'}
-      </p>
+    <Dzial
+      id="budzet"
+      nr={nr}
+      tytul={naOsobe !== null
+        ? `Budżet ${budzet.rok}: ${zlote(naOsobe)} dochodów na mieszkańca`
+        : `Budżet ${budzet.rok}: ${zlote(budzet.dochody)} dochodów`}
+      metoda={
+        /*
+          ZGLOSZENIE PAWLA 24.09.2026: „mam 14,0 tys. zl dochodu na mieszkanca,
+          ale nie wiem, co wchodzi w ten dochod". Liczba bez definicji nie jest
+          informacja — definicja stoi w „Jak to liczymy" tego dzialu.
+        */
+        <>
+          <ul>
+            <li>
+              <b>Dochody</b> to wszystko, co w roku wpłynęło do budżetu: dochody własne (podatek od
+              nieruchomości, rolny, leśny i od środków transportowych, opłaty lokalne, dochody
+              z majątku, udział w PIT i CIT mieszkańców i firm), subwencja ogólna z budżetu państwa
+              (jej największa część idzie na oświatę) i dotacje celowe. Kredyty i obligacje nie są
+              dochodem.
+            </li>
+            <li>
+              <b>Wydatki majątkowe</b> obejmują też dotacje inwestycyjne (np. dla spółki miejskiej),
+              dlatego są szersze niż same inwestycje — podajemy obie kwoty, gdy się różnią.
+            </li>
+            <li><b>Mediana w województwie</b> — połowa gmin ma więcej, połowa mniej. Punkt odniesienia, nie ocena.</li>
+            <li>Kwoty w cenach bieżących, bez korekty o inflację — złotówka sprzed kilku lat była warta więcej niż dzisiejsza.</li>
+            <li>„Pozostałe działy” w wydatkach to różnica wobec wydatków ogółem, a nie brak danych.</li>
+          </ul>
+          <p className="flex flex-wrap gap-x-4">
+            <Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="Bank Danych Lokalnych, budżety gmin" />
+            <Podstawa adres={ZRODLO_GUS_INFLACJA} nazwa="inflacja według GUS" />
+          </p>
+        </>
+      }
+    >
+      {dzielnica ? <p className="wstep">Dzielnice nie mają osobnych budżetów — pokazujemy budżet całej Warszawy.</p> : null}
+      <Wiersze>
+        <Wiersz
+          co="Dochody ogółem"
+          ile={zlote(budzet.dochody)}
+          zCzego={udzialWlasnych === null
+            ? `wydatki ogółem: ${zlote(budzet.wydatki)}`
+            /* Nie „samodzielnosc" ani „uzaleznienie" — to ocena, a my podajemy udzial. */
+            : `w tym dochody własne ${Math.round(udzialWlasnych)}% (${zlote(budzet.dochody_wlasne)})${mediana ? ` · mediana w województwie: ${Math.round(mediana.udzialWlasnych)}%` : ''}`}
+          podstawa={podstawaGus}
+        />
+        <Wiersz
+          co="Wydatki majątkowe na mieszkańca"
+          ile={zlote(majatkoweNaOsobe)}
+          zCzego={`${zlote(budzet.wydatki_majatkowe)}${rozniSie(budzet.wydatki_majatkowe, budzet.wydatki_inwestycyjne) ? `, z tego na inwestycje ${zlote(budzet.wydatki_inwestycyjne)}` : ''}${udzialMajatkowych === null ? '' : ` · ${Math.round(udzialMajatkowych)}% wydatków`}${mediana ? ` · mediana w województwie: ${zlote(mediana.majatkoweNaOsobe)}` : ''}`}
+          porownanie={zdaniePorownania(majatkoweNaOsobe, mediana?.majatkoweNaOsobe ?? null, 'mediana w województwie')}
+          podstawa={podstawaGus}
+        />
+      </Wiersze>
 
-      {/*
-        ZGLOSZENIE PAWLA 24.09.2026: „mam 14,0 tys. zl dochodu na mieszkanca,
-        ale nie wiem, co wchodzi w ten dochod". Liczba bez definicji nie jest
-        informacja. Wyjasnienie jest zwiniete, zeby nie zaglaszalo strony,
-        ale stoi TUZ przy liczbie, ktorej dotyczy.
-      */}
-      {budzet.subwencja !== null || budzet.dotacje !== null ? (
-        <SkladDochodow budzet={budzet} />
+      {budzet.subwencja !== null || budzet.dotacje !== null ? <SkladDochodow budzet={budzet} czyje={czyje} /> : null}
+
+      {oswiata && dzialy ? (
+        <Zgadnij
+          id="zgadnij-oswiata"
+          pytanie={`Jak myślisz: jaka część wydatków ${czyje} idzie na oświatę?`}
+          prawda={Math.round(1000 * oswiata.udzial) / 10}
+          odpowiedz={
+            <>
+              <p>
+                <b>{`${(100 * oswiata.udzial).toFixed(1).replace('.', ',')}%`}</b>
+                {` — ${zlote(oswiata.kwota)} z ${zlote(dzialy.ogolem)} wydatków w ${dzialy.rok} r.${ludnosc ? `, czyli ${zlote(Math.round(oswiata.kwota / ludnosc))} na mieszkańca` : ''}.`}
+              </p>
+              <p><Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="GUS BDL, wydatki według działów" data={String(dzialy.rok)} /></p>
+            </>
+          }
+        />
       ) : null}
 
-      <details className="mt-4 rounded-xl border border-kreska bg-papier-2 px-4 py-3 text-sm">
-        <summary className="min-h-11 cursor-pointer py-2 font-medium">Co wchodzi w dochody gminy?</summary>
-        <div className="mt-3 space-y-2 leading-relaxed text-atrament-2">
-          <p>
-            To wszystko, co w danym roku wpłynęło do budżetu gminy. GUS dzieli te
-            pieniądze na trzy części:
-          </p>
-          <ul className="ml-5 list-disc space-y-1.5">
-            <li>
-              <span className="font-medium text-atrament">dochody własne</span> — podatek
-              od nieruchomości, rolny, leśny i od środków transportowych, opłaty lokalne,
-              dochody z majątku gminy, a także jej udział w podatkach dochodowych
-              mieszkańców i firm;
-            </li>
-            <li>
-              <span className="font-medium text-atrament">subwencja ogólna</span> z budżetu
-              państwa — największa jej część idzie na oświatę;
-            </li>
-            <li>
-              <span className="font-medium text-atrament">dotacje celowe</span> — pieniądze
-              na konkretne zadania, w tym takie, które gmina wykonuje za państwo.
-            </li>
-          </ul>
-          <p>
-            Nie są tu wliczone pieniądze, które gmina pożyczyła — kredyty i obligacje nie
-            są dochodem. Kwota jest w cenach bieżących, czyli bez korekty o inflację.
-          </p>
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <span className="text-atrament-3">Podział i definicje pochodzą z GUS:</span>
-            <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych, budżety gmin" />
-          </p>
-        </div>
-      </details>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold">{zlote(naOsobe)}</p>
-          <p className="mt-1 text-sm font-medium">dochodów na mieszkańca</p>
-          {/* Pokazujemy DZIALANIE, nie tylko wynik: czytelnik ma widziec,
-              skad wzielo sie „14,0 tys. zl" (zgloszenie Pawla 24.09.2026). */}
-          <p className="liczby mt-0.5 text-xs text-atrament-2">
-            {ludnosc
-              ? `${zlote(budzet.dochody)} ÷ ${liczba(ludnosc)} mieszkańców`
-              : `w sumie ${zlote(budzet.dochody)}`}
-          </p>
-          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
-            {mediana
-              ? `mediana w województwie (${zOdmiana(mediana.gmin, 'gmina', 'gminy', 'gmin')}): ${zlote(mediana.dochodyNaOsobe)}`
-              : `wydatki ogółem: ${zlote(budzet.wydatki)}`}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold">{udzialWlasnych === null ? '—' : `${Math.round(udzialWlasnych)}%`}</p>
-          <p className="mt-1 text-sm font-medium">dochodów to dochody własne</p>
-          <p className="mt-0.5 text-xs text-atrament-2">{`podatki i opłaty gminy: ${zlote(budzet.dochody_wlasne)}`}</p>
-          {/*
-            Reszta to subwencje i dotacje z budzetu panstwa. Nie nazywamy tego
-            "samodzielnoscia" ani "uzaleznieniem" — to ocena, a my podajemy udzial.
-          */}
-          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
-            {mediana
-              ? `resztę stanowią subwencje i dotacje · mediana w województwie: ${Math.round(mediana.udzialWlasnych)}%`
-              : 'resztę stanowią subwencje i dotacje'}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold">{zlote(majatkoweNaOsobe)}</p>
-          <p className="mt-1 text-sm font-medium">wydatków majątkowych na mieszkańca</p>
-          {/*
-            "Majatkowe", nie "inwestycyjne": ta pozycja obejmuje tez dotacje
-            inwestycyjne, np. dla spolki miejskiej budujacej metro. Sama czesc
-            inwestycyjna jest wezsza i podajemy ja obok, zeby nazwa zgadzala sie
-            z tym, co liczymy.
-          */}
-          <p className="mt-0.5 text-xs text-atrament-2">
-            {`w sumie ${zlote(budzet.wydatki_majatkowe)}${rozniSie(budzet.wydatki_majatkowe, budzet.wydatki_inwestycyjne) ? `, z tego na inwestycje ${zlote(budzet.wydatki_inwestycyjne)}` : ''}`}
-          </p>
-          <p className="mt-3 border-t border-kreska pt-3 text-xs text-atrament-2">
-            {udzialMajatkowych === null
-              ? `wydatki ogółem: ${zlote(budzet.wydatki)}`
-              : `${Math.round(udzialMajatkowych)}% wydatków gminy${mediana ? ` · mediana w województwie: ${zlote(mediana.majatkoweNaOsobe)} na mieszkańca` : ''}`}
-          </p>
-        </div>
-      </div>
+      {dzialy ? <NaCoWydaje dzialy={dzialy} ludnosc={ludnosc} /> : null}
 
       {historia.length >= 2 ? (
-        <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="font-medium">{`Rok po roku, ${historia[0]!.rok}–${historia[historia.length - 1]!.rok}`}</p>
+        <>
+          <h3 className="tytul-wykresu">
+            {`Dochody: ${zlote(historia[0]!.dochody)} w ${historia[0]!.rok} r. i ${zlote(historia[historia.length - 1]!.dochody)} w ${historia[historia.length - 1]!.rok} r.`}
+          </h3>
           {/*
             Dwa osobne wykresy, nie jedna os: dochody sa kilka razy wieksze niz
             wydatki majatkowe i na wspolnej skali inwestycje wygladalyby na zero.
@@ -542,25 +643,10 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
             <SlupkiLat tytul="Dochody" wiersze={historia.map((h) => ({ rok: h.rok, wartosc: h.dochody }))} />
             <SlupkiLat tytul="Wydatki majątkowe" wiersze={historia.map((h) => ({ rok: h.rok, wartosc: h.wydatki_majatkowe }))} />
           </div>
-          {/*
-            Kwoty nominalne. Nie liczymy "realnego" wzrostu: wskaznik cen w BDL
-            jest kwartalny i w nowej klasyfikacji, a korekta wlasna bylaby liczba
-            wyprowadzona przez nas. Mowimy wprost, czego kwoty nie uwzgledniaja.
-          */}
-          <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-relaxed text-atrament-3">
-            <span>Kwoty w cenach bieżących, bez korekty o inflację — złotówka sprzed kilku lat była warta więcej niż dzisiejsza.</span>
-            <Zrodlo adres={ZRODLO_GUS_INFLACJA} etykieta="inflacja według GUS" />
-          </p>
-        </div>
+          <p className="podpis-wykresu">Kwoty w cenach bieżących, bez korekty o inflację.</p>
+        </>
       ) : null}
-
-      {dzialy ? <NaCoWydaje dzialy={dzialy} ludnosc={ludnosc} /> : null}
-
-      <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
-        <span>{`Źródło: GUS, Bank Danych Lokalnych, sprawozdania budżetowe gmin za ${historia.length >= 2 ? `lata ${historia[0]!.rok}–${historia[historia.length - 1]!.rok}` : `${budzet.rok} r.`}`}</span>
-        <Zrodlo adres={ZRODLO_GUS_BUDZET} etykieta="Bank Danych Lokalnych" />
-      </p>
-    </section>
+    </Dzial>
   );
 }
 
@@ -572,45 +658,37 @@ function Budzet({ teryt, budzet, ludnosc, wojewodztwo, dzielnica }: {
  * "pozostale dzialy" policzone jako roznica wobec wydatkow ogolem.
  */
 function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: number | null }) {
-  const naOsobe = (kwota: number) => (ludnosc ? zlote(Math.round(kwota / ludnosc)) : null);
+  const naOsobe = (kwota: number) => (ludnosc ? ` · ${zlote(Math.round(kwota / ludnosc))} na mieszk.` : '');
   const wiersze = [
     ...dzialy.pozycje,
     ...(dzialy.pozostale > 0
       ? [{ dzial: 'pozostale', nazwa: 'Pozostałe działy', kwota: dzialy.pozostale, udzial: dzialy.pozostale / dzialy.ogolem }]
       : []),
   ];
+  const pierwszy = dzialy.pozycje[0];
+  const pozycje = wiersze.map((w) => ({
+    klucz: w.dzial,
+    nazwa: w.nazwa,
+    opis: `${(100 * w.udzial).toFixed(1).replace('.', ',')}% · ${zlote(w.kwota)}${naOsobe(w.kwota)}`,
+    udzial: w.udzial,
+    blady: w.dzial === 'pozostale',
+  }));
+  const podpis = `Działy klasyfikacji budżetowej — tej samej, którą gmina ma w uchwale budżetowej. Wydatki ogółem: ${zlote(dzialy.ogolem)}.`;
   return (
-    <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="font-medium">{`Na co gmina wydaje — ${dzialy.rok}`}</p>
-        <p className="liczby text-sm text-atrament-3">{`${zlote(dzialy.ogolem)} wydatków ogółem`}</p>
-      </div>
-      <ul className="mt-4 space-y-2.5">
-        {wiersze.map((w) => (
-          <li key={w.dzial} className="min-w-0">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm">
-              <span className={w.dzial === 'pozostale' ? 'text-atrament-2' : ''}>{w.nazwa}</span>
-              <span className="liczby shrink-0 text-atrament-2">
-                {`${(100 * w.udzial).toFixed(1).replace('.', ',')}%`}
-                <span className="text-atrament-3">{` · ${zlote(w.kwota)}`}</span>
-                {naOsobe(w.kwota) ? <span className="text-atrament-3">{` · ${naOsobe(w.kwota)} na mieszkańca`}</span> : null}
-              </span>
-            </div>
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-papier-3">
-              <div
-                className={`h-full rounded-full ${w.dzial === 'pozostale' ? 'bg-kreska-2' : 'bg-akcent'}`}
-                style={{ width: `${Math.max(0.4, 100 * w.udzial).toFixed(2)}%` }}
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 text-xs leading-relaxed text-atrament-3">
-        Podział według działów klasyfikacji budżetowej — tej samej, którą gmina ma
-        w uchwale budżetowej. „Pozostałe działy” to różnica wobec wydatków ogółem,
-        a nie brak danych.
-      </p>
-    </div>
+    <>
+      <ListaPaskow
+        tytul={pierwszy
+          ? `Najwięcej, ${(100 * pierwszy.udzial).toFixed(1).replace('.', ',')}% wydatków ${dzialy.rok} r., idzie na: ${pierwszy.nazwa.toLowerCase()}`
+          : `Na co gmina wydaje — ${dzialy.rok}`}
+        pozycje={pozycje.slice(0, NA_WIERZCHU)}
+        podpis={pozycje.length > NA_WIERZCHU ? undefined : podpis}
+      />
+      {pozycje.length > NA_WIERZCHU ? (
+        <Wiecej napis={`Pokaż wszystkie ${zOdmiana(pozycje.length, 'dział', 'działy', 'działów')} wydatków`}>
+          <ListaPaskow pozycje={pozycje.slice(NA_WIERZCHU)} podpis={podpis} />
+        </Wiecej>
+      ) : null}
+    </>
   );
 }
 
@@ -624,7 +702,7 @@ function KartaOkresu({ f, lata, ludnosc, wojewodztwo, tylkoPowiat }: {
   const naOsobe = naMieszkanca(f.tylko_tu_ue, ludnosc);
   const mediana = ludnosc ? medianaUeNaMieszkanca(wojewodztwo, f.okres) : null;
   return (
-    <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+    <div className="border-t-2 border-atrament pt-4">
       <p className="text-xs font-medium tracking-wider text-atrament-3 uppercase">{`Perspektywa ${f.okres.replace('-', '–')}`}</p>
       {tylkoPowiat ? (
         <>
@@ -710,7 +788,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         dostaly firmy z tej gminy" — czyli falszywie.
       */}
       {z.rodzaj === 'dni' ? (
-        <p className="mt-6 rounded-2xl border border-kreska bg-papier-3 p-4 text-sm leading-relaxed text-atrament-2">
+        <p className="uwaga text-atrament-2">
           <span className="font-medium text-atrament">To nie jest cała historia tej gminy.</span>
           {` Pełnych danych jeszcze nie pobraliśmy — poniżej jest wyłącznie pomoc udzielona ${z.dni === 1 ? 'w jednym dniu, który pobraliśmy' : `w ${liczba(z.dni)} dniach, które pobraliśmy`} dla całego kraju (${dataSlownie(z.od)}${z.od === z.do ? '' : ` – ${dataSlownie(z.do)}`}).`}
         </p>
@@ -722,7 +800,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           hojniej obdarowany niz Gdansk (9 mln zl), a roznica jest w tym,
           ile zdazylismy pobrac, nie w pieniadzach.
         */
-        <p className="mt-6 rounded-2xl border border-kreska bg-papier-3 p-4 text-sm leading-relaxed text-atrament-2">
+        <p className="uwaga text-atrament-2">
           <span className="font-medium text-atrament">Ta gmina ma pełne dziesięć lat danych.</span>
           {' Jest jedną z kilku, dla których pobraliśmy całą historię z rejestru — w pozostałych'}
           {' gminach mamy na razie tylko dni pobrane dla całego kraju, więc '}
@@ -731,8 +809,8 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           <Link href="/stan" className="text-akcent underline underline-offset-4 hover:no-underline">stanu danych</Link>.
         </p>
       )}
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_2fr]">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_2fr]">
+        <div className="border-t-2 border-atrament pt-4">
           <p className="liczby szryft text-4xl font-semibold">{zlote(r.brutto)}</p>
           {/* Mianownik przy samej liczbie, nie tylko w ramce obok — to liczba,
               ktora ktos wytnie do udostepnienia. */}
@@ -752,7 +830,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           </details>
         </div>
 
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+        <div className="border-t-2 border-atrament pt-4">
           <SlupkiLat tytul="Według roku udzielenia" wiersze={pomoc.lata.map((l) => ({ rok: l.rok, wartosc: l.brutto }))} />
         </div>
       </div>
@@ -771,14 +849,14 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         sie jak opis calej gminy.
       */}
       {r.brutto && jawni[0]?.brutto && jawni[0].brutto / r.brutto >= 0.25 ? (
-        <p className="mt-4 rounded-2xl border border-kreska bg-papier-3 p-4 text-sm leading-relaxed text-atrament-2">
+        <p className="uwaga text-atrament-2">
           {`Z tej kwoty ${Math.round((100 * jawni[0].brutto) / r.brutto)}% (${zlote(jawni[0].brutto)}) trafiło do jednego podmiotu: `}
           <span className="font-medium text-atrament">{skroc(jawni[0].nazwa, 70)}</span>
           {'. Reszta rozkłada się na pozostałych.'}
         </p>
       ) : null}
 
-      <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
+      <div className="mt-6 border-t-2 border-atrament pt-4">
         <p className="text-sm font-medium">Największe podmioty, które otrzymały pomoc</p>
         <ul className="mt-3 divide-y divide-kreska">
           {jawni.slice(0, 10).map((b) => (
@@ -802,7 +880,9 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         ) : null}
         {progAktywny ? (
           <p className="mt-2 text-xs leading-relaxed text-atrament-3">
-            {`Jeśli jesteś osobą, której nazwisko tu widać, i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy je bez pytania o powód.`}
+            {'Jeśli jesteś osobą, której nazwisko tu widać, i nie chcesz tego — '}
+            <Link href="/prywatnosc#kontakt" className="text-akcent underline underline-offset-4">napisz do nas</Link>
+            {'. Usuniemy je bez pytania o powód.'}
           </p>
         ) : null}
       </div>
@@ -833,13 +913,29 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
 function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) {
   return (
     <>
-      <ul className="mt-6 space-y-3">
-        {organy.organy.map((o) => (
+      <ListaOrganow organy={organy.organy.slice(0, NA_WIERZCHU)} />
+      {organy.organy.length > NA_WIERZCHU ? (
+        <Wiecej napis={`Pokaż wszystkie ${zOdmiana(organy.organy.length, 'organ', 'organy', 'organów')}`}>
+          <ListaOrganow organy={organy.organy.slice(NA_WIERZCHU)} />
+        </Wiecej>
+      ) : null}
+      {organy.bezNazwy ? (
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-atrament-2">
+          {`Do tego ${zOdmiana(organy.bezNazwy, 'organ', 'organy', 'organów')}, których nazw nie pokazujemy, bo rejestr wskazuje osoby fizyczne — razem ${zOdmiana(organy.przypadkowBezNazwy, 'decyzja', 'decyzje', 'decyzji')}. Liczby zostają, nazwiska nie.`}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function ListaOrganow({ organy }: { organy: ReturnType<typeof organyPomocy>['organy'] }) {
+  return (
+    <>
+      <ul className="mt-4">
+        {organy.map((o) => (
           <li
             key={o.nip}
-            className={`rounded-2xl border bg-papier-2 p-5 shadow-karta ${
-              o.wlasny ? 'border-akcent' : 'border-kreska'
-            }`}
+            className={`py-4 ${o.wlasny ? 'border-t-4 border-akcent' : 'border-t border-kreska'}`}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               {/* Nazwa byla do 02.10.2026 zwyklym tekstem, czyli slepa uliczka:
@@ -884,18 +980,13 @@ function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) 
           </li>
         ))}
       </ul>
-      {organy.bezNazwy ? (
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-atrament-2">
-          {`Do tego ${zOdmiana(organy.bezNazwy, 'organ', 'organy', 'organów')}, których nazwy nie pokazujemy, bo rejestr wskazuje osoby fizyczne — razem ${zOdmiana(organy.przypadkowBezNazwy, 'decyzja', 'decyzje', 'decyzji')}. Liczby zostają, nazwiska nie.`}
-        </p>
-      ) : null}
     </>
   );
 }
 
 function BrakPomocy() {
   return (
-    <div className="mt-6 max-w-3xl rounded-2xl border border-kreska bg-papier-2 p-6 text-sm leading-relaxed text-atrament-2">
+    <div className="uwaga text-atrament-2">
       <p className="font-medium text-atrament">Tej gminy jeszcze nie pobraliśmy.</p>
       <p className="mt-2">
         SUDOP wydaje dane przez kolejkę, a UOKiK napisał nam, że ruch przekracza możliwości jego
@@ -916,7 +1007,8 @@ function BrakPomocy() {
  * urzad gminy, i strona musi to powiedziec, zeby nikt nie odczytal tego
  * jako „tyle wydala gmina".
  */
-function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
+function ZamowieniaWGminie({ nr, z, dzielnica, pobrano, pobranoRegon }: {
+  nr: number;
   z: ZamowieniaGminy;
   dzielnica: boolean;
   pobrano: string | null;
@@ -925,81 +1017,54 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
   pobranoRegon: string | null;
 }) {
   return (
-    <section id="zamowienia" className="mt-14 scroll-mt-20">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="szryft text-3xl font-semibold">Zamówienia publiczne z tej gminy</h2>
-        <Zrodlo adres="https://ted.europa.eu" etykieta="TED — dziennik zamówień UE" />
-      </div>
-      <p className="mt-2 max-w-3xl text-atrament-2">
-        Ogłoszenia o udzieleniu zamówienia, w których zamawiający ma siedzibę w tej gminie.
-        To nie są wydatki samego urzędu gminy: zamawiającym bywa szpital, spółka komunalna
-        albo uczelnia. Do TED trafiają zamówienia powyżej progów unijnych, a nie wszystkie.
+    <Dzial
+      id="zamowienia"
+      nr={nr}
+      tytul={z.suma === null
+        ? `Zamówienia publiczne: ${zOdmiana(z.ogloszen, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} od listopada 2023`
+        : `Zamówienia publiczne: ${zlote(z.suma)} w ${zOdmiana(z.wSumie, 'ogłoszeniu', 'ogłoszeniach', 'ogłoszeniach')} od listopada 2023`}
+      obok={<Podstawa adres="https://ted.europa.eu" nazwa="TED" data={pobrano ? dataKrotko(pobrano) : null} />}
+      metoda={
+        <p>
+          {`Ogłoszenia o udzieleniu zamówienia od 13 listopada 2023 (początek kadencji)${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. `}
+          {'Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON '
+            + `(Główny Urząd Statystyczny, licencja CC BY 4.0${pobranoRegon ? `, pobrany ${dataSlownie(pobranoRegon)}` : ''}). `}
+          Kwota dotyczy całego ogłoszenia, ze wszystkimi częściami i wykonawcami. Do TED trafiają
+          tylko zamówienia powyżej progów unijnych.
+        </p>
+      }
+    >
+      {/*
+        Uwaga z przegladu 24.09.2026: „8,43 mld zl" przy rocznym budzecie
+        Gdanska 6,05 mld zl czyta sie jak absurd. Nie jest — to sa wartosci
+        CALYCH umow, czesto kilkuletnich. Zdanie stoi przy liczbie.
+      */}
+      <p className="wstep">
+        Zamówienia instytucji z siedzibą w tej gminie — urzędu, ale też szpitala czy spółki
+        komunalnej. <b className="text-atrament">To wartości całych umów, często wieloletnich, nie wydatek jednego roku.</b>
         {dzielnica ? ' Dzielnice nie mają osobnych zamawiających — pokazujemy całą Warszawę.' : ''}
       </p>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold">{z.suma === null ? '—' : zlote(z.suma)}</p>
-          <p className="mt-1 text-sm font-medium">wartość ogłoszeń w złotych</p>
-          <p className="mt-0.5 text-xs text-atrament-2">
-            {`z ${zOdmiana(z.wSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')}`}
-          </p>
-          {/*
-            Uwaga z przegladu 24.09.2026: „8,43 mld zl" przy rocznym budzecie
-            Gdanska 6,05 mld zl czyta sie jak absurd. Nie jest — to sa wartosci
-            CALYCH umow, czesto kilkuletnich, a nie wydatek jednego roku.
-            Zdanie stoi przy liczbie, a nie w przypisie na dole.
-          */}
-          <p className="mt-2 border-t border-kreska pt-2 text-xs leading-relaxed text-atrament-3">
-            To wartości całych umów — często wieloletnich i obejmujących kilka części.
-            Nie jest to wydatek jednego roku ani budżet gminy.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-          <p className="liczby szryft text-4xl font-semibold">{liczba(z.ogloszen)}</p>
-          <p className="mt-1 text-sm font-medium">ogłoszeń razem</p>
-          {/* Mianownik: ogloszenia bez kwoty w zlotych nie wchodza do sumy. */}
-          <p className="mt-0.5 text-xs text-atrament-2">
-            {z.bezKwoty
-              ? `${zOdmiana(z.bezKwoty, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} bez kwoty w złotych — poza sumą`
-              : 'wszystkie z kwotą w złotych'}
-          </p>
-        </div>
-      </div>
+      <Wiersze>
+        <Wiersz
+          co="Wartość ogłoszeń w złotych"
+          ile={z.suma === null ? null : zlote(z.suma)}
+          zCzego={`z ${zOdmiana(z.wSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z kwotą w złotych (z ${liczba(z.ogloszen)} razem${z.bezKwoty ? `; ${liczba(z.bezKwoty)} bez kwoty w złotych — poza sumą` : ''})`}
+          podstawa={<Podstawa adres="https://ted.europa.eu" nazwa="TED" data={pobrano ? dataKrotko(pobrano) : null} />}
+        />
+      </Wiersze>
 
       {z.suma && z.najwieksze[0]?.wartosc && z.najwieksze[0].wartosc / z.suma >= 0.25 ? (
-        <p className="mt-4 rounded-2xl border border-kreska bg-papier-3 p-4 text-sm leading-relaxed text-atrament-2">
-          {`Z tej sumy ${Math.round((100 * z.najwieksze[0].wartosc) / z.suma)}% to jedno ogłoszenie (${zlote(z.najwieksze[0].wartosc)}): `}
-          <span className="font-medium text-atrament">{skroc(z.najwieksze[0].tytul ?? '', 70)}</span>
-          {'. Wartość ogłoszenia obejmuje całą umowę, często wieloletnią — to nie jest wydatek jednego roku.'}
-        </p>
+        <Uwaga naglowek={`${Math.round((100 * z.najwieksze[0].wartosc) / z.suma)}% sumy to jedno ogłoszenie.`}>
+          {`${zlote(z.najwieksze[0].wartosc)}: „${skroc(z.najwieksze[0].tytul ?? '', 70)}”. Wartość obejmuje całą umowę, często wieloletnią.`}
+        </Uwaga>
       ) : null}
 
-      <p className="mt-6 font-medium">Największe zamówienia</p>
-      <ul className="mt-2 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
-        {z.najwieksze.map((o) => (
-          <li key={o.numer} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
-            <div className="min-w-0 flex-1">
-              <p className="leading-snug font-medium">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 120)}</p>
-              <p className="mt-1 text-sm text-atrament-2">{skroc(o.nabywca ?? '—', 80)}</p>
-              <p className="mt-1 text-xs text-atrament-3">
-                {`${dataKrotko(o.data)} · ogłoszenie ${o.numer} · ${zOdmiana(o.wykonawcow, 'wykonawca', 'wykonawców', 'wykonawców')}`}
-              </p>
-            </div>
-            <div className="shrink-0 text-left sm:text-right">
-              <p className="liczby font-semibold">{o.wartosc === null ? '—' : zlote(o.wartosc)}</p>
-              <a
-                className="text-xs text-akcent underline underline-offset-4 hover:no-underline"
-                href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                ogłoszenie (PDF)
-              </a>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ListaZamowien ogloszenia={z.najwieksze.slice(0, 3)} />
+      {z.najwieksze.length > 3 ? (
+        <Wiecej napis={`Pokaż ${zOdmiana(z.najwieksze.length, 'największe zamówienie', 'największe zamówienia', 'największych zamówień')}`}>
+          <ListaZamowien ogloszenia={z.najwieksze.slice(3)} />
+        </Wiecej>
+      ) : null}
 
       {/*
         Bledne kwoty w rejestrze pokazujemy, zamiast je po cichu wyrzucac
@@ -1007,52 +1072,72 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
         torow) zamienialo sume Warszawy w bezsens.
       */}
       {z.podejrzane.length ? (
-        <div className="mt-4 rounded-2xl border border-kreska bg-papier-3 p-5 text-sm">
-          <p className="font-medium">
-            {`Poza sumą: ${zOdmiana(z.podejrzane.length, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z kwotą powyżej ${zlote(PROG_PODEJRZANEJ_KWOTY)}`}
-          </p>
-          <p className="mt-1 text-atrament-2">
-            W rejestrze zdarzają się pomyłki o trzy rzędy wielkości — kwota bywa wpisana
-            w złych jednostkach. Nie poprawiamy jej i nie ukrywamy; nie wliczamy jej tylko
-            do sumy, bo jedna taka pozycja czyni ją bezużyteczną. Próg jest nasz, nie rejestru.
-          </p>
-          <ul className="mt-3 space-y-1">
+        <div className="uwaga">
+          <b>{`Poza sumą: ${zOdmiana(z.podejrzane.length, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z kwotą powyżej ${zlote(PROG_PODEJRZANEJ_KWOTY)}.`}</b>
+          {' W rejestrze zdarzają się pomyłki o trzy rzędy wielkości. Nie poprawiamy ich i nie ukrywamy — nie wliczamy ich tylko do sumy. Próg jest nasz, nie rejestru.'}
+          <ul className="mt-2 space-y-1">
             {z.podejrzane.map((o) => (
               <li key={o.numer} className="flex flex-wrap items-baseline gap-x-3">
-                <a
-                  className="text-akcent underline underline-offset-4 hover:no-underline"
-                  href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a className="znak text-akcent underline underline-offset-4" href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`} target="_blank" rel="noreferrer">
                   {o.numer}
                 </a>
-                <span className="liczby text-xs text-atrament-2">{zlote(o.wartosc)}</span>
-                {/*
-                  `flex-1` to `flex: 1 1 0%`, czyli baza ZERO — w kontenerze
-                  `flex-wrap` taki element nigdy nie przechodzi do wlasnego
-                  wiersza, tylko bierze resztke po numerze i kwocie. ZMIERZONE
-                  na 390 px: tytul dostawal 120 px z potrzebnych 409, czyli
-                  widac bylo 20 znakow z 68 („Polska – Uslugi w z…"). A to jest
-                  blok, ktorego caly sens polega na pokazaniu, czego dotyczylo
-                  bledne ogloszenie. Na telefonie wiec wlasny wiersz i bez
-                  obcinania; `skroc(..., 70)` i tak trzyma dlugosc.
-                */}
-                <span className="min-w-0 basis-full text-xs text-atrament-3 sm:basis-0 sm:flex-1 sm:truncate">{skroc(o.tytul ?? '', 70)}</span>
+                <span className="liczby text-sm text-atrament-2">{zlote(o.wartosc)}</span>
+                {/* Na telefonie wlasny wiersz: `flex-1` w kontenerze flex-wrap
+                    dawal tytulowi 120 px z potrzebnych 409 (zmierzone na 390 px). */}
+                <span className="min-w-0 basis-full text-sm text-atrament-2 sm:basis-0 sm:flex-1">{skroc(o.tytul ?? '', 70)}</span>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
+    </Dzial>
+  );
+}
 
-      {/* Kazdy inny blok na tej stronie ma okres i date pobrania — ten nie mial
-          (uwaga z przegladu 24.09.2026). */}
-      <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-        {`Ogłoszenia od 13 listopada 2023 (początek kadencji) do dziś${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. `}
-        {'Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON '
-          + `(Główny Urząd Statystyczny, licencja CC BY 4.0${pobranoRegon ? `, pobrany ${dataSlownie(pobranoRegon)}` : ''}).`}
-      </p>
-    </section>
+function ListaZamowien({ ogloszenia }: { ogloszenia: ZamowieniaGminy['najwieksze'] }) {
+  return (
+        <ul className="pozycje">
+          {ogloszenia.map((o) => (
+            <li key={o.numer}>
+              <div className="min-w-0">
+                <p className="font-semibold leading-snug">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 120)}</p>
+                <p className="meta">
+                  {`${skroc(o.nabywca ?? '—', 80)} · ${dataKrotko(o.data)} · ogłoszenie `}
+                  <span className="znak">{o.numer}</span>
+                  {` · ${zOdmiana(o.wykonawcow, 'wykonawca', 'wykonawców', 'wykonawców')}`}
+                </p>
+              </div>
+              <p className="kwota">
+                {o.wartosc === null ? '—' : zlote(o.wartosc)}
+                <small><a href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`} target="_blank" rel="noreferrer" className="text-akcent">ogłoszenie (PDF)</a></small>
+              </p>
+            </li>
+          ))}
+        </ul>
+  );
+}
+
+function ListaProjektow({ projekty }: { projekty: ReturnType<typeof najwiekszeProjektyGminy> }) {
+  return (
+    <ul className="pozycje">
+      {projekty.map((p) => {
+        const b = nazwaDoPokazania(p.beneficjent);
+        return (
+          <li key={p.id}>
+            <div className="min-w-0">
+              <p className="font-semibold leading-snug">{skroc(p.tytul, 160)}</p>
+              <p className={`meta ${b.pominieta ? 'italic' : ''}`}>
+                {`${b.tekst} · ${p.okres}${p.program ? ` · ${skroc(p.program, 70)}` : ''}${p.poczatek ? ` · ${dataKrotko(p.poczatek)}–${dataKrotko(p.koniec)}` : ''}`}
+              </p>
+            </div>
+            <p className="kwota">
+              {zlote(p.dofinansowanie_ue)}
+              <small>{`z UE, wartość ${zlote(p.wartosc)}`}</small>
+            </p>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -1069,59 +1154,40 @@ function ZamowieniaWGminie({ z, dzielnica, pobrano, pobranoRegon }: {
  * „Pozostale" to roznica do dochodow ogolem: GUS liczy je z innego
  * sprawozdania niz skladniki i suma nie zawsze schodzi sie co do zlotowki.
  */
-function SkladDochodow({ budzet }: { budzet: BudzetGminy }) {
+function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }) {
   const razem = budzet.dochody ?? 0;
   if (razem <= 0) return null;
   const glowne = [
-    { nazwa: 'Dochody własne', kwota: budzet.dochody_wlasne, mocny: true },
-    { nazwa: 'Subwencja ogólna z budżetu państwa', kwota: budzet.subwencja, mocny: true },
-    { nazwa: 'Dotacje', kwota: budzet.dotacje, mocny: true },
-  ].filter((p) => p.kwota !== null) as { nazwa: string; kwota: number; mocny: boolean }[];
+    { nazwa: 'Dochody własne', kwota: budzet.dochody_wlasne },
+    { nazwa: 'Subwencja ogólna z budżetu państwa', kwota: budzet.subwencja },
+    { nazwa: 'Dotacje', kwota: budzet.dotacje },
+  ].filter((p) => p.kwota !== null) as { nazwa: string; kwota: number }[];
   const suma = glowne.reduce((a, p) => a + p.kwota, 0);
   const reszta = razem - suma;
   const wSrodku = [
-    { nazwa: 'w tym udział gminy w podatku PIT', kwota: budzet.udzial_pit },
-    { nazwa: 'w tym udział gminy w podatku CIT', kwota: budzet.udzial_cit },
+    { nazwa: 'w tym udział w podatku PIT', kwota: budzet.udzial_pit },
+    { nazwa: 'w tym udział w podatku CIT', kwota: budzet.udzial_cit },
     { nazwa: 'w tym podatek od nieruchomości', kwota: budzet.podatek_nieruchomosc },
   ].filter((p) => p.kwota !== null) as { nazwa: string; kwota: number }[];
-
-  const wiersz = (nazwa: string, kwota: number, wciecie = false) => (
-    <li key={nazwa} className={wciecie ? 'ml-5' : ''}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-        <span className={wciecie ? 'text-atrament-2' : ''}>{nazwa}</span>
-        <span className="liczby shrink-0 text-atrament-2">
-          {`${((100 * kwota) / razem).toFixed(1).replace('.', ',')}% · ${zlote(kwota)}`}
-        </span>
-      </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-papier-3">
-        <div
-          className={`h-full rounded-full ${wciecie ? 'bg-kreska-2' : 'bg-akcent'}`}
-          style={{ width: `${Math.max(0.4, Math.min(100, (100 * kwota) / razem)).toFixed(2)}%` }}
-        />
-      </div>
-    </li>
-  );
-
+  const udzial = (k: number) => k / razem;
+  const opis = (k: number) => `${((100 * k) / razem).toFixed(1).replace('.', ',')}% · ${zlote(k)}`;
+  const wlasne = budzet.dochody_wlasne;
+  const pozycje = glowne.flatMap((p) => [
+    { klucz: p.nazwa, nazwa: p.nazwa, opis: opis(p.kwota), udzial: udzial(p.kwota) },
+    ...(p.nazwa === 'Dochody własne'
+      ? wSrodku.map((w) => ({ klucz: w.nazwa, nazwa: w.nazwa, opis: opis(w.kwota), udzial: udzial(w.kwota), wciete: true }))
+      : []),
+  ]);
+  if (Math.abs(reszta) > razem * 0.005) {
+    pozycje.push({ klucz: 'pozostale', nazwa: 'Pozostałe', opis: opis(Math.max(0, reszta)), udzial: udzial(Math.max(0, reszta)) });
+  }
   return (
-    <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-6 shadow-karta">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="font-medium">{`Z czego składają się te dochody — ${budzet.rok}`}</p>
-        <p className="liczby text-sm text-atrament-3">{`${zlote(budzet.dochody)} razem`}</p>
-      </div>
-      <ul className="mt-4 space-y-2.5">
-        {glowne.map((p) => (
-          <React.Fragment key={p.nazwa}>
-            {wiersz(p.nazwa, p.kwota)}
-            {p.nazwa === 'Dochody własne' ? wSrodku.map((w) => wiersz(w.nazwa, w.kwota, true)) : null}
-          </React.Fragment>
-        ))}
-        {Math.abs(reszta) > razem * 0.005 ? wiersz('Pozostałe', Math.max(0, reszta)) : null}
-      </ul>
-      <p className="mt-4 text-xs leading-relaxed text-atrament-3">
-        Udziały w PIT i CIT oraz podatek od nieruchomości są częścią dochodów własnych —
-        dlatego są wcięte, a nie dodane obok. Kredyty i obligacje nie są dochodem i nie ma
-        ich w tej kwocie.
-      </p>
-    </div>
+    <ListaPaskow
+      tytul={wlasne !== null
+        ? `${((100 * wlasne) / razem).toFixed(1).replace('.', ',')}% dochodów ${budzet.rok} r. to dochody własne ${czyje}`
+        : `Z czego składają się dochody — ${budzet.rok}`}
+      pozycje={pozycje}
+      podpis="Pozycje wcięte są częścią dochodów własnych. Kredyty i obligacje nie są dochodem i nie ma ich w tej kwocie."
+    />
   );
 }

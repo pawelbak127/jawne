@@ -151,6 +151,12 @@
   :root { --f-znak: var(--font-mono), ui-monospace, monospace; }
 }
 
+/* Krój i grubość LICZB: w Standardowym od 1280 px pismo maszynowe (G „Pulpit”),
+   w Wypisie Plex Sans. Rozmiary drobne w rem, czyli 15/16,7 px i 16,2/18 px. */
+:root { --f-liczba: var(--f-tekst); --w-liczba: 600; --drobny: 0.8333rem; --sredni: 0.9rem; }
+@media (min-width: 1280px) { :root { --f-liczba: var(--font-mono), ui-monospace, monospace; --w-liczba: 500; } }
+:root[data-styl="a"] { --f-liczba: var(--f-tekst); --w-liczba: 600; }
+
 @theme inline {
   --color-papier:     var(--papier);
   --color-papier-2:   var(--papier-2);
@@ -367,6 +373,190 @@
   .stopka ul { list-style: none; margin: 8px 0 0; padding: 0; }
   .stopka li a { display: inline-flex; min-height: 32px; align-items: center; color: var(--akcent); }
   .stopka .uwaga-koncowa { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--kreska); font-size: 0.85rem; }
+}
+
+/* ---------------------------------------------------------------------------
+   Szablon stron szczegolowych (gmina, posel, firma …) — z prototypu, F1–F14.
+   Komponenty: src/components/Szablon.tsx. Reguly Wypisu z [data-styl="a"],
+   dodatki Standardowego od 1280 px z :root:not([data-styl="a"]).
+   --------------------------------------------------------------------------- */
+@layer components {
+  .okruszek { font-size: var(--drobny); color: var(--atrament-2); padding: 14px 0 0; display: flex; flex-wrap: wrap; gap: 2px 6px; }
+  .okruszek a { color: var(--atrament-2); }
+  .okruszek i { font-style: normal; margin-left: 6px; color: var(--atrament-3); }
+  .okruszek .wielokropek { display: none; }
+  @media (max-width: 639px) { .okruszek .srodek { display: none; } .okruszek .wielokropek { display: inline; } }
+
+  .wypis { padding: 10px 0 0; }
+  .wypis h1 { font-family: var(--f-naglowek); font-weight: 600; font-size: 2rem; line-height: 1.08; }
+  @media (min-width: 1024px) { .wypis h1 { font-size: 2.4rem; } }
+  .wypis .podtytul { margin-top: 8px; color: var(--atrament-2); max-width: 34em; }
+  .skad { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--kreska); max-width: 40em; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
+  .skad b { color: var(--atrament); font-weight: 600; }
+  .skad a { white-space: nowrap; color: var(--akcent); }
+  .stan-danych { margin-top: 10px; font-size: var(--drobny); color: var(--atrament-2); display: flex; flex-wrap: wrap; gap: 2px 14px; font-family: var(--f-znak); }
+
+  /* „W liczbach” — jedyny obramowany blok na ekranie (F6) */
+  .w-liczbach { border: 2px solid var(--atrament); background: var(--papier-2); padding: 2px 16px 4px; margin-top: 14px; }
+  @media (min-width: 640px) { .w-liczbach { padding: 4px 24px 8px; } }
+  .w-liczbach > h2 { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.1rem; padding: 12px 0 0; }
+
+  /* wiersz rejestru: etykieta · wartosc · z czego · porownanie · zrodlo */
+  .wiersze { margin-top: 8px; }
+  .wiersz { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 12px 0; border-bottom: 1px solid var(--kreska); }
+  .wiersz:last-child { border-bottom: 0; }
+  @media (min-width: 900px) { .wiersz { grid-template-columns: minmax(0, 1fr) auto 12rem; } }
+  .wiersz .co { font-weight: 600; line-height: 1.35; }
+  .wiersz .ile { text-align: right; font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.35rem; line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .wiersz.duzy .ile { font-size: 1.6rem; }
+  .wiersz .z-czego, .wiersz .porownanie { grid-column: 1 / -1; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
+  .wiersz .porownanie { color: var(--atrament); }
+  @media (min-width: 900px) { .wiersz .z-czego, .wiersz .porownanie { grid-column: 1 / 3; } }
+  .wiersz .podstawa { grid-column: 1 / -1; }
+  @media (min-width: 900px) { .wiersz .podstawa { grid-column: 3; grid-row: 1 / span 3; align-self: start; padding-left: 12px; border-left: 1px solid var(--kreska); } }
+  .dzial .wiersze { border-top: 2px solid var(--atrament); margin-top: 16px; }
+  .dzial .wiersz:last-child { border-bottom: 1px solid var(--kreska); }
+
+  /* odnosnik do rejestru — element interfejsu, nie przypis (zasada 1) */
+  a.zrodlo {
+    display: inline-grid; grid-template-columns: 1em auto; column-gap: 6px; align-items: start;
+    min-height: 28px; padding: 3px 0; text-align: left; font-size: var(--drobny); line-height: 1.35;
+    color: var(--akcent); text-decoration: none;
+  }
+  a.zrodlo::before {
+    content: ""; width: 1em; height: 1em; margin-top: 0.1em; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  a.zrodlo .nazwa { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  a.zrodlo:hover .nazwa { text-decoration-thickness: 2px; }
+  a.zrodlo .data { grid-column: 2; color: var(--atrament-2); font-family: var(--f-znak); }
+  [data-styl="a"] a.zrodlo { font-family: var(--f-znak); font-weight: 500; }
+  [data-styl="a"] a.zrodlo .nazwa::before { content: "podstawa: "; color: var(--atrament-2); }
+
+  /* warunki UOKiK — tuz przy liczbach SUDOP (zasada 10) */
+  .warunki { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--kreska); font-size: var(--drobny); color: var(--atrament-2); max-width: 46em; }
+  .w-liczbach .warunki { margin-bottom: 10px; }
+
+  /* spis dzialow (przyklejony) */
+  .spis { position: sticky; top: 0; z-index: 20; background: var(--papier); border-bottom: 1px solid var(--kreska); margin-top: 22px; }
+  .spis ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .spis a { display: block; white-space: nowrap; padding: 10px; color: var(--atrament-2); text-decoration: none; font-size: var(--drobny); border-bottom: 3px solid transparent; }
+  .spis a .znak { color: var(--atrament-3); margin-right: 4px; }
+  .spis a.biezacy { color: var(--atrament); border-bottom-color: var(--atrament); }
+
+  /* dzialy: linia i odstep, nie karty (F6); naglowek od odpowiedzi (F7) */
+  .dzial { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 28px; padding: 36px 0 10px; border-bottom: 1px solid var(--kreska); scroll-margin-top: 3.5rem; }
+  .dzial > .nr { display: none; font-family: var(--f-naglowek); font-weight: 600; font-size: 1.3rem; line-height: 1.15; color: var(--atrament-3); }
+  .dzial .tytul { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+  .dzial .tytul h2 { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.3rem; line-height: 1.2; }
+  .dzial .tytul .nr-tel { color: var(--atrament-3); }
+  .dzial .wstep { margin-top: 10px; color: var(--atrament-2); max-width: 40em; }
+  .dzial h3 { margin-top: 30px; font-weight: 600; font-size: 1.08rem; }
+  @media (min-width: 900px) {
+    [data-styl="a"] .dzial { grid-template-columns: 5rem minmax(0, 1fr); }
+    [data-styl="a"] .dzial > .nr { display: block; }
+    [data-styl="a"] .dzial > .nr::before { content: "Dział "; display: block; font-family: var(--f-znak); font-size: var(--drobny); font-weight: 500; }
+    [data-styl="a"] .dzial .tytul .nr-tel { display: none; }
+  }
+
+  /* uwaga — wyglada jak uwaga, nie jak kolejna karta */
+  .uwaga { margin-top: 16px; padding: 2px 0 2px 14px; border-left: 4px solid var(--atrament-2); max-width: 40em; }
+  .uwaga b { font-weight: 600; }
+  :root:not([data-styl="a"]) .uwaga { border-left: 10px solid var(--kreska); padding-left: 16px; }
+  :root:not([data-styl="a"]) .uwaga > b:first-child::before {
+    content: "!"; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-right: 10px;
+    border-radius: 50%; background: var(--atrament); color: var(--papier); font-weight: 700;
+  }
+
+  /* „Jak to liczymy” — jedno na dzial, na koncu dzialu (F7) */
+  details.metoda { margin-top: 18px; max-width: 46em; border-top: 1px dashed var(--kreska-2); }
+  details.metoda > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: var(--sredni); list-style: none; }
+  details.metoda > summary::-webkit-details-marker { display: none; }
+  details.metoda > summary::before { content: "+"; font-family: var(--f-znak); width: 22px; height: 22px; display: inline-grid; place-items: center; border: 2px solid var(--atrament); font-size: var(--drobny); line-height: 1; flex: none; }
+  details.metoda[open] > summary::before { content: "−"; }
+  details.metoda .tresc { padding: 0 0 14px 32px; color: var(--atrament-2); font-size: var(--sredni); }
+  details.metoda .tresc > * + * { margin-top: 8px; }
+  details.metoda ul { margin: 6px 0 0; padding-left: 20px; list-style: disc; }
+  details.metoda li + li { margin-top: 4px; }
+
+  /* wykresy: paski na wspolnej osi, tytul u gory jako zdanie z wnioskiem (F11) */
+  .tytul-wykresu { margin-top: 30px; font-weight: 600; font-size: 1.08rem; max-width: 34em; }
+  .lista-paskow { list-style: none; margin: 12px 0 0; padding: 0; max-width: 46rem; }
+  .lista-paskow li { padding: 8px 0; }
+  .lista-paskow .opis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: var(--sredni); }
+  .lista-paskow .opis span:last-child { margin-left: auto; color: var(--atrament-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pasek { height: 8px; background: var(--papier-3); margin-top: 6px; }
+  .pasek i { display: block; height: 100%; background: var(--akcent); }
+  [data-styl="a"] .pasek i { background: var(--atrament); }
+  .podpis-wykresu { margin-top: 8px; font-size: var(--drobny); color: var(--atrament-2); max-width: 40em; }
+
+  /* „Jak myslisz, ile…?” — opcjonalne, do pominiecia, bez JS pokazuje liczbe (F10) */
+  .zgadnij { margin-top: 30px; padding: 16px 0; border-top: 2px solid var(--atrament); border-bottom: 1px solid var(--kreska); max-width: 46rem; }
+  .zgadnij h3 { margin: 0; }
+  .zgadnij .pytanie { margin-top: 12px; }
+  .zgadnij [hidden] { display: none; }
+  .zgadnij label { display: flex; justify-content: space-between; gap: 12px; font-size: var(--sredni); }
+  .zgadnij output { font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.2rem; }
+  .zgadnij input[type=range] { width: 100%; max-width: 30rem; margin: 10px 0; accent-color: var(--akcent); min-height: 44px; }
+  .zgadnij .przyciski { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .zgadnij button { min-height: 44px; padding: 0 18px; font: inherit; font-size: var(--sredni); cursor: pointer; }
+  .zgadnij button.sprawdz { background: var(--atrament); color: var(--papier); border: 2px solid var(--atrament); font-weight: 600; }
+  :root:not([data-styl="a"]) .zgadnij button.sprawdz { background: var(--akcent); border-color: var(--akcent); box-shadow: 0 2px 0 var(--atrament); }
+  .zgadnij button.pomin { background: none; border: 0; color: var(--akcent); text-decoration: underline; padding: 0 4px; }
+  .zgadnij .odpowiedz { margin-top: 12px; }
+  .zgadnij .odpowiedz b { font-family: var(--f-liczba); font-weight: var(--w-liczba); font-size: 1.35rem; }
+  .zgadnij .roznica { display: block; margin-top: 4px; color: var(--atrament-2); }
+
+  /* listy pozycji (projekty, przypadki) */
+  .pozycje { list-style: none; margin: 16px 0 0; padding: 0; border-top: 2px solid var(--atrament); }
+  .pozycje > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 20px; padding: 14px 0; border-bottom: 1px solid var(--kreska); }
+  .pozycje .meta { color: var(--atrament-2); font-size: var(--drobny); }
+  .pozycje .kwota { text-align: right; font-family: var(--f-liczba); font-weight: var(--w-liczba); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pozycje .kwota small { display: block; font-family: var(--f-tekst); font-weight: 400; color: var(--atrament-2); font-size: var(--drobny); }
+  .pliki { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
+  .pliki a { display: inline-flex; align-items: center; min-height: 44px; color: var(--akcent); }
+
+  /*
+    Odnosniki w tresci szablonu. Preflight Tailwinda daje `a` kolor
+    i podkreslenie po rodzicu, wiec link bez klasy wygladal jak zwykly tekst
+    (zmierzone 08.10.2026: „budżet ↓” i „wszyscy na stronie okręgu” w „W liczbach”).
+    Linki z wlasna klasa (portrety, `a.zrodlo`) maja swoj wyglad.
+  */
+  :where(.w-liczbach, .dzial, .wypis, .uwaga, .warunki, .podpis-wykresu) a:not([class]) {
+    color: var(--akcent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em;
+  }
+  :where(.w-liczbach, .dzial, .wypis, .uwaga, .warunki, .podpis-wykresu) a:not([class]):hover { text-decoration-thickness: 2px; }
+
+  /* „Pokaż wszystkie N ↓” — reszta listy zwinieta, ale w HTML-u i bez JavaScriptu */
+  details.wiecej > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; color: var(--akcent); text-decoration: underline; text-underline-offset: 0.18em; font-size: var(--sredni); }
+  details.wiecej > summary::-webkit-details-marker { display: none; }
+  details.wiecej[open] > summary { display: none; }
+
+  /* ---- Standardowy: „W liczbach” jako lista podsumowania; od 1280 px dodatki z G „Pulpit” ---- */
+  :root:not([data-styl="a"]) .w-liczbach { border: 0; background: none; padding-inline: 0; }
+  :root:not([data-styl="a"]) .w-liczbach > h2 { font-size: 1.4rem; }
+  @media (min-width: 1280px) {
+    :root:not([data-styl="a"]) .w-liczbach { border: 1px solid var(--kreska-2); border-top: 4px solid var(--akcent); background: var(--papier-2); padding: 4px 24px 8px; }
+    :root:not([data-styl="a"]) .w-liczbach .wiersze { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    :root:not([data-styl="a"]) .w-liczbach .wiersz { grid-template-columns: minmax(0, 1fr); padding: 14px 20px 14px 0; border-bottom: 1px solid var(--kreska); }
+    :root:not([data-styl="a"]) .w-liczbach .wiersz:nth-child(odd) { border-right: 1px solid var(--kreska); }
+    :root:not([data-styl="a"]) .w-liczbach .wiersz:nth-child(even) { padding-left: 20px; }
+    :root:not([data-styl="a"]) .w-liczbach .wiersz > * { grid-column: 1; grid-row: auto; border: 0; padding-left: 0; }
+    :root:not([data-styl="a"]) .wiersz .co { text-transform: uppercase; letter-spacing: .04em; font-size: var(--drobny); color: var(--atrament-2); }
+    :root:not([data-styl="a"]) .wiersz .ile { text-align: left; }
+    :root:not([data-styl="a"]) .dzial .wiersz { grid-template-columns: minmax(0, 1fr) 12rem; }
+    :root:not([data-styl="a"]) .dzial .wiersz .ile { grid-column: 1; }
+    :root:not([data-styl="a"]) .dzial .wiersz .podstawa { grid-column: 2; grid-row: 1 / span 4; }
+    :root:not([data-styl="a"]) .dzial .wiersz .z-czego, :root:not([data-styl="a"]) .dzial .wiersz .porownanie { grid-column: 1; }
+    /* spis dzialow w bocznym pasku — dodatkowo do menu u gory (F2) */
+    :root:not([data-styl="a"]) .z-spisem { display: grid; grid-template-columns: 12rem minmax(0, 1fr); column-gap: 28px; }
+    :root:not([data-styl="a"]) .z-spisem > .spis { grid-column: 1; align-self: start; position: sticky; top: 16px; margin-top: 36px; border: 0; border-right: 1px solid var(--kreska); background: none; }
+    :root:not([data-styl="a"]) .z-spisem > .spis ol { flex-direction: column; }
+    :root:not([data-styl="a"]) .z-spisem > .spis a { border-bottom: 0; border-left: 4px solid transparent; padding: 8px 12px; color: var(--akcent); text-decoration: underline; white-space: normal; }
+    :root:not([data-styl="a"]) .z-spisem > .spis a.biezacy { border-left-color: var(--akcent); background: var(--papier-3); color: var(--atrament); text-decoration: none; }
+    :root:not([data-styl="a"]) .z-spisem > .dzialy { grid-column: 2; min-width: 0; }
+  }
 }
 
 @layer utilities {
