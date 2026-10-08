@@ -6,7 +6,8 @@ import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Dzial, Okruszek, Podstawa, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
+import { SpisDzialow } from '@/components/SpisDzialow';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { adresSprawyKE, numerSprawyKE } from '@/lib/sprawy-ke';
 
@@ -96,141 +97,217 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
   const zeStrona = organyZeStrona(przypadki.map((p) => p.nip_udzielajacego ?? ''));
   const zamowienia = zamowieniaFirmy(nip);
   const imp = zrodloImportu('sudop');
+  const impTed = zrodloImportu('zamowienia');
+  const grupy = pogrupuj(przypadki);
+  const maStrone = (p: PrzypadekFirmy) => Boolean(p.nip_udzielajacego && zeStrona.has(p.nip_udzielajacego));
+  const roznaNominalna = przypadki.some((p) => p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1);
+  const podstawy = [...new Set(przypadki.map((p) => p.podstawa).filter((x): x is string => Boolean(x)))];
+  const gmina = f.teryt && f.gmina
+    ? <Link href={`/gmina/${f.teryt}`}>{`${f.gmina_rodzaj === 'gmina' ? `gmina ${f.gmina}` : f.gmina} — publiczne pieniądze w gminie`}</Link>
+    // Warszawa jest w SUDOP jednym miastem (146501), a w danych PKW —
+    // osiemnastoma dzielnicami, więc nie ma dla niej naszej strony gminy.
+    // Nazwę znamy i ją podajemy; odnośnika nie zmyślamy.
+    : f.teryt === TERYT_WARSZAWY ? 'Warszawa' : null;
+
+  const dzialy = [
+    { id: 'przypadki', nazwa: 'Przypadki pomocy' },
+    ...(zamowienia.ogloszen > 0 ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
+  ];
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
   return (
-    <div className="obszar max-w-4xl py-10">
-      <p className="text-sm text-atrament-2">
-        {f.teryt && f.gmina ? (
-          <Link href={`/gmina/${f.teryt}`} className="hover:text-akcent">
-            {f.gmina_rodzaj === 'gmina' ? `gmina ${f.gmina}` : f.gmina}
-          </Link>
-        ) : f.teryt === TERYT_WARSZAWY ? (
-          // Warszawa jest w SUDOP jednym miastem (146501), a w danych PKW —
-          // osiemnastoma dzielnicami, więc nie ma dla niej naszej strony gminy.
-          // Nazwę znamy i ją podajemy; odnośnika nie zmyślamy.
-          'Warszawa'
-        ) : (
-          'beneficjent pomocy publicznej'
-        )}
-      </p>
+    <>
+      <div className="obszar">
+        <Okruszek ogniwa={[{ nazwa: 'Pieniądze publiczne' }, { adres: '/pomoc-publiczna', nazwa: 'Pomoc publiczna' }, { nazwa: w.nazwa }]} />
+        <Wypis
+          tytul={w.nazwa}
+          podtytul={
+            <>
+              {f.pkd_nazwa ? skroc(f.pkd_nazwa, 80) : 'beneficjent pomocy publicznej'}
+              {/*
+                ZMIERZONE 22.09.2026: sam `f.teryt` nie wystarczy. Firmy z Warszawy
+                mają teryt 146501, którego NIE MA w naszej tabeli gmin (PKW dzieli
+                Warszawę na 18 dzielnic) — wychodziło z tego „w gminie null” i odnośnik
+                do nieistniejącej strony. Dotyczy 5 484 przypadków pomocy.
+              */}
+              {gmina ? <>{' · siedziba: '}{gmina}</> : null}
+            </>
+          }
+        />
 
-      <header className="mt-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">{w.nazwa}</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-atrament-2">
-          <span className="liczby">{`NIP ${f.nip}`}</span>
+        <WLiczbach tytul="W liczbach" stopka={<WarunkiSudop pobrano={imp?.kiedy ?? null} />}>
+          <Wiersz
+            duzy
+            co="Pomoc publiczna brutto"
+            ile={zlote(f.brutto)}
+            zCzego={
+              <>
+                {`${zOdmiana(f.przypadkow, 'przypadek', 'przypadki', 'przypadków')}, ${dataKrotko(f.pierwszy)}–${dataKrotko(f.ostatni)} · ${zakresDanych(f)} `}
+                <a href="#przypadki">przypadki pomocy ↓</a>
+              </>
+            }
+            porownanie={f.przypadkow > 1 && f.brutto !== null ? `Średnio ${zlote(f.brutto / f.przypadkow)} na jeden przypadek pomocy.` : null}
+            podstawa={<Podstawa adres={`${ZRODLO_SUDOP}/search/aidBeneficiary`} nazwa="SUDOP, UOKiK" data={imp ? dataKrotko(imp.kiedy) : null} />}
+          />
+          {zamowienia.ogloszen > 0 ? (
+            <Wiersz
+              duzy
+              co="Zamówienia publiczne, w których była jedynym wykonawcą"
+              ile={zamowienia.sumaSama === null ? null : zlote(zamowienia.sumaSama)}
+              zCzego={
+                <>
+                  {`z ${zOdmiana(zamowienia.ogloszenWSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} · ogłoszeń z kilkoma wykonawcami: ${liczba(zamowienia.ogloszenZInnymi)} (bez sumy) `}
+                  <a href="#zamowienia">zamówienia ↓</a>
+                </>
+              }
+              podstawa={<Podstawa adres="https://ted.europa.eu" nazwa="TED" data={impTed ? dataKrotko(impTed.kiedy) : null} />}
+            />
+          ) : null}
+        </WLiczbach>
+
+        <p className="stan-danych">
+          <span>{`NIP ${f.nip}`}</span>
           {/*
             Zrodlo opisuje kategorie 3 jako "przedsiebiorstwo nienalezace do
             kategorii okreslonych kodem od 0 do 2" — czyli po ludzku: duze.
           */}
           {f.wielkosc ? <span>{f.wielkosc_kod === '3' ? 'duży przedsiębiorca' : f.wielkosc}</span> : null}
-          {f.pkd ? <span>{`PKD ${f.pkd}${f.pkd_nazwa ? ` — ${skroc(f.pkd_nazwa, 60)}` : ''}`}</span> : null}
+          {f.pkd ? <span>{`PKD ${f.pkd}`}</span> : null}
+          <span>
+            {'stan danych: '}
+            {[imp ? `SUDOP ${dataKrotko(imp.kiedy)}` : null, zamowienia.ogloszen > 0 && impTed ? `TED ${dataKrotko(impTed.kiedy)}` : null].filter(Boolean).join(' · ')}
+          </span>
         </p>
-      </header>
+      </div>
 
-      <section className="mt-8 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{zlote(f.brutto)}</p>
-          <p className="mt-1 text-sm font-medium">wartość pomocy brutto</p>
-        </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{liczba(f.przypadkow)}</p>
-          <p className="mt-1 text-sm font-medium">
-            {f.przypadkow === 1 ? 'przypadek pomocy' : 'przypadków pomocy'}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="szryft text-xl font-semibold">{`${dataKrotko(f.pierwszy)} – ${dataKrotko(f.ostatni)}`}</p>
-          <p className="mt-1 text-sm font-medium">zakres dat w naszych danych</p>
-          <p className="mt-0.5 text-xs text-atrament-2">{zakresDanych(f)}</p>
-        </div>
-      </section>
-
-      <section className="mt-10">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="szryft text-2xl font-semibold">Przypadki pomocy</h2>
-          <Zrodlo adres={`${ZRODLO_SUDOP}/search/aidBeneficiary`} etykieta="sprawdź w SUDOP" />
-        </div>
-        {przypadki.length < f.przypadkow ? (
-          <p className="mt-1 text-sm text-atrament-2">
-            {`Pokazujemy ${liczba(przypadki.length)} najnowszych z ${liczba(f.przypadkow)}.`}
-          </p>
-        ) : null}
-
-        <ul className="mt-4 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
-          {przypadki.map((p, i) => (
-            <li key={`${p.dzien}-${i}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
-              <div className="min-w-0 flex-1">
-                <p className="leading-snug font-medium">{skroc(p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}</p>
-                <Udzielajacy p={p} maStrone={Boolean(p.nip_udzielajacego && zeStrona.has(p.nip_udzielajacego))} />
-                <p className="mt-1 text-xs text-atrament-3">
-                  {`${dataKrotko(p.dzien)}${p.forma ? ` · ${skroc(p.forma, 60)}` : ''}${p.srodek ? ` · ${skroc(p.srodek, 60)}` : ''}`}
-                </p>
+      <div className="obszar z-spisem">
+        <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
+        <div className="dzialy">
+          <Dzial
+            id="przypadki"
+            nr={nr('przypadki')}
+            tytul={przypadki.length < f.przypadkow
+              ? `Przypadki pomocy: ${liczba(przypadki.length)} najnowszych z ${liczba(f.przypadkow)}`
+              : `Przypadki pomocy: ${liczba(f.przypadkow)}`}
+            obok={<Podstawa adres={`${ZRODLO_SUDOP}/search/aidBeneficiary`} nazwa="sprawdź w SUDOP" />}
+            metoda={
+              <ul>
                 {/*
                   Podstawa prawna i sprawa w Komisji Europejskiej (04.10.2026) —
                   prosba Pawla „czy da sie wejsc glebiej w te pomoc". Oba pola sa
                   w SUDOP; dokumentow (decyzji, umow) rejestr nie udostepnia.
-                  Odnosnik do Komisji tylko przy numerze „SA.…" — patrz sprawy-ke.ts.
+                  Przy kazdym przypadku osobno — w liscie „osobno” nizej.
                 */}
-                {p.podstawa ? (
-                  <p className="mt-1 text-xs leading-relaxed text-atrament-3">{`Podstawa prawna: ${p.podstawa}`}</p>
-                ) : null}
-                {numerSprawyKE(p.srodek_numer) ? (
-                  <a
-                    href={adresSprawyKE(numerSprawyKE(p.srodek_numer)!)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex min-h-6 items-center text-xs text-akcent underline underline-offset-4 hover:no-underline"
-                  >
-                    {`decyzja Komisji Europejskiej w sprawie ${numerSprawyKE(p.srodek_numer)}`}
-                  </a>
-                ) : null}
-              </div>
-              <div className="shrink-0 text-left sm:text-right">
-                <p className="liczby font-semibold">{zlote(p.brutto)}</p>
-                {/*
-                  Nominalna bywa inna niz brutto (pozyczka, gwarancja) — pokazujemy
-                  ja tylko wtedy, bo powtorzona ta sama liczba tylko myli.
-                */}
-                {p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1 ? (
-                  <p className="liczby text-xs text-atrament-2">{`nominalnie ${zlote(p.nominalna)}`}</p>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-        {przypadki.some((p) => p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1) ? (
-          <p className="mt-2 text-xs leading-relaxed text-atrament-3">
-            Wartość brutto to ekwiwalent dotacji brutto, czyli tyle, ile pomoc jest warta dla firmy.
-            Przy dotacji to cała kwota, ale przy pożyczce, gwarancji czy płatnościach rozłożonych
-            w czasie bywa niższa niż kwota nominalna. Rejestr podaje obie; sumujemy brutto.
-          </p>
+                {podstawy.slice(0, 6).map((x) => <li key={x}>{`Podstawa prawna: ${x}`}</li>)}
+                <li>
+                  Wartość brutto to ekwiwalent dotacji brutto, czyli tyle, ile pomoc jest warta dla firmy.
+                  Przy dotacji to cała kwota, ale przy pożyczce, gwarancji czy płatnościach rozłożonych
+                  w czasie bywa niższa niż kwota nominalna. Rejestr podaje obie; sumujemy brutto.
+                </li>
+                {f.przypadkow > 1 && f.brutto !== null ? <li>{`Średnia na przypadek to ${zlote(f.brutto)} ÷ ${zOdmiana(f.przypadkow, 'przypadek', 'przypadki', 'przypadków')}.`}</li> : null}
+              </ul>
+            }
+          >
+            {grupy.length < przypadki.length ? (
+              <p className="wstep">Zgrupowane, gdy data, podmiot udzielający i przeznaczenie pomocy są te same.</p>
+            ) : null}
+            <table className="tabela">
+              <thead>
+                <tr><th>Data</th><th>Na co · kto przyznał</th><th className="l">Przypadki</th><th className="l">Brutto</th></tr>
+              </thead>
+              <tbody>
+                {grupy.map((g) => (
+                  <tr key={g.klucz}>
+                    <td className="znak whitespace-nowrap">{dataKrotko(g.p.dzien)}</td>
+                    <td>
+                      {skroc(g.p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}
+                      <Udzielajacy p={g.p} maStrone={maStrone(g.p)} />
+                    </td>
+                    <td className="l" data-etykieta="przypadki">{liczba(g.ile)}</td>
+                    <td className="l">{g.ile === 1 || g.min === g.max ? zlote(g.max) : `od ${zlote(g.min)} do ${zlote(g.max)}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {grupy.length < przypadki.length || roznaNominalna || podstawy.length ? (
+              <Wiecej napis={`Pokaż ${zOdmiana(przypadki.length, 'przypadek', 'przypadki', 'przypadków')} osobno, z podstawą prawną`}>
+                <ul className="pozycje">
+                  {przypadki.map((p, i) => <PrzypadekOsobno key={`${p.dzien}-${i}`} p={p} maStrone={maStrone(p)} />)}
+                </ul>
+              </Wiecej>
+            ) : null}
+
+            {!w.osobaPrawna && KONTAKT ? (
+              <p className="mt-4 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+                {`Nazwę pokazujemy, bo pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — te same dane publikuje UOKiK w rejestrze SUDOP. Strony nie zgłaszamy wyszukiwarkom. Jeśli jesteś tą osobą i nie chcesz tego — `}
+                <Link href="/prywatnosc#kontakt">napisz do nas</Link>
+                {'. Usuniemy bez pytania o powód.'}
+              </p>
+            ) : null}
+          </Dzial>
+
+          {zamowienia.ogloszen > 0 ? <Zamowienia nr={nr('zamowienia')} z={zamowienia} /> : null}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Przypadki z ta sama data, podmiotem udzielajacym, przeznaczeniem i forma
+ * w jednym wierszu. ZMIERZONE 08.10.2026: PGE GiEK ma w 50 najnowszych
+ * po 15–16 transz rynku mocy z jednego dnia od jednego podmiotu — lista
+ * pozycja po pozycji to 50 prawie identycznych wierszy. Kazdy przypadek
+ * z osobna (z podstawa prawna i sprawa KE) zostaje w liscie „osobno”.
+ */
+function pogrupuj(przypadki: PrzypadekFirmy[]) {
+  const grupy = new Map<string, { klucz: string; p: PrzypadekFirmy; ile: number; min: number | null; max: number | null }>();
+  for (const p of przypadki) {
+    const klucz = [p.dzien, p.nip_udzielajacego ?? p.udzielajacy, p.przeznaczenie, p.forma].join('|');
+    const g = grupy.get(klucz);
+    if (!g) {
+      grupy.set(klucz, { klucz, p, ile: 1, min: p.brutto, max: p.brutto });
+      continue;
+    }
+    g.ile++;
+    // null to brak kwoty, nie zero (zasada 4) — nie wchodzi do „od … do …”.
+    if (p.brutto !== null) {
+      g.min = g.min === null ? p.brutto : Math.min(g.min, p.brutto);
+      g.max = g.max === null ? p.brutto : Math.max(g.max, p.brutto);
+    }
+  }
+  return [...grupy.values()];
+}
+
+function PrzypadekOsobno({ p, maStrone }: { p: PrzypadekFirmy; maStrone: boolean }) {
+  const sprawa = numerSprawyKE(p.srodek_numer);
+  return (
+    <li>
+      <div className="min-w-0">
+        <p className="font-semibold leading-snug">{skroc(p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}</p>
+        <Udzielajacy p={p} maStrone={maStrone} />
+        <p className="meta">
+          {`${dataKrotko(p.dzien)}${p.forma ? ` · ${skroc(p.forma, 60)}` : ''}${p.srodek ? ` · ${skroc(p.srodek, 60)}` : ''}`}
+        </p>
+        {p.podstawa ? <p className="meta">{`Podstawa prawna: ${p.podstawa}`}</p> : null}
+        {/* Odnosnik do Komisji tylko przy numerze „SA.…" — patrz sprawy-ke.ts. */}
+        {sprawa ? (
+          <a href={adresSprawyKE(sprawa)} target="_blank" rel="noreferrer" className="meta text-akcent underline underline-offset-4 hover:no-underline">
+            {`decyzja Komisji Europejskiej w sprawie ${sprawa}`}
+          </a>
         ) : null}
-
-        <WarunkiSudop pobrano={imp?.kiedy ?? null} />
-
-        {!w.osobaPrawna && KONTAKT ? (
-          <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-            {`Nazwę pokazujemy, bo pojedyncza pomoc przekroczyła ${liczba(PROG_JAWNOSCI_EUR)} euro — te same dane publikuje UOKiK w rejestrze SUDOP. Strony nie zgłaszamy wyszukiwarkom. Jeśli jesteś tą osobą i nie chcesz tego — napisz na ${KONTAKT}. Usuniemy bez pytania o powód.`}
-          </p>
-        ) : null}
-      </section>
-
-      {zamowienia.ogloszen > 0 ? <Zamowienia z={zamowienia} /> : null}
-
-      <p className="mt-10 text-sm text-atrament-2">
+      </div>
+      <p className="kwota">
+        {zlote(p.brutto)}
         {/*
-          ZMIERZONE 22.09.2026: sam `f.teryt` nie wystarczy. Firmy z Warszawy
-          mają teryt 146501, którego NIE MA w naszej tabeli gmin (PKW dzieli
-          Warszawę na 18 dzielnic) — wychodziło z tego „w gminie null” i odnośnik
-          do nieistniejącej strony. Dotyczy 5 484 przypadków pomocy.
+          Nominalna bywa inna niz brutto (pozyczka, gwarancja) — pokazujemy
+          ja tylko wtedy, bo powtorzona ta sama liczba tylko myli.
         */}
-        {f.teryt && f.gmina ? (
-          <Link href={`/gmina/${f.teryt}`} className="text-akcent underline underline-offset-4 hover:no-underline">
-            {`Zobacz wszystkie publiczne pieniądze w gminie ${f.gmina} →`}
-          </Link>
+        {p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1 ? (
+          <small>{`nominalnie ${zlote(p.nominalna)}`}</small>
         ) : null}
       </p>
-    </div>
+    </li>
   );
 }
 
@@ -242,74 +319,63 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
  * a przy pozostalych piszemy, ilu ich bylo, i kwoty nie przypisujemy.
  * Zmierzone: 90 na 250 polskich ogloszen ma wiecej niz jednego wykonawce.
  */
-function Zamowienia({ z }: { z: ZamowieniaFirmy }) {
+function Zamowienia({ nr, z }: { nr: number; z: ZamowieniaFirmy }) {
   return (
-    <section className="mt-12">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="szryft text-2xl font-semibold">Zamówienia publiczne</h2>
-        <Zrodlo adres="https://ted.europa.eu" etykieta="TED — dziennik zamówień UE" />
-      </div>
-      <p className="mt-1 text-sm text-atrament-2">
+    <Dzial
+      id="zamowienia"
+      nr={nr}
+      tytul={`Zamówienia publiczne: ${zOdmiana(z.ogloszen, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')}${z.sumaSama !== null ? `, ${zlote(z.sumaSama)} jako jedyny wykonawca` : ''}`}
+      obok={<Podstawa adres="https://ted.europa.eu" nazwa="TED — dziennik zamówień UE" />}
+      metoda={
+        <p>
+          Źródłem jest TED, unijny dziennik zamówień publicznych — trafiają tam zamówienia
+          powyżej progów unijnych, a nie wszystkie. Kwota dotyczy całego ogłoszenia, ze
+          wszystkimi częściami i wykonawcami; przy ogłoszeniach z kilkoma wykonawcami nie
+          da się z niej wyczytać, ile przypadło tej firmie.
+        </p>
+      }
+    >
+      <p className="wstep">
         {`${zOdmiana(z.ogloszen, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} o udzieleniu zamówienia, w których ta firma jest wskazana jako wykonawca.`}
       </p>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{z.sumaSama === null ? '—' : zlote(z.sumaSama)}</p>
-          <p className="mt-1 text-sm font-medium">
-            {`z ${zOdmiana(z.ogloszenWSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z jednym wykonawcą`}
-          </p>
-          <p className="mt-0.5 text-xs text-atrament-2">
-            {z.ogloszenSama > z.ogloszenWSumie
-              ? `${zOdmiana(z.ogloszenSama - z.ogloszenWSumie, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z jednym wykonawcą zostało poza sumą: bez kwoty w złotych albo z kwotą odrzuconą jako błędna`
-              : 'tylko kwoty w złotych'}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{liczba(z.ogloszenZInnymi)}</p>
-          <p className="mt-1 text-sm font-medium">ogłoszeń z kilkoma wykonawcami</p>
-          <p className="mt-0.5 text-xs text-atrament-2">
-            kwoty nie sumujemy — dotyczy całego ogłoszenia, nie tej firmy
-          </p>
-        </div>
-      </div>
-
-      <ul className="mt-4 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
+      <Wiersze>
+        <Wiersz
+          co="Jako jedyny wykonawca"
+          ile={z.sumaSama === null ? null : zlote(z.sumaSama)}
+          zCzego={`z ${zOdmiana(z.ogloszenWSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} · ${z.ogloszenSama > z.ogloszenWSumie
+            ? `${zOdmiana(z.ogloszenSama - z.ogloszenWSumie, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} z jednym wykonawcą zostało poza sumą: bez kwoty w złotych albo z kwotą odrzuconą jako błędna`
+            : 'tylko kwoty w złotych'}`}
+        />
+        <Wiersz
+          co="Ogłoszeń z kilkoma wykonawcami"
+          ile={liczba(z.ogloszenZInnymi)}
+          zCzego="kwoty nie sumujemy — dotyczy całego ogłoszenia, nie tej firmy"
+        />
+      </Wiersze>
+      <ul className="pozycje">
         {z.lista.map((o) => (
-          <li key={o.numer} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-6">
-            <div className="min-w-0 flex-1">
-              <p className="leading-snug font-medium">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 130)}</p>
-              <p className="mt-1 text-sm text-atrament-2">{skroc(o.nabywca ?? '—', 80)}</p>
-              <p className="mt-1 text-xs text-atrament-3">
-                {`${dataKrotko(o.data)} · ogłoszenie ${o.numer}`}
+          <li key={o.numer}>
+            <div className="min-w-0">
+              <p className="font-semibold leading-snug">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 130)}</p>
+              <p className="meta">
+                {`${skroc(o.nabywca ?? '—', 80)} · ${dataKrotko(o.data)} · ogłoszenie `}
+                <span className="znak">{o.numer}</span>
                 {o.wykonawcow > 1 ? ` · ${zOdmiana(o.wykonawcow, 'wykonawca', 'wykonawców', 'wykonawców')}` : ''}
               </p>
             </div>
-            <div className="shrink-0 text-left sm:text-right">
-              <p className="liczby font-semibold">
-                {o.wartosc === null ? '—' : o.waluta === 'PLN' ? zlote(o.wartosc) : `${liczba(Math.round(o.wartosc))} ${o.waluta ?? ''}`}
-              </p>
-              <p className="text-xs text-atrament-3">{o.wykonawcow > 1 ? 'całe ogłoszenie' : ''}</p>
-              <a
-                className="text-xs text-akcent underline underline-offset-4 hover:no-underline"
-                href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                ogłoszenie (PDF)
-              </a>
-            </div>
+            <p className="kwota">
+              {o.wartosc === null ? '—' : o.waluta === 'PLN' ? zlote(o.wartosc) : `${liczba(Math.round(o.wartosc))} ${o.waluta ?? ''}`}
+              <small>
+                {o.wykonawcow > 1 ? 'całe ogłoszenie · ' : ''}
+                <a href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`} target="_blank" rel="noreferrer" className="text-akcent underline underline-offset-4 hover:no-underline">
+                  ogłoszenie (PDF)
+                </a>
+              </small>
+            </p>
           </li>
         ))}
       </ul>
-
-      <p className="mt-3 text-xs leading-relaxed text-atrament-3">
-        Źródłem jest TED, unijny dziennik zamówień publicznych — trafiają tam zamówienia
-        powyżej progów unijnych, a nie wszystkie. Kwota dotyczy całego ogłoszenia, ze
-        wszystkimi częściami i wykonawcami; przy ogłoszeniach z kilkoma wykonawcami nie
-        da się z niej wyczytać, ile przypadło tej firmie.
-      </p>
-    </section>
+    </Dzial>
   );
 }
 
@@ -322,11 +388,11 @@ function Zamowienia({ z }: { z: ZamowieniaFirmy }) {
  * strony organu (`/organ/[nip]` istnieje dokladnie dla takich).
  */
 function Udzielajacy({ p, maStrone }: { p: PrzypadekFirmy; maStrone: boolean }) {
-  if (!p.udzielajacy?.trim()) return <p className="mt-1 text-sm text-atrament-2">—</p>;
+  if (!p.udzielajacy?.trim()) return <p className="meta">—</p>;
   const jawny = nazwaPodmiotuJawna(p.udzielajacy, p.typ_udzielajacego);
   const nazwa = nazwaDoPokazania(p.udzielajacy, { typRegon: p.typ_udzielajacego });
   return (
-    <p className={`mt-1 text-sm ${nazwa.pominieta ? 'text-atrament-3 italic' : 'text-atrament-2'}`}>
+    <p className={`meta ${nazwa.pominieta ? 'italic' : ''}`}>
       {'przyznał: '}
       {jawny && maStrone ? (
         <Link href={`/organ/${p.nip_udzielajacego}`} className="text-akcent underline underline-offset-4 hover:no-underline">

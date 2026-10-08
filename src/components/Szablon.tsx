@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /**
  * Szablon stron szczegolowych — wspolny dla gminy, posla, firmy i reszty.
@@ -43,11 +43,27 @@ export function Okruszek({ ogniwa }: { ogniwa: Ogniwo[] }) {
  * z wyszukiwarki i z mediow spolecznosciowych, z pominieciem strony glownej
  * (badania-ux.md §8, mySociety 2023).
  */
-export function Wypis({ tytul, podtytul, children }: { tytul: string; podtytul?: ReactNode; children?: ReactNode }) {
+export function Wypis({ tytul, podtytul, obraz, children }: {
+  tytul: string;
+  podtytul?: ReactNode;
+  /** Np. portret posla — stoi obok nazwy, nie nad nia. */
+  obraz?: ReactNode;
+  children?: ReactNode;
+}) {
+  const glowa = (
+    <>
+      <h1 className={tytul.length > 40 ? 'dlugi' : undefined}>{tytul}</h1>
+      {podtytul ? <p className="podtytul">{podtytul}</p> : null}
+    </>
+  );
   return (
     <header className="wypis">
-      <h1>{tytul}</h1>
-      {podtytul ? <p className="podtytul">{podtytul}</p> : null}
+      {obraz ? (
+        <div className="glowa-z-obrazem">
+          {obraz}
+          <div className="min-w-0 flex-1">{glowa}</div>
+        </div>
+      ) : glowa}
       {children}
       <p className="skad">
         <b>zrejestru.pl</b>
@@ -149,7 +165,8 @@ export function Uwaga({ naglowek, children }: { naglowek: string; children: Reac
 /** Wykres paskowy: dlugosc na wspolnej osi i tytul-wniosek u gory (F11, Borkin 2016). */
 export function ListaPaskow({ tytul, pozycje, podpis }: {
   tytul?: string;
-  pozycje: { klucz: string; nazwa: ReactNode; opis: ReactNode; udzial: number; wciete?: boolean; blady?: boolean }[];
+  /** `barwa`: zmienne `--b`/`--bc` dla `miejsce-probka` (np. glos „za” zielony w obu motywach). */
+  pozycje: { klucz: string; nazwa: ReactNode; opis: ReactNode; udzial: number; wciete?: boolean; blady?: boolean; barwa?: CSSProperties }[];
   podpis?: ReactNode;
 }) {
   return (
@@ -163,7 +180,10 @@ export function ListaPaskow({ tytul, pozycje, podpis }: {
               <span>{p.opis}</span>
             </div>
             <div className="pasek">
-              <i style={{ width: `${Math.max(0.4, Math.min(100, 100 * p.udzial)).toFixed(2)}%`, opacity: p.wciete || p.blady ? 0.45 : undefined }} />
+              <i
+                className={p.barwa ? 'miejsce-probka' : undefined}
+                style={{ ...p.barwa, width: `${Math.max(0.4, Math.min(100, 100 * p.udzial)).toFixed(2)}%`, opacity: p.wciete || p.blady ? 0.45 : undefined }}
+              />
             </div>
           </li>
         ))}

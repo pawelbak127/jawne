@@ -390,6 +390,9 @@
   .wypis { padding: 10px 0 0; }
   .wypis h1 { font-family: var(--f-naglowek); font-weight: 600; font-size: 2rem; line-height: 1.08; }
   @media (min-width: 1024px) { .wypis h1 { font-size: 2.4rem; } }
+  /* nazwy spolek maja po 80 znakow — przy 2,4rem zajmowaly caly pierwszy ekran telefonu */
+  .wypis h1.dlugi { font-size: 1.45rem; line-height: 1.2; }
+  @media (min-width: 1024px) { .wypis h1.dlugi { font-size: 1.8rem; } }
   .wypis .podtytul { margin-top: 8px; color: var(--atrament-2); max-width: 34em; }
   .skad { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--kreska); max-width: 40em; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
   .skad b { color: var(--atrament); font-weight: 600; }
@@ -490,6 +493,16 @@
   .pasek i { display: block; height: 100%; background: var(--akcent); }
   [data-styl="a"] .pasek i { background: var(--atrament); }
   .podpis-wykresu { margin-top: 8px; font-size: var(--drobny); color: var(--atrament-2); max-width: 40em; }
+  /* pasek z barwa glosu: po regulach .pasek i, zeby wygrala barwa semantyczna */
+  .pasek i.miejsce-probka { background: var(--b); }
+  .kropka { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 6px; flex: none; }
+
+  /* posel: portret obok nazwy, metryczka zwinieta pod „W liczbach” */
+  .glowa-z-obrazem { display: flex; gap: 18px; align-items: flex-start; }
+  @media (max-width: 639px) { .glowa-z-obrazem { gap: 14px; } }
+  .metryczka { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; }
+  .metryczka dt { color: var(--atrament-2); }
+  .metryczka dd { margin: 0; color: var(--atrament); overflow-wrap: anywhere; }
 
   /* „Jak myslisz, ile…?” — opcjonalne, do pominiecia, bez JS pokazuje liczbe (F10) */
   .zgadnij { margin-top: 30px; padding: 16px 0; border-top: 2px solid var(--atrament); border-bottom: 1px solid var(--kreska); max-width: 46rem; }
@@ -514,6 +527,23 @@
   .pozycje .meta { color: var(--atrament-2); font-size: var(--drobny); }
   .pozycje .kwota { text-align: right; font-family: var(--f-liczba); font-weight: var(--w-liczba); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pozycje .kwota small { display: block; font-family: var(--f-tekst); font-weight: 400; color: var(--atrament-2); font-size: var(--drobny); }
+  .pozycje .glos { display: inline-flex; align-items: center; white-space: nowrap; font-size: var(--sredni); font-weight: 600; }
+  .pozycje a.tytul-poz { color: var(--atrament); font-weight: 600; text-decoration: underline; text-decoration-color: var(--kreska-2); text-underline-offset: 0.18em; }
+  .pozycje a.tytul-poz:hover { color: var(--akcent); text-decoration-color: currentColor; }
+  /* tabele: na telefonie wiersz staje sie blokiem, liczby zostaja po prawej */
+  .tabela { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: var(--sredni); }
+  .tabela th { text-align: left; font-weight: 600; font-size: var(--drobny); color: var(--atrament-2); border-bottom: 2px solid var(--atrament); padding: 8px 10px 8px 0; }
+  .tabela td { border-bottom: 1px solid var(--kreska); padding: 10px 10px 10px 0; vertical-align: top; }
+  .tabela .l { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  @media (max-width: 639px) {
+    .tabela thead { display: none; }
+    .tabela, .tabela tbody { display: block; }
+    .tabela tr { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--kreska); }
+    .tabela td { border: 0; padding: 0; }
+    .tabela td:not(.l) { flex: 1 1 100%; }
+    .tabela td.l:last-child { margin-left: auto; font-weight: 600; }
+    .tabela td.l[data-etykieta]::before { content: attr(data-etykieta) ": "; color: var(--atrament-2); }
+  }
   .pliki { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
   .pliki a { display: inline-flex; align-items: center; min-height: 44px; color: var(--akcent); }
 
@@ -532,6 +562,8 @@
   details.wiecej > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; color: var(--akcent); text-decoration: underline; text-underline-offset: 0.18em; font-size: var(--sredni); }
   details.wiecej > summary::-webkit-details-marker { display: none; }
   details.wiecej[open] > summary { display: none; }
+  /* ciag dalszy listy, nie nowa lista: bez drugiej grubej kreski na poczatku */
+  details.wiecej > .pozycje, details.wiecej > .lista-paskow { margin-top: 0; border-top: 0; }
 
   /* ---- Standardowy: „W liczbach” jako lista podsumowania; od 1280 px dodatki z G „Pulpit” ---- */
   :root:not([data-styl="a"]) .w-liczbach { border: 0; background: none; padding-inline: 0; }

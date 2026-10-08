@@ -62,7 +62,14 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    długie listy zwinięte pod „Pokaż wszystkie N ↓”. Kraków na telefonie
    31,8 → 18,0 tys. px, Bełchatów 53,4 → 18,8 tys. px; wszystkie 228 kwot
    starej strony Krakowa są na nowej.
-3. Poseł i firma.
+3. ~~Poseł i firma~~ — **zrobione 08.10**. Poseł: portret obok nazwy,
+   „W liczbach” (inaczej niż klub, udział, usprawiedliwione dni), metryczka
+   zwinięta, rozkład głosów jako paski w barwach głosu, interpelacje
+   i zapytania w jednym dziale; strona 96 kB (było 103). Firma: przypadki
+   zgrupowane w tabeli (ta sama data, udzielający, przeznaczenie), każdy
+   osobno z podstawą prawną pod „Pokaż …”; PGE GiEK na telefonie
+   22,9 → 4,9 tys. px. Zdanie o sprzeciwie odsyła do `/prywatnosc#kontakt`,
+   nie na adres, który nie odbiera poczty.
 4. Głosowanie, ustawa, pomoc publiczna, strona główna.
 5. Listy (posłowie, głosowania, ustawy, gminy), okręg, organ, szukanie,
    nowa trasa `/firmy`, mapa, sala, stan, o serwisie; obrazki podglądu
