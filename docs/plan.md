@@ -32,13 +32,17 @@ sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
 
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
-### Stan na 07.10.2026
+### Stan na 08.10.2026
 
-**Na serwerze działa `1665969`** (wdrożone 05.10): strona gminy ze stanu sum
-(pułapka 69), dzień SUDOP liczony porcjami (pułapka 70), CSV gminy strumieniem.
-**Czeka na `sudo jawne aktualizuj`:** strony gmin, firm, organów, głosowań
-i ustaw w pamięci podręcznej (`3cfec55`), limit 4 h dla `fundusze`
-(`484d3a8`), etap 1 przebudowy wyglądu (`5b11e0e`).
+**Na serwerze działa `c90c4f0`** (wdrożone 08.10 o 17:01, w tle przez
+`jawne-wdrozenie`): pamięć podręczna stron, etapy 1–2 przebudowy, wdrożenie
+odporne na zamknięcie terminala. Timery wróciły po ok. 21 h przestoju
+(pułapka 71).
+**Czeka na `sudo jawne aktualizuj`:** etap 3 przebudowy (`619cda9`) i naprawa
+pułapki 72 — indeks firm bez 2,5-godzinnej blokady zapisu i agregaty SUDOP
+bez godzinnego czytania dysku przy każdym przebiegu. Do tego czasu
+`sudop-dzien` i `ted` mogą dalej padać na „database is locked” w dni,
+w które `sejm` buduje indeks firm.
 
 **Bloker: poczta nie działa, a `JAWNE_KONTAKT` jest ustawiony** (sprawdzone
 07.10: zmienna w pliku i w procesie strony). Próg jawności z zasady 7 pokazuje

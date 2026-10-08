@@ -669,14 +669,14 @@ export function mapaZeSum(db: DatabaseSync, terytWarszawy: string): WartoscNaMap
  * a skutek byl powazniejszy niz sam blad: **nie dalo sie wdrozyc niczego**,
  * bo migracje ida przed budowa.
  *
- * Tu grupowanie i sortowanie robi SQLite — na swoim magazynie tymczasowym,
- * nie na stercie V8 — a JavaScript trzyma najwyzej `limit` napisow. Pamiec
- * przestaje zalezec od wielkosci rejestru.
+ * Tu stan czyta sie strumieniem, posortowany przez SQLite, a w pamieci jest
+ * tylko delta (firmy spoza stanu) i najwyzej `limit` napisow. Pamiec nie
+ * zalezy od wielkosci rejestru.
  *
  * DELTY NIE WOLNO POMINAC, choc kusi: ZMIERZONE — **18 655 firm (co piata)
  * jest znanych TYLKO** z gmin pokazowych i dni jeszcze nieustalonych, bo ich
  * dni nie weszly do stanu przyrostowego. Sama `pomoc_sumy_firm` pominelaby
- * je w mapie strony po cichu. Dlatego zapytanie sklada jedno z drugim.
+ * je w mapie strony po cichu. Dlatego lista sklada jedno z drugim.
  *
  * `wolno` to regula jawnosci — przekazana z zewnatrz, zeby ten plik nie
  * zalezal od `src/lib/prywatnosc.ts`.
@@ -685,29 +685,50 @@ export function firmyDoMapy(
   db: DatabaseSync,
   limit: number,
   wolno: (nazwa: string | null, typRegon: string | null) => boolean,
+  d: Delta = policzDelte(db),
 ): string[] {
-  const zapytanie = db.prepare(
-    `with laczne as (
-       select nip as nip, nazwa as nazwa, brutto as brutto from pomoc_sumy_firm
-       union all
-       select nip_beneficjenta as nip, max(nazwa_beneficjenta) as nazwa,
-              coalesce(sum(wartosc_brutto), 0) as brutto
-         from pomoc_publiczna
-        where nip_beneficjenta is not null
-          and dzien not in (select dzien from pomoc_sumy_dni)
-        group by nip_beneficjenta
-     )
-     select l.nip as nip, max(l.nazwa) as nazwa, sum(l.brutto) as brutto,
-            (select typ from regon r where r.nip = l.nip) as typ
-       from laczne l group by l.nip order by brutto desc`,
-  );
+  /*
+   * ZMIERZONE 08.10.2026 (pulapka 72): ta lista liczyla delte warunkiem
+   * `nip_beneficjenta is not null and dzien not in (…stan…)`. Plan SQLite to
+   * NIE byl przeglad tabeli, tylko gorzej: `SEARCH pomoc_publiczna USING INDEX
+   * pomoc_nip (nip_beneficjenta>?)` — zakres obejmujacy prawie kazdy z 8,7 mln
+   * wierszy, doczytywanych w kolejnosci NIP-ow, czyli w losowych miejscach
+   * pliku 7 GB. Krok agregatow trwal przez to 60–80 minut przy KAZDYM
+   * przebiegu, takze przy „dolozono 0 dni”, a zadania czekajace na zapis
+   * (`sudop-dzien`, `ted`) padaly na „database is locked”.
+   * Delta jest teraz ta sama co dla firm i przegladu: `policzDelte` czyta
+   * indeksem po dniu wylacznie dni spoza stanu.
+   *
+   * Firmy z delty dostaja sume „stan + delta” i sortujemy je osobno; reszte
+   * czytamy ze stanu malejaco po kwocie i scalamy oba ciagi. Kolejnosc wychodzi
+   * ta sama co z jednego `order by brutto desc` po obu zrodlach (test
+   * porownuje to ze starym zapytaniem).
+   */
+  const zeStanu = db.prepare('select nazwa, brutto from pomoc_sumy_firm where nip = ?');
+  const typ = db.prepare('select typ from regon where nip = ?');
+  const dotkniete = [...d.firmy].map(([nip, f]) => {
+    const s = zeStanu.get(nip) as { nazwa: string | null; brutto: number } | undefined;
+    return { nip, nazwa: wieksza(s?.nazwa ?? null, f.nazwa), brutto: (s?.brutto ?? 0) + f.brutto };
+  }).sort((a, b) => b.brutto - a.brutto || (a.nip < b.nip ? -1 : 1));
+
   const nipy: string[] = [];
-  for (const r of zapytanie.iterate() as unknown as Iterable<
-    { nip: string; nazwa: string | null; typ: string | null }>) {
-    if (!wolno(r.nazwa, r.typ)) continue;
-    nipy.push(r.nip);
-    if (nipy.length >= limit) break;
+  /** true, gdy lista jest pelna. */
+  const wez = (r: { nip: string; nazwa: string | null }): boolean => {
+    const t = (typ.get(r.nip) as { typ: string | null } | undefined)?.typ ?? null;
+    if (wolno(r.nazwa, t)) nipy.push(r.nip);
+    return nipy.length >= limit;
+  };
+  let i = 0;
+  for (const r of db.prepare('select nip, nazwa, brutto from pomoc_sumy_firm order by brutto desc, nip')
+    .iterate() as unknown as Iterable<{ nip: string; nazwa: string | null; brutto: number }>) {
+    if (d.firmy.has(r.nip)) continue;
+    while (i < dotkniete.length && (dotkniete[i]!.brutto > r.brutto
+      || (dotkniete[i]!.brutto === r.brutto && dotkniete[i]!.nip < r.nip))) {
+      if (wez(dotkniete[i++]!)) return nipy;
+    }
+    if (wez(r)) return nipy;
   }
+  while (i < dotkniete.length) if (wez(dotkniete[i++]!)) return nipy;
   return nipy;
 }
 

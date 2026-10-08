@@ -885,6 +885,29 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     pokazuje jej dziennik, a `jawne stan` ostrzega o timerach włączonych, ale
     zatrzymanych. **Długie wdrożenie nie może zależeć od otwartego okna.**
 
+72. **`SEARCH … USING INDEX` bywa gorszy niż `SCAN`.** ZMIERZONE 08.10.2026
+    na serwerze, dzień po wdrożeniu: `sudop-dzien` i `ted` padły na
+    „database is locked”, bo zadanie `sejm` przez **2,5 h** budowało indeks
+    firm w jednej transakcji zapisu (wcześniej 1–2 h dziennie; pominięcie przy
+    niezmienionym podpisie z pułapki 64 nie działa, odkąd historia SUDOP
+    dopisuje co godzinę). Osobno krok agregatów historii SUDOP trwał
+    **60–80 min przy każdym przebiegu**, także przy „dołożono 0 dni”.
+    Oba miały ten sam plan: `nip_beneficjenta is not null` zamieniało się
+    w `SEARCH pomoc_publiczna USING INDEX pomoc_nip (nip_beneficjenta>?)`,
+    czyli zakres obejmujący prawie każdy z 8,7 mln wierszy, doczytywanych
+    w kolejności NIP-ów — w losowych miejscach pliku 7 GB. Zmierzone `dd`:
+    ten plik czytany po kolei daje **149 MB/s**, losowo ok. **7 MB/s**.
+    Naprawa: indeks firm czyta `NOT INDEXED` i liczy do tabel `temp`
+    (osobny plik, zapis do niego nie blokuje bazy), a bazę główną podmienia
+    jedną krótką transakcją (`ingest/lib/indeks-firm.ts`); lista firm do mapy
+    strony bierze deltę z `policzDelte` (indeks po dniu) zamiast `dzien not in`.
+    Oba wyniki porównane ze starym SQL-em na lokalnej bazie: 0 różnic.
+    Testy sprawdzają **plan zapytania**, nie tylko wynik — lokalnie (168 tys.
+    wierszy) stara droga trwała 3 s i nikt by jej nie zauważył (pułapka 67).
+    Zasada: **„użyty indeks” w planie to nie dowód taniości — pytaj, ile
+    wierszy obejmuje zakres i czy czyta je po kolei.** Czytanie w trybie WAL
+    nie blokuje zapisu, ale długa transakcja zapisu blokuje wszystkich.
+
 ---
 
 ## Bezpieczeństwo

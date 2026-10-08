@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { zalozSchemat } from './baza.js';
-import { mapaZeSum, odswiezSumy, PORCJA_DNIA, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
+import { firmyDoMapy, mapaZeSum, odswiezSumy, PORCJA_DNIA, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
 import { DNI_USTALONE, policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
 import { policzPomocGminy, pomocGminyZeSum } from '../../src/lib/pomoc-gminy.js';
 
@@ -299,5 +299,79 @@ describe('dzien wiekszy niz porcja (17.12.2024: 846 670 przypadkow)', () => {
     // Najwiekszy przypadek lezal w srodku dnia, w drugiej porcji.
     expect(przegladZeSum(db, WARSZAWA)!.najwieksze[0]!.brutto).toBe(9_999_999);
     expect(przegladZeSum(db, WARSZAWA)!.przypadkow).toBe(ile);
+  });
+});
+
+describe('firmy do mapy strony (pulapka 72)', () => {
+  /** Stara droga: jedno zapytanie po CALEJ tabeli — tu jako druga droga do porownania. */
+  const zSql = (limit: number, wolno: (n: string | null, t: string | null) => boolean): string[] => {
+    const wynik: string[] = [];
+    for (const r of db.prepare(
+      `with laczne as (
+         select nip, nazwa, brutto from pomoc_sumy_firm
+         union all
+         select nip_beneficjenta, max(nazwa_beneficjenta), coalesce(sum(wartosc_brutto), 0)
+           from pomoc_publiczna
+          where nip_beneficjenta is not null and dzien not in (select dzien from pomoc_sumy_dni)
+          group by nip_beneficjenta
+       )
+       select l.nip as nip, max(l.nazwa) as nazwa, sum(l.brutto) as brutto,
+              (select typ from regon r where r.nip = l.nip) as typ
+         from laczne l group by l.nip order by brutto desc, l.nip`,
+    ).iterate() as unknown as Iterable<{ nip: string; nazwa: string | null; typ: string | null }>) {
+      if (!wolno(r.nazwa, r.typ)) continue;
+      wynik.push(r.nip);
+      if (wynik.length >= limit) break;
+    }
+    return wynik;
+  };
+
+  it('daje te sama liste co zapytanie po calej tabeli — stan, dni swieze i gminy pokazowe razem', () => {
+    // Stan: trzy firmy z dni ustalonych.
+    dodajDzien('2026-01-01', 20, [
+      { nip: '1000000001', nazwa: 'Alfa', brutto: 500 },
+      { nip: '1000000002', nazwa: 'Beta', brutto: 300 },
+      { nip: '1000000003', nazwa: 'Gamma', brutto: 100 },
+    ]);
+    // Dzien swiezy: Gamma dostaje tyle, ze przeskakuje Alfe; Delta jest TYLKO tutaj.
+    dodajDzien('2026-02-01', 2, [
+      { nip: '1000000003', nazwa: 'Gamma', brutto: 900 },
+      { nip: '1000000004', nazwa: 'Delta', brutto: 200 },
+    ]);
+    // Historia gminy pokazowej: dnia nie ma w rejestrze dni kraju.
+    wstawWiersze('2019-05-05', [
+      { nip: '1000000005', nazwa: 'Pokazowa', brutto: 400 },
+      { nip: '1000000002', nazwa: 'Beta', brutto: 50 },
+    ]);
+    odswiezSumy(db);
+    const wszystkie = () => true;
+    const bezBety = (n: string | null) => n !== 'Beta';
+
+    expect(firmyDoMapy(db, 10, wszystkie)).toEqual(zSql(10, wszystkie));
+    expect(firmyDoMapy(db, 10, wszystkie)).toEqual(['1000000003', '1000000001', '1000000005', '1000000002', '1000000004']);
+    expect(firmyDoMapy(db, 3, bezBety)).toEqual(zSql(3, bezBety));
+  });
+
+  it('NIE przechodzi po calej tabeli pomocy — czyta tylko dni spoza stanu, indeksem po dniu', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1000000001', nazwa: 'Alfa', brutto: 500 }]);
+    odswiezSumy(db);
+    const plany: string[] = [];
+    const prepare = db.prepare.bind(db);
+    db.prepare = ((sql: string) => {
+      if (/pomoc_publiczna\b/.test(sql)) {
+        for (const r of prepare(`explain query plan ${sql}`).all(...(sql.includes('?') ? ['2026-01-01'] : [])) as { detail: string }[]) plany.push(r.detail);
+      }
+      return prepare(sql);
+    }) as typeof db.prepare;
+    firmyDoMapy(db, 10, () => true);
+    db.prepare = prepare;
+    // ZMIERZONE 08.10.2026: stare zapytanie nie mialo SCAN-a, tylko
+    // `SEARCH pomoc_publiczna USING INDEX pomoc_nip (nip_beneficjenta>?)` —
+    // zakres obejmujacy prawie kazdy wiersz, czytany w kolejnosci NIP-ow,
+    // czyli w losowych miejscach pliku. Wolno tylko „po dniu”.
+    // Lista dni z indeksu pokrywajacego jest w porzadku: czyta sam indeks, nie tabele.
+    const poTabeli = plany.filter((p) => /\bpomoc_publiczna\b(?!_)/.test(p)
+      && !/\(dzien=\?\)/.test(p) && !/USING COVERING INDEX pomoc_dzien\b/.test(p));
+    expect(poTabeli).toEqual([]);
   });
 });
