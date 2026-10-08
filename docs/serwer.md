@@ -298,7 +298,7 @@ lat, bo 2020 ma pięciokrotność zwykłego roku — czyli **20–30 nocy**.
 | `sudo jawne plan` | co pobierze najbliższa noc |
 | `sudo jawne uruchom sejm` | zadanie teraz, z czekaniem na koniec |
 | `sudo jawne sprawdz` | czy strona odpowiada |
-| `sudo jawne aktualizuj` | `git pull` i przebudowa (strona kilka minut niedostępna) |
+| `sudo jawne aktualizuj` | `git pull` i przebudowa (strona kilka minut niedostępna). Od 08.10.2026 idzie jako usługa `jawne-wdrozenie` — zamknięcie terminala NIE przerywa wdrożenia; postęp: `sudo jawne logi wdrozenie` |
 | ⚠ nie rób | `git pull`, `npm`, `sudo chown` ręcznie w `/srv/jawne` — katalog należy do użytkownika `jawne`, a ręczne polecenia zabierają mu go i strona traci prawo zapisu |
 | `sudo jawne ustaw GUS_BDL_KLUCZ` | wpis klucza — pyta o wartość, nie zostaje w historii |
 | `sudo jawne kopia` | kopia bazy i odpowiedzi SUDOP do ściągnięcia na komputer |

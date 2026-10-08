@@ -34,9 +34,55 @@ publiczne_ip() {
   curl -s -m 2 -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/public-ipv4 || true
 }
 
+#
+# Wdrozenie jako USLUGA, nie jako proces terminala.
+#
+# ZMIERZONE 07/08.10.2026: `sudo jawne aktualizuj` o 20:13 zatrzymal timery
+# danych i ruszyl z migracjami; o 20:39 Pawel zamknal terminal („disconnected
+# by user"), a razem z sesja SSH zginelo cale wdrozenie — w srodku migracji,
+# przed budowa. Pulapka EXIT nie wznowila timerow (w dzienniku zadnego startu)
+# i przez kilkanascie godzin nie chodzilo ZADNE zadanie danych: ani historia
+# SUDOP, ani poranny Sejm, ani TED. Wdrozenie nie moze zalezec od tego, czy
+# okno terminala zostanie otwarte przez pol godziny.
+#
+# Teraz skrypt sam przenosi sie do jednostki `jawne-wdrozenie` (systemd-run),
+# a terminal tylko pokazuje jej dziennik. Zamkniecie okna przerywa
+# podglad, nie wdrozenie; wrocic do postepu: `sudo jawne logi wdrozenie`.
+# INVOCATION_ID ustawia systemd kazdej usludze — po nim poznajemy, ze juz
+# jestesmy w srodku. JAWNE_W_TERMINALU=1 przywraca stare zachowanie.
+#
+w_tle() {
+  local skrypt log kod=0
+  skrypt=$(readlink -f "$0")
+  case "$(systemctl is-active jawne-wdrozenie 2>/dev/null || true)" in
+    active|activating|deactivating)
+      echo "Wdrozenie juz trwa. Postep: sudo jawne logi wdrozenie"
+      exit 1 ;;
+  esac
+  systemctl reset-failed jawne-wdrozenie 2>/dev/null || true
+  echo "Wdrozenie idzie jako usluga jawne-wdrozenie — zamkniecie terminala go NIE przerwie."
+  echo "Ponizej jego dziennik. Ctrl+C albo zamkniecie okna przerywa tylko PODGLAD."
+  echo "Wrocic do niego pozniej: sudo jawne logi wdrozenie"
+  journalctl -f -n 0 -o cat -u jawne-wdrozenie &
+  log=$!
+  systemd-run --unit=jawne-wdrozenie --collect --wait --quiet \
+    --property=StandardOutput=journal --property=StandardError=journal \
+    /usr/bin/bash "$skrypt" "$@" || kod=$?
+  sleep 2
+  kill "$log" 2>/dev/null || true
+  echo
+  if [ "$kod" = 0 ]; then
+    echo "Wdrozenie zakonczone."
+  else
+    echo "Wdrozenie skonczylo sie bledem (kod $kod). Szczegoly: sudo jawne logi wdrozenie"
+  fi
+  exit "$kod"
+}
+
 main() {
   local ip host adres
   [ "$(id -u)" = 0 ] || { echo "Uruchom przez sudo: sudo bash $0"; exit 1; }
+  if [ -z "${INVOCATION_ID:-}" ] && [ -z "${JAWNE_W_TERMINALU:-}" ]; then w_tle "$@"; fi
 
   krok "System: strefa czasowa, pakiety, automatyczne aktualizacje"
   timedatectl set-timezone Europe/Warsaw 2>/dev/null || ln -sf /usr/share/zoneinfo/Europe/Warsaw /etc/localtime

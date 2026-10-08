@@ -151,6 +151,21 @@ stan() {
     fi
   done
   printf '   %-16s %s\n' strona "$(systemctl is-active jawne-strona || true)"
+  # Timer WLACZONY, ale NIEAKTYWNY nie odpali nigdy, a „Wynik: success”
+  # przy zadaniu wyglada wtedy jak zdrowy serwer. ZMIERZONE 08.10.2026:
+  # wdrozenie przerwane zamknieciem terminala zostawilo wszystkie szesc
+  # timerow zatrzymanych na kilkanascie godzin i nic tego nie pokazywalo.
+  local t stojace=''
+  for t in $ZADANIA; do
+    if systemctl is-enabled --quiet "jawne-$t.timer" 2>/dev/null \
+      && ! systemctl is-active --quiet "jawne-$t.timer" 2>/dev/null; then
+      stojace="$stojace jawne-$t.timer"
+    fi
+  done
+  if [ -n "$stojace" ] && ! systemctl is-active --quiet jawne-wdrozenie 2>/dev/null; then
+    echo "   UWAGA: timery wlaczone, ale zatrzymane — zadania danych NIE ruszą:"
+    echo "     sudo systemctl start$stojace"
+  fi
   if [ "$nieudanych" -gt 0 ]; then
     echo "   UWAGA: $nieudanych zadan skonczylo sie inaczej niz 'success' — sudo jawne logi <zadanie>"
   fi

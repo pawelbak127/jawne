@@ -874,6 +874,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     **Zanim dołożysz do stanu nową mapę, policz ją dla NAJWIĘKSZEGO dnia
     w bazie serwera, nie lokalnej** (`select dzien, count(*) … order by 2 desc`).
 
+71. **Zamknięcie terminala zabijało wdrożenie — i zostawiało stojące timery.**
+    ZMIERZONE 08.10.2026: `aktualizuj` o 20:13 zatrzymał wszystkie sześć
+    timerów danych i ruszył z migracjami; o 20:39 sesja SSH się zamknęła
+    („disconnected by user”) i wdrożenie zginęło w środku migracji, przed
+    budową. Pułapka EXIT nie wznowiła timerów (dziennik: żadnego startu), więc
+    przez kilkanaście godzin nie chodziło NIC: historia SUDOP, Sejm o 7:15, TED.
+    `jawne stan` pokazywał przy zadaniach „success”. Teraz `instaluj.sh` sam
+    przenosi się do jednostki `jawne-wdrozenie` (`systemd-run`), terminal tylko
+    pokazuje jej dziennik, a `jawne stan` ostrzega o timerach włączonych, ale
+    zatrzymanych. **Długie wdrożenie nie może zależeć od otwartego okna.**
+
 ---
 
 ## Bezpieczeństwo
