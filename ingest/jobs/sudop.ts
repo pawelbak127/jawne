@@ -87,12 +87,35 @@ const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
 
 async function get(url: string) {
   // redirect: 'manual' — inaczej fetch sam idzie za 303 i gubi adres kolejki.
+  //
+  // Connection: close — KAZDE zapytanie nowym polaczeniem. ZMIERZONE
+  // 01–09.10.2026 w dzienniku serwera: 67 razy „fetch failed”, w 33 z nich
+  // na PIERWSZYM zapytaniu zakresu, w tej samej sekundzie co zapis
+  // poprzedniego (20–30 minut bez ruchu do urzedu). Po kwadransie ten sam
+  // adres szedl normalnie. Obraz zgadza sie z polaczeniem keep-alive, ktore
+  // serwer zamknal w czasie zapisu, a fetch probowal go uzyc ponownie
+  // (przyczyne zapisuje teraz `opisBledu`). Kazdy taki blad kosztowal
+  // kwadrans przerwy, odlozenie zakresu i skrocenie zakresow o polowe.
+  // NIE ponawiamy rejestracji po bledzie sieci: gdyby jednak doszla do
+  // urzedu, mielibysmy dwie pozycje w kolejce naraz. Nowe polaczenie na
+  // zapytanie (raz na minute) nic nie kosztuje.
   const odp = await fetch(url, {
     redirect: 'manual',
-    headers: { 'User-Agent': UA, Accept: 'application/json' },
+    headers: { 'User-Agent': UA, Accept: 'application/json', Connection: 'close' },
     signal: AbortSignal.timeout(120_000),
   });
   return { status: odp.status, location: odp.headers.get('location'), tekst: await odp.text() };
+}
+
+/**
+ * Tresc bledu razem z przyczyna. Sam `fetch failed` nie mowi, czy padlo
+ * polaczenie, DNS, czy TLS — przyczyna siedzi w `cause` (kod undici/systemu).
+ */
+function opisBledu(e: unknown): string {
+  if (!(e instanceof Error)) return String(e);
+  const c = e.cause as { code?: string; message?: string } | undefined;
+  const przyczyna = c ? [c.code, c.message].filter(Boolean).join(': ') : '';
+  return przyczyna && !e.message.includes(przyczyna) ? `${e.message} (${przyczyna})` : e.message;
 }
 
 const pelny = (loc: string) => (/^https?:/.test(loc) ? loc : new URL(loc, SUDOP_BAZA).toString());
@@ -536,7 +559,7 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
         }
       } catch (e) {
         if (e instanceof KoniecPrzydzialu) throw e;
-        const tresc = e instanceof Error ? e.message : String(e);
+        const tresc = opisBledu(e);
         log(`   BLAD na ${zakres}: ${tresc}`);
         log('   Pobrane strony tego zakresu zostaja na dysku — nastepna noc je wznowi. Biore nastepny zakres.');
         zBledem.set(zakres, tresc);
@@ -755,7 +778,7 @@ async function main(): Promise<void> {
         porazekZRzedu = 0;
       } catch (e) {
         porazekZRzedu++;
-        log(`   BLAD: ${e instanceof Error ? e.message : e}`);
+        log(`   BLAD: ${opisBledu(e)}`);
         if (porazekZRzedu >= 3) {
           log('Trzy gminy z rzedu bez wyniku — przerywam, zeby nie obciazac kolejki urzedu.');
           break;
@@ -770,6 +793,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  log(`BLAD: ${e instanceof Error ? e.message : e}`);
+  log(`BLAD: ${opisBledu(e)}`);
   process.exit(1);
 });
