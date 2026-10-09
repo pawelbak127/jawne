@@ -134,6 +134,7 @@ create table if not exists glosowania (
   opis          text,
   rodzaj        text,
   typ_wiekszosci text,
+  wiekszosc_glosow integer,        -- majorityVotes: ile glosow „za” przesadza o wiekszosci
   za            integer not null,
   przeciw       integer not null,
   wstrzymalo    integer not null,
@@ -868,6 +869,12 @@ export function zalozSchemat(db: DatabaseSync): string[] {
       db.exec(`alter table budzety_gmin add column ${k} integer`);
       zrobione.push(`dodano kolumne budzety_gmin.${k}`);
     }
+  }
+
+  const kolumnyGlosowan = db.prepare('pragma table_info(glosowania)').all() as unknown as { name: string }[];
+  if (kolumnyGlosowan.length && !kolumnyGlosowan.some((k) => k.name === 'wiekszosc_glosow')) {
+    db.exec('alter table glosowania add column wiekszosc_glosow integer');
+    zrobione.push('dodano kolumne glosowania.wiekszosc_glosow');
   }
 
   const kolumnyRegon = db.prepare('pragma table_info(regon)').all() as unknown as { name: string }[];

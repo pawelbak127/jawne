@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, etapyProcesu, proces, streszczenieUstawy, type EtapProcesu, type ProcesSkrot } from '@/lib/dane';
-import { dataSlownie, skroc } from '@/lib/format';
+import {
+  bazaDostepna, etapyProcesu, glosowanie, proces, streszczenieUstawy, zrodloImportu,
+  type EtapProcesu, type ProcesSkrot,
+} from '@/lib/dane';
+import { dataKrotko, dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
+import { opisGlosowania } from '@/lib/opis-glosowania';
+import { wynikGlosowania } from '@/lib/wynik-glosowania';
 import { BrakDanych } from '@/components/BrakDanych';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Dzial, Okruszek, Podstawa, Wypis } from '@/components/Szablon';
+import { SpisDzialow } from '@/components/SpisDzialow';
 
 /*
  * Pusta lista = strona generuje sie przy pierwszym wejsciu i zostaje w pamieci
@@ -27,10 +33,8 @@ const REJESTR = (numer: string) => `https://www.sejm.gov.pl/sejm10.nsf/PrzebiegP
  * (zmierzone 23.09.2026 na 1692 procesach). Gdy etapu koncowego nie ma,
  * proces trwa — i wtedy mowimy tylko, na czym stanal.
  */
-function stan(p: ProcesSkrot): { etykieta: string; ton: 'zamkniety' | 'uchwalony' | 'wtoku' } {
-  if (p.koniec === 'Uchwalono') return { etykieta: 'Uchwalono', ton: 'uchwalony' };
-  if (p.koniec) return { etykieta: p.koniec, ton: 'zamkniety' };
-  return { etykieta: 'W toku', ton: 'wtoku' };
+function stan(p: ProcesSkrot): string {
+  return p.koniec ?? 'W toku';
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ numer: string }> }): Promise<Metadata> {
@@ -40,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ numer: st
   const tytul = bezNazwiskOsobPrywatnych(p.tytul);
   return {
     title: `${skroc(tytul, 70)} — druk ${p.numer}`,
-    description: `${stan(p).etykieta}. ${skroc(tytul, 150)}`,
+    description: `${stan(p)}. ${skroc(tytul, 150)}`,
     // Ta sama regula co przy glosowaniach: tytul z nazwiskiem osoby prywatnej
     // nie trafia do wyszukiwarek.
     ...(pominietoNazwiska(p.tytul) ? { robots: { index: false, follow: true } } : {}),
@@ -54,181 +58,222 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
   if (!p) notFound();
   const etapy = etapyProcesu(numer);
   const streszczenie = streszczenieUstawy(numer);
-  const s = stan(p);
   const tytul = bezNazwiskOsobPrywatnych(p.tytul);
+  const importProcesow = zrodloImportu('procesy');
+  const ostatni = [...etapy].reverse().find((e) => e.data) ?? null;
+
+  // Glosowania wskazane przez rejestr przy etapach — z wynikiem wobec
+  // wymaganej wiekszosci (src/lib/wynik-glosowania.ts). Kilka odczytow po
+  // kluczu glownym, nie przebieg po tabeli.
+  const glosowaniaEtapow = etapy
+    .filter((e) => e.glos_posiedzenie !== null && e.glos_numer !== null)
+    .map((e) => ({ e, g: e.glosowanie_mamy > 0 ? glosowanie(e.glos_posiedzenie!, e.glos_numer!) : null }));
+
+  const dzialy = [
+    ...(p.opis ? [{ id: 'opis', nazwa: 'Opis z rejestru' }] : []),
+    { id: 'droga', nazwa: 'Droga przez Sejm' },
+    { id: 'glosowania', nazwa: 'Głosowania' },
+  ];
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
   return (
-    <div className="obszar max-w-3xl py-10">
-      <p className="text-sm text-atrament-2">
-        <Link href="/ustawy" className="hover:text-akcent">Ustawy</Link>
-        {` · druk nr ${p.numer}`}
-      </p>
+    <>
+      <div className="obszar">
+        <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { adres: '/ustawy', nazwa: 'Ustawy' }, { nazwa: `druk nr ${p.numer}` }]} />
+        <Wypis
+          tytul={tytul}
+          podtytul={
+            <>
+              <b className="text-atrament">{stan(p)}</b>
+              {p.rodzaj ? ` · ${p.rodzaj}` : ''}
+              {!p.koniec && ostatni ? ` · ostatni etap: ${bezNazwiskOsobPrywatnych(ostatni.nazwa)} (${dataKrotko(ostatni.data)})` : ''}
+            </>
+          }
+        />
 
-      <header className="mt-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">{tytul}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-          <span
-            className={`rounded-full px-3 py-1 font-medium ${
-              s.ton === 'uchwalony' ? 'bg-akcent-slaby text-akcent'
-                : s.ton === 'zamkniety' ? 'bg-papier-3 text-atrament-2' : 'border border-kreska-2 text-atrament-2'
-            }`}
-          >
-            {s.etykieta}
-          </span>
-          {p.rodzaj ? <span className="text-atrament-2">{p.rodzaj}</span> : null}
-          {p.data_wplyniecia ? (
-            <span className="text-atrament-3">{`wpłynął ${dataSlownie(p.data_wplyniecia)}`}</span>
-          ) : null}
-        </div>
-      </header>
+        {/*
+          PO LUDZKU (04.10.2026) — prosba Pawla: „dla zwyklego zjadacza chleba".
+          Napisane przez model jezykowy WYLACZNIE z opisu rejestru, ktory stoi
+          w dziale nizej — zrodlo jest o rzut oka, a nie zamiast. Kazda liczba
+          przeszla bezpiecznik (musi wystepowac w opisie rejestru), a gdy rejestr
+          zmieni opis, streszczenie znika samo (skrot zrodla). Podpis mowi wprost,
+          kto to napisal i ze rozstrzyga tekst rejestru.
+        */}
+        {streszczenie ? (
+          <section className="w-liczbach po-ludzku" aria-labelledby="po-ludzku-t" data-odpowiedz="">
+            <h2 id="po-ludzku-t">Po ludzku</h2>
+            <p className="py-2 leading-relaxed">{streszczenie.tekst}</p>
+            <p className="pb-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+              {`Napisał automatycznie model językowy (${streszczenie.model}) wyłącznie na podstawie `}
+              <a href="#opis">opisu z rejestru Sejmu</a>
+              {'. Może zawierać błędy — rozstrzyga tekst rejestru. Każda liczba w streszczeniu została sprawdzona: musi występować w opisie rejestru.'}
+            </p>
+          </section>
+        ) : null}
 
-      {/*
-        CZEGO DOTYCZY — cytat z rejestru, nie nasze streszczenie.
-        Naglowek musi mowic, KTO to napisal. „Streszczenie" bez autora kazaloby
-        czytelnikowi przypisac tekst nam, a przy pierwszym nieprecyzyjnym opisie
-        zaplacilaby za to nasza wiarygodnosc — przy liczbach trzymamy odnosnik
-        do rejestru wlasnie dlatego, zeby nie bylo watpliwosci, skad co jest.
-        Dlatego tez odnosnik stoi TUTAJ, przy tekscie, a nie tylko na dole
-        strony (zasada 1: ma wygladac jak element interfejsu, nie jak przypis).
-
-        Ta sama regula prywatnosci co przy tytule: nazwiska osob prywatnych
-        nie wychodza na strone (zasada 7). Import stosuje ja do tego samego
-        pola, skladajac indeks wyszukiwania.
-      */}
-      {/*
-        PO LUDZKU (04.10.2026) — prosba Pawla: „dla zwyklego zjadacza chleba".
-        Napisane przez model jezykowy WYLACZNIE z opisu rejestru, ktory stoi
-        tuz nizej — zrodlo jest o rzut oka, a nie zamiast. Kazda liczba
-        przeszla bezpiecznik (musi wystepowac w opisie rejestru), a gdy rejestr
-        zmieni opis, streszczenie znika samo (skrot zrodla). Podpis mowi wprost,
-        kto to napisal i ze rozstrzyga tekst rejestru.
-      */}
-      {streszczenie ? (
-        <section className="mt-6 rounded-2xl border border-kreska bg-akcent-slaby p-5">
-          <h2 className="szryft text-lg font-semibold">Po ludzku</h2>
-          <p className="mt-2 leading-relaxed">{streszczenie.tekst}</p>
-          <p className="mt-3 text-xs leading-relaxed text-atrament-2">
-            {`Streszczenie napisał automatycznie model językowy (${streszczenie.model}) wyłącznie na podstawie opisu z rejestru, który jest niżej. Może zawierać błędy — rozstrzyga tekst rejestru. Każda liczba w streszczeniu została sprawdzona: musi występować w opisie rejestru.`}
+        {p.adres_publikacji ? (
+          <p className="mt-4" style={{ fontSize: 'var(--sredni)' }}>
+            <b>{`Opublikowano: ${p.adres_publikacji}`}</b>
+            {p.eli ? (
+              <>
+                {' · '}
+                <a className="text-akcent underline underline-offset-4 hover:no-underline" href={`https://eli.gov.pl/eli/${p.eli}`} target="_blank" rel="noreferrer">
+                  tekst aktu w Dzienniku Ustaw
+                </a>
+              </>
+            ) : null}
           </p>
-        </section>
-      ) : null}
+        ) : null}
 
-      {p.opis ? (
-        <section className="mt-6 rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="szryft text-lg font-semibold">Czego dotyczy</h2>
-            <Zrodlo adres={REJESTR(p.numer)} etykieta="opis z rejestru Sejmu" />
-          </div>
-          <p className="mt-2 leading-relaxed text-atrament-2">
-            {bezNazwiskOsobPrywatnych(p.opis)}
-          </p>
-        </section>
-      ) : null}
-
-      {p.adres_publikacji ? (
-        <p className="mt-5 rounded-2xl border border-kreska bg-papier-2 p-5 text-sm shadow-karta">
-          <span className="font-medium">{`Opublikowano: ${p.adres_publikacji}`}</span>
-          {p.eli ? (
-            <a
-              className="mt-1 block text-akcent underline underline-offset-4 hover:no-underline"
-              href={`https://eli.gov.pl/eli/${p.eli}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Tekst aktu w Dzienniku Ustaw →
-            </a>
-          ) : null}
+        <p className="stan-danych">
+          <span>{`druk nr ${p.numer}`}</span>
+          {p.data_wplyniecia ? <span>{`wpłynął ${dataKrotko(p.data_wplyniecia)}`}</span> : null}
+          {importProcesow ? <span>{`stan danych: rejestr procesów ${dataKrotko(importProcesow.kiedy)}`}</span> : null}
+          <span><Podstawa adres={REJESTR(p.numer)} nazwa="przebieg procesu w Sejmie" /></span>
         </p>
-      ) : null}
+      </div>
 
-      <h2 className="szryft mt-10 text-2xl font-semibold">Droga przez Sejm</h2>
-      <p className="mt-1 text-sm text-atrament-2">
-        Nazwy etapów pochodzą z rejestru Sejmu. Nie dopisujemy do nich własnych wyjaśnień.
-      </p>
+      <div className="obszar z-spisem">
+        <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
+        <div className="dzialy">
+          {/*
+            CZEGO DOTYCZY — cytat z rejestru, nie nasze streszczenie.
+            Naglowek musi mowic, KTO to napisal. „Streszczenie" bez autora kazaloby
+            czytelnikowi przypisac tekst nam, a przy pierwszym nieprecyzyjnym opisie
+            zaplacilaby za to nasza wiarygodnosc. Dlatego odnosnik stoi TUTAJ, przy
+            tekscie (zasada 1: ma wygladac jak element interfejsu, nie jak przypis).
+            Ta sama regula prywatnosci co przy tytule (zasada 7).
+          */}
+          {p.opis ? (
+            <Dzial id="opis" nr={nr('opis')} tytul="Opis z rejestru Sejmu" obok={<Podstawa adres={REJESTR(p.numer)} nazwa="opis z rejestru Sejmu" />}>
+              <p className="wstep text-atrament" style={{ color: 'var(--atrament)' }}>{bezNazwiskOsobPrywatnych(p.opis)}</p>
+            </Dzial>
+          ) : null}
 
-      {etapy.length === 0 ? (
-        <p className="mt-4 text-atrament-2">Rejestr nie podaje etapów tego procesu.</p>
-      ) : (
-        <ol className="mt-5 space-y-0">
-          {etapy.map((e) => <Etap key={e.kolejnosc} e={e} />)}
-        </ol>
-      )}
+          <Dzial
+            id="droga"
+            nr={nr('droga')}
+            tytul={etapy.length
+              ? `Droga przez Sejm: ${zOdmiana(etapy.length, 'etap', 'etapy', 'etapów')}${ostatni ? `, ostatni ${dataKrotko(ostatni.data)}` : ''}`
+              : 'Droga przez Sejm'}
+            obok={<Podstawa adres={REJESTR(p.numer)} nazwa="przebieg procesu w Sejmie" />}
+          >
+            {etapy.length === 0 ? (
+              <p className="wstep">Rejestr nie podaje etapów tego procesu.</p>
+            ) : (
+              <ol className="droga">
+                {etapy.map((e, i) => <Etap key={e.kolejnosc} e={e} ostatni={i === etapy.length - 1} />)}
+              </ol>
+            )}
+            {/*
+              ZGLOSZENIE PAWLA 24.09.2026: „druk 3101 — nie mozna otworzyc pliku".
+              Zmierzone tego samego dnia: ten sam adres oddal 404, a zaraz potem
+              piec razy 200. To pulapka 1 (API Sejmu za F5 oddaje 404 na poprawna
+              sciezke). Link jest dobry — zawodzi usluga, i tak to mowimy.
+            */}
+            <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+              Nazwy etapów pochodzą z rejestru Sejmu; nie dopisujemy do nich własnych wyjaśnień.
+              Druki otwierają się prosto z API Sejmu — jeśli plik się nie otworzy, spróbuj za
+              chwilę: serwer Sejmu zdarza się oddać błąd na poprawny adres. Nie kopiujemy druków
+              do siebie, to dokumenty Kancelarii Sejmu.
+            </p>
+          </Dzial>
 
-      {/*
-        ZGLOSZENIE PAWLA 24.09.2026: „druk 3101 — nie mozna otworzyc pliku".
-        Zmierzone tego samego dnia: ten sam adres oddal 404, a zaraz potem
-        piec razy 200. To pulapka 1 (API Sejmu za F5 oddaje 404 na poprawna
-        sciezke). Link jest dobry — zawodzi usluga, i tak to mowimy.
-      */}
-      <p className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-atrament-3">
-        <span>{`Źródło: rejestr procesów legislacyjnych Kancelarii Sejmu, druk nr ${p.numer}`}</span>
-        <Zrodlo adres={REJESTR(p.numer)} etykieta="przebieg procesu w Sejmie" />
-      </p>
-      <p className="mt-2 text-xs leading-relaxed text-atrament-3">
-        Druki otwierają się prosto z API Sejmu. Zdarza mu się oddać błąd na poprawny
-        adres — jeśli plik się nie otworzy, spróbuj ponownie za chwilę. Nie kopiujemy
-        druków do siebie: to dokumenty Kancelarii Sejmu i mają pochodzić od niej.
-      </p>
-    </div>
+          <Dzial
+            id="glosowania"
+            nr={nr('glosowania')}
+            tytul={glosowaniaEtapow.length
+              ? `Głosowania: ${zOdmiana(glosowaniaEtapow.length, 'głosowanie', 'głosowania', 'głosowań')} nad tym projektem`
+              : 'Głosowania: jeszcze żadnego nad tym projektem'}
+          >
+            {glosowaniaEtapow.length === 0 ? (
+              <p className="wstep">Rejestr nie wskazuje przy etapach tego procesu żadnego głosowania.</p>
+            ) : (
+              <ul className="pozycje">
+                {glosowaniaEtapow.map(({ e, g }) => <GlosowanieEtapu key={e.kolejnosc} e={e} g={g} />)}
+              </ul>
+            )}
+          </Dzial>
+        </div>
+      </div>
+    </>
   );
 }
 
-/**
- * Jeden etap. Podetapy (skierowania, sprawozdania komisji) sa wciete —
- * w rejestrze sa dziecmi czytania i tak tez czyta sie sciezke.
- */
-function Etap({ e }: { e: EtapProcesu }) {
+/** Jeden etap. Podetapy (skierowania, sprawozdania komisji) sa wciete — w rejestrze sa dziecmi czytania. */
+function Etap({ e, ostatni }: { e: EtapProcesu; ostatni: boolean }) {
   const doGlosowania = e.glos_posiedzenie !== null && e.glos_numer !== null && e.glosowanie_mamy > 0;
   return (
-    <li className={`relative border-l border-kreska py-3 pl-5 ${e.poziom > 0 ? 'ml-4' : ''}`}>
-      <span
-        className={`absolute -left-[5px] top-5 h-2.5 w-2.5 rounded-full ${e.poziom > 0 ? 'bg-kreska-2' : 'bg-akcent'}`}
-        aria-hidden
-      />
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className={e.poziom > 0 ? 'text-sm text-atrament-2' : 'font-medium'}>
-          {bezNazwiskOsobPrywatnych(e.nazwa)}
-        </span>
-        {e.data ? <span className="liczby text-xs text-atrament-3">{dataSlownie(e.data)}</span> : null}
-        {e.posiedzenie ? <span className="text-xs text-atrament-3">{`posiedzenie ${e.posiedzenie}`}</span> : null}
-        {/*
-          Kod "Sejm" nie jest komisja — rejestr uzywa go dla skierowania
-          na posiedzenie izby. "komisja Sejm" byloby nieprawda.
-        */}
-        {e.komisja && e.komisja !== 'Sejm'
-          ? <span className="text-xs text-atrament-3">{`komisja ${e.komisja}`}</span>
-          : null}
-      </div>
-
-      {e.decyzja || e.komentarz ? (
-        <p className="mt-1 text-sm text-atrament-2">{[e.decyzja, e.komentarz].filter(Boolean).join(' · ')}</p>
+    <li className={ostatni ? 'ostatni' : undefined} style={e.poziom > 0 ? { marginLeft: '1.25rem' } : undefined}>
+      <p className="kiedy">
+        {[
+          e.data ? dataKrotko(e.data) : null,
+          e.posiedzenie ? `posiedzenie ${e.posiedzenie}` : null,
+          // Kod "Sejm" nie jest komisja — rejestr uzywa go dla skierowania
+          // na posiedzenie izby. "komisja Sejm" byloby nieprawda.
+          e.komisja && e.komisja !== 'Sejm' ? `komisja ${e.komisja}` : null,
+        ].filter(Boolean).join(' · ') || '—'}
+      </p>
+      <p>
+        {e.poziom > 0 ? bezNazwiskOsobPrywatnych(e.nazwa) : <b>{bezNazwiskOsobPrywatnych(e.nazwa)}</b>}
+        {e.decyzja || e.komentarz ? <span className="text-atrament-2">{` · ${[e.decyzja, e.komentarz].filter(Boolean).join(' · ')}`}</span> : null}
+      </p>
+      {e.druk || e.glos_posiedzenie !== null ? (
+        <p className="flex flex-wrap gap-x-4" style={{ fontSize: 'var(--sredni)' }}>
+          {e.druk ? (
+            <a href={`https://api.sejm.gov.pl/sejm/term10/prints/${e.druk}/${e.druk}.pdf`} target="_blank" rel="noreferrer" className="text-akcent underline underline-offset-4 hover:no-underline">
+              {`druk nr ${e.druk} (PDF)`}
+            </a>
+          ) : null}
+          {doGlosowania ? (
+            <Link href={`/glosowanie/${e.glos_posiedzenie}-${e.glos_numer}`} className="text-akcent underline underline-offset-4 hover:no-underline">
+              kto jak głosował
+            </Link>
+          ) : e.glos_posiedzenie !== null ? (
+            // Rejestr wskazuje glosowanie, ktorego jeszcze nie pobralismy.
+            // Mowimy to wprost, zamiast dawac odnosnik prowadzacy donikad.
+            <span className="text-atrament-2">{`głosowanie ${e.glos_posiedzenie}-${e.glos_numer} — nie mamy go jeszcze w bazie`}</span>
+          ) : null}
+        </p>
       ) : null}
+    </li>
+  );
+}
 
-      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        {e.druk ? (
-          <a
-            className="text-akcent underline underline-offset-4 hover:no-underline"
-            href={`https://api.sejm.gov.pl/sejm/term10/prints/${e.druk}/${e.druk}.pdf`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {`Druk nr ${e.druk} (PDF)`}
-          </a>
-        ) : null}
-        {doGlosowania ? (
-          <Link
-            className="text-akcent underline underline-offset-4 hover:no-underline"
-            href={`/glosowanie/${e.glos_posiedzenie}-${e.glos_numer}`}
-          >
-            Kto jak głosował →
-          </Link>
-        ) : e.glos_posiedzenie !== null ? (
-          // Rejestr wskazuje glosowanie, ktorego jeszcze nie pobralismy.
-          // Mowimy to wprost, zamiast dawac odnosnik prowadzacy donikad.
-          <span className="text-xs text-atrament-3">
-            {`głosowanie ${e.glos_posiedzenie}-${e.glos_numer} — nie mamy go jeszcze w bazie`}
-          </span>
-        ) : null}
+/** „Głosowanie — głosowanie nad całością” mowi to samo dwa razy: przy samym „Głosowanie” zostaje przedmiot. */
+function tytulGlosowania(nazwa: string, przedmiot: string | null): string {
+  const n = bezNazwiskOsobPrywatnych(nazwa);
+  if (!przedmiot) return n;
+  if (/^głosowanie$/i.test(n.trim())) return przedmiot.charAt(0).toLocaleUpperCase('pl-PL') + przedmiot.slice(1);
+  return `${n} — ${przedmiot}`;
+}
+
+function GlosowanieEtapu({ e, g }: { e: EtapProcesu; g: ReturnType<typeof glosowanie> }) {
+  if (!g) {
+    return (
+      <li>
+        <div className="min-w-0">
+          <p className="meta">{e.data ? dataKrotko(e.data) : '—'}</p>
+          <p className="font-semibold">{bezNazwiskOsobPrywatnych(e.nazwa)}</p>
+          <p className="meta">{`głosowanie ${e.glos_posiedzenie}-${e.glos_numer} — nie mamy go jeszcze w bazie`}</p>
+        </div>
+      </li>
+    );
+  }
+  const o = opisGlosowania(g);
+  const w = wynikGlosowania(g);
+  return (
+    <li>
+      <div className="min-w-0">
+        <p className="meta">{`${dataSlownie(g.data)} · posiedzenie ${g.posiedzenie}`}</p>
+        <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">
+          {skroc(tytulGlosowania(e.nazwa, o.przedmiot), 150)}
+        </Link>
+        <p className="meta">
+          {`za ${liczba(g.za)}, przeciw ${liczba(g.przeciw)}, wstrzymało się ${liczba(g.wstrzymalo)}`}
+          {w ? ` · ${w.nazwa}: wymagane ${liczba(w.wymagane)} „za”` : ''}
+        </p>
+        {w ? <p className="meta"><b className="text-atrament">{w.osiagnieta ? 'Wymagana większość osiągnięta.' : 'Wymagana większość nieosiągnięta.'}</b></p> : null}
       </div>
     </li>
   );

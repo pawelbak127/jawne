@@ -167,11 +167,12 @@ async function importGlosowan(db: DatabaseSync): Promise<void> {
   const wszystkie = partie.flat();
   const wstaw = db.prepare(
     `insert into glosowania(posiedzenie, numer, dzien, data, tytul, temat, opis, rodzaj,
-       typ_wiekszosci, za, przeciw, wstrzymalo, nieobecnych, glosowalo, pdf)
-     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       typ_wiekszosci, wiekszosc_glosow, za, przeciw, wstrzymalo, nieobecnych, glosowalo, pdf)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      on conflict(posiedzenie, numer) do update set
        data=excluded.data, tytul=excluded.tytul, temat=excluded.temat, opis=excluded.opis,
-       rodzaj=excluded.rodzaj, typ_wiekszosci=excluded.typ_wiekszosci, za=excluded.za,
+       rodzaj=excluded.rodzaj, typ_wiekszosci=excluded.typ_wiekszosci,
+       wiekszosc_glosow=excluded.wiekszosc_glosow, za=excluded.za,
        przeciw=excluded.przeciw, wstrzymalo=excluded.wstrzymalo,
        nieobecnych=excluded.nieobecnych, glosowalo=excluded.glosowalo, pdf=excluded.pdf`,
   );
@@ -179,7 +180,7 @@ async function importGlosowan(db: DatabaseSync): Promise<void> {
     for (const g of wszystkie) {
       wstaw.run(
         g.sitting, g.votingNumber, g.sittingDay ?? null, g.date, g.title,
-        g.topic ?? null, g.description ?? null, g.kind ?? null, g.majorityType ?? null,
+        g.topic ?? null, g.description ?? null, g.kind ?? null, g.majorityType ?? null, g.majorityVotes ?? null,
         g.yes, g.no, g.abstain, g.notParticipating, g.totalVoted, api.adresPdf(g),
       );
     }

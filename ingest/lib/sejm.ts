@@ -29,7 +29,7 @@ export type ApiGlos = {
 export type ApiGlosowanie = {
   term: number; sitting: number; sittingDay: number; votingNumber: number;
   date: string; title: string; topic?: string; description?: string;
-  kind: string; majorityType?: string;
+  kind: string; majorityType?: string; majorityVotes?: number;
   yes: number; no: number; abstain: number; notParticipating: number; totalVoted: number;
   links?: { rel: string; href: string }[];
   votes?: ApiGlos[];

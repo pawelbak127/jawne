@@ -335,6 +335,8 @@ export type Glosowanie = GlosowanieSkrot & {
   dzien: number | null;
   opis: string | null;
   typ_wiekszosci: string | null;
+  /** `majorityVotes` z rejestru: ile glosow „za” przesadza o wiekszosci. NULL przed importem z 09.10.2026. */
+  wiekszosc_glosow: number | null;
   pdf: string | null;
 };
 
