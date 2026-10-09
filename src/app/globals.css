@@ -488,7 +488,7 @@
   .lista-paskow { list-style: none; margin: 12px 0 0; padding: 0; max-width: 46rem; }
   .lista-paskow li { padding: 8px 0; }
   .lista-paskow .opis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: var(--sredni); }
-  .lista-paskow .opis span:last-child { margin-left: auto; color: var(--atrament-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .lista-paskow .opis > span:last-child { margin-left: auto; color: var(--atrament-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pasek { height: 8px; background: var(--papier-3); margin-top: 6px; }
   .pasek i { display: block; height: 100%; background: var(--akcent); }
   [data-styl="a"] .pasek i { background: var(--atrament); }
