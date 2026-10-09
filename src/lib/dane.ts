@@ -1194,6 +1194,25 @@ export function stronaProcesow(od: number, ile: number, rodzaj = 'projekt ustawy
   );
 }
 
+/**
+ * Ostatnio uchwalone ustawy — do strony glownej. Kolejnosc po
+ * `data_zakonczenia`: etap koncowy „Uchwalono” w rejestrze NIE MA daty
+ * (zmierzone 09.10.2026: 602 z 602 bez daty), a data zakonczenia jest
+ * wypelniona dla wszystkich 602.
+ */
+export function ostatnioUchwalone(ile: number): ProcesSkrot[] {
+  return bezTabeli(
+    () => wszystkie<ProcesSkrot>(
+      `select ${KOLUMNY_PROCESU} from procesy p
+        where p.rodzaj = 'projekt ustawy' ${warunekStanu('uchwalone')}
+        order by coalesce(p.data_zakonczenia, '') desc, cast(p.numer as integer) desc
+        limit ?`,
+      ile,
+    ),
+    [],
+  );
+}
+
 export type Streszczenie = { tekst: string; model: string; przygotowano: string };
 
 /**

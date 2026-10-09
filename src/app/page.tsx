@@ -1,17 +1,20 @@
 import Link from 'next/link';
 import {
-  bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, listaPoslow, ostatnieGlosowania,
-  podsumowanie, wojewodztwaGmin,
+  bazaDostepna, kluby, liczbaGlosowan, liczbaProcesow, ostatnieGlosowania, ostatnioUchwalone,
+  podsumowanie, przegladPomocy, streszczenieUstawy, wojewodztwaGmin, zrodloImportu,
 } from '@/lib/dane';
-import { MIEJSCA, PLAN_SZEROKOSC, PLAN_WYSOKOSC, STAN_PLANU } from '@/lib/plan-sali';
-import { polaczPlan } from '@/lib/sala';
-import { dataSlownie, liczba } from '@/lib/format';
-import { PlanSali } from '@/components/PlanSali';
-import { Szukajka } from '@/components/Szukajka';
-import { Kafel, Zrodlo } from '@/components/Zrodlo';
+import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { opisGlosowania } from '@/lib/opis-glosowania';
+import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
-import { KartaGlosowania } from '@/components/KartaGlosowania';
+import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
+import { Dzial, Podstawa, Wiersz, Wiersze } from '@/components/Szablon';
 
+/*
+ * Przyklady: dwie miejscowosci i dwa tematy. Celowo bez nazwisk —
+ * nazwisko wybrane przez nas na stronie glownej czyta sie jak wyroznienie.
+ */
 const PRZYKLADY = ['Kraków', 'Zakopane', 'podatek', 'sygnaliści'];
 
 export default function StronaGlowna() {
@@ -19,202 +22,246 @@ export default function StronaGlowna() {
 
   const stan = podsumowanie();
   const listaKlubow = kluby();
-  const glosowania = ostatnieGlosowania(6, { nadCaloscia: true });
+  const glosowania = ostatnieGlosowania(4, { nadCaloscia: true });
   const glosowanNadCaloscia = liczbaGlosowan({ nadCaloscia: true });
   // Ta sama liczba co na /gminy: Warszawa raz, nie 18 dzielnic (pulapka 24).
-  // Z okregow wychodzilo 2496 wobec 2479 na /gminy — zgloszenie sesji przebudowy.
   const gminLiczba = wojewodztwaGmin().reduce((a, w) => a + w.gmin, 0);
   const ustawUchwalonych = liczbaProcesow('projekt ustawy', 'uchwalone');
+  const uchwalone = ostatnioUchwalone(3);
+  const pomoc = przegladPomocy();
+  const importPomocy = zrodloImportu('sudop-przyrost');
 
-  const { miejsca: miejscaNaSali } = polaczPlan(MIEJSCA, listaPoslow());
-  // Liczba mandatow z REJESTRU, nie z rysunku sali — to dwa rozne zrodla
-  // i nie wolno ich mylic. Ze sie zgadzaja, pilnuje test w sala.test.ts.
-  const mandatow = listaKlubow.reduce((a, k) => a + (k.mandaty ?? 0), 0);
+  // Liczba mandatow z REJESTRU KLUBOW. Kluby historyczne (bez mandatow)
+  // zostaja w bazie dla starych glosow, ale nie w ukladzie izby.
+  const klubyIzby = listaKlubow.filter((k) => (k.mandaty ?? 0) > 0).sort((a, b) => (b.mandaty ?? 0) - (a.mandaty ?? 0));
+  const mandatow = klubyIzby.reduce((a, k) => a + (k.mandaty ?? 0), 0);
+  const [pierwszy, drugi] = klubyIzby;
+
+  const ludnosc = pomoc && pomoc.wojewodztwa.length >= 16 && pomoc.wojewodztwa.every((w) => w.osob)
+    ? pomoc.wojewodztwa.reduce((a, w) => a + (w.osob ?? 0), 0)
+    : null;
+  const pomocNaOsobe = pomoc?.brutto != null && ludnosc ? pomoc.brutto / ludnosc : null;
 
   return (
-    <>
-      <section className="relative">
-        <div className="obszar pt-16 pb-12 sm:pt-24">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-akcent">
-            Sejm RP · X kadencja
-          </p>
-          {/* text-balance zamiast twardego <br>: przy <br> "Sejmie" zostawalo samo w linii. */}
-          <h1 className="szryft mt-4 max-w-4xl text-4xl leading-[1.08] font-semibold tracking-tight text-balance sm:text-6xl">
-            Kto Cię reprezentuje w&nbsp;Sejmie — i&nbsp;jak naprawdę głosuje.
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-atrament-2">
-            Wpisz swoją gminę: zobaczysz jej budżet, pieniądze z Unii, pomoc publiczną
-            dla firm i zamówienia publiczne, a obok — posłów ze swojego okręgu i to, jak
-            głosują. Przy każdej liczbie jest odnośnik do rejestru.
-          </p>
-
-          <div className="mt-8 max-w-2xl">
-            <Szukajka />
-          </div>
-          {/*
-            Przyklady: dwie miejscowosci i dwa tematy. Celowo bez nazwisk —
-            nazwisko wybrane przez nas na stronie glownej czyta sie jak wyroznienie.
-          */}
-          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-atrament-3">
-            <span>np.</span>
-            {PRZYKLADY.map((p) => (
-              <Link
-                key={p}
-                href={`/szukaj?q=${encodeURIComponent(p)}`}
-                className="rounded-full border border-kreska-2 px-2.5 py-0.5 text-atrament-2 transition-colors hover:border-akcent hover:text-akcent"
-              >
-                {p}
-              </Link>
-            ))}
-          </p>
-        </div>
+    <div className="obszar">
+      <section className="pt-7 pb-1">
+        <p className="znak text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+          {`Sejm X kadencji · ${liczba(gminLiczba)} gmin · rejestry publiczne, nie nasze oceny`}
+        </p>
+        <h1 className="szryft mt-2.5 max-w-[22em] text-[2rem] leading-[1.1] font-semibold lg:text-[2.4rem]">
+          Sejm i publiczne pieniądze — z rejestrów, liczba po liczbie.
+        </h1>
+        <p className="podtytul mt-3 max-w-[34em] text-atrament-2">
+          Przy każdej liczbie jest odnośnik do rejestru, z którego pochodzi. Nie oceniamy i nie komentujemy.
+        </p>
+        <p className="mt-2.5 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+          {'Szukaj w polu u góry strony, np. '}
+          {PRZYKLADY.map((p, i) => (
+            <span key={p}>
+              <Link href={`/szukaj?q=${encodeURIComponent(p)}`} className="text-akcent underline underline-offset-4 hover:no-underline">{p}</Link>
+              {i < PRZYKLADY.length - 1 ? ', ' : '.'}
+            </span>
+          ))}
+        </p>
+        {/*
+          Trzy pytania, z ktorymi ludzie tu przychodza — nazwane ich slowami,
+          nie nazwami naszych zakladek (badania-ux.md §2, F2). Reszta serwisu
+          jest w menu u gory, ktore jest widoczne zawsze.
+        */}
+        <nav className="drzwi" aria-label="Najczęstsze pytania">
+          <Link href="/gminy">
+            <b>Moja gmina →</b>
+            <span>{`Budżet, fundusze UE, pomoc dla firm, zamówienia i posłowie z okręgu — ${liczba(gminLiczba)} gmin, zawsze na mieszkańca.`}</span>
+          </Link>
+          <Link href="/poslowie">
+            <b>Mój poseł →</b>
+            <span>{`Jak głosuje i czy razem z klubem — ${liczba(stan.poslow)} posłów, w tym ${liczba(stan.poslow - stan.poslowAktywnych)} z wygasłym mandatem.`}</span>
+          </Link>
+          <Link href="/pomoc-publiczna">
+            <b>Firma →</b>
+            <span>Czy dostała pomoc publiczną albo zamówienie — po nazwie albo NIP-ie.</span>
+          </Link>
+        </nav>
       </section>
+
+      {uchwalone.length ? (
+        <Dzial
+          id="uchwalone"
+          nr={1}
+          tytul={`Ostatnio uchwalone ustawy${uchwalone[0]?.data_zakonczenia ? `, ostatnia z ${dataSlownie(uchwalone[0].data_zakonczenia)}` : ''}`}
+          obok={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/processes" nazwa="rejestr procesów" />}
+        >
+          <p className="wstep">
+            Projekty, których przebieg rejestr zakończył słowem „Uchwalono”. Uchwalenie to jeszcze nie
+            wejście w życie — przy ustawie już opublikowanej stoi adres w Dzienniku Ustaw.
+          </p>
+          <ul className="pozycje">
+            {uchwalone.map((p) => {
+              const s = streszczenieUstawy(p.numer);
+              return (
+                <li key={p.numer}>
+                  <div className="min-w-0">
+                    <p className="meta">{`druk ${p.numer}${p.data_zakonczenia ? ` · ${dataKrotko(p.data_zakonczenia)}` : ''}${p.adres_publikacji ? ` · ${p.adres_publikacji}` : ''}`}</p>
+                    <Link href={`/ustawa/${p.numer}`} className="tytul-poz">{skroc(bezNazwiskOsobPrywatnych(p.tytul), 200)}</Link>
+                    {s ? <p className="streszczenie">{s.tekst}</p> : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {uchwalone.some((p) => streszczenieUstawy(p.numer)) ? (
+            <p className="mt-2 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+              Streszczenia napisał model językowy wyłącznie na podstawie opisu z rejestru; rozstrzyga rejestr — opis jest na stronie każdej ustawy.
+            </p>
+          ) : null}
+          <p className="mt-3"><Link href="/ustawy" className="text-akcent underline underline-offset-4 hover:no-underline">{`Wszystkie ${liczba(ustawUchwalonych)} uchwalone w tej kadencji →`}</Link></p>
+        </Dzial>
+      ) : null}
 
       {/*
-        Sześć kart, bo serwis ma dziś sześć rzeczy do pokazania. Wcześniej
-        były cztery i nie było wśród nich ani ustaw, ani mapy, ani zamówień —
-        czytelnik nie mial skad wiedziec, ze one w ogole istnieja.
-        Kazda karta to PYTANIE czytelnika, nie nazwa naszej zakladki.
+        Ostatnie glosowania w ogole to prawie zawsze kworum, przerwy
+        i poprawki. Nie wybieramy "waznych" wedlug siebie — pokazujemy
+        ostateczne glosowania nad projektami, rozpoznane po slowach rejestru
+        (zasada 8).
       */}
-      <section className="obszar pb-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Link href="/gminy" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Co trafia do mojej gminy?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              {`${liczba(gminLiczba)} gmin: budżet, projekty unijne, pomoc publiczna dla firm i zamówienia publiczne — zawsze w przeliczeniu na mieszkańca.`}
-            </p>
-          </Link>
-          <Link href="/mapa" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Gdzie w Polsce jest tych pieniędzy więcej?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              Mapa wszystkich gmin: dochody, fundusze europejskie i pomoc publiczna. Ciemniej znaczy więcej złotych na mieszkańca, nie „lepiej”.
-            </p>
-          </Link>
-          <Link href="/poslowie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Czy mój poseł głosuje jak klub?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              {`Każdy głos porównany z resztą klubu — w ${liczba(stan.glosowan)} głosowaniach, zawsze z mianownikiem.`}
-            </p>
-          </Link>
-          <Link href="/ustawy" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Co się stało z tą ustawą?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              {`Droga projektu przez Sejm etap po etapie — od wpłynięcia do podpisu Prezydenta. ${liczba(ustawUchwalonych)} uchwalonych w tej kadencji.`}
-            </p>
-          </Link>
-          <Link href="/pomoc-publiczna" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Kto rozdaje publiczne pieniądze firmom?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              Dotacje, ulgi i pomoc de minimis w całej Polsce: kto udziela, na co i jakim firmom.
-            </p>
-          </Link>
-          <Link href="/o-serwisie" className="group rounded-2xl border border-kreska bg-papier-2 p-5 transition-all hover:border-kreska-2 hover:shadow-karta">
-            <p className="font-medium group-hover:text-akcent">Skąd to wiadomo?</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-atrament-2">
-              Z rejestrów Sejmu, PKW, GUS, ministerstwa funduszy, UOKiK i TED. Przy każdej liczbie jest odnośnik — sprawdzisz nas w dwóch kliknięciach.
-            </p>
-          </Link>
-        </div>
-      </section>
-
-      <section className="obszar py-8">
-        {/* p-4 na telefonie, nie p-6: kazde 16 px to ok. 2% rysunku sali, ktory
-            i tak miesci sie tylko w 42% (zmierzone na 390 px). */}
-        <div className="rounded-3xl border border-kreska bg-papier-2 p-4 shadow-karta sm:p-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="szryft text-2xl font-semibold">Układ izby</h2>
-            <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/clubs" etykieta="rejestr klubów" />
-          </div>
-
-          {/*
-            PRAWDZIWA sala, nie polkole ulozone klubami. Do 30.09.2026 stal tu
-            wykres, ktory wygladal jak izba, ale miejsca ustawial po kolei
-            wedlug klubow — a odkad mamy rysunek Kancelarii, nie ma powodu
-            rysowac przyblizenia. Przy okazji jest klikalny, o co prosil Pawel.
-          */}
-          <p className="mt-4 text-sm text-atrament-2">
-            <span className="liczby font-medium">{liczba(mandatow)} mandatów</span> — każda kropka
-            to jedno miejsce w sali posiedzeń. Najedź, żeby zobaczyć, kto na nim siedzi.
-          </p>
-          <div className="mt-4">
-            <PlanSali
-              miejsca={miejscaNaSali}
-              szerokosc={PLAN_SZEROKOSC}
-              wysokosc={PLAN_WYSOKOSC}
-              stan={dataSlownie(STAN_PLANU)}
-              zSzukaniem={false}
-            />
-          </div>
-
-          {/*
-            Ta uwaga nie jest drobnym drukiem. Czytelnik widzacy kolorowy wykres
-            sejmowy zaklada, ze to barwy partyjne — i na tym zalozeniu buduje
-            wnioski. Musi wiedziec, ze tak nie jest.
-          */}
-          <p className="mx-auto mt-8 max-w-xl text-center text-xs leading-relaxed text-atrament-3">
-            Barwy są nasze, dobrane pod rozróżnialność przy daltonizmie — nie są
-            barwami partyjnymi. Loga klubów dają pięć podobnych czerwieni i trzy
-            granaty, więc na ich podstawie nie da się narysować czytelnego wykresu.
-          </p>
-        </div>
-      </section>
-
-      <section className="obszar py-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Kafel
-            wartosc={liczba(stan.glosowan)}
-            etykieta="głosowań"
-            mianownik={stan.pierwszeGlosowanie ? `od ${dataSlownie(stan.pierwszeGlosowanie)}` : undefined}
-            zrodlo="https://api.sejm.gov.pl/sejm/term10/votings"
-          />
-          <Kafel
-            wartosc={liczba(stan.poslow)}
-            etykieta="posłów w rejestrze"
-            mianownik={`w tym ${liczba(stan.poslow - stan.poslowAktywnych)} z wygasłym mandatem`}
-            zrodlo="https://api.sejm.gov.pl/sejm/term10/MP"
-          />
-          <Kafel
-            wartosc={liczba(stan.glosow)}
-            etykieta="głosów imiennych"
-            mianownik={`z ${liczba(stan.glosowanZGlosami)} głosowań`}
-            zrodlo="https://api.sejm.gov.pl/sejm/openapi/"
-          />
-          <Kafel
-            // Liczymy kluby Z REJESTRU KLUBOW, a nie wszystkie wiersze tabeli:
-            // te zawieraja rowniez kluby historyczne wystepujace juz tylko
-            // w starych glosach.
-            wartosc={liczba(listaKlubow.filter((k) => k.mandaty !== null).length)}
-            etykieta="klubów i kół"
-            mianownik={stan.ostatnieGlosowanie ? `stan na ${dataSlownie(stan.ostatnieGlosowanie)}` : undefined}
-            zrodlo="https://api.sejm.gov.pl/sejm/term10/clubs"
-          />
-        </div>
-      </section>
-
-      <section className="obszar py-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="szryft text-2xl font-semibold">Ostatnie głosowania nad całością projektów</h2>
-          <Link href="/glosowania?rodzaj=calosc" className="text-sm text-akcent underline underline-offset-4 hover:no-underline">
-            {`wszystkie ${liczba(glosowanNadCaloscia)}`}
-          </Link>
-        </div>
-        {/*
-          Ostatnie glosowania w ogole to prawie zawsze kworum, przerwy
-          i poprawki. Nie wybieramy "waznych" wedlug siebie — pokazujemy
-          ostateczne glosowania nad projektami, rozpoznane po slowach rejestru.
-        */}
-        <p className="mt-1 max-w-2xl text-sm text-atrament-2">
+      <Dzial
+        id="glosowania"
+        nr={2}
+        tytul={glosowania[0] ? `Ostatnie głosowania nad całością, od ${dataSlownie(glosowania[glosowania.length - 1].data)}` : 'Ostatnie głosowania nad całością'}
+        obok={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/votings" nazwa="rejestr głosowań" />}
+      >
+        <p className="wstep">
           {`Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je rejestr. Wszystkich głosowań, łącznie z poprawkami i sprawami porządkowymi, jest ${liczba(stan.glosowan)}.`}
         </p>
+        <ul className="pozycje">
+          {glosowania.map((g) => {
+            const o = opisGlosowania(g);
+            return (
+              <li key={`${g.posiedzenie}-${g.numer}`}>
+                <div className="min-w-0">
+                  <p className="meta">{[dataSlownie(g.data), `posiedzenie ${g.posiedzenie}`, o.punkt ? `pkt ${o.punkt}` : null].filter(Boolean).join(' · ')}</p>
+                  <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">{skroc(o.sprawa, 170)}</Link>
+                  <PaseczekGlosow g={g} className="mt-2 max-w-xl" zOpisem />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3"><Link href="/glosowania?rodzaj=calosc" className="text-akcent underline underline-offset-4 hover:no-underline">{`Wszystkie ${liczba(glosowanNadCaloscia)} głosowań nad całością →`}</Link></p>
+      </Dzial>
 
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-          {glosowania.map((g) => (
-            <li key={`${g.posiedzenie}-${g.numer}`}>
-              <KartaGlosowania g={g} />
+      {pomoc ? (
+        <Dzial
+          id="pieniadze"
+          nr={3}
+          tytul={pomocNaOsobe !== null
+            ? `Pieniądze publiczne: ${zlote(pomocNaOsobe)} pomocy dla firm na mieszkańca w ${zOdmiana(pomoc.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')}`
+            : 'Pieniądze publiczne'}
+        >
+          <Wiersze>
+            <Wiersz
+              duzy
+              co={pomocNaOsobe !== null ? 'Pomoc publiczna dla firm w całej Polsce, na mieszkańca' : 'Pomoc publiczna dla firm w całej Polsce'}
+              ile={pomocNaOsobe !== null ? zlote(pomocNaOsobe) : zlote(pomoc.brutto)}
+              zCzego={
+                <>
+                  {`${zlote(pomoc.brutto)}${ludnosc ? ` ÷ ${liczba(ludnosc)} mieszkańców (GUS)` : ''} · `}
+                  <b>{`w ${zOdmiana(pomoc.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')}`}</b>
+                  {` (${dataKrotko(pomoc.od)}–${dataKrotko(pomoc.do)}), nie w całym roku · ${zOdmiana(pomoc.przypadkow, 'przypadek', 'przypadki', 'przypadków')} `}
+                  <Link href="/pomoc-publiczna">pomoc publiczna w Polsce →</Link>
+                </>
+              }
+              podstawa={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={importPomocy ? dataKrotko(importPomocy.kiedy) : null} />}
+            />
+          </Wiersze>
+          <WarunkiSudop pobrano={importPomocy?.kiedy ?? null} />
+          <p className="pliki">
+            <Link href="/gminy">Budżet i fundusze UE Twojej gminy →</Link>
+            <Link href="/mapa">Mapa: gdzie jest więcej złotych na mieszkańca →</Link>
+          </p>
+        </Dzial>
+      ) : null}
+
+      {/*
+        Uklad izby jako JEDEN pasek i legenda, nie plan sali. Plan (kto gdzie
+        siedzi) jest na /sala; na stronie glownej wazyl najwiecej i odpowiadal
+        na pytanie, ktorego tu nikt nie zadaje. Mandaty z rejestru klubow.
+      */}
+      <Dzial
+        id="izba"
+        nr={4}
+        tytul={`Układ izby: ${liczba(mandatow)} mandatów`}
+        obok={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/clubs" nazwa="rejestr klubów" data={stan.ostatnieGlosowanie ? `stan na ${dataKrotko(stan.ostatnieGlosowanie)}` : null} />}
+      >
+        {pierwszy && drugi ? (
+          <h3 className="tytul-wykresu">{`${pierwszy.id} i ${drugi.id} mają razem ${liczba((pierwszy.mandaty ?? 0) + (drugi.mandaty ?? 0))} z ${liczba(mandatow)} mandatów`}</h3>
+        ) : null}
+        <div
+          className="mt-3.5 flex max-w-[46rem] overflow-hidden"
+          style={{ height: 22 }}
+          role="img"
+          aria-label={klubyIzby.map((k) => `${k.id}: ${k.mandaty}`).join(', ')}
+        >
+          {klubyIzby.map((k) => (
+            <span
+              key={k.id}
+              className="miejsce-probka block h-full"
+              title={`${k.id}: ${k.mandaty}`}
+              style={{ width: `${((k.mandaty ?? 0) / mandatow) * 100}%`, '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties}
+            />
+          ))}
+        </div>
+        <ul className="legenda">
+          {klubyIzby.map((k) => (
+            <li key={k.id}>
+              <span title={k.nazwa ?? undefined}>
+                <span className="miejsce-probka kropka" style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties} />
+                {k.id}
+              </span>
+              <span className="liczby">{k.mandaty}</span>
             </li>
           ))}
         </ul>
-      </section>
-    </>
+        {/*
+          Ta uwaga nie jest drobnym drukiem. Czytelnik widzacy kolorowy wykres
+          sejmowy zaklada, ze to barwy partyjne — i na tym zalozeniu buduje
+          wnioski. Musi wiedziec, ze tak nie jest.
+        */}
+        <p className="mt-2.5 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+          {'Barwy są nasze, dobrane pod rozróżnialność przy daltonizmie — to nie barwy partyjne. Kto na którym miejscu siedzi — na stronie '}
+          <Link href="/sala">Sala posiedzeń</Link>.
+        </p>
+      </Dzial>
+
+      <Dzial id="mamy" nr={5} tytul={`Co mamy: ${liczba(stan.glosow)} głosów imiennych z ${liczba(stan.glosowanZGlosami)} głosowań`}>
+        <Wiersze>
+          <Wiersz
+            co="Głosowania"
+            ile={liczba(stan.glosowan)}
+            zCzego={stan.pierwszeGlosowanie ? `od ${dataSlownie(stan.pierwszeGlosowanie)}` : undefined}
+            podstawa={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/votings" nazwa="API Sejmu" />}
+          />
+          <Wiersz
+            co="Głosy imienne"
+            ile={liczba(stan.glosow)}
+            zCzego={`z ${zOdmiana(stan.glosowanZGlosami, 'głosowania', 'głosowań', 'głosowań')} — każdy głos każdego posła`}
+            podstawa={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/votings" nazwa="API Sejmu" />}
+          />
+          <Wiersz
+            co="Posłowie w rejestrze"
+            ile={liczba(stan.poslow)}
+            zCzego={`w tym ${liczba(stan.poslow - stan.poslowAktywnych)} z wygasłym mandatem — zostają w serwisie`}
+            podstawa={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/MP" nazwa="API Sejmu" />}
+          />
+          <Wiersz
+            co="Ustawy uchwalone w tej kadencji"
+            ile={liczba(ustawUchwalonych)}
+            zCzego="droga każdego projektu etap po etapie"
+            podstawa={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/processes" nazwa="API Sejmu" />}
+          />
+        </Wiersze>
+        <p className="mt-3"><Link href="/stan" className="text-akcent underline underline-offset-4 hover:no-underline">Stan danych: co i kiedy pobraliśmy →</Link></p>
+      </Dzial>
+    </div>
   );
 }
