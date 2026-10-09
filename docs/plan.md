@@ -81,11 +81,9 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
 
 ### Kolejność przed zdjęciem `noindex` (ustalona 03.10.2026)
 
-1. **DNS w panelu Hostido: rekord A dla `www` → 52.29.50.167.** Dziś `www`
-   wskazuje na serwer Hostido (185.110.48.29) z jego stroną zastępczą
-   (pułapka 68). Rekordów AAAA nie ma ani dla `www`, ani dla adresu głównego,
-   więc wystarczy ten jeden. Przekierowanie po naszej stronie jest już
-   w Caddyfile i zacznie działać samo.
+1. ~~**DNS w panelu Hostido: rekord A dla `www` → 52.29.50.167.**~~ —
+   **zrobione** (sprawdzone 09.10.2026): `www.zrejestru.pl` wskazuje na
+   52.29.50.167 i oddaje `301` na `https://zrejestru.pl/`.
 2. **Poczta `kontakt@zrejestru.pl` — SPRAWDZONE 04.10.2026: NIE DZIAŁA.**
    Próbny list odbił się z `550 authentication required`: serwer Hostido
    (`mail.zrejestru.pl` → 185.110.48.29) nie przyjmuje poczty dla domeny,
