@@ -96,7 +96,16 @@ EOF
   if pgrep -x unattended-upgr >/dev/null; then
     echo "   w tle dziala unattended-upgrades — apt poczeka na blokade (do 10 min)"
   fi
-  apt-get update -q
+  # Blad odswiezenia list NIE przerywa wdrozenia. ZMIERZONE 09.10.2026:
+  # repozytorium Caddy na Cloudsmith oddawalo „402 Payment Required” na
+  # indeksie pakietow (klucz i plik .list dalej 200), `apt-get update`
+  # konczyl sie kodem 100 i wdrozenie padalo w pierwszym kroku — z powodu
+  # cudzego konta, przy pakietach, ktore na serwerze juz sa. Ponizsza
+  # instalacja korzysta z list z ostatniego udanego odswiezenia.
+  if ! apt-get update -q; then
+    echo "   UWAGA: apt-get update zglosil blad (zwykle jedno repozytorium, np. Caddy na Cloudsmith)."
+    echo "          Ide dalej na listach z ostatniego udanego odswiezenia. Sprawdz: sudo apt-get update"
+  fi
   # goaccess: raport HTML z dziennika wejsc (sudo jawne statystyki), od 03.10.2026.
   apt-get install -y -q git curl ca-certificates gnupg sqlite3 sudo unattended-upgrades goaccess \
     debian-keyring debian-archive-keyring apt-transport-https
