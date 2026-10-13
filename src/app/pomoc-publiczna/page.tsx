@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { bazaDostepna, DNI_DO_USTALENIA, przegladPomocy, zrodloImportu } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
-import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
@@ -183,7 +183,7 @@ export default function StronaPomocy() {
             id="woj"
             nr={nr('woj')}
             tytul={pierwszyWoj && ostatniWoj
-              ? `Na mieszkańca: od ${zlote(ostatniWoj.naOsobe)} w ${wMiejscowniku(ostatniWoj.wojewodztwo)} do ${zlote(pierwszyWoj.naOsobe)} w ${wMiejscowniku(pierwszyWoj.wojewodztwo)}`
+              ? `Na mieszkańca: od ${zlote(ostatniWoj.naOsobe)} w ${wojewodztwoWMiejscowniku(ostatniWoj.wojewodztwo)} do ${zlote(pierwszyWoj.naOsobe)} w ${wojewodztwoWMiejscowniku(pierwszyWoj.wojewodztwo)}`
               : 'Na mieszkańca, według województwa'}
             metoda={
               <p>
@@ -196,7 +196,7 @@ export default function StronaPomocy() {
             }
           >
             <ListaPaskow
-              tytul={pierwszyWoj ? `Najwięcej na mieszkańca w ${wMiejscowniku(pierwszyWoj.wojewodztwo)}: ${zlote(pierwszyWoj.naOsobe)} — liczy się siedziba firmy` : undefined}
+              tytul={pierwszyWoj ? `Najwięcej na mieszkańca w ${wojewodztwoWMiejscowniku(pierwszyWoj.wojewodztwo)}: ${zlote(pierwszyWoj.naOsobe)} — liczy się siedziba firmy` : undefined}
               pozycje={pozycjeWoj(woj.slice(0, NA_WIERZCHU), pierwszyWoj?.naOsobe ?? null)}
             />
             {woj.length > NA_WIERZCHU ? (
@@ -220,11 +220,6 @@ export default function StronaPomocy() {
       </div>
     </>
   );
-}
-
-/** „mazowieckie” → „mazowieckim” (w mazowieckim). Wszystkie 16 nazw konczy sie na „-ie”. */
-function wMiejscowniku(woj: string): string {
-  return woj.replace(/ie$/, 'im');
 }
 
 function pozycjeWoj(woj: { wojewodztwo: string; naOsobe: number | null; brutto: number | null }[], max: number | null) {

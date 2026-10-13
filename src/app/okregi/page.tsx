@@ -4,7 +4,7 @@ import { bazaDostepna, okregi } from '@/lib/dane';
 import { zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Szukajka } from '@/components/Szukajka';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 
 export const metadata: Metadata = {
   title: 'Okręgi wyborcze',
@@ -36,42 +36,35 @@ export default function StronaOkregow() {
   const posortowane = [...wojewodztwa.entries()].sort((a, b) => a[0].localeCompare(b[0], 'pl'));
 
   return (
-    <div className="obszar py-10">
+    <div className="obszar">
       {/*
         Spis gmin ma własną trasę (/gminy). Tutaj zostają okręgi wyborcze —
         to co innego: jeden okręg obejmuje wiele gmin i służy do wybierania
         posłów, a nie do oglądania pieniędzy gminy.
       */}
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">Okręgi wyborcze</h1>
-        <Zrodlo adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach" etykieta="PKW — wybory 2023" />
-      </div>
-      <p className="mt-2 max-w-2xl text-atrament-2">
-        {`Posłów wybiera się w ${zOdmiana(lista.length, 'okręgu', 'okręgach', 'okręgach')}. Każdy okręg ma listę swoich gmin. Szukasz konkretnej gminy? Wpisz jej nazwę albo zajrzyj do spisu gmin.`}
-      </p>
+      <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { nazwa: 'Okręgi wyborcze' }]} />
+      <Wypis
+        tytul="Okręgi wyborcze"
+        podtytul={`Posłów wybiera się w ${zOdmiana(lista.length, 'okręgu', 'okręgach', 'okręgach')}. Każdy okręg ma listę swoich gmin. Szukasz konkretnej gminy? Wpisz jej nazwę albo zajrzyj do spisu gmin.`}
+      />
       <div className="mt-5 max-w-xl">
         <Szukajka etykieta="Nazwa Twojej gminy lub miasta" />
       </div>
-      <p className="mt-3 text-sm text-atrament-2">
-        <Link href="/gminy" className="text-akcent underline underline-offset-4 hover:no-underline">
-          Spis wszystkich gmin →
-        </Link>
+      <p className="pliki">
+        <Link href="/gminy">Spis wszystkich gmin →</Link>
       </p>
 
-      <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {posortowane.map(([woj, okr]) => (
           <section key={woj}>
-            <h2 className="text-xs font-medium tracking-wider text-atrament-3 uppercase">{`woj. ${woj}`}</h2>
-            <ul className="mt-2 space-y-1.5">
+            <h2 className="border-b-2 border-atrament pb-1 font-semibold">{`woj. ${woj}`}</h2>
+            <ul>
               {okr.map((o) => (
-                <li key={o.nr}>
-                  <Link
-                    href={`/okreg/${o.nr}`}
-                    className="group flex items-baseline gap-3 rounded-lg border border-kreska bg-papier-2 px-3 py-3 transition-colors hover:border-kreska-2"
-                  >
-                    <span className="liczby w-6 shrink-0 text-right text-sm text-atrament-3">{o.nr}</span>
-                    <span className="flex-1 font-medium group-hover:text-akcent">{o.nazwa ?? `Okręg nr ${o.nr}`}</span>
-                    <span className="text-xs text-atrament-3">{zOdmiana(o.poslow, 'poseł', 'posłów', 'posłów')}</span>
+                <li key={o.nr} className="border-b border-kreska">
+                  <Link href={`/okreg/${o.nr}`} className="group flex min-h-11 items-baseline gap-3 py-2">
+                    <span className="znak w-7 shrink-0 text-right text-atrament-2">{o.nr}</span>
+                    <span className="flex-1 text-akcent underline decoration-kreska-2 underline-offset-4 group-hover:decoration-current">{o.nazwa ?? `Okręg nr ${o.nr}`}</span>
+                    <span className="text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>{zOdmiana(o.poslow, 'poseł', 'posłów', 'posłów')}</span>
                   </Link>
                 </li>
               ))}
@@ -79,6 +72,10 @@ export default function StronaOkregow() {
           </section>
         ))}
       </div>
+      <p className="stan-danych">
+        <span>okręgi i ich gminy: PKW, wybory do Sejmu 2023</span>
+        <span><Podstawa adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach" nazwa="PKW — wybory 2023" /></span>
+      </p>
     </div>
   );
 }

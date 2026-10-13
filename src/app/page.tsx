@@ -4,10 +4,9 @@ import {
   podsumowanie, przegladPomocy, streszczenieUstawy, wojewodztwaGmin, zrodloImportu,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
-import { opisGlosowania } from '@/lib/opis-glosowania';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
-import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { PozycjaGlosowania } from '@/components/PozycjaGlosowania';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { Dzial, Podstawa, Wiersz, Wiersze } from '@/components/Szablon';
 
@@ -134,18 +133,7 @@ export default function StronaGlowna() {
           {`Ostateczne głosowania nad projektami ustaw i uchwał — tak nazywa je rejestr. Wszystkich głosowań, łącznie z poprawkami i sprawami porządkowymi, jest ${liczba(stan.glosowan)}.`}
         </p>
         <ul className="pozycje">
-          {glosowania.map((g) => {
-            const o = opisGlosowania(g);
-            return (
-              <li key={`${g.posiedzenie}-${g.numer}`}>
-                <div className="min-w-0">
-                  <p className="meta">{[dataSlownie(g.data), `posiedzenie ${g.posiedzenie}`, o.punkt ? `pkt ${o.punkt}` : null].filter(Boolean).join(' · ')}</p>
-                  <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">{skroc(o.sprawa, 170)}</Link>
-                  <PaseczekGlosow g={g} className="mt-2 max-w-xl" zOpisem />
-                </div>
-              </li>
-            );
-          })}
+          {glosowania.map((g) => <PozycjaGlosowania key={`${g.posiedzenie}-${g.numer}`} g={g} />)}
         </ul>
         <p className="mt-3"><Link href="/glosowania?rodzaj=calosc" className="text-akcent underline underline-offset-4 hover:no-underline">{`Wszystkie ${liczba(glosowanNadCaloscia)} głosowań nad całością →`}</Link></p>
       </Dzial>

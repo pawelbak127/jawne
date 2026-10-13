@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Portret } from '@/components/Portret';
 import { liczba, zOdmiana } from '@/lib/format';
 
 export type PoselNaLiscie = {
@@ -23,6 +22,9 @@ function uprosc(t: string): string {
   return t.replace(/ł/g, 'l').replace(/Ł/g, 'L').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 }
 
+type Zakres = 'aktywni' | 'wszyscy' | 'wygasli';
+const wZakresie = (p: PoselNaLiscie, z: Zakres) => (z === 'wszyscy' ? true : z === 'aktywni' ? p.aktywny : !p.aktywny);
+
 /**
  * Lista poslow z filtrowaniem w przegladarce.
  *
@@ -40,7 +42,9 @@ export function PrzegladPoslow({
 }) {
   const [fraza, ustawFraze] = useState('');
   const [klub, ustawKlub] = useState<string | null>(null);
-  const [tylkoAktywni, ustawTylkoAktywnych] = useState(true);
+  // Domyslnie sprawujacy mandat, ale wygasli sa o jedno klikniecie i z liczba
+  // przy zakladce — nikogo nie ukrywamy (zasada 5).
+  const [zakres, ustawZakres] = useState<Zakres>('aktywni');
 
   const indeks = useMemo(
     () => poslowie.map((p) => ({ ...p, klucz: uprosc(`${p.nazwa} ${p.klub ?? ''} ${p.okreg ?? ''} ${p.wojewodztwo ?? ''}`) })),
@@ -50,120 +54,88 @@ export function PrzegladPoslow({
   const widoczni = useMemo(() => {
     const szukane = uprosc(fraza.trim());
     return indeks.filter((p) => {
-      if (tylkoAktywni && !p.aktywny) return false;
+      if (!wZakresie(p, zakres)) return false;
       if (klub && p.klub !== klub) return false;
       if (szukane && !p.klucz.includes(szukane)) return false;
       return true;
     });
-  }, [indeks, fraza, klub, tylkoAktywni]);
+  }, [indeks, fraza, klub, zakres]);
 
-  const wszystkich = indeks.filter((p) => (tylkoAktywni ? p.aktywny : true)).length;
+  const wszystkich = indeks.filter((p) => wZakresie(p, zakres)).length;
   const barwa = (id: string | null) => kluby.find((k) => k.id === id);
+  const ZAKRESY = [
+    { klucz: 'aktywni', nazwa: 'sprawujący mandat' },
+    { klucz: 'wszyscy', nazwa: 'wszyscy w kadencji' },
+    { klucz: 'wygasli', nazwa: 'mandat wygasł' },
+  ] as const;
 
   return (
     <>
-      <div className="sticky top-0 z-20 -mx-4 bg-papier/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:px-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={fraza}
-            onChange={(e) => ustawFraze(e.target.value)}
-            type="search"
-            placeholder="Nazwisko, okręg lub województwo"
-            aria-label="Szukaj posła"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-kreska-2 bg-papier-2 px-4 text-sm outline-none focus:border-akcent"
-          />
-          {/* min-h-11: klikalny jest CALY <label>, ale miał 20 px wysokosci.
-              Wyrownuje sie przy okazji z polem szukania obok (h-11). */}
-          <label className="flex min-h-11 shrink-0 cursor-pointer items-center gap-2 text-sm text-atrament-2">
-            <input
-              type="checkbox"
-              checked={tylkoAktywni}
-              onChange={(e) => ustawTylkoAktywnych(e.target.checked)}
-              /* Sam kwadracik ma 16 px i tak zostaje: klikalny jest CALY
-                 <label> (min-h-11 wyzej), a WCAG 2.5.8 liczy cel, nie
-                 kontrolke. Powiekszanie pola wyboru do 24 px zmienia wyglad
-                 formularza, nie poprawiajac trafialnosci. */
-              className="h-4 w-4 accent-[var(--akcent)]"
-            />
-            tylko sprawujący mandat
-          </label>
-        </div>
+      <form role="search" className="filtry" onSubmit={(e) => e.preventDefault()}>
+        <label htmlFor="szukaj-posla" className="sr-only">Znajdź posła</label>
+        <input
+          id="szukaj-posla"
+          className="pole"
+          value={fraza}
+          onChange={(e) => ustawFraze(e.target.value)}
+          type="search"
+          placeholder="Nazwisko, okręg lub województwo"
+        />
+        <label htmlFor="klub-posla" className="sr-only">Klub</label>
+        <select id="klub-posla" className="pole" value={klub ?? ''} onChange={(e) => ustawKlub(e.target.value || null)}>
+          <option value="">wszystkie kluby</option>
+          {kluby.map((k) => <option key={k.id} value={k.id}>{k.etykieta}</option>)}
+        </select>
+      </form>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => ustawKlub(null)}
-            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-              klub === null ? 'border-atrament bg-atrament text-papier' : 'border-kreska-2 text-atrament-2 hover:border-atrament-3'
-            }`}
+      {/* Zakladki jako przyciski: filtr dziala w przegladarce, bez przeladowania. */}
+      <div className="zakladki" role="group" aria-label="Kto">
+        {ZAKRESY.map((z) => (
+          <a
+            key={z.klucz}
+            href="#"
+            role="button"
+            aria-current={zakres === z.klucz ? 'page' : undefined}
+            onClick={(e) => { e.preventDefault(); ustawZakres(z.klucz); }}
           >
-            wszystkie kluby
-          </button>
-          {kluby.map((k) => (
-            <button
-              key={k.id}
-              type="button"
-              onClick={() => ustawKlub(klub === k.id ? null : k.id)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
-                klub === k.id ? 'border-atrament bg-atrament text-papier' : 'border-kreska-2 text-atrament-2 hover:border-atrament-3'
-              }`}
-            >
-              <span
-                className="miejsce-probka h-2 w-2 rounded-full"
-                style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties}
-              />
-              {k.etykieta}
-            </button>
-          ))}
-        </div>
-
-        <p className="mt-3 text-sm text-atrament-2">
-          {widoczni.length === wszystkich
-            ? zOdmiana(widoczni.length, 'poseł', 'posłów', 'posłów')
-            : `${liczba(widoczni.length)} z ${liczba(wszystkich)}`}
-        </p>
+            {z.nazwa}
+            <span className="znak">{liczba(indeks.filter((p) => wZakresie(p, z.klucz)).length)}</span>
+          </a>
+        ))}
       </div>
 
+      <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--sredni)' }} aria-live="polite">
+        {widoczni.length === wszystkich
+          ? zOdmiana(widoczni.length, 'poseł', 'posłów', 'posłów')
+          : `${liczba(widoczni.length)} z ${liczba(wszystkich)}`}
+      </p>
+
       {widoczni.length === 0 ? (
-        <p className="py-16 text-center text-atrament-2">
-          Nikt nie pasuje do tych warunków.
-        </p>
+        <p className="py-16 text-center text-atrament-2">Nikt nie pasuje do tych warunków.</p>
       ) : (
-        <ul className="grid gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-3">
-          {widoczni.map((p) => {
-            const k = barwa(p.klub);
-            // min-w-0: element siatki bez tego nie zejdzie ponizej szerokosci tresci
-            return (
-              <li key={p.slug} className="min-w-0">
-                <Link
-                  href={`/posel/${p.slug}`}
-                  className="group flex items-center gap-3 rounded-xl border border-kreska bg-papier-2 p-3 transition-all hover:border-kreska-2 hover:shadow-karta"
-                >
-                  <Portret slug={p.slug} imieNazwisko={p.nazwa} maZdjecie={p.maZdjecie} rozmiar="maly" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium group-hover:text-akcent">{p.nazwa}</span>
-                    {/* min-w-0: bez tego truncate w srodku nie dziala i kafelek rozpycha strone */}
-                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-atrament-2">
-                      {k ? (
-                        <span
-                          className="miejsce-probka h-2 w-2 shrink-0 rounded-full"
-                          style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties}
-                        />
-                      ) : null}
-                      <span className="truncate">{p.klub ?? 'bez klubu'}</span>
-                      {p.okreg ? <span className="truncate text-atrament-3">· {p.okreg}</span> : null}
-                    </span>
-                  </span>
-                  {!p.aktywny ? (
-                    <span className="shrink-0 rounded-md bg-papier-3 px-1.5 py-0.5 text-xs text-atrament-3">
-                      mandat wygasł
-                    </span>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <table className="tabela osoby">
+          <thead>
+            <tr><th>Imię i nazwisko</th><th>Klub</th><th>Okręg</th></tr>
+          </thead>
+          <tbody>
+            {widoczni.map((p) => {
+              const k = barwa(p.klub);
+              return (
+                <tr key={p.slug}>
+                  <td>
+                    <Link href={`/posel/${p.slug}`} className="font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">{p.nazwa}</Link>
+                    {!p.aktywny ? <span className="ml-2 text-atrament-2">· mandat wygasł</span> : null}
+                  </td>
+                  <td>
+                    {k ? <span className="miejsce-probka kropka" style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties} /> : null}
+                    {p.klub ?? 'bez klubu'}
+                  </td>
+                  <td className="text-atrament-2">{p.okreg ?? '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
     </>
   );

@@ -287,13 +287,17 @@ export type GlosowanieSkrot = {
    */
   glosowalo: number;
   rodzaj: string | null;
+  /** Typ wiekszosci i liczba glosow „za”, ktora o niej przesadza — do `wynikGlosowania`. */
+  typ_wiekszosci: string | null;
+  wiekszosc_glosow: number | null;
 };
 
 /** Kolumny skrotu glosowania z tabela aliasowana jako `g`. Jedno miejsce, piec zapytan. */
 const KOLUMNY_GLOSOWANIA = `
   g.posiedzenie as posiedzenie, g.numer as numer, g.data as data, g.tytul as tytul,
   g.temat as temat, g.za as za, g.przeciw as przeciw, g.wstrzymalo as wstrzymalo,
-  g.nieobecnych as nieobecnych, g.glosowalo as glosowalo, g.rodzaj as rodzaj`;
+  g.nieobecnych as nieobecnych, g.glosowalo as glosowalo, g.rodzaj as rodzaj,
+  g.typ_wiekszosci as typ_wiekszosci, g.wiekszosc_glosow as wiekszosc_glosow`;
 
 /**
  * Filtr "nad caloscia projektu" korzysta z tabeli cech wyliczonej ta sama
@@ -334,9 +338,6 @@ export function liczbaGlosowan(opcje: { nadCaloscia?: boolean } = {}): number {
 export type Glosowanie = GlosowanieSkrot & {
   dzien: number | null;
   opis: string | null;
-  typ_wiekszosci: string | null;
-  /** `majorityVotes` z rejestru: ile glosow „za” przesadza o wiekszosci. NULL przed importem z 09.10.2026. */
-  wiekszosc_glosow: number | null;
   pdf: string | null;
 };
 

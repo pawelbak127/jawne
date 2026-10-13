@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { bazaDostepna, kluby, listaPoslow } from '@/lib/dane';
+import { bazaDostepna, kluby, listaPoslow, zrodloImportu } from '@/lib/dane';
+import { dataKrotko } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { PrzegladPoslow } from '@/components/PrzegladPoslow';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 
 export const metadata: Metadata = {
   title: 'Posłowie',
@@ -15,17 +16,13 @@ export default function StronaPoslow() {
   const poslowie = listaPoslow();
   const listaKlubow = kluby();
 
-  return (
-    <div className="obszar py-10">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">Posłowie</h1>
-        <Zrodlo adres="https://api.sejm.gov.pl/sejm/term10/MP" etykieta="rejestr posłów" />
-      </div>
-      <p className="mt-2 max-w-2xl text-atrament-2">
-        Cały skład kadencji, razem z tymi, których mandat wygasł — nikogo nie ukrywamy.
-      </p>
+  const importPoslow = zrodloImportu('poslowie');
 
-      <div className="mt-6">
+  return (
+    <div className="obszar">
+      <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { nazwa: 'Posłowie' }]} />
+      <Wypis tytul="Posłowie" podtytul="Cały skład kadencji, razem z tymi, których mandat wygasł — nikogo nie ukrywamy." />
+      <div>
         <PrzegladPoslow
           poslowie={poslowie.map((p) => ({
             id: p.id,
@@ -50,6 +47,10 @@ export default function StronaPoslow() {
           }))}
         />
       </div>
+      <p className="stan-danych">
+        <span>{importPoslow ? `stan danych: rejestr posłów ${dataKrotko(importPoslow.kiedy)}` : 'stan danych: —'}</span>
+        <span><Podstawa adres="https://api.sejm.gov.pl/sejm/term10/MP" nazwa="rejestr posłów" /></span>
+      </p>
     </div>
   );
 }

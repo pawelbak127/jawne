@@ -513,6 +513,22 @@
   .legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--kreska); break-inside: avoid; }
   .pozycje .streszczenie { margin-top: 6px; max-width: 40em; color: var(--atrament-2); font-size: var(--sredni); }
 
+  /* listy: zakladki-filtry, pola filtrow, litery, stronicowanie */
+  .zakladki { display: flex; flex-wrap: wrap; gap: 0 4px; margin-top: 18px; border-bottom: 2px solid var(--atrament); }
+  .zakladki a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--atrament-2); text-decoration: none; border-bottom: 4px solid transparent; margin-bottom: -2px; font-size: var(--sredni); }
+  .zakladki a[aria-current="page"] { color: var(--atrament); font-weight: 600; border-bottom-color: var(--atrament); }
+  .zakladki a .znak { margin-left: 6px; color: var(--atrament-3); }
+  .filtry { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; max-width: 46rem; }
+  .filtry input { flex: 1 1 14rem; width: auto; }
+  .filtry select { flex: 0 1 auto; width: auto; padding: 0 10px; }
+  .litery { display: flex; gap: 2px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+  @media (min-width: 1024px) { .litery { flex-wrap: wrap; } }
+  .litery a { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; font-size: var(--sredni); color: var(--atrament); text-decoration: none; border-bottom: 1px solid var(--kreska); }
+  .litery a:hover { border-bottom-color: var(--atrament); }
+  .stronicowanie { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--sredni); }
+  .stronicowanie a, .stronicowanie span { display: inline-flex; align-items: center; min-height: 44px; }
+  .stronicowanie a { color: var(--akcent); text-decoration: underline; text-underline-offset: 0.18em; }
+
   /* droga ustawy przez Sejm: os z kropkami, ostatni etap wypelniony */
   .droga { list-style: none; margin: 16px 0 0; padding: 0; border-left: 2px solid var(--atrament); max-width: 46rem; }
   .droga li { position: relative; padding: 8px 0 14px 18px; }
@@ -567,6 +583,11 @@
     .tabela td:not(.l) { flex: 1 1 100%; }
     .tabela td.l:last-child { margin-left: auto; font-weight: 600; }
     .tabela td.l[data-etykieta]::before { content: attr(data-etykieta) ": "; color: var(--atrament-2); }
+    /* lista osob: nazwisko w linii, klub i okreg obok siebie pod spodem —
+       trzy pelne linie na posla daly 48 tys. px na 460 poslow (13.10.2026) */
+    .tabela.osoby tr { gap: 0 10px; padding: 8px 0; }
+    .tabela.osoby td:first-child { flex: 1 1 100%; }
+    .tabela.osoby td:not(:first-child) { flex: 0 0 auto; color: var(--atrament-2); }
   }
   .pliki { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
   .pliki a { display: inline-flex; align-items: center; min-height: 44px; color: var(--akcent); }

@@ -194,6 +194,47 @@ export function ListaPaskow({ tytul, pozycje, podpis }: {
 }
 
 /**
+ * Zakladki-filtry list: zwykle odnosniki, wiec adres z filtrem da sie
+ * komus wyslac. Liczba przy zakladce mowi, ile tam jest (zasada 3).
+ */
+export function Zakladki({ etykieta, pozycje }: {
+  etykieta: string;
+  pozycje: { adres: string; nazwa: string; ile?: number | null; biezaca: boolean }[];
+}) {
+  return (
+    <nav className="zakladki" aria-label={etykieta}>
+      {pozycje.map((p) => (
+        <Link key={p.adres} href={p.adres} aria-current={p.biezaca ? 'page' : undefined}>
+          {p.nazwa}
+          {p.ile != null ? <span className="znak">{p.ile.toLocaleString('pl-PL')}</span> : null}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/**
+ * Stronicowanie zwyklymi odnosnikami, nie doladowywaniem: adres strony
+ * nr 7 da sie komus wyslac, a lista nie urywa sie po cichu (wzorzec 4).
+ */
+export function Stronicowanie({ biezaca, stron, adres, nowsze = '← poprzednia', starsze = 'następna →' }: {
+  biezaca: number;
+  stron: number;
+  adres: (nr: number) => string;
+  nowsze?: string;
+  starsze?: string;
+}) {
+  if (stron <= 1) return null;
+  return (
+    <nav className="stronicowanie" aria-label="Stronicowanie">
+      {biezaca > 1 ? <Link href={adres(biezaca - 1)}>{nowsze}</Link> : <span className="text-atrament-3">{nowsze}</span>}
+      <span className="znak text-atrament-2">{`strona ${biezaca} z ${stron}`}</span>
+      {biezaca < stron ? <Link href={adres(biezaca + 1)}>{starsze}</Link> : <span className="text-atrament-3">{starsze}</span>}
+    </nav>
+  );
+}
+
+/**
  * „Pokaż wszystkie N ↓”: reszta listy zwinieta. Tresc jest w HTML-u (dziala
  * bez JavaScriptu i trafia do wyszukiwarki), a strona na telefonie nie ma
  * 50 tys. px. Ile pokazac od razu, decyduje strona — tu tylko zwijanie.

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, zlote } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote } from './format';
+
+describe('wojewodztwoWMiejscowniku', () => {
+  it.each([
+    ['mazowieckie', 'mazowieckim'], ['łódzkie', 'łódzkim'], ['małopolskie', 'małopolskim'],
+    ['warmińsko-mazurskie', 'warmińsko-mazurskim'], ['kujawsko-pomorskie', 'kujawsko-pomorskim'],
+  ])('%s → %s', (w, m) => {
+    expect(wojewodztwoWMiejscowniku(w)).toBe(m);
+  });
+});
 
 describe('odmien', () => {
   it('forma pojedyncza tylko dla dokladnie jednego', () => {

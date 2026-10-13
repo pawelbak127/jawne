@@ -5,7 +5,7 @@ import { bazaDostepna, kodyKomisji, komisja, zrodloImportu, type CzlonekKomisji 
 import { adresKomisjiWRejestrze, etykietaTypu, rodzajFunkcji } from '@/lib/komisje';
 import { dataSlownie, liczba, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Dzial, Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 
 /**
  * Komisja sejmowa: zakres dzialania i sklad.
@@ -48,71 +48,59 @@ export default async function StronaKomisji({ params }: { params: Promise<{ kod:
   const czlonkowie = k.sklad.filter((c) => rodzajFunkcji(c.funkcja) === 'czlonek');
 
   return (
-    <div className="obszar max-w-4xl py-10">
-      <p className="text-sm text-atrament-2">
-        <Link href="/komisje" className="inline-flex min-h-11 items-center hover:text-akcent">Komisje</Link>
-        {` · ${k.kod}`}
-      </p>
-      <header className="mt-1">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">{k.nazwa}</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-atrament-2">
-          <span>{etykietaTypu(k.typ)}</span>
-          {k.powolana ? <span>{`powołana ${dataSlownie(k.powolana)}`}</span> : null}
-          <Zrodlo adres={adresKomisjiWRejestrze(k.kod)} etykieta="ta komisja w rejestrze" />
-        </p>
-      </header>
+    <div className="obszar">
+      <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { adres: '/komisje', nazwa: 'Komisje' }, { nazwa: k.nazwa }]} />
+      <Wypis
+        tytul={k.nazwa}
+        podtytul={`${etykietaTypu(k.typ)}${k.powolana ? ` · powołana ${dataSlownie(k.powolana)}` : ''} · ${zOdmiana(k.sklad.length, 'poseł', 'posłów', 'posłów')} w składzie`}
+      />
 
       {k.zakres ? (
-        <section className="mt-6 rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <h2 className="szryft text-lg font-semibold">Czym się zajmuje</h2>
-          <p className="mt-2 leading-relaxed text-atrament-2">{k.zakres}</p>
-          <p className="mt-2 text-xs text-atrament-3">Zakres działania słowami rejestru Sejmu.</p>
+        <section className="w-liczbach po-ludzku" aria-labelledby="zakres-t">
+          <h2 id="zakres-t">Czym się zajmuje</h2>
+          <p className="py-2 leading-relaxed">{k.zakres}</p>
+          <p className="pb-3"><Podstawa adres={adresKomisjiWRejestrze(k.kod)} nazwa="zakres słowami rejestru Sejmu" /></p>
         </section>
       ) : null}
 
-      <section className="mt-10">
-        <h2 className="szryft text-2xl font-semibold">Skład</h2>
-        <p className="mt-2 text-sm text-atrament-2">
-          {`${zOdmiana(k.sklad.length, 'poseł', 'posłów', 'posłów')} według rejestru`}
-          {imp?.kiedy ? ` z ${dataSlownie(imp.kiedy.slice(0, 10))}` : ''}
-          {'. Rejestr podaje skład bieżący — kto odszedł z komisji, nie ma go na liście.'}
-        </p>
+      <p className="stan-danych">
+        <span className="znak">{k.kod}</span>
+        <span>{imp?.kiedy ? `stan danych: skład ${dataSlownie(imp.kiedy.slice(0, 10))}` : 'stan danych: —'}</span>
+        <span><Podstawa adres={adresKomisjiWRejestrze(k.kod)} nazwa="ta komisja w rejestrze" /></span>
+      </p>
 
+      <Dzial id="sklad" nr={2} tytul={`Skład: ${zOdmiana(k.sklad.length, 'poseł', 'posłów', 'posłów')}`}>
+        <p className="wstep">Rejestr podaje skład bieżący — kto odszedł z komisji, nie ma go na liście.</p>
         {prezydium.length ? (
           <>
-            <h3 className="mt-6 text-sm font-medium tracking-wider text-atrament-3 uppercase">Prezydium</h3>
+            <h3>Prezydium</h3>
             <ListaCzlonkow lista={prezydium} />
           </>
         ) : null}
         {czlonkowie.length ? (
           <>
-            <h3 className="mt-6 text-sm font-medium tracking-wider text-atrament-3 uppercase">
-              {`Członkowie (${liczba(czlonkowie.length)})`}
-            </h3>
+            <h3>{`Członkowie (${liczba(czlonkowie.length)})`}</h3>
             <ListaCzlonkow lista={czlonkowie} />
           </>
         ) : null}
-      </section>
+      </Dzial>
     </div>
   );
 }
 
 function ListaCzlonkow({ lista }: { lista: CzlonekKomisji[] }) {
   return (
-    <ul className="mt-2 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
+    <ul className="pozycje">
       {lista.map((c) => (
-        <li key={c.posel_id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2">
-          <span className="flex flex-wrap items-baseline gap-x-3">
-            <Link href={`/posel/${c.slug}`} className="inline-block py-1.5 font-medium hover:text-akcent">
-              {c.imie_nazwisko}
-            </Link>
-            {c.klub ? <span className="text-xs text-atrament-3">{c.klub}</span> : null}
-          </span>
-          <span className="text-sm text-atrament-2">
-            {c.funkcja ? <span className="font-medium text-atrament">{c.funkcja}</span> : null}
-            {c.funkcja && c.od ? ' · ' : ''}
-            {c.od ? `od ${dataSlownie(c.od)}` : ''}
-          </span>
+        <li key={c.posel_id}>
+          <div className="min-w-0">
+            <Link href={`/posel/${c.slug}`} className="tytul-poz">{c.imie_nazwisko}</Link>
+            <p className="meta">
+              {c.klub ?? 'bez klubu'}
+              {c.funkcja ? <>{' · '}<b className="text-atrament">{c.funkcja}</b></> : null}
+              {c.od ? ` · od ${dataSlownie(c.od)}` : ''}
+            </p>
+          </div>
         </li>
       ))}
     </ul>

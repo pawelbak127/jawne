@@ -79,6 +79,15 @@ export function inicjaly(pelneImie: string): string {
   return litery.toLocaleUpperCase('pl-PL');
 }
 
+/**
+ * Wojewodztwo w miejscowniku: „mazowieckie” → „mazowieckim” (w mazowieckim,
+ * w wojewodztwie mazowieckim). Wszystkie 16 nazw to przymiotniki na „-ie”,
+ * takze dwuczlonowe („warmińsko-mazurskie” → „warmińsko-mazurskim”).
+ */
+export function wojewodztwoWMiejscowniku(woj: string): string {
+  return woj.replace(/ie$/, 'im');
+}
+
 /** Skraca tytul glosowania do naglowka, nie rozcinajac slowa w polowie. */
 export function skroc(tekst: string, ile: number): string {
   if (tekst.length <= ile) return tekst;

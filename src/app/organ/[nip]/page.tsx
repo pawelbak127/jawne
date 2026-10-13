@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { bazaDostepna, organ, zrodloImportu } from '@/lib/dane';
 import { OPIS_KATEGORII } from '@/lib/formy-pomocy';
-import { liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Dzial, Okruszek, Podstawa, Wiersz, WLiczbach, Wypis } from '@/components/Szablon';
+import { SpisDzialow } from '@/components/SpisDzialow';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 
 /*
@@ -63,98 +64,109 @@ export default async function Strona({ params }: { params: Promise<{ nip: string
   if (!w) notFound();
   const { o } = w;
   const imp = zrodloImportu('sudop-przyrost');
+  const podstawa = <Podstawa adres={`${ZRODLO_SUDOP}/search/aidGrantor`} nazwa="SUDOP, UOKiK" data={imp ? dataKrotko(imp.kiedy) : null} />;
+
+  const dzialy = [
+    { id: 'rodzaje', nazwa: 'Rodzaje pomocy' },
+    ...(o.gminy.length ? [{ id: 'gdzie', nazwa: 'Gdzie trafiła' }] : []),
+  ];
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
   return (
-    <div className="obszar max-w-4xl py-10">
-      <p className="text-sm text-atrament-2">Organ przyznający pomoc publiczną</p>
-      <header className="mt-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">{o.nazwa}</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-atrament-2">
-          <span className="liczby">{`NIP ${o.nip}`}</span>
-          {o.siedziba ? (
-            <span>
-              {'siedziba: '}
-              <Link href={`/gmina/${o.siedziba.teryt}`} className="text-akcent underline underline-offset-4 hover:no-underline">
-                {o.siedziba.nazwa}
-              </Link>
-              {` (pow. ${o.siedziba.powiat})`}
-            </span>
-          ) : null}
-        </p>
-      </header>
+    <>
+      <div className="obszar">
+        <Okruszek ogniwa={[{ nazwa: 'Pieniądze publiczne' }, { adres: '/pomoc-publiczna', nazwa: 'Pomoc publiczna' }, { nazwa: o.nazwa }]} />
+        <Wypis
+          tytul={o.nazwa}
+          podtytul={
+            <>
+              {'Organ przyznający pomoc publiczną'}
+              {o.siedziba ? (
+                <>
+                  {' · siedziba: '}
+                  <Link href={`/gmina/${o.siedziba.teryt}`}>{o.siedziba.nazwa}</Link>
+                  {` (pow. ${o.siedziba.powiat})`}
+                </>
+              ) : null}
+            </>
+          }
+        />
 
-      <section className="mt-8 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{liczba(o.przypadkow)}</p>
-          <p className="mt-1 text-sm font-medium">
-            {o.przypadkow === 1 ? 'decyzja o pomocy' : 'decyzji o pomocy'}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-          <p className="liczby szryft text-3xl font-semibold">{liczba(o.gmin)}</p>
-          <p className="mt-1 text-sm font-medium">
-            {o.gmin === 1 ? 'gmina, w której firmy je dostały' : 'gmin, w których firmy je dostały'}
-          </p>
-          <p className="mt-0.5 text-xs text-atrament-2">liczone po siedzibie firmy, nie po miejscu inwestycji</p>
-        </div>
-      </section>
+        <WLiczbach tytul="W liczbach" stopka={<WarunkiSudop pobrano={imp?.kiedy ?? null} />}>
+          <Wiersz
+            duzy
+            co="Decyzje o pomocy"
+            ile={liczba(o.przypadkow)}
+            zCzego={<>{`w ${zOdmiana(o.kategorie.length, 'rodzaju', 'rodzajach', 'rodzajach')} pomocy — kwot z różnych rodzajów nie sumujemy `}<a href="#rodzaje">rodzaje pomocy ↓</a></>}
+            podstawa={podstawa}
+          />
+          <Wiersz
+            co="Gminy, w których firmy je dostały"
+            ile={liczba(o.gmin)}
+            zCzego={<>{'liczone po siedzibie firmy, nie po miejscu inwestycji '}{o.gminy.length ? <a href="#gdzie">gdzie trafiła ↓</a> : null}</>}
+            podstawa={podstawa}
+          />
+        </WLiczbach>
 
-      {/* ------------------------------------------------------------------ */}
-      <section className="mt-10">
-        <h2 className="szryft text-2xl font-semibold">Rodzaje pomocy</h2>
-        <p className="mt-2 max-w-3xl text-atrament-2">
-          Kwot z różnych rodzajów nie sumujemy w jedną liczbę: dotacja jest wydatkiem budżetu,
-          zwolnienie dochodem, którego nie pobrano, a rata tylko korzyścią z odsetek.
+        <p className="stan-danych">
+          <span>{`NIP ${o.nip}`}</span>
+          <span>{`stan danych: SUDOP ${imp ? dataKrotko(imp.kiedy) : '—'}`}</span>
         </p>
-        <ul className="mt-4 space-y-2">
-          {o.kategorie.map((k) => (
-            <li key={k.kategoria} className="rounded-2xl border border-kreska bg-papier-2 p-5 shadow-karta">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <p className="font-medium">{OPIS_KATEGORII[k.kategoria].etykieta}</p>
-                <p className="liczby text-sm">
-                  {`${zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${
-                    k.brutto === null ? 'bez kwoty w rejestrze' : zlote(k.brutto)
-                  }`}
-                </p>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-atrament-3">
-                {OPIS_KATEGORII[k.kategoria].wyjasnienie}
+      </div>
+
+      <div className="obszar z-spisem">
+        <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
+        <div className="dzialy">
+          <Dzial
+            id="rodzaje"
+            nr={nr('rodzaje')}
+            tytul={`Rodzaje pomocy: ${liczba(o.kategorie.length)}`}
+          >
+            <p className="wstep">
+              Kwot z różnych rodzajów nie sumujemy w jedną liczbę: dotacja jest wydatkiem budżetu,
+              zwolnienie dochodem, którego nie pobrano, a rata tylko korzyścią z odsetek.
+            </p>
+            <ul className="pozycje">
+              {o.kategorie.map((k) => (
+                <li key={k.kategoria}>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{OPIS_KATEGORII[k.kategoria].etykieta}</p>
+                    <p className="meta">{zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')}</p>
+                    <p className="meta mt-1">{OPIS_KATEGORII[k.kategoria].wyjasnienie}</p>
+                  </div>
+                  {/* Brak kwoty to brak w rejestrze, nie zero (zasada 4). */}
+                  <p className="kwota">{k.brutto === null ? '—' : zlote(k.brutto)}{k.brutto === null ? <small>bez kwoty w rejestrze</small> : null}</p>
+                </li>
+              ))}
+            </ul>
+          </Dzial>
+
+          {o.gminy.length ? (
+            <Dzial
+              id="gdzie"
+              nr={nr('gdzie')}
+              tytul={`Gdzie trafiła ta pomoc: ${zOdmiana(o.gminy.length, 'gmina', 'gminy', 'gmin')} z największymi kwotami`}
+              obok={<Podstawa adres={`${ZRODLO_SUDOP}/search/aidGrantor`} nazwa="sprawdź w SUDOP" />}
+            >
+              <p className="wstep">
+                {`${zOdmiana(o.gminy.length, 'pozycja', 'pozycje', 'pozycji')} z ${liczba(o.gmin)} gmin. `}
+                To rozkład decyzji tego organu po kraju, nie ocena gmin.
               </p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {o.gminy.length ? (
-        <section className="mt-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="szryft text-2xl font-semibold">Gdzie trafiła ta pomoc</h2>
-            <Zrodlo adres={`${ZRODLO_SUDOP}/search/aidGrantor`} etykieta="sprawdź w SUDOP" />
-          </div>
-          <p className="mt-2 max-w-3xl text-atrament-2">
-            {`Gminy z największymi kwotami — ${zOdmiana(o.gminy.length, 'pozycja', 'pozycje', 'pozycji')} z ${liczba(o.gmin)}. `}
-            To rozkład decyzji tego organu po kraju, nie ocena gmin.
-          </p>
-          <ul className="mt-4 divide-y divide-kreska rounded-2xl border border-kreska bg-papier-2">
-            {o.gminy.map((g) => (
-              <li key={g.teryt} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 p-4">
-                <Link href={`/gmina/${g.teryt}`} className="font-medium text-akcent underline underline-offset-4 hover:no-underline">
-                  {g.nazwa}
-                </Link>
-                <span className="text-xs text-atrament-3">{`pow. ${g.powiat}`}</span>
-                <span className="liczby basis-full text-sm sm:basis-auto">
-                  {`${zOdmiana(g.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${
-                    g.brutto === null ? 'bez kwoty' : zlote(g.brutto)
-                  }`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <WarunkiSudop pobrano={imp?.kiedy ?? null} />
-    </div>
+              <ul className="pozycje">
+                {o.gminy.map((g) => (
+                  <li key={g.teryt}>
+                    <div className="min-w-0">
+                      <Link href={`/gmina/${g.teryt}`} className="tytul-poz">{g.nazwa}</Link>
+                      <p className="meta">{`pow. ${g.powiat} · ${zOdmiana(g.przypadkow, 'decyzja', 'decyzje', 'decyzji')}`}</p>
+                    </div>
+                    <p className="kwota">{g.brutto === null ? '—' : zlote(g.brutto)}</p>
+                  </li>
+                ))}
+              </ul>
+            </Dzial>
+          ) : null}
+        </div>
+      </div>
+    </>
   );
 }
