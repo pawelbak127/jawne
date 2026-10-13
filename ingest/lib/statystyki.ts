@@ -48,7 +48,7 @@ export type Podsumowanie = {
  * odwiedziny sa gorsze niz zanizone, bo z zawyzonych ktos wyciagnie
  * wniosek, ze serwis jest czytany. Brak przegladarki to tez robot.
  */
-const ROBOT = /bot\b|bot\/|crawl|spider|slurp|scrap|curl|wget|python|httpx|go-http|java\/|okhttp|axios|node-fetch|undici|headless|lighthouse|pagespeed|monitor|uptime|pingdom|preview|facebookexternalhit|embedly|whatsapp|telegram|discord|slack|semrush|ahrefs|mj12|dotbot|petal|bytespider|gptbot|claude|perplexity|ccbot|dataforseo|censys|zgrab|masscan|nmap/i;
+const ROBOT = /bot\b|bot\/|crawl|spider|slurp|scrap|curl|wget|python|httpx|go-http|java\/|okhttp|axios|node-fetch|undici|headless|lighthouse|pagespeed|monitor|uptime|pingdom|preview|facebookexternalhit|externalagent|embedly|whatsapp|telegram|discord|slack|semrush|ahrefs|mj12|dotbot|petal|bytespider|gptbot|claude|perplexity|ccbot|dataforseo|censys|zgrab|masscan|nmap/i;
 
 /** Pliki, ktore nie sa „strona" — nawet jesli przegladarka je pobrala. */
 const NIE_STRONA = /^\/(api|_next)\/|^\/(robots\.txt|sitemap\.xml|favicon\.ico)$|\/opengraph-image|\/zdjecie$|\.(png|jpe?g|svg|webp|ico|json|txt|xml|css|js|map|woff2?)$/i;

@@ -222,7 +222,7 @@ EOF
   krok "Zatrzymanie zadan danych na czas migracji i budowy"
   local timery=()
   local zadanie
-  for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted; do
+  for zadanie in sudop-dzien sudop-historia sejm gus fundusze ted porzadki; do
     if systemctl is-enabled --quiet "jawne-$zadanie.timer" 2>/dev/null; then timery+=("jawne-$zadanie.timer"); fi
     systemctl stop "jawne-$zadanie.timer" 2>/dev/null || true
     # Stan, nie `is-active --quiet`: zadanie Type=oneshot W TRAKCIE pracy ma
@@ -289,6 +289,16 @@ EOF
   jako rm -rf .next-poprzednia
   [ -d "$KATALOG/.next" ] && jako mv .next .next-poprzednia
   jako mv .next-budowa .next
+  # Poprzednia wersja zostaje do cofniecia, ale BEZ swojej pamieci podrecznej
+  # stron: ZMIERZONE 13.10.2026 bylo to 7,2 GB, ktore lezalyby do nastepnego
+  # wdrozenia. Do cofniecia potrzebny jest kod, strony wyrenderuja sie same.
+  if [ -d "$KATALOG/.next-poprzednia/server/app" ]; then
+    jako find .next-poprzednia/server/app/firma .next-poprzednia/server/app/gmina \
+      .next-poprzednia/server/app/glosowanie .next-poprzednia/server/app/organ \
+      .next-poprzednia/server/app/ustawa -mindepth 1 -maxdepth 1 \
+      \( -name '*.html' -o -name '*.rsc' -o -name '*.meta' -o -name '*.segments' \) \
+      -exec rm -rf {} + 2>/dev/null || true
+  fi
   # Z CZEGO zbudowano — zeby `sudo jawne stan` mogl to porownac z HEAD.
   # ZMIERZONE 03.10.2026: HEAD stal piec commitow i dziewiec godzin PRZED
   # dzialajaca strona, bo `aktualizuj` padl po `git pull`, a przed budowa —
@@ -323,7 +333,7 @@ EOF
   systemctl reload-or-restart caddy
 
   krok "Harmonogram danych"
-  for t in sudop-dzien sudop-historia sejm gus fundusze ted; do
+  for t in sudop-dzien sudop-historia sejm gus fundusze ted porzadki; do
     systemctl enable --now "jawne-$t.timer" >/dev/null
   done
   systemctl list-timers 'jawne-*' --no-pager

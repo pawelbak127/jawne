@@ -32,17 +32,22 @@ sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
 
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
-### Stan na 08.10.2026
+### Stan na 13.10.2026
 
-**Na serwerze działa `c90c4f0`** (wdrożone 08.10 o 17:01, w tle przez
-`jawne-wdrozenie`): pamięć podręczna stron, etapy 1–2 przebudowy, wdrożenie
-odporne na zamknięcie terminala. Timery wróciły po ok. 21 h przestoju
-(pułapka 71).
-**Czeka na `sudo jawne aktualizuj`:** etap 3 przebudowy (`619cda9`) i naprawa
-pułapki 72 — indeks firm bez 2,5-godzinnej blokady zapisu i agregaty SUDOP
-bez godzinnego czytania dysku przy każdym przebiegu. Do tego czasu
-`sudop-dzien` i `ted` mogą dalej padać na „database is locked” w dni,
-w które `sejm` buduje indeks firm.
+**Na serwerze działa `354437b`** (wdrożone 09.10). Timery chodzą, `sejm`
+11 min zamiast 2,5 h (pułapka 72), błędy połączenia z SUDOP z ok. 8 do ok. 2
+na dobę (reszta to przekroczenia czasu i błędy 500 po stronie urzędu).
+Historia SUDOP: 58,5% okna (do 21.06.2020), 14,4 mln przypadków.
+
+**Czeka na `sudo jawne aktualizuj`:** etap 4 przebudowy (głosowanie z wynikiem
+wobec wymaganej większości, ustawa, pomoc publiczna, strona główna) oraz
+pułapka 73 — blokada robota `meta-externalagent` (94% ruchu) i sufit doby
+dla pamięci podręcznej stron (`jawne-porzadki`).
+
+**Dysk: 33 z 58 GB, przybywa ok. 3 GB na dobę.** Po wdrożeniu pamięć stron
+spadnie o ok. 7 GB, ale historia SUDOP dołoży jeszcze ok. 21 GB bazy —
+zalecenie: dysk 100 GB, zanim zajętość przekroczy 80% (`docs/serwer.md`,
+sekcja o dysku). Decyzja i koszt — Paweł.
 
 **Bloker: poczta nie działa, a `JAWNE_KONTAKT` jest ustawiony** (sprawdzone
 07.10: zmienna w pliku i w procesie strony). Próg jawności z zasady 7 pokazuje

@@ -1,0 +1,15 @@
+[Unit]
+Description=jawne — porzadki: pamiec podreczna stron starsza niz doba
+
+[Service]
+Type=oneshot
+User=jawne
+Group=jawne
+WorkingDirectory=/srv/jawne
+ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh porzadki
+TimeoutStartSec=30min
+Nice=15
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full

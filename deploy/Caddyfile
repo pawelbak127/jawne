@@ -68,6 +68,20 @@
 ADRES {
 	import dziennik
 	encode zstd gzip
+
+	# ROBOT, KTORY LAMIE robots.txt. ZMIERZONE 13.10.2026 w dzienniku wejsc:
+	# meta-externalagent (Meta, zbiera teksty do modeli AI) to 94% calego
+	# ruchu — 37 571 z 41 336 zadan w jednym pliku dziennika — choc robots.txt
+	# mowi „Disallow: /”. Przedstawia sie jak Chrome z dopiskiem na koncu.
+	# Kazda jego wizyta renderowala strone firmy albo gminy i zapisywala ja
+	# na dysku: pamiec podreczna stron urosla do 7,2 GB w cztery dni.
+	# Blokada tylko egzekwuje to, co i tak deklarujemy. Podglad linku na
+	# Facebooku (facebookexternalhit) to inny robot i zostaje wpuszczony.
+	# Po premierze (JAWNE_INDEKSOWANIE) to, czy wpuszczamy roboty AI, jest
+	# decyzja Pawla — wtedy ten blok trzeba przejrzec razem z robots.txt.
+	@lamie_robots header_regexp User-Agent (?i)meta-externalagent
+	respond @lamie_robots "robots.txt: Disallow: /" 403
+
 	reverse_proxy 127.0.0.1:3000
 }
 

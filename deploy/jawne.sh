@@ -19,7 +19,7 @@ set -euo pipefail
 
 KATALOG=/srv/jawne
 USTAWIENIA=/etc/jawne/jawne.env
-ZADANIA='sudop-dzien sudop-historia sejm gus fundusze ted'
+ZADANIA='sudop-dzien sudop-historia sejm gus fundusze ted porzadki'
 
 [ "$(id -u)" = 0 ] || { echo "Uruchom przez sudo: sudo jawne ${1:-stan}"; exit 1; }
 jako() { (cd "$KATALOG" && sudo -u jawne -H "$@"); }
@@ -191,7 +191,16 @@ stan() {
   fi
   echo "== Dysk"
   df -h "$KATALOG" | tail -1 | awk '{print "   zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
-  echo "   dane: $(du -sh "$KATALOG/dane" 2>/dev/null | cut -f1)"
+  echo "   baza: $(du -sh "$KATALOG/dane/sejm.db" 2>/dev/null | cut -f1), dziennik WAL: $(du -sh "$KATALOG/dane/sejm.db-wal" 2>/dev/null | cut -f1 || echo 0), odpowiedzi SUDOP: $(du -sh "$KATALOG/dane/zrodla" 2>/dev/null | cut -f1)"
+  echo "   strony (.next): $(du -sh "$KATALOG/.next" 2>/dev/null | cut -f1), poprzednia wersja: $(du -sh "$KATALOG/.next-poprzednia" 2>/dev/null | cut -f1 || echo brak)"
+  # ZMIERZONE 13.10.2026: 17 GB zajete 09.10, 33 GB cztery dni pozniej —
+  # baza ok. 1 GB na dobe (historia SUDOP) i pamiec podreczna stron. Prog
+  # 80%, bo przy takim tempie od 80% do pelnego dysku zostaje kilka dni.
+  local zajete
+  zajete=$(df --output=pcent "$KATALOG" | tail -1 | tr -dc '0-9')
+  if [ "${zajete:-0}" -ge 80 ]; then
+    echo "   UWAGA: dysk zajety w ${zajete}% — pelny dysk zatrzyma baze i strone. docs/serwer.md, sekcja o dysku."
+  fi
   if [ -f /var/run/reboot-required ]; then echo "   czeka restart po aktualizacji systemu (sam o 12:30)"; fi
 }
 

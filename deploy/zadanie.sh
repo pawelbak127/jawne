@@ -2,7 +2,7 @@
 # Jedno zadanie danych. Wywoluja je jednostki systemd jawne-*.service
 # (deploy/systemd/), recznie: sudo systemctl start jawne-sejm.service
 #
-#   zadanie.sh sejm | gus | fundusze | sudop-dzien | sudop-historia
+#   zadanie.sh sejm | gus | fundusze | sudop-dzien | sudop-historia | porzadki
 #
 # Tempo SUDOP to decyzja Pawla, nie parametr do strojenia. Kod nie przyjmie
 # wiecej niz 150 zapytan na przebieg.
@@ -89,6 +89,27 @@ case "${1:-}" in
       echo "Pomijam etap REGON — brak GUS_BIR_KLUCZ (sudo jawne ustaw GUS_BIR_KLUCZ)."
     fi
     ;;
+  porzadki)
+    # PAMIEC PODRECZNA STRON NA DYSKU MA SUFIT: doba. ZMIERZONE 13.10.2026:
+    # .next urosl z ok. 250 MB do 7,2 GB w cztery dni — strony firm (4,1 GB,
+    # 22 tys. stron), gmin (1,5 GB, wszystkie 2 479), glosowan, organow.
+    # Next zapisuje kazda strone renderowana na zadanie (generateStaticParams
+    # zwraca [], revalidate z layout.tsx) i nigdy jej nie usuwa; przy ok.
+    # 230 tys. firm to kilkadziesiat GB, czyli wiecej niz dysk. Usuniety plik
+    # nic nie psuje: przy nastepnym wejsciu Next wyrenderuje strone od nowa.
+    # Usuwamy TYLKO wpisy pamieci podrecznej ({id}.html/.rsc/.meta/.segments),
+    # nigdy katalogow z kodem trasy ([nip], [teryt] …). Strony poslow zostaja:
+    # jest ich staly komplet z budowy.
+    for k in .next/server/app/firma .next/server/app/gmina .next/server/app/glosowanie \
+             .next/server/app/organ .next/server/app/ustawa; do
+      [ -d "$k" ] || continue
+      przed=$(du -sm "$k" | cut -f1)
+      find "$k" -mindepth 1 -maxdepth 1 \( -name '*.html' -o -name '*.rsc' -o -name '*.meta' -o -name '*.segments' \) \
+        -mmin +1440 -exec rm -rf {} +
+      echo "$k: ${przed} MB -> $(du -sm "$k" | cut -f1) MB"
+    done
+    df -h . | tail -1 | awk '{print "dysk: zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
+    ;;
   sudop-dzien)
     sudop 79200 --dzienny
     ;;
@@ -100,7 +121,7 @@ case "${1:-}" in
     sudop 60 --historia --maks-zapytan=20 --okno=zawsze
     ;;
   *)
-    echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia" >&2
+    echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia|porzadki" >&2
     exit 2
     ;;
 esac

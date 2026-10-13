@@ -1,0 +1,12 @@
+[Unit]
+Description=jawne — porzadki co 6 godzin
+
+[Timer]
+# Usuwa strony z pamieci podrecznej starsze niz doba (zadanie.sh porzadki).
+# Co 6 godzin, a nie raz na dobe: przy ruchu robota z 13.10.2026 przybywalo
+# ok. 1,7 GB stron na dobe — sufit ma trzymac, zanim dysk sie zapelni.
+OnCalendar=*-*-* 03,09,15,21:40:00 Europe/Warsaw
+Persistent=true
+
+[Install]
+WantedBy=timers.target

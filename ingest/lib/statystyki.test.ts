@@ -62,7 +62,11 @@ describe('co jest odsłoną', () => {
 
 describe('roboty', () => {
   it.each(['Googlebot/2.1', 'Mozilla/5.0 (compatible; bingbot/2.0)', 'curl/8.5', 'python-requests/2.31',
-    'facebookexternalhit/1.1', 'GPTBot/1.0', 'Mozilla/5.0 HeadlessChrome/140', 'ClaudeBot/1.0'])('%s', (ua) => {
+    'facebookexternalhit/1.1', 'GPTBot/1.0', 'Mozilla/5.0 HeadlessChrome/140', 'ClaudeBot/1.0',
+    // ZMIERZONE 13.10.2026: 94% ruchu, podpis Chrome z dopiskiem na koncu. Lapal go
+    // juz „crawl” z adresu w podpisie; „externalagent” na wypadek, gdyby adres zniknal.
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+  ])('%s', (ua) => {
     expect(czyRobot(wpis({ ua }))).toBe(true);
   });
   it('brak przeglądarki to też robot', () => {

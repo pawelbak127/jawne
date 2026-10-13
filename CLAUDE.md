@@ -908,6 +908,23 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     wierszy obejmuje zakres i czy czyta je po kolei.** Czytanie w trybie WAL
     nie blokuje zapisu, ale długa transakcja zapisu blokuje wszystkich.
 
+73. **Pamięć podręczna stron nie ma sufitu, a robot AI ignoruje robots.txt.**
+    ZMIERZONE 13.10.2026: dysk z 17 do 33 GB w cztery dni, w tym `.next`
+    z ok. 250 MB do **7,2 GB** — strony firm (22 tys., 4,1 GB) i wszystkie
+    gminy (1,5 GB). Next zapisuje na dysku każdą stronę renderowaną na
+    żądanie (`generateStaticParams` → `[]` z pułapki 69) i nigdy jej nie
+    usuwa; przy ok. 230 tys. firm to więcej niż cały dysk. Ruch generował
+    **`meta-externalagent`** (Meta, dane do modeli AI): **94% żądań**, mimo
+    `Disallow: /`, podpisany jak Chrome z dopiskiem. Teraz: Caddy oddaje mu
+    403, a zadanie `jawne-porzadki` co 6 h usuwa wpisy pamięci podręcznej
+    starsze niż doba (tylko `{id}.html/.rsc/.meta/.segments`, nigdy katalogi
+    z kodem trasy); wdrożenie czyści je też z `.next-poprzednia`.
+    Raport odwiedzin liczył go poprawnie jako robota („crawl” w adresie
+    z podpisu) — sprawdziłem testem, zanim napisałem, że statystyki kłamały.
+    Zasada: **cache, który rośnie z liczbą ADRESÓW, a nie z ruchem ludzi,
+    musi mieć sufit — boty odwiedzą każdy adres.** Osobno: historia SUDOP
+    dołoży jeszcze ok. 21 GB bazy — `docs/serwer.md`, sekcja o dysku.
+
 ---
 
 ## Bezpieczeństwo

@@ -353,6 +353,38 @@ kosztują — to decyzja o rachunku, nie techniczna.
   osobowa, a nam do niczego niepotrzebna.
 - Wszystko działa jako użytkownik `jawne` bez `sudo`.
 
+## Dysk — co rośnie i kiedy go powiększyć
+
+ZMIERZONE 13.10.2026: zajęte **33 GB z 58** (09.10 było 17 GB). Co rośnie:
+
+| Co | 13.10 | Tempo | Sufit |
+|---|---|---|---|
+| baza `dane/sejm.db` | 12,7 GB (14,4 mln przypadków SUDOP) | ok. 1 GB/dobę, dopóki idzie historia | patrz niżej |
+| dziennik `sejm.db-wal` | 1,9 GB | rośnie między wdrożeniami | migracje składają go przy `aktualizuj` |
+| odpowiedzi SUDOP `dane/zrodla` | 5,1 GB | ok. 2,2 MB na dzień rejestru | ok. 9 GB przy pełnym oknie |
+| pamięć podręczna stron `.next` | 7,2 GB | do 1,7 GB/dobę przy ruchu robota | **doba** — `jawne-porzadki` (pułapka 73) |
+
+**Szacunek do końca historii SUDOP** (zostało 1 633 dni rejestru, 2016–2020):
+ostatnie dni przyniosły ok. 13 tys. przypadków na dzień rejestru i ok. 1 KB
+na przypadek w bazie, czyli jeszcze ok. **21 mln przypadków i ok. 21 GB**.
+Starsze lata mogą mieć mniej wpisów — to szacunek z tempa, nie pomiar.
+Na końcu: system ok. 6 GB + baza ok. 34 GB + odpowiedzi ok. 9 GB + WAL
+i strony kilka GB ≈ **52–55 GB z 58**. To za mało zapasu na budowę i na
+składanie dziennika. Przy obecnym tempie (ok. rok rejestru na 4 doby) historia
+skończy się za ok. 2–3 tygodnie.
+
+**Zalecenie: powiększyć dysk do 100 GB, zanim zajętość przekroczy 80%**
+(`sudo jawne stan` ostrzega od 80%). Koszt to dopłata za +40 GB gp3 —
+sprawdź w cenniku EBS dla eu-central-1 (rząd kilku USD miesięcznie).
+Decyzja i kliknięcie są Pawła:
+
+1. ☁ EC2 → Volumes → wolumin maszyny `jawne` → **Modify volume** → Size: 100 → Modify.
+   Działa bez zatrzymywania maszyny; stan „optimizing” może trwać godzinę i nie przeszkadza.
+2. 🐧 Na serwerze system plików trzeba rozciągnąć na nowe miejsce. Najpierw
+   `lsblk` — pokaże nazwę dysku i partycji (na t4g zwykle `nvme0n1` i `nvme0n1p1`).
+   Potem, z nazwami z `lsblk`: `sudo growpart /dev/nvme0n1 1` i `sudo resize2fs /dev/nvme0n1p1`.
+3. 🐧 `df -h /` — powinno pokazać ok. 97 GB.
+
 ## Gdy coś nie działa
 
 | Objaw | Co zrobić |
