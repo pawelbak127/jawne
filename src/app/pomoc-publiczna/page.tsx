@@ -129,7 +129,7 @@ export default function StronaPomocy() {
           {p.swiezych ? <span>{`pominięto ${zOdmiana(p.swiezych, 'świeży dzień', 'świeże dni', 'świeżych dni')} (dzień wliczamy ${DNI_DO_USTALENIA} dni po dacie)`}</span> : null}
         </p>
 
-        <form role="search" action="/szukaj" className="mt-6 max-w-xl">
+        <form role="search" action="/firmy" className="mt-6 max-w-xl">
           <label htmlFor="szukaj-firmy" className="mb-1.5 block font-semibold">Sprawdź firmę</label>
           <input className="pole w-full" id="szukaj-firmy" name="q" type="search" placeholder="Nazwa firmy albo NIP" />
         </form>

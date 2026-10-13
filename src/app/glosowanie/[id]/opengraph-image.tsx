@@ -19,7 +19,7 @@ export default async function Obrazek({ params }: { params: Promise<{ id: string
     return new ImageResponse(
       (
         <div style={{ display: 'flex', width: '100%', height: '100%', background: OG.tlo, alignItems: 'center', justifyContent: 'center', fontSize: 64, color: OG.atrament }}>
-          jawne
+          zrejestru.pl
         </div>
       ),
       { ...size, fonts },
@@ -49,7 +49,7 @@ export default async function Obrazek({ params }: { params: Promise<{ id: string
       >
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', fontSize: 24, color: OG.akcent, letterSpacing: 4 }}>
-            JAWNE · GŁOSOWANIE
+            ZREJESTRU.PL · GŁOSOWANIE
           </div>
           <div style={{ display: 'flex', fontSize: 24, color: OG.atrament3, marginTop: 18 }}>
             {dataSlownie(g.data)} · posiedzenie {g.posiedzenie}, nr {g.numer}

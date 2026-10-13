@@ -22,7 +22,7 @@ export default async function Obrazek({ params }: { params: Promise<{ teryt: str
     return new ImageResponse(
       (
         <div style={{ display: 'flex', width: '100%', height: '100%', background: OG.tlo, alignItems: 'center', justifyContent: 'center', fontSize: 64, color: OG.atrament }}>
-          jawne
+          zrejestru.pl
         </div>
       ),
       { ...size, fonts: [czcionka] },
@@ -48,7 +48,7 @@ export default async function Obrazek({ params }: { params: Promise<{ teryt: str
         }}
       >
         <div style={{ display: 'flex', fontSize: 24, color: OG.akcent, letterSpacing: 4 }}>
-          JAWNE · PUBLICZNE PIENIĄDZE W GMINIE
+          ZREJESTRU.PL · PUBLICZNE PIENIĄDZE W GMINIE
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>

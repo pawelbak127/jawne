@@ -8,7 +8,7 @@ import { nazwaPowiatu } from '@/lib/mapa';
 import { zlote, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { MapaGmin, type PozycjaMapy } from '@/components/MapaGmin';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Okruszek, Podstawa, Wypis, Zakladki } from '@/components/Szablon';
 
 /** Tytul idzie za poziomem: dwie rozne mapy nie moga miec jednego tytulu. */
 export async function generateMetadata({
@@ -118,51 +118,25 @@ export default async function StronaMapy({
   const bezDanych = pozycje.filter((p) => p[2] === null).length;
 
   return (
-    <div className="obszar py-10">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">{poziom === 'powiaty' ? 'Mapa powiatów' : 'Mapa gmin'}</h1>
-        <Zrodlo adres="https://www.geoportal.gov.pl/pl/dane/panstwowy-rejestr-granic-prg/" etykieta="granice: PRG (GUGiK)" />
-      </div>
-      <p className="mt-2 max-w-2xl text-atrament-2">
-        Każda liczba na tej mapie jest w przeliczeniu na mieszkańca.{' '}
-        {poziom === 'gminy'
+    <div className="obszar">
+      <Okruszek ogniwa={[{ nazwa: 'Pieniądze publiczne' }, { nazwa: 'Mapa' }]} />
+      <Wypis
+        tytul={poziom === 'powiaty' ? 'Mapa powiatów' : 'Mapa gmin'}
+        podtytul={`Każda liczba na tej mapie jest w przeliczeniu na mieszkańca. ${poziom === 'gminy'
           ? 'Kliknij gminę, żeby zobaczyć, skąd te pieniądze pochodzą.'
-          : 'Powiat to suma jego gmin podzielona przez sumę ich mieszkańców — nie średnia z gmin.'}
-      </p>
+          : 'Powiat to suma jego gmin podzielona przez sumę ich mieszkańców — nie średnia z gmin.'}`}
+      />
 
-      <nav className="mt-6 flex flex-wrap gap-2 text-sm" aria-label="Co pokazuje mapa">
-        {MIARY.map((m) => (
-          <Link
-            key={m.klucz}
-            href={adres(m.klucz, poziom)}
-            className={`rounded-full border px-3 py-3 transition-colors ${
-              m.klucz === miara.klucz
-                ? 'border-akcent bg-akcent-slaby text-akcent'
-                : 'border-kreska text-atrament-2 hover:border-kreska-2'
-            }`}
-          >
-            {m.etykieta}
-          </Link>
-        ))}
-      </nav>
+      <Zakladki
+        etykieta="Co pokazuje mapa"
+        pozycje={MIARY.map((m) => ({ adres: adres(m.klucz, poziom), nazwa: m.etykieta, biezaca: m.klucz === miara.klucz }))}
+      />
+      <Zakladki
+        etykieta="Poziom podziału"
+        pozycje={(['gminy', 'powiaty'] as const).map((p) => ({ adres: adres(miara.klucz, p), nazwa: p === 'gminy' ? 'gminy' : 'powiaty', biezaca: p === poziom }))}
+      />
 
-      <nav className="mt-2 flex flex-wrap gap-2 text-sm" aria-label="Poziom podziału">
-        {(['gminy', 'powiaty'] as const).map((p) => (
-          <Link
-            key={p}
-            href={adres(miara.klucz, p)}
-            className={`rounded-full border px-3 py-3 transition-colors ${
-              p === poziom
-                ? 'border-atrament bg-atrament text-papier'
-                : 'border-kreska text-atrament-2 hover:border-kreska-2'
-            }`}
-          >
-            {p === 'gminy' ? 'Gminy' : 'Powiaty'}
-          </Link>
-        ))}
-      </nav>
-
-      <p className="mt-3 max-w-2xl text-sm text-atrament-2">{miara.opis}</p>
+      <p className="wstep mt-3 text-atrament-2">{miara.opis}</p>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
         <MapaGmin
@@ -174,7 +148,7 @@ export default async function StronaMapy({
           miara={miara.klucz}
         />
 
-        <aside className="text-sm">
+        <aside style={{ fontSize: 'var(--sredni)' }}>
           <p className="font-medium">Legenda — złote na mieszkańca</p>
           <ul className="mt-3 space-y-1.5">
             {['#dbeee9', '#b3ddd3', '#84c7b6', '#55ac97', '#2f8a76', '#1b6152'].map((kolor, i) => (
@@ -207,13 +181,16 @@ export default async function StronaMapy({
           <p className="mt-3 text-xs leading-relaxed text-atrament-3">
             {`Podstawa: ${zOdmiana(wartosci.length, slowo.jedna, slowo.dwie, slowo.pieciu)} z wartością. Źródło liczb: ${miara.zrodlo}.`}
           </p>
-          <p className="mt-3 text-xs">
+          <p className="mt-3">
             <Link href="/gminy" className="text-akcent underline underline-offset-4 hover:no-underline">
               Wolisz listę? Spis wszystkich gmin →
             </Link>
           </p>
         </aside>
       </div>
+      <p className="stan-danych">
+        <span><Podstawa adres="https://www.geoportal.gov.pl/pl/dane/panstwowy-rejestr-granic-prg/" nazwa="granice: PRG (GUGiK)" /></span>
+      </p>
     </div>
   );
 }

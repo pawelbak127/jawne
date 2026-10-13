@@ -1,3 +1,5 @@
+import { zOdmiana } from './format';
+
 /**
  * Ksztalt odpowiedzi wyszukiwarki, wspolny dla trasy API i komponentu.
  * Osobny plik bez 'server-only', bo typy importuje tez przegladarka.
@@ -54,7 +56,8 @@ export type OdpowiedzWyszukiwania = {
 
 /** Jedna linia pod nazwa firmy: gdzie ma siedzibe i ile razy dostala pomoc. */
 export function opisFirmy(f: { gmina?: string | null; przypadkow: number }): string {
-  const ile = `${f.przypadkow} ${f.przypadkow === 1 ? 'przypadek pomocy' : f.przypadkow < 5 ? 'przypadki pomocy' : 'przypadków pomocy'}`;
+  // zOdmiana, nie „< 5”: ta regula dawala „22 przypadków” i „12 przypadki”.
+  const ile = zOdmiana(f.przypadkow, 'przypadek pomocy', 'przypadki pomocy', 'przypadków pomocy');
   return f.gmina ? `${f.gmina} · ${ile}` : ile;
 }
 

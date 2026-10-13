@@ -25,14 +25,19 @@ export async function fontDoOg(): Promise<ArrayBuffer> {
 export const ROZMIAR_OG = { width: 1200, height: 630 };
 export const TYP_OG = 'image/png';
 
-/** Barwy obrazka OG. Osobno od tokenow CSS, bo Satori nie zna zmiennych. */
+/**
+ * Barwy obrazka OG. Osobno od tokenow CSS, bo Satori nie zna zmiennych —
+ * dlatego przy zmianie palety trzeba je przepisac recznie. Od 13.10.2026
+ * to jasna paleta wersji Standardowej (globals.css, :root); wczesniej
+ * zostala tu paleta sprzed przebudowy z morskim akcentem.
+ */
 export const OG = {
-  tlo: '#faf9f6',
-  atrament: '#17161a',
-  atrament2: '#56535e',
-  atrament3: '#8b8794',
-  kreska: '#e3e0d8',
-  akcent: '#0a6b62',
+  tlo: '#ffffff',
+  atrament: '#0b0c0c',
+  atrament2: '#383f43',
+  atrament3: '#505a5f',
+  kreska: '#b1b4b6',
+  akcent: '#1d70b8',
   za: '#1b9e63',
   przeciw: '#d2453f',
   wstrzymal: '#e0a021',

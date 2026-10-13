@@ -52,7 +52,7 @@ export async function GET(_req: Request, ctx: RouteContext<'/gmina/[teryt]/csv/[
 function naglowki(nazwaGminy: string, teryt: string, zestaw: string): HeadersInit {
   return {
     'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': `attachment; filename="${nazwaPliku('jawne', nazwaGminy, teryt, zestaw)}"`,
+    'Content-Disposition': `attachment; filename="${nazwaPliku('zrejestru', nazwaGminy, teryt, zestaw)}"`,
     // Plik do pobrania, nie strona — nie ma czego szukac w wyszukiwarce.
     'X-Robots-Tag': 'noindex',
   };

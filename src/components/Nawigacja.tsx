@@ -20,7 +20,7 @@ type Grupa = { etykieta: string; pozycje: Pozycja[] };
  * z opisami pod „Menu”. Panele to `<details>` — dzialaja bez JavaScriptu;
  * skrypt doklada tylko zamykanie (Escape, klikniecie obok, zmiana strony).
  */
-const MENU: Grupa[] = [
+export const MENU: Grupa[] = [
   {
     etykieta: 'Sejm',
     pozycje: [
@@ -37,15 +37,15 @@ const MENU: Grupa[] = [
     pozycje: [
       { adres: '/gminy', etykieta: 'Gminy', opis: 'budżet, fundusze UE, pomoc dla firm' },
       { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', skrot: 'Pomoc', opis: 'dotacje i ulgi dla firm (UOKiK)' },
-      { adres: '/szukaj', etykieta: 'Firmy', opis: 'czy firma dostała pomoc — szukaj po nazwie albo NIP' },
+      { adres: '/firmy', etykieta: 'Firmy', opis: 'czy firma dostała pomoc — szukaj po nazwie albo NIP' },
       { adres: '/mapa', etykieta: 'Mapa', opis: 'cała Polska, zawsze na mieszkańca' },
     ],
   },
 ];
 
 /** Skroty na telefonie: najczestsze wejscia obu grup, reszta pod „Menu”. */
-const SKROTY_SEJM = ['/poslowie', '/glosowania', '/ustawy'];
-const SKROTY_PIENIADZE = ['/gminy', '/pomoc-publiczna', '/szukaj'];
+export const SKROTY_SEJM = ['/poslowie', '/glosowania', '/ustawy'];
+export const SKROTY_PIENIADZE = ['/gminy', '/pomoc-publiczna', '/firmy'];
 
 const NA_DOLE_PANELU: Pozycja[] = [
   { adres: '/stan', etykieta: 'Stan danych', opis: 'co i kiedy pobraliśmy' },

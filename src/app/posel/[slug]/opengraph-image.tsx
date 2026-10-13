@@ -19,7 +19,7 @@ export default async function Obrazek({ params }: { params: Promise<{ slug: stri
     return new ImageResponse(
       (
         <div style={{ display: 'flex', width: '100%', height: '100%', background: OG.tlo, alignItems: 'center', justifyContent: 'center', fontSize: 64, color: OG.atrament }}>
-          jawne
+          zrejestru.pl
         </div>
       ),
       { ...size, fonts: [{ name: 'Inter', data: await fontDoOg(), weight: 600, style: 'normal' }] },
@@ -48,7 +48,7 @@ export default async function Obrazek({ params }: { params: Promise<{ slug: stri
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 24, color: OG.akcent, letterSpacing: 4 }}>
-          JAWNE · SEJM X KADENCJI
+          ZREJESTRU.PL · SEJM X KADENCJI
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>

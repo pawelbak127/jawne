@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BrakDanych } from '@/components/BrakDanych';
 import { PlanSali } from '@/components/PlanSali';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Okruszek, Podstawa, Uwaga, Wypis } from '@/components/Szablon';
 import {
   bazaDostepna, glosowanie, glosyWGlosowaniu, listaPoslow, maGlosyImienne, ostatnieGlosowania,
 } from '@/lib/dane';
@@ -65,28 +65,26 @@ export default async function StronaSali({
     .slice(0, 12);
 
   return (
-    <div className="obszar py-10">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="szryft text-3xl font-semibold sm:text-4xl">Sala posiedzeń</h1>
-        <Zrodlo adres={ZRODLO_PLANU} etykieta="plan sali, Kancelaria Sejmu" />
-      </div>
-      <p className="mt-2 max-w-2xl text-atrament-2">
-        Każda kropka to jedno miejsce w sali posiedzeń — w tym punkcie, w którym rysuje
-        je Kancelaria Sejmu. Najedź, żeby zobaczyć, kto na nim siedzi; kliknięcie prowadzi
-        na stronę posła.
-      </p>
+    <div className="obszar">
+      <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { nazwa: 'Sala posiedzeń' }]} />
+      <Wypis
+        tytul="Sala posiedzeń"
+        podtytul="Każda kropka to jedno miejsce w sali posiedzeń — w tym punkcie, w którym rysuje je Kancelaria Sejmu. Najedź, żeby zobaczyć, kto na nim siedzi; kliknięcie prowadzi na stronę posła."
+      >
+        <p className="mt-1"><Podstawa adres={ZRODLO_PLANU} nazwa="plan sali, Kancelaria Sejmu" data={dataSlownie(STAN_PLANU)} /></p>
+      </Wypis>
 
       {doWyboru.length > 0 ? (
         <form method="get" action="/sala" className="mt-6 flex flex-wrap items-end gap-2">
           <div>
-            <label htmlFor="glosowanie" className="block text-sm text-atrament-2">
+            <label htmlFor="glosowanie" className="block font-semibold">
               Pokaż na planie głosowanie
             </label>
             <select
               id="glosowanie"
               name="glosowanie"
               defaultValue={pokazywane ? `${pokazywane.posiedzenie}-${pokazywane.numer}` : ''}
-              className="mt-1 w-full max-w-lg rounded-xl border border-kreska bg-papier px-3 py-2 text-sm"
+              className="pole mt-1 w-full max-w-lg"
             >
               <option value="">bez głosowania — barwy klubów</option>
               {doWyboru.map((g) => (
@@ -100,7 +98,7 @@ export default async function StronaSali({
               glosowanie zostaje w adresie i da sie go komus wyslac. */}
           <button
             type="submit"
-            className="rounded-xl bg-atrament px-4 py-3 text-sm font-medium text-papier transition-opacity hover:opacity-90"
+            className="min-h-11 bg-atrament px-4 font-semibold text-papier hover:opacity-90"
           >
             Pokaż
           </button>
@@ -108,13 +106,11 @@ export default async function StronaSali({
       ) : null}
 
       {zadane && !pokazywane ? (
-        <p className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-4 text-sm text-atrament-2">
-          Nie mamy głosowania o takim adresie. Plan pokazuje barwy klubów.
-        </p>
+        <Uwaga naglowek="Nie ma takiego głosowania.">Nie mamy głosowania o takim adresie. Plan pokazuje barwy klubów.</Uwaga>
       ) : null}
 
       {bezImiennych ? (
-        <p className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-4 text-sm text-atrament-2">
+        <Uwaga naglowek="Bez głosów imiennych.">
           {`Rejestr podaje liczby tego głosowania (${dataSlownie(pokazywane!.data)}), ale nie ma
           jeszcze głosów imiennych — nie wiemy, kto jak zagłosował, więc plan pokazuje barwy
           klubów. `}
@@ -125,12 +121,12 @@ export default async function StronaSali({
             Strona głosowania
           </Link>
           {' ma to, co rejestr podał.'}
-        </p>
+        </Uwaga>
       ) : null}
 
       {pokazywane && !bezImiennych ? (
-        <div className="mt-4 rounded-2xl border border-kreska bg-papier-2 p-5">
-          <p className="liczby text-sm text-atrament-2">{dataSlownie(pokazywane.data)}</p>
+        <div className="mt-5 border-t-2 border-atrament pt-3">
+          <p className="znak text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>{dataSlownie(pokazywane.data)}</p>
           <p className="mt-1 font-medium">
             <Link
               href={`/glosowanie/${pokazywane.posiedzenie}-${pokazywane.numer}`}
@@ -141,7 +137,7 @@ export default async function StronaSali({
           </p>
           {/* Liczby rejestru, nie nasze: pasek jest miara kontrolna dla planu. */}
           <PaseczekGlosow g={pokazywane} zOpisem className="mt-4" />
-          <p className="mt-4 text-sm leading-relaxed text-atrament-3">
+          <p className="mt-4 leading-relaxed text-atrament-2" style={{ fontSize: 'var(--sredni)' }}>
             {`Plan jest ze stanu na ${dataSlownie(STAN_PLANU)}, a to głosowanie odbyło się `}
             <span className="liczby">{dataSlownie(pokazywane.data)}</span>
             {'. Miejsca nie są tego dnia takie same, więc nie każdy głos ma na planie swoją kropkę: '}
@@ -166,9 +162,9 @@ export default async function StronaSali({
         />
       </div>
 
-      <div className="mt-8 grid gap-4 text-sm text-atrament-2 sm:grid-cols-2">
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5">
-          <p className="font-medium text-atrament">Skąd to wiemy</p>
+      <div className="mt-8 grid gap-6 text-atrament-2 sm:grid-cols-2" style={{ fontSize: 'var(--sredni)' }}>
+        <div className="border-t-2 border-atrament pt-3">
+          <p className="font-semibold text-atrament">Skąd to wiemy</p>
           <p className="mt-2 leading-relaxed">
             API Sejmu nie podaje, kto gdzie siedzi. Jedynym źródłem jest rysunek sali
             wydawany przez Kancelarię Sejmu — ten, z którego korzysta prezydium w czasie
@@ -178,8 +174,8 @@ export default async function StronaSali({
             pod nowym adresem za każdym razem.
           </p>
         </div>
-        <div className="rounded-2xl border border-kreska bg-papier-2 p-5">
-          <p className="font-medium text-atrament">Czego tu nie ma</p>
+        <div className="border-t-2 border-atrament pt-3">
+          <p className="font-semibold text-atrament">Czego tu nie ma</p>
           <p className="mt-2 leading-relaxed">
             Numer miejsca podajemy przy{' '}
             <span className="liczby">
@@ -200,7 +196,7 @@ export default async function StronaSali({
         </div>
       </div>
 
-      <p className="mt-6 text-sm text-atrament-3">
+      <p className="mt-6 text-atrament-2" style={{ fontSize: 'var(--sredni)' }}>
         Szukasz kogoś po nazwisku albo chcesz porównać kluby?{' '}
         <Link href="/poslowie" className="text-akcent underline underline-offset-4">
           Pełna lista posłów

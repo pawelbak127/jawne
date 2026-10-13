@@ -3,7 +3,7 @@ import { bazaDostepna, podsumowanie, stanImportu } from '@/lib/dane';
 import { dataSlownie, liczba } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { STAN_PLANU, ZRODLO_PLANU } from '@/lib/plan-sali';
-import { Zrodlo } from '@/components/Zrodlo';
+import { Dzial, Okruszek, Podstawa, Uwaga, Wypis } from '@/components/Szablon';
 
 export const metadata: Metadata = {
   title: 'Stan danych',
@@ -54,90 +54,84 @@ export default function StronaStanu() {
   const wpisy = stanImportu();
   const brakujaceGlosy = stan.glosowan - stan.glosowanZGlosami;
 
+  const ZRODLA: { co: string; linki: { adres: string; nazwa: string }[] }[] = [
+    { co: 'Posłowie, kluby, głosowania, głosy imienne i zdjęcia', linki: [{ adres: 'https://api.sejm.gov.pl/sejm/openapi/', nazwa: 'API Sejmu RP' }] },
+    { co: 'Ludność i budżety gmin', linki: [{ adres: 'https://bdl.stat.gov.pl', nazwa: 'GUS — Bank Danych Lokalnych' }] },
+    {
+      co: 'Projekty z Funduszy Europejskich',
+      linki: [
+        { adres: 'https://dane.gov.pl/pl/dataset/13939', nazwa: 'MFiPR — lista 2021–2027' },
+        { adres: 'https://dane.gov.pl/pl/dataset/1176', nazwa: 'MFiPR — lista 2014–2020' },
+      ],
+    },
+    { co: 'Pomoc publiczna dla przedsiębiorców', linki: [{ adres: 'https://sudop.uokik.gov.pl', nazwa: 'SUDOP — UOKiK' }] },
+    // Jedyne zrodlo, ktorego NIE odswieza zadne zadanie: kazde wydanie
+    // rysunku ma inny adres, wiec nowy plan dodaje sie recznie.
+    { co: `Plan sali posiedzeń (stan na ${dataSlownie(STAN_PLANU)}, odświeżany ręcznie)`, linki: [{ adres: ZRODLO_PLANU, nazwa: 'Kancelaria Sejmu — rysunek sali' }] },
+    {
+      co: 'Przypisanie gmin do okręgów wyborczych',
+      linki: [{ adres: 'https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach', nazwa: 'PKW — wyniki wyborów do Sejmu 2023 po gminach' }],
+    },
+  ];
+
   return (
-    <div className="obszar max-w-5xl py-10">
-      <h1 className="szryft text-3xl font-semibold sm:text-4xl">Stan danych</h1>
-      <p className="mt-3 text-atrament-2">
-        Ta strona istnieje po to, żeby dało się sprawdzić, czego jeszcze nie mamy.
-        Serwis, który pokazuje tylko to, co mu wyszło, jest trudniejszy do
-        zweryfikowania niż taki, który mówi wprost, gdzie ma dziury.
-      </p>
+    <div className="obszar">
+      <Okruszek ogniwa={[{ nazwa: 'O serwisie' }, { nazwa: 'Stan danych' }]} />
+      <Wypis
+        tytul="Stan danych"
+        podtytul="Ta strona istnieje po to, żeby dało się sprawdzić, czego jeszcze nie mamy. Serwis, który pokazuje tylko to, co mu wyszło, jest trudniejszy do zweryfikowania niż taki, który mówi wprost, gdzie ma dziury."
+      />
 
-      {/*
-        Bez tabeli. ZGLOSZENIE PAWLA 24.09.2026: tabela miala wlasny poziomy
-        suwak („do uwalenia”) — na telefonie nie dalo sie jej czytac, a na
-        szerokim ekranie i tak siedziala w waskiej kolumnie. Lista kart czyta
-        sie tak samo w kazdej szerokosci i nigdzie nie trzeba przewijac w bok.
-      */}
-      <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-        {wpisy.map((w) => (
-          <li key={w.co} className="min-w-0 rounded-2xl border border-kreska bg-papier-2 p-4">
-            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <span className="min-w-0 font-medium">
-                {opisZbioru(w.co).tytul}
-                {opisZbioru(w.co).bezOpisu ? (
-                  <span className="ml-2 text-xs font-normal text-atrament-3">(zbiór bez opisu)</span>
-                ) : null}
-              </span>
-              <span className="liczby shrink-0 text-lg font-semibold">{w.ile === null ? '—' : liczba(w.ile)}</span>
-            </div>
-            <p className="mt-1 text-xs text-atrament-3">{`zaimportowano ${dataSlownie(w.kiedy)}`}</p>
-            {/* Uwagi bywaja jednym dlugim adresem z suma SHA — bez break-all
-                rozpychaja karte i cala strone (zmierzone: 613 px z 390). */}
-            {w.uwagi ? <p className="mt-2 text-xs leading-relaxed break-all text-atrament-3">{w.uwagi}</p> : null}
-          </li>
-        ))}
-      </ul>
+      <Uwaga naglowek="Głosy imienne.">
+        {`Mamy ${liczba(stan.glosow)} głosów imiennych z ${liczba(stan.glosowanZGlosami)} głosowań.`}
+        {brakujaceGlosy > 0
+          ? ` Dla ${liczba(brakujaceGlosy)} głosowań mamy na razie tylko liczby zbiorcze z nagłówka rejestru — na stronie takiego głosowania jest to napisane wprost.`
+          : ' To wszystkie głosowania kadencji.'}
+      </Uwaga>
 
-      <div className="mt-8 rounded-2xl border border-kreska bg-papier-2 p-5">
-        <h2 className="font-medium">Głosy imienne</h2>
-        <p className="mt-2 text-sm text-atrament-2">
-          Mamy {liczba(stan.glosow)} głosów imiennych z {liczba(stan.glosowanZGlosami)} głosowań.
-          {brakujaceGlosy > 0
-            ? ` Dla ${liczba(brakujaceGlosy)} głosowań mamy na razie tylko liczby zbiorcze z nagłówka rejestru — na stronie takiego głosowania jest to napisane wprost.`
-            : ' To wszystkie głosowania kadencji.'}
-        </p>
-      </div>
-
-      <div className="mt-8 text-sm">
-        <h2 className="font-medium">Skąd to pochodzi</h2>
-        <ul className="mt-3 space-y-2 text-atrament-2">
-          <li className="flex flex-wrap items-center gap-2">
-            Posłowie, kluby, głosowania, głosy imienne i zdjęcia:
-            <Zrodlo adres="https://api.sejm.gov.pl/sejm/openapi/" etykieta="API Sejmu RP" />
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            Ludność i budżety gmin:
-            <Zrodlo adres="https://bdl.stat.gov.pl" etykieta="GUS — Bank Danych Lokalnych" />
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            Projekty z Funduszy Europejskich:
-            <Zrodlo adres="https://dane.gov.pl/pl/dataset/13939" etykieta="MFiPR — lista 2021–2027" />
-            <Zrodlo adres="https://dane.gov.pl/pl/dataset/1176" etykieta="MFiPR — lista 2014–2020" />
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            Pomoc publiczna dla przedsiębiorców:
-            <Zrodlo adres="https://sudop.uokik.gov.pl" etykieta="SUDOP — UOKiK" />
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            {/* Jedyne zrodlo, ktorego NIE odswieza zadne zadanie: kazde wydanie
-                rysunku ma inny adres, wiec nowy plan dodaje sie recznie. */}
-            Plan sali posiedzeń (stan na {dataSlownie(STAN_PLANU)}, odświeżany ręcznie):
-            <Zrodlo adres={ZRODLO_PLANU} etykieta="Kancelaria Sejmu — rysunek sali" />
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            Przypisanie gmin do okręgów wyborczych:
-            <Zrodlo
-              adres="https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach"
-              etykieta="PKW — wyniki wyborów do Sejmu 2023 po gminach"
-            />
-          </li>
+      <Dzial id="zbiory" nr={1} tytul={`Co pobraliśmy: ${liczba(wpisy.length)} zbiorów`}>
+        {/*
+          Bez tabeli. ZGLOSZENIE PAWLA 24.09.2026: tabela miala wlasny poziomy
+          suwak („do uwalenia”) — na telefonie nie dalo sie jej czytac. Lista
+          z liniami czyta sie tak samo w kazdej szerokosci.
+        */}
+        <ul className="pozycje">
+          {wpisy.map((w) => (
+            <li key={w.co}>
+              <div className="min-w-0">
+                <p className="font-semibold">
+                  {opisZbioru(w.co).tytul}
+                  {opisZbioru(w.co).bezOpisu ? <span className="ml-2 font-normal text-atrament-2">(zbiór bez opisu)</span> : null}
+                </p>
+                <p className="meta">{`zaimportowano ${dataSlownie(w.kiedy)}`}</p>
+                {/* Uwagi bywaja jednym dlugim adresem z suma SHA — bez break-all
+                    rozpychaja wiersz i cala strone (zmierzone: 613 px z 390). */}
+                {w.uwagi ? <p className="meta mt-1 break-all">{w.uwagi}</p> : null}
+              </div>
+              <p className="kwota">{w.ile === null ? '—' : liczba(w.ile)}</p>
+            </li>
+          ))}
         </ul>
-        <p className="mt-4 text-xs text-atrament-3">
-          Dane trzymamy u siebie i odświeżamy według harmonogramu — nie pytamy
-          rejestrów przy każdym wejściu na stronę.
+      </Dzial>
+
+      <Dzial id="skad" nr={2} tytul="Skąd to pochodzi">
+        <ul className="pozycje">
+          {ZRODLA.map((z) => (
+            <li key={z.co}>
+              <div className="min-w-0">
+                <p>{z.co}</p>
+                <p className="flex flex-wrap gap-x-4">
+                  {z.linki.map((l) => <Podstawa key={l.adres} adres={l.adres} nazwa={l.nazwa} />)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+          Dane trzymamy u siebie i odświeżamy według harmonogramu — nie pytamy rejestrów przy
+          każdym wejściu na stronę.
         </p>
-      </div>
+      </Dzial>
     </div>
   );
 }

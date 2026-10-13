@@ -31,7 +31,7 @@ describe('doCsv', () => {
 
 describe('nazwaPliku', () => {
   it('usuwa polskie znaki i spacje', () => {
-    expect(nazwaPliku('jawne', 'Bełchatów', 'pomoc publiczna')).toBe('jawne-belchatow-pomoc-publiczna.csv');
-    expect(nazwaPliku('jawne', 'Łódź')).toBe('jawne-lodz.csv');
+    expect(nazwaPliku('zrejestru', 'Bełchatów', 'pomoc publiczna')).toBe('zrejestru-belchatow-pomoc-publiczna.csv');
+    expect(nazwaPliku('zrejestru', 'Łódź')).toBe('zrejestru-lodz.csv');
   });
 });

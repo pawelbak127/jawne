@@ -76,7 +76,7 @@ export default function StronaGlowna() {
             <b>Mój poseł →</b>
             <span>{`Jak głosuje i czy razem z klubem — ${liczba(stan.poslow)} posłów, w tym ${liczba(stan.poslow - stan.poslowAktywnych)} z wygasłym mandatem.`}</span>
           </Link>
-          <Link href="/pomoc-publiczna">
+          <Link href="/firmy">
             <b>Firma →</b>
             <span>Czy dostała pomoc publiczną albo zamówienie — po nazwie albo NIP-ie.</span>
           </Link>
