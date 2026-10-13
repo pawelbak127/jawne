@@ -79,10 +79,15 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    osobno z podstawą prawną pod „Pokaż …”; PGE GiEK na telefonie
    22,9 → 4,9 tys. px. Zdanie o sprzeciwie odsyła do `/prywatnosc#kontakt`,
    nie na adres, który nie odbiera poczty.
-4. Głosowanie, ustawa, pomoc publiczna, strona główna.
-5. Listy (posłowie, głosowania, ustawy, gminy), okręg, organ, szukanie,
-   nowa trasa `/firmy`, mapa, sala, stan, o serwisie; obrazki podglądu
-   linków z nazwą „zrejestru”.
+4. ~~Głosowanie, ustawa, pomoc publiczna, strona główna~~ — **zrobione
+   09.10** (`104163d`, `9bcff8c`, `a8c9aef`). Najważniejsze: wynik wobec
+   wymaganej większości z `majorityVotes` rejestru (12 głosowań z większą
+   liczbą „za” niż „przeciw” bez większości, 11 z 23 prób odrzucenia weta).
+5. ~~Listy, okręg, organ, szukanie, `/firmy`, mapa, sala, stan, o serwisie,
+   obrazki podglądu~~ — **zrobione 13.10** (`c7e9922`, `ec9f594`).
+   Do ewentualnej dalszej pracy: wyszukiwanie firm przegląda cały indeks
+   (`instr` po 2,24 mln wierszy) — to jest koszt pierwszego wejścia na
+   `/szukaj` i `/firmy` z planu U3; kandydat: indeks trygramowy FTS5.
 
 ### Kolejność przed zdjęciem `noindex` (ustalona 03.10.2026)
 
