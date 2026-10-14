@@ -32,28 +32,25 @@ sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
 
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
-### Stan na 13.10.2026
+### Stan na 14.10.2026
 
-**Na serwerze działa `354437b`** (wdrożone 09.10). Timery chodzą, `sejm`
-11 min zamiast 2,5 h (pułapka 72), błędy połączenia z SUDOP z ok. 8 do ok. 2
-na dobę (reszta to przekroczenia czasu i błędy 500 po stronie urzędu).
-Historia SUDOP: 58,5% okna (do 21.06.2020), 14,4 mln przypadków.
+**Na serwerze działa `b31be62`** (wdrożone 14.10): wyszukiwanie firm po
+indeksie trygramowym, „Kto był za” na stronie ustawy, organ gminy z regułą
+`gminaOrganu` (2 545 z 2 548 przypisanych), akapit do cytowania,
+porównywarka gmin. Sumy SUDOP: 2 293 dni ustalonych, 14,4 mln przypadków.
 
-**Czeka na `sudo jawne aktualizuj`:** etap 4 przebudowy (głosowanie z wynikiem
-wobec wymaganej większości, ustawa, pomoc publiczna, strona główna) oraz
-pułapka 73 — blokada robota `meta-externalagent` (94% ruchu) i sufit doby
-dla pamięci podręcznej stron (`jawne-porzadki`).
+**Czeka na `sudo jawne aktualizuj`:** `8d89676` — tekst ciągły na szerokość
+list (zgłoszenie Pawła z 14.10).
 
-**Dysk: 33 z 58 GB, przybywa ok. 3 GB na dobę.** Po wdrożeniu pamięć stron
-spadnie o ok. 7 GB, ale historia SUDOP dołoży jeszcze ok. 21 GB bazy —
-zalecenie: dysk 100 GB, zanim zajętość przekroczy 80% (`docs/serwer.md`,
-sekcja o dysku). Decyzja i koszt — Paweł.
+**Dysk: 96 GB, zajęte 28 GB (30%)** — powiększony 14.10 (`docs/serwer.md`).
 
-**Bloker: poczta nie działa, a `JAWNE_KONTAKT` jest ustawiony** (sprawdzone
-07.10: zmienna w pliku i w procesie strony). Próg jawności z zasady 7 pokazuje
-więc nazwy powyżej 10 tys. EUR, choć adres do sprzeciwu nie odbiera poczty.
-Kolejność: albo `sudo jawne ustaw JAWNE_KONTAKT` (pusta wartość — próg się
-wyłącza), albo najpierw ImprovMX i test wysyłki. Decyzja Pawła.
+**Poczta działa od 14.10.2026:** MX domeny na ImprovMX, `kontakt@` (i catch-all)
+przekierowane na osobną skrzynkę serwisu założoną przez Pawła; próbne listy
+dochodzą. Bloker z 04.10 zamknięty — próg jawności z zasady 7 ma teraz
+działającą drogę sprzeciwu. Odpowiadać NIE z prywatnej skrzynki; gdy będzie
+trzeba pisać jako `kontakt@`, to Zoho Mail albo płatny ImprovMX (wysyłka
+przez SMTP Gmaila nie przejdzie DMARC domeny: `p=quarantine`, ścisłe
+dopasowanie).
 
 ### Przebudowa wyglądu — etapy (decyzja Pawła z 07.10.2026)
 
@@ -94,7 +91,9 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
 1. ~~**DNS w panelu Hostido: rekord A dla `www` → 52.29.50.167.**~~ —
    **zrobione** (sprawdzone 09.10.2026): `www.zrejestru.pl` wskazuje na
    52.29.50.167 i oddaje `301` na `https://zrejestru.pl/`.
-2. **Poczta `kontakt@zrejestru.pl` — SPRAWDZONE 04.10.2026: NIE DZIAŁA.**
+2. ~~**Poczta `kontakt@zrejestru.pl`**~~ — **działa od 14.10.2026**
+   (ImprovMX, próbne listy dochodzą). Historia poniżej.
+   **SPRAWDZONE 04.10.2026: NIE DZIAŁAŁA.**
    Próbny list odbił się z `550 authentication required`: serwer Hostido
    (`mail.zrejestru.pl` → 185.110.48.29) nie przyjmuje poczty dla domeny,
    a skrzynki w tym planie założyć się nie da. Tymczasem na żywej stronie
@@ -119,9 +118,9 @@ nie zmienia — serwis i tak jest publicznie dostępny.
 
 | | Co | Dlaczego blokuje | Stan |
 |---|---|---|---|
-| 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie | **jest 02.10.2026**: `kontakt@zrejestru.pl`, zapisany w `/etc/jawne/jawne.env`. **Na żywej stronie jeszcze nie działa** — proces wstał przed zapisem, patrz pułapka 63. Włączy się przy najbliższym `aktualizuj` |
-| 2 | **Polityka prywatności** | Wymagana, gdy przetwarzamy dane osobowe (art. 13–14 RODO): kto jest administratorem, po co, na jakiej podstawie, jak długo, jakie prawa | **napisana 23.09.2026**: `/prywatnosc`, odnośnik w stopce. Zostają dwa miejsca do uzupełnienia przez Pawła (administrator + adres, `JAWNE_KONTAKT`) — widoczne na stronie na żółto |
-| 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | **napisany 23.09.2026**: [test-rownowagi.md](test-rownowagi.md) — cel, niezbędność, ważenie, dziesięć zabezpieczeń z nazwami plików, co uruchamia ponowny test. Do uzupełnienia: administrator i adres |
+| 1 | **Adres e-mail do kontaktu** (`JAWNE_KONTAKT`) | Bez drogi zgłoszenia sprzeciwu (art. 21 RODO) nie pokazujemy nazwisk osób fizycznych — próg kwotowy jest wyłączony w kodzie | **gotowe 14.10.2026**: `kontakt@zrejestru.pl` w `/etc/jawne/jawne.env`, widoczny na żywej stronie (`/prywatnosc#kontakt`), a poczta na niego dochodzi (ImprovMX) |
+| 2 | **Polityka prywatności** | Wymagana, gdy przetwarzamy dane osobowe (art. 13–14 RODO): kto jest administratorem, po co, na jakiej podstawie, jak długo, jakie prawa | **gotowe**: `/prywatnosc`, odnośnik w stopce; administrator opisany (decyzja z 02.10: osoba fizyczna, adres korespondencyjny nieujawniony), adres e-mail z `JAWNE_KONTAKT` — sprawdzone na żywej stronie 14.10, bez żółtych miejsc do uzupełnienia |
+| 3 | **Test równowagi na piśmie** | Podstawą jest uzasadniony interes (art. 6 ust. 1 lit. f). Test trzeba mieć *przed* publikacją, nie po pytaniu z UODO | **napisany 23.09.2026**: [test-rownowagi.md](test-rownowagi.md) — cel, niezbędność, ważenie, dziesięć zabezpieczeń z nazwami plików, co uruchamia ponowny test. Administrator wpisany (02.10) |
 | 3a | ~~**Sprawdzić próg z rozporządzenia 651/2014 (GBER)**~~ | Gdyby próg publikacji był wyższy, w paśmie między progami pokazywalibyśmy nazwiska, których prawo publikować nie każe | **sprawdzone 30.09.2026: 100 tys. EUR się zgadza.** EUR-Lex nadal oddaje pustą odpowiedź (HTTP 202, zero bajtów), ale tekst nowelizacji GBER jest na stronie Komisji. Art. 9 ust. 1 lit. c) po zmianie z 2023 r.: publikacja „on each individual aid award exceeding EUR 100 000”, 500 tys. EUR dla produktów InvestEU (sekcja 16), 10 tys. EUR dla rolnictwa pierwotnego i rybołówstwa. Przed tą nowelizacją próg ogólny wynosił 500 tys. EUR — stąd rozbieżność w starszych opracowaniach |
 | 4 | **Domena i `JAWNE_ADRES_SERWISU`** | Bez tego podglądy linków wskazują na `localhost` | **zrejestru.pl działa z certyfikatem** (02.10.2026). Zmienna zapisana; proces strony widzi jeszcze stary adres — jak wyżej |
 | 5 | **Decyzja o `noindex`** | Zdejmujemy dopiero, gdy 1–4 są gotowe | świadoma decyzja Pawła. Od 03.10 to jedno polecenie (`JAWNE_INDEKSOWANIE`), a nie zmiana w kodzie w dwóch miejscach |
