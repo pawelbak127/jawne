@@ -385,6 +385,11 @@ Decyzja i kliknięcie są Pawła:
    Potem, z nazwami z `lsblk`: `sudo growpart /dev/nvme0n1 1` i `sudo resize2fs /dev/nvme0n1p1`.
 3. 🐧 `df -h /` — powinno pokazać ok. 97 GB.
 
+**Zrobione 14.10.2026:** wolumin 100 GB, `growpart` (partycja 1: 123 729 887 →
+207 615 967 sektorów) i `resize2fs` na żywym systemie, bez restartu.
+`df -h /` po zmianie: **96 GB, zajęte 28 GB (30%)**. Szacunek końca historii
+SUDOP (52–55 GB) daje teraz ok. 55% zajętości — z zapasem na budowę i WAL.
+
 ## Gdy coś nie działa
 
 | Objaw | Co zrobić |
