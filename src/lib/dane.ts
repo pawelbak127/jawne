@@ -11,6 +11,7 @@ import { nazwaOrganu } from './organy';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { policzPomocGminy, pomocGminyZeSum } from './pomoc-gminy';
+import type { WierszPorownania } from './porownanie-gmin';
 import { KONTAKT } from './adres';
 import { zwinDoPowiatow, type LudnoscGminy, type WartoscNaMapie } from './mapa';
 import {
@@ -1473,6 +1474,84 @@ export function gminyWojewodztwa(wojewodztwo: string): GminaSpisu[] {
     ),
     [],
   );
+}
+
+export type PorownanieGmin = {
+  wiersze: WierszPorownania[];
+  /** Rok budzetu — jeden dla calej tabeli, ostatni opublikowany przez GUS. */
+  rokBudzetu: number | null;
+  /** Dni ustalone ze stanu sum — te same, co na stronie gminy i w medianie. */
+  dniPomocy: { od: string; do: string; dni: number } | null;
+  jestUe: boolean;
+};
+
+/**
+ * Porownywarka gmin wojewodztwa (src/lib/porownanie-gmin.ts). Jedno zapytanie
+ * po tabelach z kluczem od TERYT-u — stan sum pomocy, nie tabela pomocy
+ * (pulapka 69), wiec koszt nie rosnie z historia SUDOP.
+ *
+ * Populacja jak w medianach strony gminy (`JEDNOSTKI_FE`): Warszawa jednym
+ * wierszem zamiast 18 dzielnic. Gmina bez liczby mieszkancow zostaje
+ * w tabeli, ale bez zadnej wartosci na mieszkanca — mianownika nie zgadujemy.
+ * Gmina bez przypadku pomocy w dniach ustalonych ma ZERO (dni sa pobrane dla
+ * calego kraju), bez projektu UE tylko u siebie — tez zero (zmierzone, patrz
+ * `wartosciMapy`); bez budzetu w danym roku — null.
+ */
+export function porownanieGmin(wojewodztwo: string): PorownanieGmin {
+  const pusto: PorownanieGmin = { wiersze: [], rokBudzetu: null, dniPomocy: null, jestUe: false };
+  return bezTabeli(() => {
+    const rokBudzetu = bezTabeli(() => jeden<{ r: number | null }>('select max(rok) as r from budzety_gmin')?.r ?? null, null);
+    const dni = bezTabeli(
+      () => jeden<{ od: string | null; do: string | null; dni: number }>(
+        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_sumy_dni',
+      ),
+      null,
+    );
+    const dniPomocy = dni?.od && dni.do && dni.dni ? { od: dni.od, do: dni.do, dni: dni.dni } : null;
+    const jestUe = (bezTabeli(() => jeden<{ c: number }>("select count(*) as c from fe_gminy where okres = '2021-2027'")?.c, 0) ?? 0) > 0;
+    const wiersze = wszystkie<{
+      teryt: string; nazwa: string; rodzaj: string; powiat: string; osob: number | null;
+      dochody: number | null; ue: number | null; pomoc_brutto: number | null; pomoc_z_kwota: number | null;
+    }>(
+      `with j as (
+         select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat, l.osob as osob
+           from gminy g left join ludnosc l on l.teryt = g.teryt
+          where g.wojewodztwo = ? and g.rodzaj <> 'dzielnica Warszawy'
+         union all
+         select '${TERYT_WARSZAWY}', 'Warszawa', 'miasto na prawach powiatu', 'Warszawa', sum(l.osob)
+           from gminy g join ludnosc l on l.teryt = g.teryt
+          where g.rodzaj = 'dzielnica Warszawy' and g.wojewodztwo = ?
+         having count(*) > 0
+       )
+       select j.teryt as teryt, j.nazwa as nazwa, j.rodzaj as rodzaj, j.powiat as powiat, j.osob as osob,
+              b.dochody as dochody, f.tylko_tu_ue as ue,
+              s.brutto as pomoc_brutto, s.z_kwota as pomoc_z_kwota
+         from j
+         left join budzety_gmin b on b.teryt = j.teryt and b.rok = ?
+         left join fe_gminy f on f.teryt = j.teryt and f.okres = '2021-2027'
+         left join pomoc_sumy_gmin s on s.teryt = j.teryt`,
+      wojewodztwo, wojewodztwo, rokBudzetu,
+    );
+    return {
+      rokBudzetu,
+      dniPomocy,
+      jestUe,
+      wiersze: wiersze.map((r) => {
+        const os = r.osob && r.osob > 0 ? r.osob : null;
+        return {
+          teryt: r.teryt,
+          nazwa: r.nazwa,
+          rodzaj: r.rodzaj,
+          powiat: r.powiat,
+          osob: r.osob,
+          dochody: os && r.dochody !== null ? r.dochody / os : null,
+          ue: os && jestUe ? (r.ue ?? 0) / os : null,
+          // Jak w `medianaPomocyNaMieszkanca`: przypadki bez kwot licza sie jako zero.
+          pomoc: os && dniPomocy ? ((r.pomoc_z_kwota ?? 0) > 0 ? r.pomoc_brutto! : 0) / os : null,
+        };
+      }),
+    };
+  }, pusto);
 }
 
 export function terytyGmin(): string[] {

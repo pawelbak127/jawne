@@ -71,6 +71,11 @@ export default async function StronaGminWojewodztwa({ params }: { params: Promis
 
       {/* Sama liczba przy nazwie nie mowi, co znaczy — dlatego zdanie w podtytule i zrodlo tutaj. */}
       <p className="mt-2"><Podstawa adres={ZRODLO_GUS} nazwa="ludność: GUS — Bank Danych Lokalnych" data={rok ? String(rok) : null} /></p>
+      <p className="mt-2">
+        <Link href={`/gminy/${adresWojewodztwa(nazwa)}/porownanie`} className="inline-flex min-h-11 items-center text-akcent underline underline-offset-4">
+          porównanie gmin: dochody, UE i pomoc publiczna na mieszkańca →
+        </Link>
+      </p>
 
       {/*
         Kolumny CSS, nie siatka: powiaty maja od 3 do 18 gmin, a w siatce
@@ -105,6 +110,7 @@ export default async function StronaGminWojewodztwa({ params }: { params: Promis
           </section>
         ))}
       </div>
+
     </div>
   );
 }

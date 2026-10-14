@@ -646,10 +646,13 @@ na serwerze, obok danych.
   (dochody, fundusze UE, pomoc publiczna, zawsze na mieszkańca), kubełki po
   kwantylach, gmina bez danych szara. Granice z PRG (GUGiK), opis źródła
   w `ingest/zrodla/prg/ZRODLO.md`.
-- **Porównywarka gmin w województwie.** Dochody, unijne pieniądze i pomoc
-  publiczna na mieszkańca, sortowanie, link do konkretnego zestawienia.
-  Ryzyko: łatwo zrobić z tego ranking „dobrych i złych gmin” — a to już ocena.
-  Trzymamy się liczb z mianownikiem.
+- ~~**Porównywarka gmin w województwie.**~~ **zrobione 14.10.2026**:
+  `/gminy/[wojewodztwo]/porownanie` — dochody, UE 2021–2027 i pomoc publiczna
+  (dni ustalone) na mieszkańca dla każdej gminy, wiersz mediany na wierzchu
+  przy każdej kolejności, kolejność wybiera czytelnik (bez miejsc i ocen),
+  brak wartości zawsze na końcu. Mediany sprawdzone drugą drogą z tymi na
+  stronach gmin: 16 województw × 3 miary, 0 różnic. Osobna strona, nie
+  sekcja spisu: tabela to ok. 115 kB HTML-a na województwo.
 - **„Co nowego w mojej gminie”.** Skoro przyrost SUDOP jest dzienny, da się
   pokazać świeże wpisy, a docelowo powiadomienia e-mail dla gminy.
 - **Okręg wyborczy jako klamra.** Ile pieniędzy trafia do okręgu i jak głosowali

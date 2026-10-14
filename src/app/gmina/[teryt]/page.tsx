@@ -216,6 +216,11 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
           {/* Liczba mieszkancow tez ma zrodlo (zasada 1) — jest mianownikiem
               kazdej kwoty „na mieszkanca” nizej. */}
           {g.ludnosc ? <p className="mt-1"><Podstawa adres={ZRODLO_GUS} nazwa="ludność: GUS BDL" data={g.ludnosc_rok ? String(g.ludnosc_rok) : null} /></p> : null}
+          <p className="mt-1">
+            <Link href={`/gminy/${adresWojewodztwa(g.wojewodztwo)}/porownanie`} className="text-akcent underline underline-offset-4">
+              {`porównaj z innymi gminami woj. ${g.wojewodztwo} →`}
+            </Link>
+          </p>
         </Wypis>
 
         <WLiczbach

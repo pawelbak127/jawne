@@ -29,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...okregi().map((o) => ({ url: adres(`/okreg/${o.nr}`) })),
     ...kodyKomisji().map((kod) => ({ url: adres(`/komisja/${kod}`) })),
     ...wojewodztwaGmin().map((w) => ({ url: adres(`/gminy/${adresWojewodztwa(w.wojewodztwo)}`) })),
+    ...wojewodztwaGmin().map((w) => ({ url: adres(`/gminy/${adresWojewodztwa(w.wojewodztwo)}/porownanie`) })),
     ...terytyGmin().map((t) => ({ url: adres(`/gmina/${t}`) })),
     // Druki z nazwiskiem osoby prywatnej w tytule maja noindex — jak glosowania.
     ...procesyDoMapy().filter((p) => !pominietoNazwiska(p.tytul)).map((p) => ({ url: adres(`/ustawa/${p.numer}`) })),
