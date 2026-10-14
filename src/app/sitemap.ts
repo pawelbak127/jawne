@@ -35,7 +35,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...procesyDoMapy().filter((p) => !pominietoNazwiska(p.tytul)).map((p) => ({ url: adres(`/ustawa/${p.numer}`) })),
     ...glosowaniaDoMapy()
       .filter((g) => !pominietoNazwiska(g.tytul) && !pominietoNazwiska(g.temat) && !pominietoNazwiska(g.opis))
-      .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data })),
+      // Sama data: rejestr podaje czas BEZ strefy („2023-11-13T15:17:22”), a format
+      // map stron (W3C Datetime) wymaga strefy przy godzinie. ZMIERZONE 14.10.2026:
+      // Google Search Console zglosil 4 916 bledow — dokladnie tyle, ile glosowan.
+      .map((g) => ({ url: adres(`/glosowanie/${g.posiedzenie}-${g.numer}`), lastModified: g.data.slice(0, 10) })),
   ];
   /*
    * FIRMY NA KOŃCU, i tylko tyle, ile zostanie miejsca.
