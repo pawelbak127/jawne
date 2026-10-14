@@ -33,7 +33,7 @@ describe('robots.txt', () => {
   it('po premierze pozwala i podaje mape strony', async () => {
     const { wynik, wlaczone } = await wczytaj('tak');
     expect(wlaczone).toBe(true);
-    expect(wynik.rules).toEqual([{ userAgent: '*', allow: '/' }]);
+    expect(wynik.rules).toEqual([{ userAgent: '*', allow: '/', disallow: ['/api/', '/szukaj', '/firmy?', '/gmina/*/csv/'] }]);
     expect(String(wynik.sitemap)).toMatch(/\/sitemap\.xml$/);
   });
 

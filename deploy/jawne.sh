@@ -316,8 +316,12 @@ ustaw() {
         echo "   NIE UDALO SIE zrestartowac strony: sudo journalctl -u jawne-strona -n 30"
         exit 1
       fi
-      echo "Strony zbudowane wczesniej maja stary adres w podgladzie linku"
-      echo "jeszcze do godziny (revalidate = 3600). Od razu wszedzie: sudo jawne aktualizuj"
+      # ZMIERZONE 14.10.2026 przy JAWNE_INDEKSOWANIE: godzine po zmianie strony
+      # z pamieci podrecznej wciaz mialy noindex — Next oddaje przy PIERWSZYM
+      # wejsciu stara wersje i dopiero wtedy buduje nowa w tle. Strona, na
+      # ktora nikt nie wszedl, ma stara tresc bez konca.
+      echo "UWAGA: strony zapisane w pamieci podrecznej przy pierwszym wejsciu oddadza"
+      echo "jeszcze stara wersje (nowa buduje sie w tle). Od razu wszedzie: sudo jawne aktualizuj"
       ;;
   esac
 }

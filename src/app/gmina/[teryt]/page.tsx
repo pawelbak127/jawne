@@ -458,7 +458,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             <p className="wstep">Pliki pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF‑8.</p>
             <p className="pliki">
               {pliki.map(([zestaw, opis]) => (
-                <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`}>{`${opis} (CSV)`}</a>
+                // nofollow: plik pomocy duzego miasta to strumien po calej historii — nie dla robotow (robots.ts).
+                <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`} rel="nofollow">{`${opis} (CSV)`}</a>
               ))}
             </p>
             {akapit ? (
