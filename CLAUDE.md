@@ -917,8 +917,11 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     **`meta-externalagent`** (Meta, dane do modeli AI): **94% żądań**, mimo
     `Disallow: /`, podpisany jak Chrome z dopiskiem. Teraz: Caddy oddaje mu
     403, a zadanie `jawne-porzadki` co 6 h usuwa wpisy pamięci podręcznej
-    starsze niż doba (tylko `{id}.html/.rsc/.meta/.segments`, nigdy katalogi
-    z kodem trasy); wdrożenie czyści je też z `.next-poprzednia`.
+    STRON FIRM starsze niż doba (tylko `{id}.html/.rsc/.meta/.segments`,
+    nigdy katalogi z kodem trasy); wdrożenie czyści je też z `.next-poprzednia`.
+    Gmin, głosowań, ustaw i organów jest skończona liczba — tych nie
+    usuwamy, bo zimne renderowanie Warszawy to 9 s blokady całego procesu
+    (zmierzone 14.10.2026; koszt to odczyt wszystkich firm miasta, nie REGON).
     Raport odwiedzin liczył go poprawnie jako robota („crawl” w adresie
     z podpisu) — sprawdziłem testem, zanim napisałem, że statystyki kłamały.
     Zasada: **cache, który rośnie z liczbą ADRESÓW, a nie z ruchem ludzi,

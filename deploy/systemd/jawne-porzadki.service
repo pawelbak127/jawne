@@ -1,5 +1,5 @@
 [Unit]
-Description=jawne — porzadki: pamiec podreczna stron starsza niz doba
+Description=jawne — porzadki: pamiec podreczna stron firm starsza niz doba
 
 [Service]
 Type=oneshot

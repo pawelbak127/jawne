@@ -98,10 +98,17 @@ case "${1:-}" in
     # 230 tys. firm to kilkadziesiat GB, czyli wiecej niz dysk. Usuniety plik
     # nic nie psuje: przy nastepnym wejsciu Next wyrenderuje strone od nowa.
     # Usuwamy TYLKO wpisy pamieci podrecznej ({id}.html/.rsc/.meta/.segments),
-    # nigdy katalogow z kodem trasy ([nip], [teryt] …). Strony poslow zostaja:
-    # jest ich staly komplet z budowy.
-    for k in .next/server/app/firma .next/server/app/gmina .next/server/app/glosowanie \
-             .next/server/app/organ .next/server/app/ustawa; do
+    # nigdy katalogow z kodem trasy ([nip], [teryt] …).
+    #
+    # TYLKO FIRMY (zmiana 14.10.2026). Sufitu potrzebuje zbior, ktory rosnie
+    # z liczba adresow bez granicy — firm jest ok. 230 tys. Gmin jest 2 479
+    # (ok. 1,5 GB), glosowan, ustaw i organow tez skonczona liczba: te strony
+    # zostaja, a Next odswieza je w tle (revalidate). Usuwanie ich kosztowalo
+    # czytelnika ZIMNE renderowanie: ZMIERZONE na serwerze — Warszawa 9 s,
+    # Krakow 5,8 s, a przez ten czas nie odpowiada zadna strona (pulapka 69).
+    # Koszt to przeczytanie wszystkich firm miasta (Wroclaw: 82 tys. wierszy,
+    # 0,94 s na zimno), nie REGON (0,05 s) — sprawdzone, zanim cos zmienilem.
+    for k in .next/server/app/firma; do
       [ -d "$k" ] || continue
       przed=$(du -sm "$k" | cut -f1)
       find "$k" -mindepth 1 -maxdepth 1 \( -name '*.html' -o -name '*.rsc' -o -name '*.meta' -o -name '*.segments' \) \
