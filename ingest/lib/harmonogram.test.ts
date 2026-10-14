@@ -146,6 +146,47 @@ describe('planHistorii', () => {
     expect(z.some((x) => x.powod === 'historia' && x.od === '2024-12-19')).toBe(true);
   });
 
+  describe('nakladajace sie przerwane zakresy — stan serwera z 14.10.2026', () => {
+    // Pierwszy dzien w bazie: 2020-06-21. Na dysku cztery zestawy stron tych
+    // samych dni (dzien 20.06 ma 1 203 518 przypadkow, 121 stron).
+    const ZAKRESY = ['2020-06-14..2020-06-20', '2020-06-15..2020-06-20', '2020-06-18..2020-06-20', '2020-06-20..2020-06-20'];
+    const ZOSTALO: Record<string, number> = {
+      '2020-06-14..2020-06-20': 145 - 71, '2020-06-15..2020-06-20': 145 - 55,
+      '2020-06-18..2020-06-20': 130 - 78, '2020-06-20..2020-06-20': 121 - 116,
+    };
+    const wejscie = {
+      dni: dni('2020-06-21', '2020-07-31', '2026-10-01T05:00:00.000Z'),
+      zakresyPlikow: ZAKRESY,
+      dzis: '2026-10-14',
+      poczatekOkna: OKNO,
+      zostaloStron: (z: string) => ZOSTALO[z] ?? null,
+    };
+
+    it('z nakladajacych sie bierze JEDEN — ten, ktoremu zostalo najmniej stron', () => {
+      const przerwane = planHistorii(wejscie).filter((x) => x.powod === 'przerwane');
+      expect(przerwane).toEqual([{ od: '2020-06-20', do: '2020-06-20', odswiez: false, powod: 'przerwane' }]);
+    });
+
+    it('bez wiedzy o stronach — najwezszy', () => {
+      const przerwane = planHistorii({ ...wejscie, zostaloStron: undefined }).filter((x) => x.powod === 'przerwane');
+      expect(przerwane.map((x) => `${x.od}..${x.do}`)).toEqual(['2020-06-20..2020-06-20']);
+    });
+
+    it('jednodniowy w przerwie rezerwuje dzien: nikt go nie dubluje, historia idzie dalej wstecz', () => {
+      const plan = planHistorii({ ...wejscie, pomijaj: new Set(ZAKRESY) });
+      expect(plan.some((x) => x.od <= '2020-06-20' && x.do >= '2020-06-20')).toBe(false);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-06-13', do: '2020-06-19', powod: 'historia' });
+    });
+
+    it('szerszy zakres po przerwie NIE wraca na zarezerwowany dzien', () => {
+      // 14–20.06 wyszedl z przerwy wczesniej niz 20.06 — dawniej wracal
+      // i zaczynal od strony 72, dublujac dzien, ktoremu brakuje 5 stron.
+      const plan = planHistorii({ ...wejscie, pomijaj: new Set(['2020-06-20..2020-06-20', '2020-06-15..2020-06-20', '2020-06-18..2020-06-20']) });
+      expect(plan.filter((x) => x.powod === 'przerwane')).toEqual([]);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-06-13', do: '2020-06-19', powod: 'historia' });
+    });
+  });
+
   it('stan bazy z 19.09.2026: najpierw przerwany zakres, potem dziura, potem historia', () => {
     const plan = planHistorii({
       dni: [

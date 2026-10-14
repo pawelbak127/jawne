@@ -939,6 +939,27 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     musi mieć sufit — boty odwiedzą każdy adres.** Osobno: historia SUDOP
     dołoży jeszcze ok. 21 GB bazy — `docs/serwer.md`, sekcja o dysku.
 
+74. **Cięcie zakresu po błędzie tworzyło nakładające się zakresy, z których
+    żaden nie dobiegał końca.** ZMIERZONE 14.10.2026 na serwerze: przez dobę
+    historia SUDOP nie dołożyła ani dnia (sumy stały na 2 293 dniach), choć
+    zużywała cały przydział. Dzień **2020-06-20 ma 1 203 518 przypadków**
+    (121 stron — tarcze z czerwca 2020), a urząd co kilkadziesiąt stron
+    oddawał 500. Każdy błąd odkładał zakres i — zgodnie z regułą z pułapki 26
+    — ciął długość na pół, więc krok „historia” tworzył NOWY zakres na tych
+    samych dniach, od strony 1: 14–20.06, 15–20.06, 18–20.06, 20.06. Na dysku
+    leżało 71 + 55 + 78 + 116 stron, w większości tego samego dnia, a przebiegi
+    skakały między zestawami zależnie od tego, któremu minęła przerwa.
+    Reguła z pułapki 26 jest dobra na kolejkę, która przy dużym wyniku nie
+    oddaje nic — ale jednego dnia nie da się pociąć. Teraz (`planHistorii`):
+    z nakładających się przerwanych zakresów idzie ten, któremu zostało
+    **najmniej stron** (liczba wyników z pierwszej strony minus strony na
+    dysku), pozostałe są pomijane; zakres **jednodniowy** w przerwie
+    rezerwuje swój dzień, a historia idzie w tym czasie dalej wstecz.
+    Sprawdzone na danych serwera (tylko odczyt): plan wybiera 20.06, któremu
+    brakuje 5 stron. Zasada: **reguła „przy błędzie zmniejsz porcję” musi
+    wiedzieć, kiedy porcji nie da się już zmniejszyć — inaczej każdy błąd
+    zaczyna tę samą pracę od zera.**
+
 ---
 
 ## Bezpieczeństwo

@@ -141,9 +141,16 @@ export function planHistorii(p: {
    * Zakresy, ktorych TERAZ nie probujemy — ich kolejka nie oddala wyniku,
    * a przerwa jeszcze nie minela (patrz `nieudane-zakresy.ts`). Pominiety
    * zakres NIE znika z planu na zawsze: ustepuje miejsca krokowi „historia",
-   * ktory te same dni poda w mniejszych kawalkach.
+   * ktory te same dni poda w mniejszych kawalkach. Wyjatek: zakres JEDNODNIOWY
+   * — mniejszych kawalkow nie ma, wiec jego dni czekaja na niego (nizej).
    */
   pomijaj?: ReadonlySet<string>;
+  /**
+   * Ile stron zostalo do pobrania w przerwanym zakresie (`null` = nie wiadomo).
+   * Wolane tylko dla zakresow, ktore naprawde sa w planie — czytanie pierwszej
+   * strony z dysku nie jest darmowe.
+   */
+  zostaloStron?: (zakres: string) => number | null;
 }): ZakresDoPobrania[] {
   const dlugosc = p.dlugosc ?? DNI_W_ZAKRESIE;
   const wczoraj = dodajDni(p.dzis, -1);
@@ -151,20 +158,56 @@ export function planHistorii(p: {
   const mamy = new Set(p.dni.map((d) => d.dzien));
   const plan: ZakresDoPobrania[] = [];
 
-  // 1. Przerwane: strony zakresu leza na dysku, a czesci dni nie ma w bazie.
-  //    Wznowienie uzywa zapisanych stron — tanszego kroku nie ma.
+  /*
+   * 1. Przerwane: strony zakresu leza na dysku, a czesci dni nie ma w bazie.
+   *    Wznowienie uzywa zapisanych stron — tanszego kroku nie ma.
+   *
+   * ZMIERZONE 14.10.2026 na serwerze: historia przez dobe nie dolozyla ani
+   * dnia, choc zuzywala caly przydzial. Dzien 2020-06-20 ma 1 203 518
+   * przypadkow (121 stron), a urzad oddawal co kilkadziesiat stron blad 500.
+   * Kazdy blad odkladal zakres i tworzyl NOWY, krotszy, nakladajacy sie
+   * (14–20.06, 15–20.06, 18–20.06, 20.06) — kazdy od strony 1, a przebiegi
+   * skakaly miedzy nimi. Na dysku lezalo 71 + 55 + 78 + 116 stron, w wiekszosci
+   * tego samego dnia, i zaden zestaw nie dobiegal konca. Dlatego:
+   *  - zakres jednodniowy w przerwie REZERWUJE swoje dni: nie ma czego ciac,
+   *    a nowy zakres na tym dniu zaczynalby od strony 1;
+   *  - z nakladajacych sie przerwanych bierzemy ten, ktoremu zostalo najmniej
+   *    stron (bez tej wiedzy — najwezszy), a pozostale pomijamy.
+   */
   const pokryte = new Set<string>();
+  const zarezerwowane = new Set<string>();
+  const kandydaci: { z: string; od: string; doDnia: string; dni: string[] }[] = [];
   for (const z of p.zakresyPlikow) {
     const [od, doDnia] = z.split('..') as [string, string];
     if (doDnia > wczoraj) continue;
     const dni = dniZakresu(od, doDnia);
     if (dni.every((d) => mamy.has(d))) continue;
-    // Zakres w przerwie po porazkach pomijamy — ale NIE oznaczamy jego dni
-    // jako pokrytych, zeby krok „historia" mogl je wziac mniejszymi porcjami.
-    if (p.pomijaj?.has(z)) continue;
-    plan.push({ od, do: doDnia, odswiez: false, powod: 'przerwane' });
-    for (const d of dni) pokryte.add(d);
+    if (p.pomijaj?.has(z)) {
+      // Zakres w przerwie po porazkach pomijamy. Dluzszy zostawia dni krokowi
+      // „historia" (wezmie je mniejszymi porcjami), jednodniowy je rezerwuje.
+      if (dni.length === 1) zarezerwowane.add(od);
+      continue;
+    }
+    kandydaci.push({ z, od, doDnia, dni });
   }
+  for (const d of zarezerwowane) pokryte.add(d);
+  const zostalo = new Map(kandydaci.map((k) => [k.z, p.zostaloStron?.(k.z) ?? null]));
+  kandydaci.sort((a, b) => {
+    const x = zostalo.get(a.z) ?? null;
+    const y = zostalo.get(b.z) ?? null;
+    if (x !== null && y !== null && x !== y) return x - y;
+    if ((x === null) !== (y === null)) return x === null ? 1 : -1;
+    return a.dni.length - b.dni.length || a.od.localeCompare(b.od);
+  });
+  const wybrane: ZakresDoPobrania[] = [];
+  for (const k of kandydaci) {
+    if (k.dni.some((d) => pokryte.has(d))) continue;
+    wybrane.push({ od: k.od, do: k.doDnia, odswiez: false, powod: 'przerwane' });
+    for (const d of k.dni) pokryte.add(d);
+  }
+  // Kolejnosc w planie jak dotad — od najstarszego — zeby nie zmieniac tego,
+  // co juz dziala; wybor nakladajacych sie zakresow robi sortowanie wyzej.
+  plan.push(...wybrane.sort((a, b) => a.od.localeCompare(b.od)));
 
   // 2. Nieustalone: pobrane za wczesnie, a 14 dni juz minelo. Normalnie
   //    odswieza je zadanie dzienne; tu zostaja zaleglosci (np. po awarii).
@@ -184,8 +227,13 @@ export function planHistorii(p: {
   }
 
   // 4. Historia wstecz, jeden zakres. Bez zadnego dnia w bazie zaczynamy
-  //    od ostatniego dnia, ktory jest juz ustalony.
-  const koniecHistorii = pierwszy ? dodajDni(pierwszy, -1) : ostatniDoUstalenia;
+  //    od ostatniego dnia, ktory jest juz ustalony. Dni zarezerwowane przez
+  //    jednodniowy zakres w przerwie przeskakujemy — historia idzie dalej
+  //    wstecz, a ten dzien wroci, gdy minie przerwa.
+  let start = pierwszy;
+  for (const d of zarezerwowane) if (!start || d < start) start = d;
+  while (start && zarezerwowane.has(dodajDni(start, -1))) start = dodajDni(start, -1);
+  const koniecHistorii = start ? dodajDni(start, -1) : ostatniDoUstalenia;
   if (koniecHistorii >= p.poczatekOkna) {
     const od = dodajDni(koniecHistorii, -(dlugosc - 1));
     plan.push({ od: od < p.poczatekOkna ? p.poczatekOkna : od, do: koniecHistorii, odswiez: false, powod: 'historia' });

@@ -491,8 +491,33 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
    * bo timer historii chodzi CO GODZINE, a zbior `zBledem` ginal razem
    * z procesem. Patrz naglowek `nieudane-zakresy.ts`.
    */
+  /*
+   * Ile stron zostalo w przerwanym zakresie: wszystkie (z liczby wynikow na
+   * pierwszej stronie) minus te na dysku. Plan wybiera wtedy z nakladajacych
+   * sie zakresow ten najblizszy konca (pulapka z 14.10.2026, harmonogram.ts).
+   * Pierwsza strona to do 10 tys. wierszy JSON-u, wiec liczbe wynikow
+   * pamietamy na czas procesu.
+   */
+  const wynikowZakresu = new Map<string, number | null>();
+  const zostaloStron = (zakres: string): number | null => {
+    const [od, doDnia] = zakres.split('..') as [string, string];
+    const przedrostek = `przyrost-${od}-${doDnia}-s`;
+    const stron = readdirSync(KATALOG).filter((n) => n.startsWith(przedrostek) && /-s\d+\.json(\.gz)?$/.test(n)).length;
+    if (!wynikowZakresu.has(zakres)) {
+      let liczba: number | null = null;
+      try {
+        liczba = zapisanaOdpowiedz(join(KATALOG, `${przedrostek}1.json`))?.['liczba-wynikow'] ?? null;
+      } catch {
+        // Uszkodzona strona nie moze zatrzymac planu — wtedy „nie wiadomo".
+      }
+      wynikowZakresu.set(zakres, liczba);
+    }
+    const liczba = wynikowZakresu.get(zakres) ?? null;
+    return liczba === null ? null : Math.max(0, Math.ceil(liczba / NA_STRONE) - stron);
+  };
   const plan = () => planHistorii({
     dlugosc,
+    zostaloStron,
     pomijaj: doPominiecia(wczytajNieudane(KATALOG), new Date()),
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
     dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
