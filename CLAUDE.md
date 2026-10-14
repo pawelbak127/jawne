@@ -683,6 +683,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     nie naprawi wiersza, ktory ma wartosc BLEDNA** — trzeba przeliczac takze
     kody z par kolizyjnych; (2) gdy klucz moze pasowac do kilku wierszy,
     slownik ma trzymac **liste kandydatow**, a nie ostatniego, ktory wygral.
+    **Ta sama rodzina przy organach pomocy (14.10.2026):** „organ tej gminy”
+    rozstrzygalismy tytulem (wojt/burmistrz/prezydent) i TERYT-em siedziby
+    z REGON. Na serwerze **33 z 2 548** organow gminnych mialo kod cudzej
+    gminy — prawie zawsze blizniaka: Wojt Gminy Elblag, Lomza, Tarnow, Zamosc
+    w miescie, prezydenci Glogowa, Mielca, Starogardu na wsi — a urzedy gmin
+    wiejskich (Bodzechow, Liw, Nowosolna) maja siedzibe w miescie obok
+    naprawde. Strona Ostrowca Swietokrzyskiego oznaczylaby wojta Bodzechowa
+    jako „organ tej gminy”. Teraz rozstrzyga `gminaOrganu` (`organy.ts`):
+    siedziba tylko gdy zgadza sie z nazwa i rodzajem, potem blizniak w tym
+    samym powiecie, potem jednoznaczna pelna nazwa; wynik w `organy_gmin`,
+    liczony przy agregatach. 2 545 przypisanych, 3 bez gminy — nie zgadujemy.
 
 
 61. **Wznowienie zakresu przewracalo sie na WLASNYCH, juz pobranych danych.**

@@ -376,6 +376,11 @@ w **0 rozjazdach na 4 641 głosowaniach**.
   odpuściła" — pomoc udzielona **przez organ gminy** (ulgi, umorzenia, raty).
   Zmierzone: 208 organów gminnych, 54,6 mln zł z 22 dni. Tego nie pokazuje nikt.
   Wymaga dołożenia `nip_udzielajacego` do etapu `regon` (~35 wywołań BIR).
+  **ZROBIONE 14.10.2026:** strona gminy pokazuje własny organ (przypisany
+  regułą `gminaOrganu`, nie samą siedzibą z REGON — 33 pomyłki na serwerze)
+  także wtedy, gdy nie przyznał nic firmom z tej gminy, oraz co przyznał
+  firmom SPOZA niej (na serwerze 20% decyzji organów gmin), osobno dla
+  każdego rodzaju pomocy. Tabela `organy_gmin` liczy się przy agregatach.
 - **Krytyka.** Werdykt: „to nie jest serwis obywatelski, to bardzo dobrze
   zbudowana hurtownia danych z warstwą prezentacji, która konsekwentnie odmawia
   powiedzenia czytelnikowi, co znaczy liczba". Sprawdzone osobno i potwierdzone:

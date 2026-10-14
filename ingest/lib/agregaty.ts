@@ -3,6 +3,8 @@ import {
   KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, MAKS_ADRESOW_MAPY, podpisDni, type Czytnik,
 } from '../../src/lib/przeglad.js';
 import { nazwaPodmiotuJawna } from '../../src/lib/prywatnosc.js';
+import { gminaOrganu, nazwaOrganu, rodzajOrganu, type GminaWykazu } from '../../src/lib/organy.js';
+import { wTransakcji } from './baza.js';
 import { TERYT_WARSZAWY } from './fe.js';
 import { firmyDoMapy, mapaZeSum, odswiezSumy, przegladZeSum } from './sumy-pomocy.js';
 
@@ -23,6 +25,7 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
   };
 
   const sumy = odswiezSumy(db, wymus);
+  const organow = przypiszOrganyGmin(db);
   /*
    * `delta(db)` juz tu nie ma, i to jest polowa naprawy OOM z 02.10.2026:
    * budowala w pamieci mapy firm i gmin z calej historii gmin pokazowych,
@@ -66,7 +69,7 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
     // to blad. Stary agregat zostawiamy: mowi prawde o tym, co bylo.
     return {
       policzono: false,
-      opis: `${sumy.opis}; mapa: ${mapa.length} gmin, ${firmy.length} firm;`
+      opis: `${sumy.opis}; organy gmin: ${organow}; mapa: ${mapa.length} gmin, ${firmy.length} firm;`
         + ' brak dni ustalonych — przegladu nie licze',
     };
   }
@@ -75,7 +78,41 @@ export function policzAgregaty(db: DatabaseSync, wymus = false): { policzono: bo
 
   return {
     policzono: true,
-    opis: `${sumy.opis}; przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
+    opis: `${sumy.opis}; organy gmin: ${organow}; przeglad krajowy: ${przeglad.dni} dni, ${przeglad.przypadkow} przypadkow; `
       + `mapa: ${mapa.length} gmin, ${firmy.length} firm`,
   };
+}
+
+/**
+ * Tabela `organy_gmin` od zera — jest mala (rzedu liczby gmin: 2 548 organow
+ * gminnych na serwerze 14.10.2026) i liczona z gotowego stanu sum, nie
+ * z tabeli pomocy.
+ * Grupowanie po NIP-ie idzie indeksem `pomoc_sumy_organy_nip`.
+ */
+export function przypiszOrganyGmin(db: DatabaseSync): string {
+  const gminy = new Map(
+    (db.prepare('select teryt, nazwa, rodzaj, wojewodztwo from gminy').all() as unknown as GminaWykazu[])
+      .map((g) => [g.teryt, g]),
+  );
+  const organy = db.prepare(
+    `select o.nip as nip, o.nazwa as nazwa_sudop, r.nazwa as nazwa_regon, r.teryt as teryt
+       from (select nip_organu as nip, max(nazwa) as nazwa from pomoc_sumy_organy group by nip_organu) o
+       left join regon r on r.nip = o.nip`,
+  ).all() as unknown as { nip: string; nazwa_sudop: string | null; nazwa_regon: string | null; teryt: string | null }[];
+
+  let gminnych = 0;
+  const przypisane: [string, string][] = [];
+  for (const o of organy) {
+    const nazwa = nazwaOrganu(o.nazwa_sudop, o.nazwa_regon);
+    if (!rodzajOrganu(nazwa)) continue;
+    gminnych++;
+    const teryt = gminaOrganu(nazwa, o.teryt, gminy);
+    if (teryt) przypisane.push([o.nip, teryt]);
+  }
+  wTransakcji(db, () => {
+    db.exec('delete from organy_gmin');
+    const wstaw = db.prepare('insert into organy_gmin (nip, teryt) values (?, ?)');
+    for (const [nip, teryt] of przypisane) wstaw.run(nip, teryt);
+  });
+  return `${przypisane.length} z ${gminnych} przypisanych`;
 }

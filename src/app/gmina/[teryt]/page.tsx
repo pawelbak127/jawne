@@ -958,9 +958,11 @@ function ListaOrganow({ organy }: { organy: ReturnType<typeof organyPomocy>['org
               ) : null}
             </div>
             <p className="liczby mt-1 text-sm text-atrament-2">
-              {zOdmiana(o.przypadkow, 'decyzja', 'decyzje', 'decyzji')}
+              {o.przypadkow
+                ? zOdmiana(o.przypadkow, 'decyzja', 'decyzje', 'decyzji')
+                : 'Żadnej decyzji dla firm z tej gminy w tych dniach.'}
             </p>
-            <ul className="mt-3 space-y-2 border-t border-kreska pt-3">
+            {o.kategorie.length ? <ul className="mt-3 space-y-2 border-t border-kreska pt-3">
               {o.kategorie.map((k) => (
                 <li key={k.kategoria}>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -976,7 +978,31 @@ function ListaOrganow({ organy }: { organy: ReturnType<typeof organyPomocy>['org
                   </p>
                 </li>
               ))}
-            </ul>
+            </ul> : null}
+            {/* Firmy SPOZA gminy — sekcja wyzej liczy tylko te z siedziba tutaj,
+                a wojt zwalnia z podatku takze firme zarejestrowana obok. */}
+            {o.pozaGmina ? (
+              <div className="mt-3 border-t border-kreska pt-3">
+                <p className="text-sm leading-relaxed text-atrament-2">
+                  {o.przypadkow ? 'Poza tym ' : 'Za to '}
+                  {o.pozaGmina.gmin === 1
+                    ? `${zOdmiana(o.pozaGmina.przypadkow, 'decyzja', 'decyzje', 'decyzji')} dla ${o.pozaGmina.przypadkow === 1 ? 'firmy' : 'firm'} z siedzibą w innej gminie, w tych samych dniach. `
+                    : `${zOdmiana(o.pozaGmina.przypadkow, 'decyzja', 'decyzje', 'decyzji')} dla firm z siedzibą w innych gminach (${liczba(o.pozaGmina.gmin)}), w tych samych dniach. `}
+                  {o.przypadkow ? 'Tych kwot nie ma w liczbach wyżej. ' : 'Tej kwoty nie ma w liczbach wyżej, bo liczą firmy z siedzibą tutaj. '}
+                  <Link href={`/organ/${o.nip}`} className="text-akcent underline underline-offset-4 hover:no-underline">{o.pozaGmina.gmin === 1 ? 'w której →' : 'w których →'}</Link>
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {o.pozaGmina.kategorie.map((k) => (
+                    <li key={k.kategoria} className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
+                      <span>{OPIS_KATEGORII[k.kategoria].etykieta}</span>
+                      <span className="liczby">
+                        {`${zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${k.brutto === null ? 'bez kwoty w rejestrze' : zlote(k.brutto)}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>

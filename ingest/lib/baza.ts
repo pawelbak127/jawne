@@ -387,6 +387,20 @@ create index if not exists pomoc_sumy_organy_teryt on pomoc_sumy_organy(teryt);
 -- Strona organu pyta o JEDEN nip po wszystkich gminach; klucz glowny
 -- zaczyna sie od teryt, wiec bez tego indeksu byl przebieg po tabeli.
 create index if not exists pomoc_sumy_organy_nip on pomoc_sumy_organy(nip_organu);
+/*
+  Czyj jest organ: NIP wojta, burmistrza albo prezydenta -> TERYT jego gminy.
+  Liczone przy agregatach (ingest/lib/agregaty.ts) regula gminaOrganu
+  z src/lib/organy.ts — siedziba z REGON sama nie wystarcza (Bodzechow).
+  Bez tej tabeli strona gminy znajdowala wlasny organ tylko wtedy, gdy
+  przyznal pomoc firmie Z TEJ gminy: Burmistrz Piatku z jedna decyzja na
+  3,78 mln zl dla firmy spoza gminy nie stal przy Piatku wcale.
+  Organ, ktorego nie umiemy przypisac, tu nie trafia — nie zgadujemy.
+*/
+create table if not exists organy_gmin (
+  nip    text primary key,
+  teryt  text not null
+);
+create index if not exists organy_gmin_teryt on organy_gmin(teryt);
 create table if not exists pomoc_sumy_wymiar (
   wymiar      text not null,          -- udzielajacy | przeznaczenie | forma | wielkosc
   klucz       text not null,

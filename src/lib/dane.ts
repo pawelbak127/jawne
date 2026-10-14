@@ -7,7 +7,7 @@ import { uprosc, zapytanieFts } from './tekst';
 import { porownajZKlubem, type GlosZKlubem, type PorownanieZKlubem } from './niezaleznosc';
 import { nazwaDoPokazania, nazwaPodmiotuJawna } from './prywatnosc';
 import { kategoriaFormy, type KategoriaPomocy } from './formy-pomocy';
-import { nazwaOrganu, organWykonawczyGminy } from './organy';
+import { nazwaOrganu } from './organy';
 import { nazwaDzialu } from './dzialy';
 import { PROG_PODEJRZANEJ_KWOTY } from './zamowienia';
 import { policzPomocGminy, pomocGminyZeSum } from './pomoc-gminy';
@@ -2444,10 +2444,17 @@ export type KategoriaOrganu = {
 export type OrganPomocy = {
   nip: string;
   nazwa: string;
-  /** Czy to organ TEJ gminy — wojt, burmistrz, prezydent albo jej jednostka. */
+  /** Czy to organ TEJ gminy — wojt, burmistrz albo prezydent (organy.ts). */
   wlasny: boolean;
   przypadkow: number;
   kategorie: KategoriaOrganu[];
+  /**
+   * Co organ TEJ gminy przyznal firmom SPOZA niej — w tych samych dniach.
+   * `null` dla organow obcych i w trybie pelnym (tam liczby wyzej opisuja
+   * pelna historie gminy, a stan sum — dni ustalone kraju; zestawienie obu
+   * mowiloby o dwoch roznych zbiorach, lekcja B2).
+   */
+  pozaGmina: { przypadkow: number; gmin: number; kategorie: KategoriaOrganu[] } | null;
 };
 
 export type OrganyPomocy = {
@@ -2537,8 +2544,14 @@ export function organyPomocy(teryt: string): OrganyPomocy {
           order by o.brutto desc`,
         teryt,
       );
-    if (!wiersze.length) return pusto;
-
+    // Czyj jest organ, rozstrzyga import (`organy_gmin`, regula z organy.ts):
+    // siedziba z REGON sama nie wystarcza. Bez tabeli — nikogo nie oznaczamy,
+    // ale lista organow zostaje.
+    const wlasne = new Set(bezTabeli(
+      () => wszystkie<{ nip: string }>('select nip from organy_gmin where teryt = ?', teryt).map((r) => r.nip),
+      [],
+    ));
+    if (!wiersze.length && (pelna || !wlasne.size)) return pusto;
     const wg = new Map<string, OrganPomocy>();
     const ukryte = new Set<string>();
     let przypadkowBezNazwy = 0;
@@ -2560,9 +2573,10 @@ export function organyPomocy(teryt: string): OrganyPomocy {
           nazwa,
           // NIE samo porownanie TERYT-u: ZUS, PFRON i BGK maja siedzibe
           // w Warszawie, wiec wychodzily jako „organ tej gminy". Patrz organy.ts.
-          wlasny: organWykonawczyGminy(nazwa, r.teryt_organu, teryt),
+          wlasny: wlasne.has(r.nip),
           przypadkow: 0,
           kategorie: [],
+          pozaGmina: null,
         };
         wg.set(r.nip, o);
       }
@@ -2586,6 +2600,53 @@ export function organyPomocy(teryt: string): OrganyPomocy {
       return b.przypadkow - a.przypadkow;
     });
     for (const o of organy) o.kategorie.sort((a, b) => b.przypadkow - a.przypadkow);
+    /*
+     * POZA GMINA (14.10.2026). Wojt czy burmistrz przyznaje pomoc takze firmom
+     * z siedziba gdzie indziej — zwolnienie z podatku od nieruchomosci w tej
+     * gminie dostaje firma zarejestrowana w sasiedniej. ZMIERZONE na lokalnej
+     * bazie: 19% kwot organow gmin (9,5 z 50,1 mln zl, 241 z 1 279 decyzji)
+     * trafia do firm spoza gminy organu, a sekcja wyzej liczy tylko firmy
+     * z tej gminy. Indeks po NIP-ie organu, jeden organ — tanio.
+     */
+    if (!pelna) {
+      // Wlasny organ, ktory nie przyznal nic firmom Z TEJ gminy, i tak tu
+      // stoi — inaczej Burmistrz Piatku (3,78 mln zl dla firmy spoza gminy)
+      // nie pojawialby sie przy Piatku wcale.
+      for (const nip of wlasne) {
+        if (wg.has(nip)) continue;
+        const m = jeden<{ nazwa_sudop: string | null; nazwa_regon: string | null; typ_regon: string | null }>(
+          `select (select nazwa from pomoc_sumy_organy where nip_organu = ? limit 1) as nazwa_sudop,
+                  (select nazwa from regon where nip = ?) as nazwa_regon,
+                  (select typ from regon where nip = ?) as typ_regon`,
+          nip, nip, nip,
+        );
+        const nazwa = nazwaOrganu(m?.nazwa_sudop ?? null, m?.nazwa_regon ?? null);
+        if (!nazwa || !nazwaPodmiotuJawna(nazwa, m?.typ_regon ?? null)) continue;
+        const o: OrganPomocy = { nip, nazwa, wlasny: true, przypadkow: 0, kategorie: [], pozaGmina: null };
+        wg.set(nip, o);
+        organy.unshift(o);
+      }
+      for (const o of organy.filter((x) => x.wlasny)) {
+        const kat = wszystkie<{ kategoria: string; przypadkow: number; z_kwota: number; brutto: number }>(
+          `select kategoria, sum(przypadkow) as przypadkow, sum(z_kwota) as z_kwota, sum(brutto) as brutto
+             from pomoc_sumy_organy where nip_organu = ? and teryt <> ?
+            group by kategoria order by 2 desc`,
+          o.nip, teryt,
+        );
+        if (!kat.length) continue;
+        o.pozaGmina = {
+          przypadkow: kat.reduce((a, k) => a + k.przypadkow, 0),
+          gmin: jeden<{ g: number }>(
+            'select count(distinct teryt) as g from pomoc_sumy_organy where nip_organu = ? and teryt <> ?', o.nip, teryt,
+          )?.g ?? 0,
+          kategorie: kat.map((k) => ({
+            kategoria: k.kategoria as KategoriaPomocy,
+            przypadkow: k.przypadkow,
+            brutto: k.z_kwota > 0 ? k.brutto : null,
+          })),
+        };
+      }
+    }
     return { organy, bezNazwy: ukryte.size, przypadkowBezNazwy, pelna };
   }, pusto);
 }
