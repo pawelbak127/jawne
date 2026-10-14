@@ -7,7 +7,8 @@ import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { wynikGlosowania } from '@/lib/wynik-glosowania';
-import { NIE_KLUBY } from '@/lib/niezaleznosc';
+import { klubyWgGlosu } from '@/lib/glosy-klubow';
+import { TabelaKlubow } from '@/components/TabelaKlubow';
 import { dataKrotko, dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Polkole, type Blok } from '@/components/Polkole';
@@ -54,11 +55,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 const KOLEJNOSC_GLOSOW = ['YES', 'NO', 'ABSTAIN', 'VOTE_VALID', 'PRESENT', 'ABSENT'];
-const OPCJE = [
-  { klucz: 'za', etykieta: 'za' },
-  { klucz: 'przeciw', etykieta: 'przeciw' },
-  { klucz: 'wstrzymalo', etykieta: 'wstrzymał się' },
-] as const;
 
 export default async function StronaGlosowania({ params }: { params: Promise<{ id: string }> }) {
   if (!bazaDostepna()) return <BrakDanych />;
@@ -128,24 +124,14 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
    * i do pytania „jak myslisz”. Remis to remis: klub z rowna liczba „za”
    * i „przeciw” nie trafia do zadnej grupy, ale zostaje w mianowniku.
    */
-  const najczestszy = (w: (typeof wynikiWgKlubow)[number]) => {
-    const [a, b] = OPCJE.map((x) => ({ ...x, ile: w[x.klucz] })).sort((x, y) => y.ile - x.ile);
-    return a.ile > 0 && a.ile > b.ile ? a.etykieta : null;
-  };
   // Niezrzeszeni nie tworza klubu (NIE_KLUBY) — ich wiersz jest w tabeli,
-  // ale nie w zdaniu „w N z M klubow” ani w pytaniu.
-  const prawdziweKluby = wynikiWgKlubow.filter((w) => !NIE_KLUBY.has(w.klub_id));
-  const grupy = new Map<string, string[]>();
-  for (const w of prawdziweKluby) {
-    const n = najczestszy(w);
-    if (n) grupy.set(n, [...(grupy.get(n) ?? []), w.klub_id]);
-  }
-  const grupyMalejaco = [...grupy.entries()].sort((a, b) => b[1].length - a[1].length);
-  const klubow = prawdziweKluby.length;
-  const tytulKlubow = grupyMalejaco.length
-    ? `Kluby: ${grupyMalejaco.slice(0, 2).map(([glos, kl], i) => `${i === 0 ? `w ${kl.length} z ${klubow}` : `w ${kl.length}`} najczęściej „${glos}”`).join(', ')}`
+  // ale nie w zdaniu „w N z M klubow” ani w pytaniu (src/lib/glosy-klubow.ts).
+  const { grupy, klubow } = klubyWgGlosu(wynikiWgKlubow);
+  const tytulKlubow = grupy.length
+    ? `Kluby: ${grupy.slice(0, 2).map((gr, i) => `${i === 0 ? `w ${gr.kluby.length} z ${klubow}` : `w ${gr.kluby.length}`} najczęściej „${gr.glos}”`).join(', ')}`
     : 'Jak głosowały kluby';
-  const [pytanyGlos, pytaneKluby] = grupyMalejaco[0] ?? [null, []];
+  const pytanyGlos = grupy[0]?.glos ?? null;
+  const pytaneKluby = grupy[0]?.kluby ?? [];
 
   const dzialy = glosy.length
     ? [
@@ -302,63 +288,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
                     }
                   />
                 ) : null}
-                <table className="tabela liczby">
-                  <thead>
-                    <tr>
-                      <th>Klub</th>
-                      <th className="l">za</th>
-                      <th className="l">przeciw</th>
-                      <th className="l">wstrz.</th>
-                      <th className="l">nie głos.</th>
-                      <th>rozkład</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {wynikiWgKlubow.map((w) => {
-                      const k = listaKlubow.find((x) => x.id === w.klub_id);
-                      const wszyscy = w.za + w.przeciw + w.wstrzymalo + w.nieobecnych + w.innych;
-                      const czesci = [
-                        { ile: w.za, b: BARWY_GLOSU.za },
-                        { ile: w.przeciw, b: BARWY_GLOSU.przeciw },
-                        { ile: w.wstrzymalo, b: BARWY_GLOSU.wstrzymal },
-                        { ile: w.nieobecnych, b: BARWY_GLOSU.brak },
-                        { ile: w.innych, b: BARWY_GLOSU.inne },
-                      ];
-                      return (
-                        <tr key={w.klub_id}>
-                          <td>
-                            <span title={k?.nazwa ?? undefined}>
-                              <span
-                                className="miejsce-probka kropka"
-                                style={{ '--b': k?.barwa ?? '#9a958c', '--bc': k?.barwaCiemna ?? '#8e8a95' } as React.CSSProperties}
-                              />
-                              <b>{w.klub_id}</b>
-                            </span>
-                          </td>
-                          <td className="l" data-etykieta="za">{w.za}</td>
-                          <td className="l" data-etykieta="przeciw">{w.przeciw}</td>
-                          <td className="l" data-etykieta="wstrz.">{w.wstrzymalo}</td>
-                          <td className="l text-atrament-2" data-etykieta="nie głos.">{w.nieobecnych}</td>
-                          <td style={{ minWidth: '8rem' }}>
-                            <div
-                              className="mt-2 flex h-2 overflow-hidden bg-papier-3"
-                              role="img"
-                              aria-label={`za ${w.za}, przeciw ${w.przeciw}, wstrzymało się ${w.wstrzymalo}, nie głosowało ${w.nieobecnych}`}
-                            >
-                              {czesci.filter((c) => c.ile > 0).map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="miejsce-probka"
-                                  style={{ width: `${(c.ile / wszyscy) * 100}%`, '--b': c.b.jasny, '--bc': c.b.ciemny } as React.CSSProperties}
-                                />
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <TabelaKlubow wyniki={wynikiWgKlubow} kluby={listaKlubow} />
               </Dzial>
             ) : null}
 

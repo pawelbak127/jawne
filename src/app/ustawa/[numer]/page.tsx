@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, etapyProcesu, glosowanie, proces, streszczenieUstawy, zrodloImportu,
+  bazaDostepna, etapyProcesu, glosowanie, kluby, proces, streszczenieUstawy, wynikiKlubow, zrodloImportu,
   type EtapProcesu, type ProcesSkrot,
 } from '@/lib/dane';
+import { klubyWgGlosu } from '@/lib/glosy-klubow';
+import { TabelaKlubow } from '@/components/TabelaKlubow';
 import { dataKrotko, dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { opisGlosowania } from '@/lib/opis-glosowania';
@@ -69,8 +71,29 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
     .filter((e) => e.glos_posiedzenie !== null && e.glos_numer !== null)
     .map((e) => ({ e, g: e.glosowanie_mamy > 0 ? glosowanie(e.glos_posiedzenie!, e.glos_numer!) : null }));
 
+  /*
+   * KTO BYL ZA (14.10.2026) — z przegladu w chmurze: pierwszy krok w temacie
+   * „poglady poslow”, ktory nie konczy sie rankingiem. Bierzemy OSTATNIE
+   * glosowanie nad calosc projektu (slowa rejestru, zasada 8) i pokazujemy
+   * kluby z dnia glosowania — liczby z rejestru, bez naszej klasyfikacji.
+   * Najczestszy glos klubu, remis to brak stanowiska (src/lib/glosy-klubow.ts).
+   */
+  const nadCaloscia = [...glosowaniaEtapow]
+    .reverse()
+    .map(({ g }) => g)
+    .find((g) => g && opisGlosowania(g).nadCaloscia) ?? null;
+  const listaKlubow = kluby();
+  const kolejnosc = new Map(listaKlubow.map((k, i) => [k.id, i]));
+  const wynikiNadCaloscia = nadCaloscia
+    ? wynikiKlubow(nadCaloscia.posiedzenie, nadCaloscia.numer)
+      .sort((a, b) => (kolejnosc.get(a.klub_id) ?? 999) - (kolejnosc.get(b.klub_id) ?? 999))
+    : [];
+  const stanowiska = klubyWgGlosu(wynikiNadCaloscia);
+  const klubyZa = stanowiska.grupy.find((gr) => gr.glos === 'za')?.kluby ?? [];
+
   const dzialy = [
     ...(p.opis ? [{ id: 'opis', nazwa: 'Opis z rejestru' }] : []),
+    ...(wynikiNadCaloscia.length ? [{ id: 'kto-za', nazwa: 'Kto był za' }] : []),
     { id: 'droga', nazwa: 'Droga przez Sejm' },
     { id: 'glosowania', nazwa: 'Głosowania' },
   ];
@@ -147,6 +170,26 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
           {p.opis ? (
             <Dzial id="opis" nr={nr('opis')} tytul="Opis z rejestru Sejmu" obok={<Podstawa adres={REJESTR(p.numer)} nazwa="opis z rejestru Sejmu" />}>
               <p className="wstep text-atrament" style={{ color: 'var(--atrament)' }}>{bezNazwiskOsobPrywatnych(p.opis)}</p>
+            </Dzial>
+          ) : null}
+
+          {nadCaloscia && wynikiNadCaloscia.length ? (
+            <Dzial
+              id="kto-za"
+              nr={nr('kto-za')}
+              tytul={klubyZa.length
+                ? `Kto był za: ${klubyZa.join(', ')}`
+                : 'Jak głosowały kluby nad całością projektu'}
+              obok={<Podstawa adres={`https://api.sejm.gov.pl/sejm/term10/votings/${nadCaloscia.posiedzenie}/${nadCaloscia.numer}`} nazwa="rejestr głosowań" />}
+            >
+              <p className="wstep">
+                {`Ostatnie głosowanie nad całością projektu, ${dataSlownie(nadCaloscia.data)}: za ${liczba(nadCaloscia.za)}, przeciw ${liczba(nadCaloscia.przeciw)}, wstrzymało się ${liczba(nadCaloscia.wstrzymalo)}. `}
+                {stanowiska.grupy.filter((gr) => gr.glos !== 'za').map((gr) => `Najczęściej „${gr.glos}”: ${gr.kluby.join(', ')}. `).join('')}
+                {stanowiska.bezStanowiska.length ? `Bez wyraźnie najczęstszego głosu: ${stanowiska.bezStanowiska.join(', ')}. ` : ''}
+                {'Kluby z dnia głosowania; posłowie niezrzeszeni nie tworzą klubu. '}
+                <Link href={`/glosowanie/${nadCaloscia.posiedzenie}-${nadCaloscia.numer}`}>kto jak głosował imiennie →</Link>
+              </p>
+              <TabelaKlubow wyniki={wynikiNadCaloscia} kluby={listaKlubow} />
             </Dzial>
           ) : null}
 
