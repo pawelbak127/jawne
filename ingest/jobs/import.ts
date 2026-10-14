@@ -611,9 +611,11 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
     const byly = db.prepare('select podpis from agregaty where klucz = ?')
       .get(KLUCZ_INDEKSU_FIRM) as { podpis: string } | undefined;
     // Podpis bez tabeli to nie „bez zmian", a pusta wyszukiwarka firm.
+    // Obie tabele: indeks trygramowy (14.10.2026) powstaje tylko przy
+    // przebudowie, a bez niego wyszukiwanie wraca do 30-sekundowego `instr`.
     const maIndeks = (db.prepare(
-      "select count(*) as c from sqlite_master where name = 'firmy_szukaj'",
-    ).get() as { c: number }).c > 0;
+      "select count(*) as c from sqlite_master where name in ('firmy_szukaj', 'firmy_szukaj_fts')",
+    ).get() as { c: number }).c === 2;
     if (maIndeks && byly?.podpis === podpis) {
       const ile = (db.prepare('select count(*) as c from firmy_szukaj').get() as { c: number }).c;
       log(`   bez zmian w pomocy publicznej — zostaje ${ile} firm w indeksie`);
