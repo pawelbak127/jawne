@@ -185,7 +185,7 @@ export default function StronaGlowna() {
           <h3 className="tytul-wykresu">{`${pierwszy.id} i ${drugi.id} mają razem ${liczba((pierwszy.mandaty ?? 0) + (drugi.mandaty ?? 0))} z ${liczba(mandatow)} mandatów`}</h3>
         ) : null}
         <div
-          className="mt-3.5 flex max-w-[46rem] overflow-hidden"
+          className="mt-3.5 flex max-w-(--miara) overflow-hidden"
           style={{ height: 22 }}
           role="img"
           aria-label={klubyIzby.map((k) => `${k.id}: ${k.mandaty}`).join(', ')}

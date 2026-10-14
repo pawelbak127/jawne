@@ -37,6 +37,13 @@
 
 /* ---- Standardowy: jasny ---- */
 :root {
+  /* Szerokosc tekstu ciaglego — TA SAMA co list, wykresow i metody pod nim.
+     Do 14.10.2026 akapity mialy 34–40em, a listy 46rem: na komputerze wstep
+     dzialu konczyl sie 120 px przed lista pod nim (800 z 952 px kolumny),
+     podpis wykresu 250 px przed (em liczy sie od mniejszej czcionki podpisu),
+     a przy krotkim zdaniu zostawial jedno slowo w drugim wierszu
+     (zgloszenie Pawla). W rem, nie em — jedna szerokosc niezaleznie od pisma. */
+  --miara: 46rem;
   --papier:      #ffffff;
   --papier-2:    #ffffff;
   --papier-3:    #f3f2f1;
@@ -196,6 +203,8 @@
 }
 
 @layer base {
+  /* Bez pojedynczego slowa w ostatnim wierszu akapitu („UTF-” / „8.”). */
+  p, li { text-wrap: pretty; }
   /*
     F5 — pismo (badania-ux.md §5, Rello 2016): tekst ciagly 18 px na telefonie
     i 20 px od 1024 px. Zmiana rozmiaru KORZENIA, nie `body`: wszystkie
@@ -393,8 +402,8 @@
   /* nazwy spolek maja po 80 znakow — przy 2,4rem zajmowaly caly pierwszy ekran telefonu */
   .wypis h1.dlugi { font-size: 1.45rem; line-height: 1.2; }
   @media (min-width: 1024px) { .wypis h1.dlugi { font-size: 1.8rem; } }
-  .wypis .podtytul { margin-top: 8px; color: var(--atrament-2); max-width: 34em; }
-  .skad { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--kreska); max-width: 40em; font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
+  .wypis .podtytul { margin-top: 8px; color: var(--atrament-2); max-width: var(--miara); }
+  .skad { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--kreska); max-width: var(--miara); font-size: var(--sredni); line-height: 1.5; color: var(--atrament-2); }
   .skad b { color: var(--atrament); font-weight: 600; }
   .skad a { white-space: nowrap; color: var(--akcent); }
   .stan-danych { margin-top: 10px; font-size: var(--drobny); color: var(--atrament-2); display: flex; flex-wrap: wrap; gap: 2px 14px; font-family: var(--f-znak); }
@@ -438,7 +447,7 @@
   [data-styl="a"] a.zrodlo .nazwa::before { content: "podstawa: "; color: var(--atrament-2); }
 
   /* warunki UOKiK — tuz przy liczbach SUDOP (zasada 10) */
-  .warunki { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--kreska); font-size: var(--drobny); color: var(--atrament-2); max-width: 46em; }
+  .warunki { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--kreska); font-size: var(--drobny); color: var(--atrament-2); max-width: var(--miara); }
   .w-liczbach .warunki { margin-bottom: 10px; }
 
   /* spis dzialow (przyklejony) */
@@ -454,7 +463,7 @@
   .dzial .tytul { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
   .dzial .tytul h2 { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.3rem; line-height: 1.2; }
   .dzial .tytul .nr-tel { color: var(--atrament-3); }
-  .dzial .wstep { margin-top: 10px; color: var(--atrament-2); max-width: 40em; }
+  .dzial .wstep { margin-top: 10px; color: var(--atrament-2); max-width: var(--miara); }
   .dzial h3 { margin-top: 30px; font-weight: 600; font-size: 1.08rem; }
   @media (min-width: 900px) {
     [data-styl="a"] .dzial { grid-template-columns: 5rem minmax(0, 1fr); }
@@ -464,7 +473,7 @@
   }
 
   /* uwaga — wyglada jak uwaga, nie jak kolejna karta */
-  .uwaga { margin-top: 16px; padding: 2px 0 2px 14px; border-left: 4px solid var(--atrament-2); max-width: 40em; }
+  .uwaga { margin-top: 16px; padding: 2px 0 2px 14px; border-left: 4px solid var(--atrament-2); max-width: var(--miara); }
   .uwaga b { font-weight: 600; }
   :root:not([data-styl="a"]) .uwaga { border-left: 10px solid var(--kreska); padding-left: 16px; }
   :root:not([data-styl="a"]) .uwaga > b:first-child::before {
@@ -473,7 +482,7 @@
   }
 
   /* „Jak to liczymy” — jedno na dzial, na koncu dzialu (F7) */
-  details.metoda { margin-top: 18px; max-width: 46em; border-top: 1px dashed var(--kreska-2); }
+  details.metoda { margin-top: 18px; max-width: var(--miara); border-top: 1px dashed var(--kreska-2); }
   details.metoda > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: var(--sredni); list-style: none; }
   details.metoda > summary::-webkit-details-marker { display: none; }
   details.metoda > summary::before { content: "+"; font-family: var(--f-znak); width: 22px; height: 22px; display: inline-grid; place-items: center; border: 2px solid var(--atrament); font-size: var(--drobny); line-height: 1; flex: none; }
@@ -484,15 +493,15 @@
   details.metoda li + li { margin-top: 4px; }
 
   /* wykresy: paski na wspolnej osi, tytul u gory jako zdanie z wnioskiem (F11) */
-  .tytul-wykresu { margin-top: 30px; font-weight: 600; font-size: 1.08rem; max-width: 34em; }
-  .lista-paskow { list-style: none; margin: 12px 0 0; padding: 0; max-width: 46rem; }
+  .tytul-wykresu { margin-top: 30px; font-weight: 600; font-size: 1.08rem; max-width: var(--miara); }
+  .lista-paskow { list-style: none; margin: 12px 0 0; padding: 0; max-width: var(--miara); }
   .lista-paskow li { padding: 8px 0; }
   .lista-paskow .opis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: var(--sredni); }
   .lista-paskow .opis > span:last-child { margin-left: auto; color: var(--atrament-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pasek { height: 8px; background: var(--papier-3); margin-top: 6px; }
   .pasek i { display: block; height: 100%; background: var(--akcent); }
   [data-styl="a"] .pasek i { background: var(--atrament); }
-  .podpis-wykresu { margin-top: 8px; font-size: var(--drobny); color: var(--atrament-2); max-width: 40em; }
+  .podpis-wykresu { margin-top: 8px; font-size: var(--drobny); color: var(--atrament-2); max-width: var(--miara); }
   /* pasek z barwa glosu: po regulach .pasek i, zeby wygrala barwa semantyczna */
   .pasek i.miejsce-probka { background: var(--b); }
   .kropka { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 6px; flex: none; }
@@ -511,7 +520,7 @@
   .drzwi a:hover b { text-decoration-thickness: 3px; }
   .legenda { list-style: none; padding: 0; margin: 14px 0 0; max-width: 46rem; columns: 2; column-gap: 28px; font-size: var(--sredni); }
   .legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--kreska); break-inside: avoid; }
-  .pozycje .streszczenie { margin-top: 6px; max-width: 40em; color: var(--atrament-2); font-size: var(--sredni); }
+  .pozycje .streszczenie { margin-top: 6px; max-width: var(--miara); color: var(--atrament-2); font-size: var(--sredni); }
 
   /* listy: zakladki-filtry, pola filtrow, litery, stronicowanie */
   .zakladki { display: flex; flex-wrap: wrap; gap: 0 4px; margin-top: 18px; border-bottom: 2px solid var(--atrament); }
@@ -535,7 +544,7 @@
   .droga li::before { content: ""; position: absolute; left: -7px; top: 15px; width: 12px; height: 12px; background: var(--papier); border: 2px solid var(--atrament); border-radius: 50%; }
   .droga li.ostatni::before { background: var(--atrament); }
   .droga .kiedy { font-family: var(--f-znak); font-size: var(--drobny); color: var(--atrament-2); }
-  .po-ludzku p { max-width: 40em; }
+  .po-ludzku p { max-width: var(--miara); }
 
   /* posel: portret obok nazwy, metryczka zwinieta pod „W liczbach” */
   .glowa-z-obrazem { display: flex; gap: 18px; align-items: flex-start; }

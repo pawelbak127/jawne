@@ -75,13 +75,13 @@ export default async function PorownanieGminWojewodztwa({ params }: { params: Pr
       */}
       {kolumny.length ? (
         <section className="mt-6 max-w-5xl">
-          <p className="max-w-3xl text-sm leading-relaxed text-atrament-2">
+          <p className="max-w-(--miara) text-sm leading-relaxed text-atrament-2">
             Te same liczby co na stronach gmin, wszystkie na mieszkańca, obok siebie. Kolejność
             wybierasz sam — to nie jest ranking: kwota na mieszkańca nie mówi, czy gmina
             gospodaruje dobrze, a w pomocy publicznej jedna duża firma potrafi dać większość kwoty
             (szczegóły na stronie gminy).
           </p>
-          <ul className="mt-3 max-w-3xl space-y-1 text-sm leading-relaxed text-atrament-2">
+          <ul className="mt-3 max-w-(--miara) space-y-1 text-sm leading-relaxed text-atrament-2">
             {kolumny.map((k) => (
               <li key={k.miara}>
                 {k.miara === 'dochody' ? `Dochody: budżet gminy za ${por.rokBudzetu} r. ÷ mieszkańcy. ` : null}

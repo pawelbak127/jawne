@@ -455,7 +455,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             nr={nr('dane')}
             tytul={`Dane do pobrania: ${zOdmiana(pliki.length, 'plik CSV', 'pliki CSV', 'plików CSV')}${akapit ? ' i akapit do cytowania' : ''}`}
           >
-            <p className="wstep">Pliki pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.</p>
+            <p className="wstep">Pliki pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF‑8.</p>
             <p className="pliki">
               {pliki.map(([zestaw, opis]) => (
                 <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`}>{`${opis} (CSV)`}</a>
@@ -469,7 +469,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
                   pismo. Każda kwota ma okres, mianownik i źródło; prosimy cytować razem ze zdaniem
                   o źródle.
                 </p>
-                <blockquote className="mt-3 max-w-3xl border-l-4 border-akcent pl-4 text-sm leading-relaxed">
+                <blockquote className="mt-3 max-w-(--miara) border-l-4 border-akcent pl-4 text-sm leading-relaxed">
                   <p>{akapit.tekst}</p>
                   <p className="mt-2 text-atrament-2">{akapit.zrodla}</p>
                 </blockquote>
@@ -980,7 +980,7 @@ function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) 
         </Wiecej>
       ) : null}
       {organy.bezNazwy ? (
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-atrament-2">
+        <p className="mt-4 max-w-(--miara) text-sm leading-relaxed text-atrament-2">
           {`Do tego ${zOdmiana(organy.bezNazwy, 'organ', 'organy', 'organów')}, których nazw nie pokazujemy, bo rejestr wskazuje osoby fizyczne — razem ${zOdmiana(organy.przypadkowBezNazwy, 'decyzja', 'decyzje', 'decyzji')}. Liczby zostają, nazwiska nie.`}
         </p>
       ) : null}

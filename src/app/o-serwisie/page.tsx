@@ -27,7 +27,7 @@ export default function StronaOSerwisie() {
       />
 
       <Dzial id="co" nr={1} tytul="Co tu jest">
-        <div className="mt-3 max-w-[40em] space-y-4 leading-relaxed">
+        <div className="mt-3 max-w-(--miara) space-y-4 leading-relaxed">
           <p>
             <b>zrejestru.pl</b> pokazuje dane publiczne o Sejmie: kto jak głosował, kto zasiada
             w izbie, co dzieje się z ustawami. Wszystko pochodzi z oficjalnych rejestrów
@@ -113,7 +113,7 @@ export default function StronaOSerwisie() {
       </Dzial>
 
       <Dzial id="sprawdz" nr={3} tytul="Jak nas sprawdzić">
-        <div className="mt-3 max-w-[40em] space-y-4 leading-relaxed">
+        <div className="mt-3 max-w-(--miara) space-y-4 leading-relaxed">
           <p>
             Każda liczba ma obok odnośnik prowadzący wprost do rejestru, z którego pochodzi.
             Jeśli coś się nie zgadza, źródło rozstrzyga — nie my.
