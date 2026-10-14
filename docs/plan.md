@@ -34,6 +34,13 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
 ### Stan na 14.10.2026
 
+**PREMIERA 14.10.2026, ok. 20:42:** Paweł ustawił `JAWNE_INDEKSOWANIE=tak`.
+Decyzja o robotach: wpuszczamy wszystkich, także roboty AI; `robots.txt`
+zakazuje tylko CSV gmin, `/szukaj`, `/firmy?` i `/api/` (`c5de149` —
+koszt dla serwera bez korzyści w wyszukiwarce), `meta-externalagent`
+dalej 403 w Caddy. Strony z pamięci podręcznej sprzed zmiany oddawały przy
+pierwszym wejściu jeszcze `noindex` — wyrównuje to najbliższe `aktualizuj`.
+
 **Na serwerze działa `b31be62`** (wdrożone 14.10): wyszukiwanie firm po
 indeksie trygramowym, „Kto był za” na stronie ustawy, organ gminy z regułą
 `gminaOrganu` (2 545 z 2 548 przypisanych), akapit do cytowania,
