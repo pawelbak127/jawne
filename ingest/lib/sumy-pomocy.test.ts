@@ -4,6 +4,7 @@ import { zalozSchemat } from './baza.js';
 import { firmyDoMapy, mapaZeSum, odswiezSumy, PORCJA_DNIA, przegladZeSum, sprawdzSumy, sumyFirm } from './sumy-pomocy.js';
 import { DNI_USTALONE, policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
 import { policzPomocGminy, pomocGminyZeSum } from '../../src/lib/pomoc-gminy.js';
+import { policzPodsumowaniaGmin } from './agregaty.js';
 
 /**
  * Kontrola, ze suma liczona dzien po dniu daje dokladnie to samo, co jedno
@@ -268,6 +269,57 @@ describe('pomoc w gminie ze stanu (strona gminy)', () => {
     expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/max_eur/);
     db.prepare("update pomoc_sumy_gmin_firmy set max_eur = 3, nazwa = 'Inna' where nip = '1111111111'").run();
     expect(sprawdzSumy(db, WARSZAWA).join(' | ')).toMatch(/firma 1111111111 nazwa/);
+  });
+});
+
+describe('podsumowanie gminy z importu (Warszawa: 247 194 firm przy kazdym wejsciu)', () => {
+  // Czytnik, ktory „nie widzi" podsumowan — strona liczy wtedy po staremu.
+  const bezPodsumowan = () => {
+    const c = czytnik();
+    return { ...c, jeden: <T>(sql: string, ...p: unknown[]) => {
+      if (sql.includes('from agregaty')) throw new Error('no such table: agregaty');
+      return c.jeden<T>(sql, ...p);
+    } };
+  };
+
+  beforeEach(() => {
+    db.prepare('insert into regon (nip, typ, nazwa, pobrano) values (?,?,?,?)').run('1111111111', 'P', 'ALFA', '2026-01-01');
+    dodajDzien('2026-01-01', 20, [
+      { nip: '1111111111', nazwa: 'Alfa sp. z o.o.', brutto: 1000, eur: 230 },
+      { nip: null, nazwa: 'Jan Kowalski', brutto: 40 },
+      { nip: '4444444444', nazwa: 'Anna Nowak Usługi', brutto: 9, eur: 50_000 },
+      { nip: '5555555555', nazwa: 'Zakład Fryzjerski Ewa', brutto: 3, eur: 1 },
+      { nip: '2222222222', nazwa: null, brutto: null },
+    ]);
+    odswiezSumy(db);
+  });
+
+  it('daje to samo, co liczenie na zywo — liczby, ukryci w obu wariantach progu i czolowka', () => {
+    expect(policzPodsumowaniaGmin(db, true)).toBe('1 gmin');
+    const z = pomocGminyZeSum(czytnik(), '020101');
+    expect(z).toEqual(pomocGminyZeSum(bezPodsumowan(), '020101'));
+    expect(z.ukrytych.bezProgu).toBeGreaterThan(z.ukrytych.zProgiem); // prog odslania nazwe powyzej 10 tys. EUR
+    expect(z.razem?.beneficjentow).toBe(4);
+    // Gmina bez firm w stanie: zero z podsumowania, jak na zywo.
+    expect(pomocGminyZeSum(czytnik(), '140101').ukrytych).toEqual({ bezProgu: 0, zProgiem: 0 });
+  });
+
+  it('NIE uzywa podsumowania z innego stanu — po nowym dniu liczy na zywo', () => {
+    policzPodsumowaniaGmin(db, true);
+    // Dowod, ze podsumowanie jest czytane: zepsute daje zepsuty wynik...
+    db.prepare("update pomoc_sumy_gmin_podsumowanie set beneficjentow = 999 where teryt = '020101'").run();
+    expect(pomocGminyZeSum(czytnik(), '020101').razem?.beneficjentow).toBe(999);
+    // ...a po dolozeniu dnia podpis sie nie zgadza i wraca liczenie na zywo.
+    dodajDzien('2026-01-02', 20, [{ nip: '6666666666', nazwa: 'Delta S.A.', brutto: 1 }]);
+    odswiezSumy(db);
+    expect(pomocGminyZeSum(czytnik(), '020101').razem?.beneficjentow).toBe(5);
+  });
+
+  it('bez zmiany stanu nie liczy drugi raz, po imporcie REGON — liczy', () => {
+    policzPodsumowaniaGmin(db, true);
+    expect(policzPodsumowaniaGmin(db, false)).toBe('bez zmian');
+    db.prepare("insert into import (co, kiedy, ile) values ('regon', '2026-10-14T10:00:00Z', 1)").run();
+    expect(policzPodsumowaniaGmin(db, false)).toBe('1 gmin');
   });
 });
 

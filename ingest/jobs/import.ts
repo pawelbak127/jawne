@@ -24,7 +24,7 @@ import { policzAgregaty } from '../lib/agregaty.js';
 import { zbudujIndeksFirm } from '../lib/indeks-firm.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
-import { slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
+import { odswiezTerytNabywcow, slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
 import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
@@ -1232,6 +1232,8 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   log(`   rodzaje: ${[...typy.entries()].map(([t, n]) => `${t}=${n}`).join(', ')}`);
   log(`   z dopasowana gmina: ${zTerytem} (${Math.round((100 * zTerytem) / Math.max(1, znalezionych))}%)`);
   if (pusteOdpowiedzi) log(`   UWAGA: ${pusteOdpowiedzi} pelnych paczek wrocilo pustych — sprawdz limit NIPOW_NA_RAZ`);
+  const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
+  log(`   gmina zamawiajacego w ogloszeniach TED: zmieniona w ${nabywcy}`);
   odnotujImport(db, 'regon', znalezionych, `BIR 1.1, ${zTerytem} z TERYT-em`);
 }
 
@@ -1331,6 +1333,8 @@ async function importZamowien(db: DatabaseSync): Promise<void> {
   log(`   razem ${wBazie} ogloszen, ${wykonawcow} wpisow wykonawcow, ${zNipem} roznych NIP-ow`);
   log(`   ${bezNipu} wpisow bez czytelnego NIP-u, ${rozjazdNazw} ogloszen z rozjazdem liczby nazw i NIP-ow`);
   log(`   ${wSudop} NIP-ow wystepuje tez w pomocy publicznej (SUDOP) — tam sie te dwa zbiory spotykaja`);
+  const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
+  log(`   gmina zamawiajacego z REGON: zmieniona w ${nabywcy} ogloszeniach`);
   odnotujImport(db, 'zamowienia', wBazie, `TED can-standard, ${zNipem} NIP-ow wykonawcow`);
 }
 

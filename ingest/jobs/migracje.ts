@@ -12,7 +12,7 @@ import { existsSync, statSync } from 'node:fs';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
 import { sprawdzSumy } from '../lib/sumy-pomocy.js';
-import { przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
+import { odswiezTerytNabywcow, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
 import { nipZTekstu } from '../../src/lib/nip.js';
 import { wTransakcji } from '../lib/baza.js';
 import { TERYT_WARSZAWY } from '../lib/fe.js';
@@ -53,9 +53,13 @@ function main(): void {
       log(`   REGON: sprawdzono ${ter.sprawdzono} wierszy (bez kodu albo z kodem z pary kolizyjnej); `
         + `TERYT doszedl ${ter.doszlo}, POPRAWIONO ${ter.poprawione}, bez kodu zostaje ${ter.nadal}`);
     }
+    const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
+    if (nabywcy) log(`   TED: gmina zamawiajacego przepisana z REGON w ${nabywcy} ogloszeniach`);
 
     const start = Date.now();
-    const w = policzAgregaty(db, process.argv.includes('--agregaty-od-nowa'));
+    // Podsumowania gmin zawsze od nowa: w ich podpisie nie ma kodu reguly
+    // jawnosci, a wdrozenie to jedyna chwila, w ktorej ten kod sie zmienia.
+    const w = policzAgregaty(db, process.argv.includes('--agregaty-od-nowa'), true);
     log(`   ${w.opis} (${Math.round((Date.now() - start) / 1000)} s)`);
 
     /*

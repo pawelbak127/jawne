@@ -396,6 +396,21 @@ create index if not exists pomoc_sumy_organy_nip on pomoc_sumy_organy(nip_organu
   3,78 mln zl dla firmy spoza gminy nie stal przy Piatku wcale.
   Organ, ktorego nie umiemy przypisac, tu nie trafia — nie zgadujemy.
 */
+/*
+  Podsumowanie pomocy w gminie dla jej strony: ilu beneficjentow, ilu z nich
+  nie wymieniamy z nazwy (z progiem i bez) i czolowka — liczone przy
+  agregatach z pomoc_sumy_gmin_firmy (src/lib/pomoc-gminy.ts). ZMIERZONE
+  14.10.2026: strona Warszawy wczytywala 247 194 firmy przy kazdym wejsciu
+  (3,7 s przy zimnej pamieci podrecznej). Strona bierze wiersz tylko wtedy,
+  gdy podpis w agregaty (klucz podsumowania-gmin) zgadza sie ze stanem sum.
+*/
+create table if not exists pomoc_sumy_gmin_podsumowanie (
+  teryt               text primary key,
+  beneficjentow       integer not null,
+  ukrytych            integer not null,
+  ukrytych_z_progiem  integer not null,
+  czolowka            text not null
+) without rowid;
 create table if not exists organy_gmin (
   nip    text primary key,
   teryt  text not null
@@ -685,7 +700,8 @@ create table if not exists ted_ogloszenia (
   wartosc    real,                -- calego ogloszenia
   waluta     text,
   cpv        text,                -- glowny kod klasyfikacji
-  wykonawcow integer not null
+  wykonawcow integer not null,
+  teryt_nabywcy text              -- gmina zamawiajacego z REGON; odswiezTerytNabywcow (teryt-regon.ts)
 );
 create index if not exists ted_data on ted_ogloszenia(data desc);
 /*
@@ -889,6 +905,24 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   if (kolumnyGlosowan.length && !kolumnyGlosowan.some((k) => k.name === 'wiekszosc_glosow')) {
     db.exec('alter table glosowania add column wiekszosc_glosow integer');
     zrobione.push('dodano kolumne glosowania.wiekszosc_glosow');
+  }
+
+  /*
+   * Gmina zamawiajacego wprost przy ogloszeniu (14.10.2026). ZMIERZONE na
+   * serwerze: zamowienia na zimnej stronie Warszawy to 4,6 s, bo trzy
+   * zapytania lacza ogloszenia z REGON-em po `nabywca_id` i filtruja po
+   * `regon.teryt` — kazde ogloszenie miasta to osobny skok po pliku 12 GB.
+   * Z kolumna i indeksem (teryt, waluta, wartosc) suma idzie samym indeksem,
+   * a czolowka — jego koncowka. Indeks dopiero tu, po `alter table`: SCHEMAT
+   * wykonuje sie przed migracjami, a stara tabela tej kolumny nie ma.
+   */
+  const kolumnyTed = db.prepare('pragma table_info(ted_ogloszenia)').all() as unknown as { name: string }[];
+  if (kolumnyTed.length) {
+    if (!kolumnyTed.some((k) => k.name === 'teryt_nabywcy')) {
+      db.exec('alter table ted_ogloszenia add column teryt_nabywcy text');
+      zrobione.push('dodano kolumne ted_ogloszenia.teryt_nabywcy');
+    }
+    db.exec('create index if not exists ted_teryt_nabywcy on ted_ogloszenia(teryt_nabywcy, waluta, wartosc)');
   }
 
   const kolumnyRegon = db.prepare('pragma table_info(regon)').all() as unknown as { name: string }[];

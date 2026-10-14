@@ -838,9 +838,10 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const widoczna = (nazwa: string, maxEur: number | null, typRegon: string | null) =>
     !nazwaDoPokazania(nazwa, { pomocEur: maxEur, progAktywny, typRegon }).pominieta;
   const jawni = pomoc.beneficjenci.filter((b) => widoczna(b.nazwa, b.max_eur, b.typ_regon));
-  // Liczymy po WSZYSTKICH beneficjentach, nie po pokazanej czolowce — inaczej
-  // spolki spoza czolowki trafialy do "niewymienionych z nazwy".
-  const ukrytych = pomoc.nazwyBeneficjentow.filter((n) => !widoczna(n.nazwa, n.max_eur, n.typ_regon)).length;
+  // Liczone po WSZYSTKICH beneficjentach, nie po pokazanej czolowce — inaczej
+  // spolki spoza czolowki trafialy do "niewymienionych z nazwy". Liczba
+  // przychodzi gotowa (import), w obu wariantach progu.
+  const ukrytych = progAktywny ? pomoc.ukrytych.zProgiem : pomoc.ukrytych.bezProgu;
   return (
     <>
       {/*

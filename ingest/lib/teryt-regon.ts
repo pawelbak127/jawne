@@ -164,6 +164,25 @@ export function przeliczTerytRegon(db: DatabaseSync): {
 }
 
 /**
+ * Przepisuje `regon.teryt` zamawiajacego do `ted_ogloszenia.teryt_nabywcy`.
+ * Zapisuje TYLKO wiersze, w ktorych sie roznia (`is not` lapie tez NULL),
+ * wiec powtorzony przebieg nic nie pisze.
+ *
+ * To kopia, a kopia potrafi sie rozjechac ze zrodlem — dlatego wolana
+ * po kazdej rzeczy, ktora zmienia ktoras strone zlaczenia: po imporcie TED
+ * (nowe ogloszenia), po imporcie REGON (nowe kody), w migracjach (po
+ * `przeliczTerytRegon` i `znormalizujNabywcow`) i przy agregatach, czyli
+ * co najmniej raz na godzine. Zwraca, ile ogloszen zmienilo gmine.
+ */
+export function odswiezTerytNabywcow(db: DatabaseSync): number {
+  const w = db.prepare(
+    `update ted_ogloszenia set teryt_nabywcy = (select r.teryt from regon r where r.nip = ted_ogloszenia.nabywca_id)
+      where teryt_nabywcy is not (select r.teryt from regon r where r.nip = ted_ogloszenia.nabywca_id)`,
+  ).run();
+  return Number(w.changes);
+}
+
+/**
  * Normalizuje `ted_ogloszenia.nabywca_id` tym samym filtrem, ktorym od poczatku
  * szedl NIP wykonawcy. BEZ SIECI — pole jest w bazie, tylko w surowej postaci.
  *

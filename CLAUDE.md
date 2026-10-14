@@ -960,6 +960,26 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     wiedzieć, kiedy porcji nie da się już zmniejszyć — inaczej każdy błąd
     zaczyna tę samą pracę od zera.**
 
+75. **Zimna strona Warszawy: 10,5 s, z czego 8,3 s to dwa zapytania, które
+    czytały całe miasto przy każdym wejściu.** ZMIERZONE 14.10.2026 na
+    serwerze (rozkład funkcji danych, zimna i ciepła pamięć podręczna):
+    zamówienia **4,6 s** (trzy zapytania łączyły ogłoszenia TED z REGON-em
+    po `nabywca_id` i filtrowały po `regon.teryt`) i pomoc publiczna
+    **3,7 s + 0,9 s** — strona wczytywała **247 194** firm miasta ze stanu
+    sum tylko po to, żeby policzyć, ilu nie wymieniamy z nazwy (205 002).
+    Na ciepło te same zapytania to 0,15 s i 1 s — dlatego lokalnie i przy
+    drugim wejściu nikt tego nie widzi (pułapka 67). Teraz: gmina
+    zamawiającego leży przy ogłoszeniu (`teryt_nabywcy` + indeks
+    `(teryt, waluta, wartosc)`, odświeżane po TED, REGON, migracjach
+    i agregatach), a liczba beneficjentów, ukrytych (z progiem i bez)
+    i czołówka gminy liczą się przy agregatach
+    (`pomoc_sumy_gmin_podsumowanie`, ok. 57 s na serwerze) i są czytane
+    tylko przy zgodnym podpisie stanu — przy rozjeździe strona liczy po
+    staremu. Sprawdzone drugą drogą lokalnie: TED 1 935 gmin identycznie,
+    pomoc 2 497 gmin, 0 różnic. **Podpis czytany przy każdym wejściu musi
+    być tani**: pierwsza wersja brała `max(pobrano) from regon` (przebieg
+    po tabeli, 20 ms na wejście) i była wolniejsza od tego, co zastępowała.
+
 ---
 
 ## Bezpieczeństwo

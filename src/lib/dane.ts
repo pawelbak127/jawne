@@ -1059,7 +1059,10 @@ export type ZamowieniaGminy = {
  * Zamowienia publiczne udzielone przez podmioty z siedziba w gminie.
  *
  * Nabywce wiazemy z gmina przez REGON (tabela `regon`), bo TED podaje przy
- * ogloszeniu tylko NIP zamawiajacego. Tu kwota jest uczciwa inaczej niz na
+ * ogloszeniu tylko NIP zamawiajacego. Od 14.10.2026 kod gminy z REGON lezy
+ * przy ogloszeniu (`teryt_nabywcy`, `odswiezTerytNabywcow`): zlaczenie
+ * z REGON-em przy kazdym wejsciu kosztowalo zimna strone Warszawy 4,6 s.
+ * Tu kwota jest uczciwa inaczej niz na
  * stronie firmy: ogloszenie ma JEDNEGO zamawiajacego, wiec jego wartosc to
  * wydatek tego zamawiajacego — niezaleznie od tego, ilu bylo wykonawcow.
  *
@@ -1083,21 +1086,21 @@ export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
               sum(case when o.wartosc is null or o.waluta <> 'PLN' then 1 else 0 end) as bezKwoty,
               sum(case when o.waluta = 'PLN' and o.wartosc is not null
                         and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY} then 1 else 0 end) as wSumie
-         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
-        where r.teryt = ?`,
+         from ted_ogloszenia o
+        where o.teryt_nabywcy = ?`,
       teryt,
     );
     const podejrzane = wszystkie<ZamowienieTed>(
       `select o.numer, o.data, o.tytul, o.nabywca, o.wartosc, o.waluta, o.cpv, o.wykonawcow
-         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
-        where r.teryt = ? and o.waluta = 'PLN' and o.wartosc > ${PROG_PODEJRZANEJ_KWOTY}
+         from ted_ogloszenia o
+        where o.teryt_nabywcy = ? and o.waluta = 'PLN' and o.wartosc > ${PROG_PODEJRZANEJ_KWOTY}
         order by o.wartosc desc`,
       teryt,
     );
     const najwieksze = wszystkie<ZamowienieTed>(
       `select o.numer, o.data, o.tytul, o.nabywca, o.wartosc, o.waluta, o.cpv, o.wykonawcow
-         from ted_ogloszenia o join regon r on r.nip = o.nabywca_id
-        where r.teryt = ? and o.waluta = 'PLN' and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY}
+         from ted_ogloszenia o
+        where o.teryt_nabywcy = ? and o.waluta = 'PLN' and o.wartosc <= ${PROG_PODEJRZANEJ_KWOTY}
         order by o.wartosc desc nulls last limit ?`,
       teryt, ile,
     );
@@ -2499,7 +2502,8 @@ export type PomocGminy = {
   pobranie: { od: string; pobrano: string; wierszy: number } | null;
   razem: { przypadkow: number; beneficjentow: number; brutto: number | null; pierwszy: string; ostatni: string } | null;
   /** WSZYSCY beneficjenci (nazwa + najwieksza pojedyncza pomoc) — do policzenia, ilu nie pokazujemy z nazwy. */
-  nazwyBeneficjentow: { nazwa: string; max_eur: number | null; typ_regon: string | null }[];
+  /** Ilu beneficjentow nie wymieniamy z nazwy — z progiem i bez (src/lib/pomoc-gminy.ts). */
+  ukrytych: { bezProgu: number; zProgiem: number };
   lata: { rok: string; przypadkow: number; brutto: number | null }[];
   przeznaczenia: { nazwa: string; przypadkow: number; brutto: number | null }[];
   udzielajacy: { nazwa: string; przypadkow: number; brutto: number | null }[];
@@ -2843,7 +2847,7 @@ export function organyDoMapy(): string[] {
 }
 
 export function pomocGminy(teryt: string): PomocGminy {
-  const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, nazwyBeneficjentow: [], lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
+  const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, ukrytych: { bezProgu: 0, zProgiem: 0 }, lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
   return bezTabeli(() => {
     const pobranie = jeden<{ od: string; pobrano: string; wierszy: number }>(
       'select od, pobrano, wierszy from pomoc_publiczna_pobrania where teryt = ?', teryt,
