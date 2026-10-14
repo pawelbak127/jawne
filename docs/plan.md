@@ -688,9 +688,14 @@ na serwerze, obok danych.
 - **CORDIS** (projekty Horizon z polskimi uczestnikami) — pieniądze, których
   nie ma w polskich listach, bo Komisja płaci beneficjentowi bezpośrednio.
 - **Kohesio** — porównanie gminy z regionami w innych krajach UE.
-- **Wersja dla mediów lokalnych**: gotowy, cytowalny akapit z liczbami o gminie
-  plus odnośniki do rejestrów. To najtańsza droga do tego, żeby ktoś w ogóle
-  te dane zobaczył.
+- ~~**Wersja dla mediów lokalnych**~~ **zrobione 14.10.2026**: na stronie gminy,
+  w dziale „Do pobrania i cytowania”, akapit z tymi samymi liczbami co
+  „W liczbach” — zdaniami, z sumą i mianownikiem przy każdej kwocie,
+  porównaniem z medianą bez słów oceniających, zastrzeżeniem UOKiK w zdaniu
+  o pomocy i linijką źródła z adresem strony i datą stanu; przycisk kopiuje
+  oba. Brak wartości to brak zdania. Dzielnice Warszawy go nie dostają
+  (liczby całego miasta po wklejeniu udawałyby liczby dzielnicy).
+  Kod: `src/lib/akapit-gminy.ts`.
 
 ---
 

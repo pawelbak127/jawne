@@ -9,11 +9,13 @@ import {
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type ZamowieniaGminy,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
-import { KONTAKT } from '@/lib/adres';
+import { ADRES_SERWISU, KONTAKT } from '@/lib/adres';
+import { akapitGminy } from '@/lib/akapit-gminy';
+import { Kopiuj } from '@/components/Kopiuj';
 import { PROG_PODEJRZANEJ_KWOTY } from '@/lib/zamowienia';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
@@ -142,6 +144,42 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
     : null;
   const czyje = miasto ? 'miasta' : 'gminy';
 
+  /*
+   * Akapit do cytowania — te same liczby co „W liczbach”, zdaniami
+   * (src/lib/akapit-gminy.ts). Dzielnica go nie dostaje: jej budzet,
+   * fundusze i pomoc to cala Warszawa, a zdanie „dochody dzielnicy Wola”
+   * z liczbami miasta byloby nieprawda po wklejeniu, bez naszego dopisku.
+   */
+  const zrodloPomocy = pomoc.zrodlo;
+  const akapit = dzielnica ? null : akapitGminy({
+    czyja: `${czyje} ${g.nazwa}`,
+    wWojewodztwie: `w województwie ${wojewodztwoWMiejscowniku(g.wojewodztwo)}`,
+    tutaj: miasto ? 'w tym mieście' : 'w tej gminie',
+    ludnosc: ludnoscDoPrzeliczen,
+    dochody: budzet && budzet.dochody !== null ? {
+      rok: budzet.rok, razem: budzet.dochody, naOsobe: dochodyNaOsobe,
+      mediana: medianaBudzetu?.dochodyNaOsobe ?? null, gminWMedianie: medianaBudzetu?.gmin ?? null,
+    } : null,
+    ue: ue2127 ? {
+      razem: ue2127.tylko_tu_ue ?? 0, projektow: ue2127.tylko_tu, naOsobe: ueNaOsobe,
+      mediana: medianaUe?.mediana ?? null,
+      // Po wklejeniu nie bedzie naglowka strony — wojewodztwo z nazwy.
+      opisMediany: !medianaUe ? null : medianaUe.grupa === 'wojewodztwo'
+        ? `mediana z ${zOdmiana(medianaUe.jednostek, 'gminy', 'gmin', 'gmin')} w województwie ${wojewodztwoWMiejscowniku(g.wojewodztwo)}`
+        : opisMediany(medianaUe),
+    } : null,
+    pomoc: jestPomoc && zrodloPomocy ? {
+      pelna: zrodloPomocy.rodzaj === 'gmina',
+      od: zrodloPomocy.od,
+      do: zrodloPomocy.rodzaj === 'dni' ? zrodloPomocy.do : null,
+      dni: zrodloPomocy.rodzaj === 'dni' ? zrodloPomocy.dni : null,
+      razem: pomoc.razem!.brutto, przypadkow: pomoc.razem!.przypadkow, naOsobe: pomocNaOsobe,
+      mediana: medianaPomocy?.mediana ?? null, udzialNajwiekszego,
+    } : null,
+    adres: new URL(`/gmina/${g.teryt}`, ADRES_SERWISU).toString(),
+    stan: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw' }).format(new Date()),
+  });
+
   const pliki = ([
     ['budzet', 'budżet rok po roku', Boolean(budzet)],
     ['fundusze', 'projekty unijne', fundusze.some((f) => f.tylko_tu || f.wspolnych)],
@@ -154,7 +192,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
     { id: 'fundusze', nazwa: 'Fundusze UE' },
     { id: 'pomoc', nazwa: 'Pomoc publiczna' },
     ...(zamowienia.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
-    { id: 'dane', nazwa: 'Dane do pobrania' },
+    { id: 'dane', nazwa: akapit ? 'Do pobrania i cytowania' : 'Dane do pobrania' },
   ];
   const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
@@ -410,7 +448,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
           <Dzial
             id="dane"
             nr={nr('dane')}
-            tytul={`Dane do pobrania: ${zOdmiana(pliki.length, 'plik CSV', 'pliki CSV', 'plików CSV')}`}
+            tytul={`Dane do pobrania: ${zOdmiana(pliki.length, 'plik CSV', 'pliki CSV', 'plików CSV')}${akapit ? ' i akapit do cytowania' : ''}`}
           >
             <p className="wstep">Pliki pod polskiego Excela: średnik jako separator, przecinek dziesiętny, kodowanie UTF-8.</p>
             <p className="pliki">
@@ -418,6 +456,23 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
                 <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`}>{`${opis} (CSV)`}</a>
               ))}
             </p>
+            {akapit ? (
+              <>
+                <h3>Akapit do cytowania</h3>
+                <p className="wstep">
+                  Te same liczby co na górze strony, zapisane zdaniami — do wklejenia w artykuł albo
+                  pismo. Każda kwota ma okres, mianownik i źródło; prosimy cytować razem ze zdaniem
+                  o źródle.
+                </p>
+                <blockquote className="mt-3 max-w-3xl border-l-4 border-akcent pl-4 text-sm leading-relaxed">
+                  <p>{akapit.tekst}</p>
+                  <p className="mt-2 text-atrament-2">{akapit.zrodla}</p>
+                </blockquote>
+                <div className="mt-3">
+                  <Kopiuj tekst={`${akapit.tekst}\n\n${akapit.zrodla}`} />
+                </div>
+              </>
+            ) : null}
           </Dzial>
         </div>
       </div>
