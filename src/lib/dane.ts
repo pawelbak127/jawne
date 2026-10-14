@@ -707,8 +707,21 @@ export type FirmaSkrot = {
  * pomijamy nazwe, nie pieniadze.
  */
 export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
+  return wyszukajFirmy(fraza, ile).firmy;
+}
+
+/**
+ * Ile kandydatow z indeksu trygramowego jeszcze sortujemy po kwocie.
+ * Fraza pasujaca do wiekszej liczby firm („spo”, „spolka”) to na serwerze
+ * setki tysiecy trafien do posortowania — a sortowanie blokuje caly proces
+ * strony (pulapka 69). Zamiast wycinka podpisanego „z najwieksza pomoca”
+ * mowimy wprost, ze fraza jest zbyt ogolna.
+ */
+export const SUFIT_KANDYDATOW_FIRM = 20_000;
+
+export function wyszukajFirmy(fraza: string, ile = 6): { firmy: FirmaSkrot[]; zbytOgolna: boolean } {
   const q = uprosc(fraza.trim());
-  if (q.length < 3 || !bazaDostepna()) return [];
+  if (q.length < 3 || !bazaDostepna()) return { firmy: [], zbytOgolna: false };
   const cyfry = fraza.replace(/\D/g, '');
   const progAktywny = Boolean(KONTAKT);
 
@@ -720,32 +733,67 @@ export function szukajFirm(fraza: string, ile = 6): FirmaSkrot[] {
     !nazwaDoPokazania(w.nazwa, { pomocEur: w.max_eur, progAktywny, typRegon: w.typ_regon }).pominieta;
 
   if (cyfry.length === 10) {
-    return bezTabeli(
-      () => wszystkie<FirmaSkrot>(
-        `select ${kolumny} from firmy_szukaj f
-           left join gminy g on g.teryt = f.teryt
-           left join regon r on r.nip = f.nip
-          where f.nip = ?`,
-        cyfry,
-      ).filter(wolnoPokazac),
-      [],
-    );
+    return {
+      firmy: bezTabeli(
+        () => wszystkie<FirmaSkrot>(
+          `select ${kolumny} from firmy_szukaj f
+             left join gminy g on g.teryt = f.teryt
+             left join regon r on r.nip = f.nip
+            where f.nip = ?`,
+          cyfry,
+        ).filter(wolnoPokazac),
+        [],
+      ),
+      zbytOgolna: false,
+    };
   }
 
+  const frazaFts = `"${q.replace(/"/g, '""')}"`;
+  // Licznik z sufitem: `limit` w podzapytaniu konczy czytanie indeksu po
+  // SUFIT+1 trafieniach, wiec nawet „spo” kosztuje ulamek sekundy.
+  const trafien = bezTabeli<number | null>(
+    () => jeden<{ c: number }>(
+      'select count(*) as c from (select 1 from firmy_szukaj_fts where firmy_szukaj_fts match ? limit ?)',
+      frazaFts, SUFIT_KANDYDATOW_FIRM + 1,
+    )?.c ?? 0,
+    null,
+  );
+  if (trafien !== null && trafien > SUFIT_KANDYDATOW_FIRM) return { firmy: [], zbytOgolna: true };
+
   // Bierzemy z zapasem, bo czesc nazw odpadnie na regule prywatnosci.
-  const kandydaci = bezTabeli(
+  //
+  // Najpierw indeks trygramowy (ingest/lib/indeks-firm.ts). ZMIERZONE
+  // 14.10.2026 na serwerze: samo `instr` po 2,24 mln wierszy to 30 s przy
+  // zimnym dysku, a przez ten czas strona nie odpowiada NIKOMU (pulapka 69).
+  // `instr` zostaje jako filtr koncowy — trygram szuka podciagow tak samo,
+  // ale to `instr` rozstrzyga, wiec wynik jest identyczny. Bez tabeli FTS
+  // (przed pierwszym przebiegiem nowego indeksu) wracamy do starej drogi.
+  const zFts = bezTabeli<FirmaSkrot[] | null>(
+    () => wszystkie<FirmaSkrot>(
+      `select ${kolumny} from firmy_szukaj_fts t
+         join firmy_szukaj f on f.nip = t.nip
+         left join gminy g on g.teryt = f.teryt
+         left join regon r on r.nip = f.nip
+        where firmy_szukaj_fts match ? and instr(f.szukaj, ?) > 0
+        order by (f.szukaj = ?) desc, f.brutto desc nulls last, f.nip
+        limit ?`,
+      frazaFts, q, q, ile * 8,
+    ),
+    null,
+  );
+  const kandydaci = zFts ?? bezTabeli(
     () => wszystkie<FirmaSkrot>(
       `select ${kolumny} from firmy_szukaj f
          left join gminy g on g.teryt = f.teryt
          left join regon r on r.nip = f.nip
         where instr(f.szukaj, ?) > 0
-        order by (f.szukaj = ?) desc, f.brutto desc nulls last
+        order by (f.szukaj = ?) desc, f.brutto desc nulls last, f.nip
         limit ?`,
       q, q, ile * 8,
     ),
     [],
   );
-  return kandydaci.filter(wolnoPokazac).slice(0, ile);
+  return { firmy: kandydaci.filter(wolnoPokazac).slice(0, ile), zbytOgolna: false };
 }
 
 // ---------------------------------------------------------------------------

@@ -86,6 +86,21 @@ describe('indeks firm (pulapka 72)', () => {
     expect(poTabeli.filter((p) => /USING (COVERING )?INDEX/.test(p))).toEqual([]);
   });
 
+  it('buduje indeks trygramowy, ktory znajduje to samo co instr (14.10.2026: 30 s na serwerze)', () => {
+    wstaw('2026-01-01', '1000000001', 'Orlen Termika S.A.', 1, 1);
+    wstaw('2026-01-01', '1000000002', 'Żółć Łódź Sp. z o.o.', 1, 1);
+    wstaw('2026-01-01', '1000000003', 'Inna Firma S.A.', 1, 1);
+    zbudujIndeksFirm(db);
+    expect((db.prepare('select count(*) as c from firmy_szukaj_fts').get() as { c: number }).c).toBe(3);
+    for (const q of ['orlen', 'zolc lodz', 'sp. z', 's.a.', 'firma']) {
+      const zFts = (db.prepare(`select t.nip from firmy_szukaj_fts t join firmy_szukaj f on f.nip = t.nip
+        where firmy_szukaj_fts match ? and instr(f.szukaj, ?) > 0 order by t.nip`).all(`"${q}"`, q) as { nip: string }[]).map((r) => r.nip);
+      const zInstr = (db.prepare('select nip from firmy_szukaj where instr(szukaj, ?) > 0 order by nip').all(q) as { nip: string }[]).map((r) => r.nip);
+      expect(zFts).toEqual(zInstr);
+      expect(zInstr.length).toBeGreaterThan(0);
+    }
+  });
+
   it('nie zostawia tabeli tymczasowej i podmienia stary indeks', () => {
     wstaw('2026-01-01', '1000000001', 'Alfa S.A.', 1, 1);
     zbudujIndeksFirm(db);

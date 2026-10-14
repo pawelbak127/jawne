@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { bazaDostepna, szukajFirm, zrodloImportu } from '@/lib/dane';
+import { bazaDostepna, SUFIT_KANDYDATOW_FIRM, wyszukajFirmy, zrodloImportu } from '@/lib/dane';
 import { dataKrotko, liczba, zlote } from '@/lib/format';
 import { opisFirmy } from '@/lib/wyszukiwanie';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -32,7 +32,7 @@ export default async function StronaFirm({ searchParams }: { searchParams: Promi
   if (!bazaDostepna()) return <BrakDanych />;
   const { q = '' } = await searchParams;
   const fraza = q.slice(0, 120).trim();
-  const wyniki = fraza.length >= 3 ? szukajFirm(fraza, WYNIKOW) : [];
+  const { firmy: wyniki, zbytOgolna } = fraza.length >= 3 ? wyszukajFirmy(fraza, WYNIKOW) : { firmy: [], zbytOgolna: false };
   const imp = zrodloImportu('sudop-przyrost');
 
   return (
@@ -59,7 +59,9 @@ export default async function StronaFirm({ searchParams }: { searchParams: Promi
       {fraza.length >= 3 ? (
         <>
           <p className="mt-4 text-atrament-2" style={{ fontSize: 'var(--sredni)' }}>
-            {wyniki.length
+            {zbytOgolna
+              ? `Fraza „${fraza}” pasuje do ponad ${liczba(SUFIT_KANDYDATOW_FIRM)} firm — doprecyzuj nazwę albo wpisz NIP.`
+              : wyniki.length
               ? `Wyniki dla „${fraza}”: ${wyniki.length >= WYNIKOW ? `${liczba(WYNIKOW)} z największą pomocą — doprecyzuj nazwę, żeby zawęzić` : liczba(wyniki.length)}. Beneficjenci pomocy publicznej z rejestru SUDOP, których nazwę wolno pokazać.`
               : `Nic nie znaleźliśmy dla „${fraza}”.`}
           </p>

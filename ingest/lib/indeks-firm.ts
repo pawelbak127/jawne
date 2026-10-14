@@ -89,6 +89,19 @@ export function zbudujIndeksFirm(db: DatabaseSync): number {
       ) without rowid;
       insert into main.firmy_szukaj select * from temp.firmy_nowe order by nip;
     `);
+    /*
+     * Indeks trygramowy do wyszukiwania. ZMIERZONE 14.10.2026 na serwerze:
+     * /firmy?q=orlen odpowiadalo po 30 s, bo `szukajFirm` robila
+     * `instr(szukaj, ?)` po wszystkich 2,24 mln wierszach — a node:sqlite
+     * blokuje caly proces strony (pulapka 69). Trygram szuka podciagow
+     * tak samo jak `instr`, wiec zawęża kandydatow, a `instr` zostaje
+     * w zapytaniu jako filtr koncowy: wynik jest ten sam co do wiersza.
+     */
+    db.exec(`
+      drop table if exists main.firmy_szukaj_fts;
+      create virtual table main.firmy_szukaj_fts using fts5(szukaj, nip unindexed, tokenize = 'trigram');
+      insert into main.firmy_szukaj_fts(szukaj, nip) select szukaj, nip from temp.firmy_nowe;
+    `);
   });
   db.exec('drop table temp.firmy_nowe');
   return firm;
