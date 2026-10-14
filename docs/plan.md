@@ -38,7 +38,10 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 Decyzja o robotach: wpuszczamy wszystkich, także roboty AI; `robots.txt`
 zakazuje tylko CSV gmin, `/szukaj`, `/firmy?` i `/api/` (`c5de149` —
 koszt dla serwera bez korzyści w wyszukiwarce), `meta-externalagent`
-dalej 403 w Caddy. Strony z pamięci podręcznej sprzed zmiany oddawały przy
+dalej 403 w Caddy — **decyzja Pawła z 14.10.2026: blokada zostaje** (robot
+ignoruje `robots.txt`, zbiera dane do trenowania modeli, nie linkuje
+i nie daje ruchu; podglądy linków robi osobny `facebookexternalhit`, który
+ma wstęp). Strony z pamięci podręcznej sprzed zmiany oddawały przy
 pierwszym wejściu jeszcze `noindex` — wyrównuje to najbliższe `aktualizuj`.
 
 **Na serwerze działa `b31be62`** (wdrożone 14.10): wyszukiwanie firm po
