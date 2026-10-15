@@ -259,6 +259,10 @@ describe('uwagi agenta asc po pomiarze na 33 813 zwyciezcach BZP (15.10.2026)', 
   it('forma zagraniczna jawna, ALE nie przebija imienia z PESEL', () => {
     expect(nazwaPodmiotuJawna('Cepheid GmbH')).toBe(true);
     expect(nazwaPodmiotuJawna('Schunk Carbon Technology S.R.O.')).toBe(true);
+    expect(nazwaPodmiotuJawna('AstraZeneca Kft.')).toBe(true);
+    expect(nazwaPodmiotuJawna('UAB Softra')).toBe(true);
+    expect(nazwaPodmiotuJawna('Medical Systems S.R.L.')).toBe(true);
+    expect(nazwaPodmiotuJawna('UAB Jonas Petraitis')).toBe(false); // imie z PESEL zatrzymuje
     // Zmierzone: polskie jednoosobowe firmy z ozdobnikiem „LTD” i „B.V”.
     expect(nazwaPodmiotuJawna('MAGA LTD MAREK GRABOWSKI')).toBe(false);
     expect(nazwaPodmiotuJawna('MAŁGORZATA PAŁCZYŃSKA "CONSULTANCY RITA B.V"')).toBe(false);

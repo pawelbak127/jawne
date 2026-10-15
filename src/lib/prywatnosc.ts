@@ -103,7 +103,9 @@ const INSTYTUCJA: readonly RegExp[] = [
   // „MAŁGORZATA … CONSULTANCY RITA B.V” to polskie jednoosobowe firmy
   // z ozdobnikiem. Imie z PESEL musi je zatrzymac, wiec forma liczy sie
   // dopiero po tym sprawdzeniu.
-  /(?<![\p{L}\p{N}])(gmbh|ltd\.?|limited|s\.\s?r\.\s?o\.?|b\.\s?v\.?|inc\.?)(?![\p{L}\p{N}])/iu,
+  // Kft (Wegry), UAB (Litwa), S.R.L. (Wlochy, Rumunia) — dopisane po
+  // synchronizacji z asc: 11 nazw zwyciezcow BZP („AstraZeneca Kft.”).
+  /(?<![\p{L}\p{N}])(gmbh|ltd\.?|limited|s\.\s?r\.\s?o\.?|b\.\s?v\.?|inc\.?|kft\.?|uab|s\.\s?r\.\s?l\.?)(?![\p{L}\p{N}])/iu,
   // „urz(ąd|ęd)”, ale nie „urządz…”: „Serwis Urządzeń Medycznych” wychodzil
   // jako urzad (15.10.2026, uwaga agenta asc). Odmiana urzad/urzedu/urzedzie
   // nigdy nie ma „z” po „ąd”.
