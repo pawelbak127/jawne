@@ -959,6 +959,12 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     brakuje 5 stron. Zasada: **reguła „przy błędzie zmniejsz porcję” musi
     wiedzieć, kiedy porcji nie da się już zmniejszyć — inaczej każdy błąd
     zaczyna tę samą pracę od zera.**
+    **Dzień później (15.10.2026) ten sam kształt wrócił drugimi drzwiami:**
+    zakres 13–19.06 skończył się godzinę po krótszym 18–19.06 i przepisał te
+    dwa dni z nową datą pobrania — dla sum przyrostowych to „policzony dzień
+    pobrano od nowa”, więc stan liczył się od zera: **7 647 s** pracy dysku
+    przy tych samych danych. Zapis zakresu zostawia teraz dni już ustalone
+    nietknięte (`dniDoZachowania`, jawne `--odswiez` przepisuje wszystko).
 
 75. **Zimna strona Warszawy: 10,5 s, z czego 8,3 s to dwa zapytania, które
     czytały całe miasto przy każdym wejściu.** ZMIERZONE 14.10.2026 na

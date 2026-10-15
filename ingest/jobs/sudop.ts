@@ -34,7 +34,7 @@ import {
 } from '../lib/nieudane-zakresy.js';
 import { odnotujImport, otworz, wTransakcji, zalozSchemat } from '../lib/baza.js';
 import {
-  dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
+  dniDoZachowania, dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
   type DzienPobrany,
 } from '../lib/harmonogram.js';
 import {
@@ -277,15 +277,34 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
  */
 function zapiszPrzyrost(
   db: DatabaseSync, od: string, doDnia: string, stron: number, znane: ReadonlySet<string>, pobrano: string | null,
-): { zapisanych: number; obce: number; gmin: number } {
+  odswiez = false,
+): { zapisanych: number; obce: number; gmin: number; zachowanych: number } {
   const naDzien = new Map<string, number>();
   const gminy = new Set<string>();
   const licznik = new Map<string, number>();
   let zapisanych = 0;
   let obce = 0;
 
+  /*
+   * Dni JUZ USTALONE zostaja nietkniete (15.10.2026). ZMIERZONE na serwerze:
+   * zakres 13–19.06.2020 dobiegl konca godzine po krotszym 18–19.06 i przepisal
+   * te dwa dni z nowa data pobrania. Dla sum przyrostowych to „policzony dzien
+   * pobrano od nowa”, wiec stan liczyl sie od zera — 7 647 s ciezkiej pracy
+   * dysku przy tych samych danych. Dzien ustalony sie nie zmienia (pulapka 37),
+   * wiec nakladajacy sie zakres nie ma czego w nim poprawic. Jawne --odswiez
+   * dalej przepisuje wszystko.
+   */
+  const zachowane = dniDoZachowania(db.prepare(
+    'select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni where dzien between ? and ?',
+  ).all(od, doDnia) as unknown as DzienPobrany[], odswiez);
+
   wTransakcji(db, () => {
-    db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
+    if (zachowane.size) {
+      const usun = db.prepare('delete from pomoc_publiczna where dzien = ?');
+      for (let d = od; d <= doDnia; d = dodajDni(d, 1)) if (!zachowane.has(d)) usun.run(d);
+    } else {
+      db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
+    }
     for (let strona = 1; strona <= stron; strona++) {
       const odp = zapisanaOdpowiedz(join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`));
       if (!odp) throw new Error(`${od}..${doDnia}: brak strony ${strona} na dysku przy zapisie`);
@@ -296,11 +315,12 @@ function zapiszPrzyrost(
       }
       // Gminy spoza naszej listy (np. kod "NZ" albo jednostka, ktorej nie ma
       // w danych PKW) sa RAPORTOWANE, nie przerywaja importu.
-      const nasze = wyniki.filter((w) => {
+      const wGminach = wyniki.filter((w) => {
         const t = terytGminyZKodu(w['gmina-siedziby-kod']);
         return t !== null && znane.has(t);
       });
-      obce += wyniki.length - nasze.length;
+      obce += wyniki.length - wGminach.length;
+      const nasze = zachowane.size ? wGminach.filter((w) => !zachowane.has(w['dzien-udzielenia-pomocy']!)) : wGminach;
       zapisanych += nasze.length;
       for (const w of nasze) {
         const d = w['dzien-udzielenia-pomocy']!;
@@ -318,6 +338,7 @@ function zapiszPrzyrost(
     // "nie pytalismy" od "pytalismy i nic nie bylo".
     for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
       const dzien = d.toISOString().slice(0, 10);
+      if (zachowane.has(dzien)) continue;
       // Stary plik bez naszej metryczki: zostawiamy date pobrania, ktora juz
       // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
       const istniejaca = pobrano ? null
@@ -329,7 +350,7 @@ function zapiszPrzyrost(
       wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
     }
   });
-  return { zapisanych, obce, gmin: gminy.size };
+  return { zapisanych, obce, gmin: gminy.size, zachowanych: zachowane.size };
 }
 
 /**
@@ -425,10 +446,11 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
   const [od, doDnia] = zakres.split('..');
   if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
   const { stron, wierszy, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez, budzet);
-  const { zapisanych, obce, gmin } = zapiszPrzyrost(db, od, doDnia, stron, znane, pobrano);
+  const { zapisanych, obce, gmin, zachowanych } = zapiszPrzyrost(db, od, doDnia, stron, znane, pobrano, odswiez);
   spakujStrony(od, doDnia);
   log(`   zapisano ${zapisanych} z ${wierszy} przypadkow z ${gmin} gmin (${stron} stron, ${zapytan} zapytan, ${sekund} s)`);
   if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
+  if (zachowanych) log(`   ${zachowanych} dni z tego zakresu juz bylo w bazie jako ustalone — zostaja bez zmian`);
   // ZGLOSZENIE Z PRZEGLADU 24.09.2026: /stan pokazywal „dni pobrane dla calego
   // kraju: 0", bo zapisywalismy tu wynik OSTATNIEJ porcji. Strona, ktorej
   // jedynym zadaniem jest sprawdzalnosc, musi podawac stan calosci.

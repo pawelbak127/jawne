@@ -56,6 +56,18 @@ export function ustalony(dzien: string, pobranoDzien: string): boolean {
 }
 
 /**
+ * Ktore dni zakresu zapis ma zostawic NIETKNIETE: te, ktore juz sa w bazie
+ * i sa ustalone (15.10.2026). Nakladajacy sie zakres, ktory konczy sie pozniej,
+ * przepisywal je z nowa data pobrania, a dla sum przyrostowych to „policzony
+ * dzien pobrano od nowa” — stan liczyl sie od zera (7 647 s na serwerze).
+ * Dzien ustalony sie nie zmienia (pulapka 37). Jawne --odswiez przepisuje wszystko.
+ */
+export function dniDoZachowania(wBazie: readonly DzienPobrany[], odswiez: boolean): Set<string> {
+  if (odswiez) return new Set();
+  return new Set(wBazie.filter((d) => ustalony(d.dzien, d.pobrano)).map((d) => d.dzien));
+}
+
+/**
  * Co zadanie dzienne ma zrobic z dniem sprzed 14 dni.
  *
  * „brak" to nie to samo co „nieustalony": dnia, ktorego w ogole nie mamy,

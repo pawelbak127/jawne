@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dodajDni, dzienWarszawa, planHistorii, stanDnia, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
+import { dniDoZachowania, dodajDni, dzienWarszawa, planHistorii, stanDnia, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
 
 describe('dzienWarszawa', () => {
   it('o 00:30 w Warszawie jest juz nowy dzien, choc w UTC jeszcze stary (lato, UTC+2)', () => {
@@ -287,6 +287,26 @@ describe('planHistorii', () => {
       poczatekOkna: OKNO,
     });
     expect(plan[0]).toEqual({ od: '2026-09-18', do: '2026-09-18', odswiez: false, powod: 'przerwane' });
+  });
+});
+
+describe('dniDoZachowania — serwer, 15.10.2026: 13–19.06 przepisal 18–19.06 i stan liczyl sie 7 647 s', () => {
+  const wBazie = [
+    { dzien: '2020-06-18', pobrano: '2026-10-15' },   // ustalony (6 lat po dacie)
+    { dzien: '2020-06-19', pobrano: '2026-10-15' },
+    { dzien: '2026-10-10', pobrano: '2026-10-11' },   // pobrany za wczesnie — wolno przepisac
+  ];
+
+  it('ustalone dni zostaja nietkniete, nieustalone ida do przepisania', () => {
+    expect([...dniDoZachowania(wBazie, false)].sort()).toEqual(['2020-06-18', '2020-06-19']);
+  });
+
+  it('jawne --odswiez przepisuje wszystko', () => {
+    expect(dniDoZachowania(wBazie, true).size).toBe(0);
+  });
+
+  it('dnia, ktorego nie ma w bazie, nie ma czego zachowywac', () => {
+    expect(dniDoZachowania([], false).size).toBe(0);
   });
 });
 
