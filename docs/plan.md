@@ -662,6 +662,16 @@ na serwerze, obok danych.
   brak wartości zawsze na końcu. Mediany sprawdzone drugą drogą z tymi na
   stronach gmin: 16 województw × 3 miary, 0 różnic. Osobna strona, nie
   sekcja spisu: tabela to ok. 115 kB HTML-a na województwo.
+- **Zamówienia gmin z BZP — DECYZJA PAWŁA z 15.10.2026: robimy, `jawne`
+  pobiera BZP samo** z publicznego API e-Zamówień (bez klucza), bez wspólnej
+  bazy z `asc` (osobne serwery i schematy; asc nie jest źródłem danych dla
+  jawne — RODO przy wykonawcach-osobach fizycznych). Przepis i pułapki
+  parsera od asc: `C:\Projects\komunikacja\STAN-asc.md` (wyniki w `htmlBody`,
+  twarda spacja w kwotach, cena spoza [min, max] odrzucana, NIP wykonawcy
+  dopasowywany do części po nazwie). Pomiar asc na 77 757 wynikach części:
+  NIP zamawiającego 99,9%, wykonawcy 61%, kwota ~76%, data 100%; brak TERYT —
+  gmina przez REGON zamawiającego (`odswiezTerytNabywcow`). Kolejność:
+  po „co nowego w mojej gminie”.
 - **„Co nowego w mojej gminie”.** Skoro przyrost SUDOP jest dzienny, da się
   pokazać świeże wpisy, a docelowo powiadomienia e-mail dla gminy.
 - **Okręg wyborczy jako klamra.** Ile pieniędzy trafia do okręgu i jak głosowali
