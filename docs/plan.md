@@ -680,7 +680,9 @@ na serwerze, obok danych.
   zero trafień, jedyne nazwisko w tytule należy do wiceminister w jej roli
   publicznej. Filtr `bezNazwiskOsobPrywatnych` zostaje mimo to — tytuły piszą
   posłowie i jutro może być inaczej.
-- **Proces legislacyjny** (1 681 procesów, 15 907 etapów w starej bazie) —
+- ~~**Proces legislacyjny**~~ **zrobione** (`/ustawy`, `/ustawa/[numer]`: droga
+  przez Sejm, głosowania, opis z rejestru, „Kto był za” od 14.10.2026).
+  Pierwotny wpis: (1 681 procesów, 15 907 etapów w starej bazie) —
   „co się stało z ustawą” to jedna z trzech rzeczy z pierwotnego briefu,
   której dziś nie ma.
 - **Oświadczenia majątkowe i rejestr korzyści posłów** — w dużej części skany,
