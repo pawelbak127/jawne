@@ -83,6 +83,12 @@ const OSOBA_PRAWNA: readonly RegExp[] = [
   /(?<![\p{L}\p{N}])s\.?\s?a\.?(?![\p{L}\p{N}])/iu,
   /(?<![\p{L}\p{N}])sp\.\s?([kjp]\.?|jawna|komandytowa|partnerska)(?![\p{L}\p{N}])/iu,
   /(?<![\p{L}\p{N}])p\.?\s?s\.?\s?a\.?(?![\p{L}\p{N}])/iu,
+  // Formy, ktorych regula nie znala (15.10.2026, uwaga agenta asc po pomiarze
+  // na 33 813 zwyciezcach BZP): S.K.A. jest w KRS jak sp.k.; spolki zagraniczne
+  // to osoby prawne; SP ZOZ ma osobowosc prawna, a jego nazwa niesie adres
+  // (kod pocztowy chowal go ponizej).
+  /(?<![\p{L}\p{N}])s\.?\s?k\.?\s?a\.?(?![\p{L}\p{N}])/iu,
+  /samodzieln\p{L}*\s+publiczn\p{L}*\s+zakład|(?<![\p{L}])sp\s?zoz(?![\p{L}])/iu,
   /(?<![\p{L}])(fundacj|stowarzysz|spółdziel)/iu,
   // Jednostka samorzadu albo organ tylko NA POCZATKU nazwy: "Gmina Kazimierz
   // Dolny" i "Starosta Powiatu Jarosław" zawieraja imie, a "Sklep Miasto Anna
@@ -92,7 +98,16 @@ const OSOBA_PRAWNA: readonly RegExp[] = [
 
 // Instytucje i organizacje, ktorych nazwy nie nosza jednoosobowe firmy.
 const INSTYTUCJA: readonly RegExp[] = [
-  /(?<![\p{L}])(gmin[ayę]|miast[oa]|powiat\p{L}*|województw\p{L}*|urz[ąę]d\p{L}*|starostw\p{L}*|marszał\p{L}*|wojewod\p{L}*)(?![\p{L}])/iu,
+  // Formy zagraniczne TU, a nie w OSOBA_PRAWNA: ZMIERZONE 15.10.2026 na
+  // 196 514 nazwach — „MAGA LTD MAREK GRABOWSKI”, „LTD- LUBRICANT DANIEL …”,
+  // „MAŁGORZATA … CONSULTANCY RITA B.V” to polskie jednoosobowe firmy
+  // z ozdobnikiem. Imie z PESEL musi je zatrzymac, wiec forma liczy sie
+  // dopiero po tym sprawdzeniu.
+  /(?<![\p{L}\p{N}])(gmbh|ltd\.?|limited|s\.\s?r\.\s?o\.?|b\.\s?v\.?|inc\.?)(?![\p{L}\p{N}])/iu,
+  // „urz(ąd|ęd)”, ale nie „urządz…”: „Serwis Urządzeń Medycznych” wychodzil
+  // jako urzad (15.10.2026, uwaga agenta asc). Odmiana urzad/urzedu/urzedzie
+  // nigdy nie ma „z” po „ąd”.
+  /(?<![\p{L}])(gmin[ayę]|miast[oa]|powiat\p{L}*|województw\p{L}*|urz(?:ąd(?!z)|ęd)\p{L}*|starostw\p{L}*|marszał\p{L}*|wojewod\p{L}*)(?![\p{L}])/iu,
   /ministerstw|(?<![\p{L}])minist(er|ra)(?![\p{L}])|komend[ay]|policj|prokuratur|skarb\s+państwa|generaln\p{L}*\s+dyrekcj/iu,
   /(?<![\p{L}])(szef|prezes|dyrektor)(?![\p{L}])|straż\p{L}*\s+pożarn|ochotnicz\p{L}*\s+straż/iu,
   // organy udzielajace pomocy: "Burmistrz Zelowa", "Starosta Tatrzański"

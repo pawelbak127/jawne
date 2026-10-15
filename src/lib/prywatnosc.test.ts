@@ -242,3 +242,30 @@ describe('spolka cywilna: nasza regula jest ostrzejsza niz REGON', () => {
     expect(nazwaPodmiotuJawna('Wspólnota Mieszkaniowa Kwiatowa 5 Kowalski i Nowak s.c.')).toBe(false);
   });
 });
+
+describe('uwagi agenta asc po pomiarze na 33 813 zwyciezcach BZP (15.10.2026)', () => {
+  it('„Urządzeń” to nie urząd — firma z nazwiskiem nie przechodzi jako instytucja', () => {
+    expect(nazwaPodmiotuJawna('Serwis Urządzeń Medycznych Kowalski')).toBe(false);
+    expect(nazwaPodmiotuJawna('Produkcja Urządzeń Pralniczych Nowak')).toBe(false);
+    // Odmiana urzedu dalej dziala.
+    expect(nazwaPodmiotuJawna('Urząd Miejski w Bełchatowie')).toBe(true);
+    expect(nazwaPodmiotuJawna('Dyrektor Urzędu Morskiego w Gdyni')).toBe(true);
+  });
+
+  it('S.K.A. jest w KRS jak sp.k. — jawna mimo nazwiska w firmie', () => {
+    expect(nazwaPodmiotuJawna('ELVIT Dariusz Witek S.K.A.')).toBe(true);
+  });
+
+  it('forma zagraniczna jawna, ALE nie przebija imienia z PESEL', () => {
+    expect(nazwaPodmiotuJawna('Cepheid GmbH')).toBe(true);
+    expect(nazwaPodmiotuJawna('Schunk Carbon Technology S.R.O.')).toBe(true);
+    // Zmierzone: polskie jednoosobowe firmy z ozdobnikiem „LTD” i „B.V”.
+    expect(nazwaPodmiotuJawna('MAGA LTD MAREK GRABOWSKI')).toBe(false);
+    expect(nazwaPodmiotuJawna('MAŁGORZATA PAŁCZYŃSKA "CONSULTANCY RITA B.V"')).toBe(false);
+  });
+
+  it('SP ZOZ ma osobowosc prawna — adres z kodem pocztowym go nie chowa', () => {
+    expect(nazwaPodmiotuJawna('Wojskowa Specjalistyczna Przychodnia Lekarska SPZOZ w Rzeszowie')).toBe(true);
+    expect(nazwaPodmiotuJawna('Szpital Samodzielnym Publicznym Zakładem Opieki Zdrowotnej, ul. Kościuszki 30, 19-300 Ełk')).toBe(true);
+  });
+});

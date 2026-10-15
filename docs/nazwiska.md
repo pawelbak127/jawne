@@ -94,3 +94,31 @@ Reguła siedzi w jednym miejscu: `src/lib/prywatnosc.ts`, funkcja
 `nazwaDoPokazania`. Wariant B to dodanie do niej kwoty i jednej stałej
 z progiem; strony gminy nie trzeba przepisywać. Zmiana jest odwracalna
 w obie strony i nie wymaga ponownego importu danych.
+
+## Zmiana 15.10.2026 — uwagi agenta `asc`
+
+Portal przetargowy `asc` przeniósł regułę do siebie i sprawdził ją na
+33 813 nazwach zwycięzców z BZP. Z jego uwag weszły trzy poprawki:
+
+1. **„Urządzeń” nie jest urzędem.** Wzorzec `urz[ąę]d…` łapał „Serwis
+   Urządzeń Medycznych” — nazwa z nazwiskiem przechodziła jako instytucja.
+   Teraz `urz(?:ąd(?!z)|ęd)…` (odmiana urząd/urzędu/urzędzie nigdy nie ma
+   „z” po „ąd”).
+2. **Nowe formy prawne:** S.K.A. (w KRS jak sp.k., więc jawna mimo nazwiska),
+   SP ZOZ (osoba prawna; kod pocztowy w nazwie już go nie chowa).
+3. **Formy zagraniczne** (GmbH, Ltd, Limited, s.r.o., B.V., Inc.) — liczą się
+   dopiero PO sprawdzeniu imienia z PESEL. Pierwsza wersja wstawiła je przed
+   nim i porównanie od razu pokazało „MAGA LTD MAREK GRABOWSKI” i „LTD-
+   LUBRICANT DANIEL LEWANDOWSKI” — polskie jednoosobowe firmy z ozdobnikiem.
+
+**Porównanie przed i po** na 196 514 nazwach z lokalnej bazy (beneficjenci
+pomocy, zwycięzcy TED, REGON), z typem z REGON: **33 nazwy się odsłaniają**
+(same spółki zagraniczne i jedna S.K.A.), **0 się chowa**. W samej heurystyce
+(bez REGON) poprawka 1 chowa dodatkowo m.in. „Biuro Urządzania Lasu
+i Geodezji Leśnej” — strona bezpieczna, a REGON zna takie podmioty.
+
+**Nie wprowadzone, do decyzji Pawła:** wzorzec „przymiotnik + centrum/zakład”
+nie ma granicy słowa przed „polsk”, więc „Wielkopolskie Centrum Odzieży
+Sportowej X” przechodzi jako instytucja — tak samo jak „Małopolskie Centrum
+Profilaktyki”, które jest instytucją. Imię z PESEL i tak taką nazwę zatrzymuje;
+bez imienia zostaje samo nazwisko.
