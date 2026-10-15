@@ -1,5 +1,5 @@
 [Unit]
-Description=jawne — porzadki: pamiec podreczna stron firm starsza niz doba
+Description=jawne — porzadki: pamiec podreczna stron firm starsza niz doba, skladanie dziennika WAL
 
 [Service]
 Type=oneshot

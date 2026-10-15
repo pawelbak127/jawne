@@ -115,6 +115,18 @@ case "${1:-}" in
         -mmin +1440 -exec rm -rf {} +
       echo "$k: ${przed} MB -> $(du -sm "$k" | cut -f1) MB"
     done
+    # DZIENNIK WAL tez potrzebuje sufitu (15.10.2026). ZMIERZONE: 2,2 GB doba
+    # po wdrozeniu — historia SUDOP pisze co godzine, a skladal go dotad tylko
+    # krok migracji przy wdrozeniu. W trybie WAL kazdy odczyt przeglada
+    # dziennik, wiec to koszt kazdego wejscia czytelnika (pulapka 67).
+    # Ten sam sposob co w migracjach: najwyzej minuta czekania na blokade;
+    # gdy czytelnik trzyma dziennik, sqlite oddaje busy=1 i zlozy sie za 6 h.
+    # `timeout` ucina bezpiecznie — przerwane skladanie zostawia poprawny WAL.
+    if [ -f dane/sejm.db ]; then
+      wal_przed=$(du -m dane/sejm.db-wal 2>/dev/null | cut -f1 || echo 0)
+      wynik=$(timeout 900 sqlite3 -cmd '.timeout 60000' dane/sejm.db 'pragma wal_checkpoint(truncate);' 2>&1 || true)
+      echo "dziennik WAL: ${wal_przed:-0} MB -> $(du -m dane/sejm.db-wal 2>/dev/null | cut -f1 || echo 0) MB (busy|strony|zlozone: ${wynik})"
+    fi
     df -h . | tail -1 | awk '{print "dysk: zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
     ;;
   sudop-dzien)
