@@ -117,8 +117,10 @@ pomocy, zwycięzcy TED, REGON), z typem z REGON: **33 nazwy się odsłaniają**
 (bez REGON) poprawka 1 chowa dodatkowo m.in. „Biuro Urządzania Lasu
 i Geodezji Leśnej” — strona bezpieczna, a REGON zna takie podmioty.
 
-**Nie wprowadzone, do decyzji Pawła:** wzorzec „przymiotnik + centrum/zakład”
+**Nie wprowadzone — decyzja Pawła z 15.10.2026: zostawiamy bez zmian.** Wzorzec „przymiotnik + centrum/zakład”
 nie ma granicy słowa przed „polsk”, więc „Wielkopolskie Centrum Odzieży
 Sportowej X” przechodzi jako instytucja — tak samo jak „Małopolskie Centrum
 Profilaktyki”, które jest instytucją. Imię z PESEL i tak taką nazwę zatrzymuje;
 bez imienia zostaje samo nazwisko.
+Poprawka schowałaby prawdziwe instytucje, a ryzyko dotyczy tylko nazw
+z samym nazwiskiem, bez imienia.
