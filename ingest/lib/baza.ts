@@ -923,6 +923,8 @@ export function zalozSchemat(db: DatabaseSync): string[] {
       zrobione.push('dodano kolumne ted_ogloszenia.teryt_nabywcy');
     }
     db.exec('create index if not exists ted_teryt_nabywcy on ted_ogloszenia(teryt_nabywcy, waluta, wartosc)');
+    // „Co nowego w gminie” bierze najnowsze ogloszenia zamawiajacych z gminy.
+    db.exec('create index if not exists ted_teryt_nabywcy_data on ted_ogloszenia(teryt_nabywcy, data)');
   }
 
   const kolumnyRegon = db.prepare('pragma table_info(regon)').all() as unknown as { name: string }[];

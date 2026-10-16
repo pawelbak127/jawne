@@ -672,7 +672,13 @@ na serwerze, obok danych.
   NIP zamawiającego 99,9%, wykonawcy 61%, kwota ~76%, data 100%; brak TERYT —
   gmina przez REGON zamawiającego (`odswiezTerytNabywcow`). Kolejność:
   po „co nowego w mojej gminie”.
-- **„Co nowego w mojej gminie”.** Skoro przyrost SUDOP jest dzienny, da się
+- ~~**„Co nowego w mojej gminie”**~~ **zrobione 16.10.2026**: pierwszy dział
+  strony gminy — ostatnie 14 dni rejestru SUDOP (liczba przypadków,
+  beneficjentów, kwota; każdy niepełny dzień oznaczony; poza sumami działu
+  „Pomoc publiczna”), najnowsze przypadki tylko firm z jawną nazwą (próg od
+  pojedynczego przypadku) i 5 najnowszych ogłoszeń TED zamawiających z gminy.
+  Indeksy (teryt, dzien) i (teryt_nabywcy, data). Powiadomienia e-mail — później.
+  Pierwotny wpis: Skoro przyrost SUDOP jest dzienny, da się
   pokazać świeże wpisy, a docelowo powiadomienia e-mail dla gminy.
 - **Okręg wyborczy jako klamra.** Ile pieniędzy trafia do okręgu i jak głosowali
   posłowie z tego okręgu. **Uwaga:** dane nie mówią, że to zasługa posła.

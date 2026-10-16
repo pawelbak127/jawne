@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
-  medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, organyPomocy, pomocGminy, porownanieBudzetu,
+  medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, nowosciGminy, organyPomocy, pomocGminy, porownanieBudzetu,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
-  type ZamowieniaGminy,
+  type NowosciGminy, type ZamowieniaGminy,
 } from '@/lib/dane';
 import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
@@ -110,6 +110,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const listaKlubow = kluby();
   const importFe = zrodloImportu('fundusze-2021-2027');
   const zamowienia = zamowieniaGminy(terytFunduszy);
+  const nowosci = nowosciGminy(terytFunduszy);
+  const saNowosci = nowosci.przypadkow > 0 || nowosci.zamowienia.length > 0;
   const importTed = zrodloImportu('zamowienia');
   const importRegon = zrodloImportu('regon');
 
@@ -187,6 +189,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   ] as const).filter(([, , jest]) => jest);
 
   const dzialy: { id: string; nazwa: string }[] = [
+    ...(saNowosci ? [{ id: 'nowe', nazwa: 'Co nowego' }] : []),
     ...(budzet ? [{ id: 'budzet', nazwa: 'Budżet' }] : []),
     ...(smup.length ? [{ id: 'finanse', nazwa: 'Finanse i podatki' }] : []),
     { id: 'fundusze', nazwa: 'Fundusze UE' },
@@ -333,6 +336,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
       <div className="obszar z-spisem">
         <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
         <div className="dzialy">
+          {saNowosci ? <CoNowego nr={nr('nowe')} n={nowosci} miasto={miasto} dzielnica={dzielnica} /> : null}
+
           {budzet ? (
             <Budzet
               nr={nr('budzet')}
@@ -1277,5 +1282,101 @@ function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }
       pozycje={pozycje}
       podpis="Pozycje wcięte są częścią dochodów własnych. Kredyty i obligacje nie są dochodem i nie ma ich w tej kwocie."
     />
+  );
+}
+
+/**
+ * CO NOWEGO (16.10.2026) — najswiezsze wpisy z rejestrow dla czytelnika,
+ * ktory wraca. Ostatnie dni SUDOP sa NIEUSTALONE (pulapka 37), wiec ta sekcja
+ * niczego nie sumuje do dzialu „Pomoc publiczna” i mowi to wprost, a kazdy
+ * niepelny dzien jest oznaczony. Dane: `nowosciGminy` w dane.ts.
+ */
+function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; miasto: boolean; dzielnica: boolean }) {
+  const tutaj = miasto ? 'w tym mieście' : 'w tej gminie';
+  return (
+    <Dzial
+      id="nowe"
+      nr={nr}
+      tytul={n.okno && n.przypadkow
+        ? `Co nowego: ${zOdmiana(n.przypadkow, 'przypadek', 'przypadki', 'przypadków')} pomocy publicznej w ostatnich ${zOdmiana(n.okno.dni, 'dniu', 'dniach', 'dniach')} rejestru`
+        : 'Co nowego w rejestrach'}
+      obok={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={n.okno ? dataKrotko(n.okno.do) : null} />}
+    >
+      <p className="wstep">
+        {`Najświeższe wpisy: pomoc publiczna dla firm z siedzibą ${tutaj} i zamówienia instytucji stąd. `}
+        {'Ostatnie dni są niepełne — urzędy mają 7 dni na zgłoszenie pomocy, a dzień uznajemy za ustalony dopiero 14 dni po dacie. '}
+        {'Dlatego tych przypadków nie ma jeszcze w sumach w dziale „Pomoc publiczna”.'}
+        {dzielnica ? ' Rejestr nie dzieli firm na dzielnice — pokazujemy całą Warszawę.' : ''}
+      </p>
+
+      {n.okno ? (
+        <p className="mt-3 text-sm leading-relaxed text-atrament-2">
+          {n.przypadkow
+            ? `Od ${dataSlownie(n.okno.od)} do ${dataSlownie(n.okno.do)}: ${zOdmiana(n.przypadkow, 'przypadek', 'przypadki', 'przypadków')} dla ${zOdmiana(n.beneficjentow, 'beneficjenta', 'beneficjentów', 'beneficjentów')}${n.brutto !== null ? `, razem ${zlote(n.brutto)} brutto` : ''}. `
+            : `Od ${dataSlownie(n.okno.od)} do ${dataSlownie(n.okno.do)} rejestr nie ma jeszcze żadnej pomocy dla firm z siedzibą ${tutaj}. `}
+          {`Pobranych dni: ${liczba(n.okno.dni)}, w tym niepełnych: ${liczba(n.okno.nieustalonych)}. Dane w rejestrze mogą ulec zmianie.`}
+        </p>
+      ) : null}
+
+      {n.najnowsze.length ? (
+        <>
+          <ul className="mt-3 divide-y divide-kreska">
+            {n.najnowsze.map((p, i) => (
+              /* Data i kwota w jednej linii, nazwa pod nimi na cala szerokosc. Stale
+                 kolumny po bokach sciskaly nazwe na telefonie do jednego slowa na
+                 wiersz (zmierzone: sekcja 5,5 tys. px przy 390 px). */
+              <li key={`${p.dzien}-${p.nip ?? p.nazwa}-${i}`} className="py-2 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="liczby whitespace-nowrap text-xs text-atrament-3">
+                    {dataKrotko(p.dzien)}{p.ustalony ? '' : ' · dzień niepełny'}
+                  </span>
+                  <span className="liczby whitespace-nowrap font-medium">{zlote(p.brutto)}</span>
+                </div>
+                <p className="mt-0.5">
+                  {p.nip ? (
+                    <Link href={`/firma/${p.nip}`} className="hover:text-akcent hover:underline">{p.nazwa}</Link>
+                  ) : p.nazwa}
+                </p>
+                <p className="text-xs text-atrament-3">{[p.forma, p.przeznaczenie, p.udzielajacy].filter(Boolean).join(' · ')}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+            Wypisujemy przypadki firm, których nazwę wolno podać; pozostałe są w liczbie wyżej, ale nie
+            pojedynczo — w małej gminie data, kwota i organ mogłyby wskazać konkretną osobę.
+          </p>
+        </>
+      ) : n.przypadkow ? (
+        <p className="mt-2 text-xs leading-relaxed text-atrament-3">
+          Żadnego z tych przypadków nie wypisujemy z nazwy — mogą dotyczyć osób prowadzących działalność
+          na własne nazwisko. Są w liczbie wyżej.
+        </p>
+      ) : null}
+
+      {n.zamowienia.length ? (
+        <>
+          <h3>Najnowsze ogłoszenia o udzieleniu zamówienia</h3>
+          <ul className="mt-2 divide-y divide-kreska">
+            {n.zamowienia.map((o) => (
+              <li key={o.numer} className="py-2 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="liczby whitespace-nowrap text-xs text-atrament-3">{dataKrotko(o.data)}</span>
+                  <span className="liczby whitespace-nowrap">
+                    {o.waluta === 'PLN' && o.wartosc !== null && o.wartosc <= PROG_PODEJRZANEJ_KWOTY ? zlote(o.wartosc) : '—'}
+                  </span>
+                </div>
+                <p className="mt-0.5">
+                  <a href={`https://ted.europa.eu/pl/notice/${o.numer}/pdf`} target="_blank" rel="noreferrer" className="hover:text-akcent hover:underline">
+                    {skroc(o.tytul ?? `Ogłoszenie ${o.numer}`, 110)}
+                  </a>
+                </p>
+                {o.nabywca ? <p className="text-xs text-atrament-3">{o.nabywca}</p> : null}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2"><Podstawa adres="https://ted.europa.eu" nazwa="TED" /></p>
+        </>
+      ) : null}
+    </Dzial>
   );
 }

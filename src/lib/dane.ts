@@ -1115,6 +1115,98 @@ export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
   }, { ogloszen: 0, suma: null, bezKwoty: 0, wSumie: 0, podejrzane: [], najwieksze: [] });
 }
 
+export type NowyPrzypadek = {
+  dzien: string; nazwa: string; nip: string | null; brutto: number | null; forma: string | null;
+  przeznaczenie: string | null; udzielajacy: string | null;
+  /** Czy dzien jest juz ustalony (pobrany co najmniej 14 dni po dacie) — inaczej moze jeszcze urosnac. */
+  ustalony: boolean;
+};
+
+export type NowosciGminy = {
+  /** Ostatnie 14 dni rejestru SUDOP pobrane dla calego kraju; `null` = nie ma zadnego dnia. */
+  okno: { od: string; do: string; dni: number; nieustalonych: number } | null;
+  przypadkow: number;
+  beneficjentow: number;
+  /** `null`, gdy rejestr nie podal kwoty przy zadnym przypadku (zasada 4). */
+  brutto: number | null;
+  /** Najnowsze przypadki firm, ktorych nazwe wolno pokazac (zasada 7). */
+  najnowsze: NowyPrzypadek[];
+  zamowienia: ZamowienieTed[];
+};
+
+/**
+ * „CO NOWEGO W MOJEJ GMINIE” (16.10.2026) — z listy pomyslow: powod, zeby
+ * czytelnik wracal. Przyrost SUDOP jest dzienny, wiec pokazujemy ostatnie
+ * 14 dni rejestru pobrane dla CALEGO kraju i kilka najnowszych przypadkow.
+ *
+ * Te dni sa w wiekszosci NIEUSTALONE: urzedy maja 7 dni na zgloszenie,
+ * a my uznajemy dzien za ustalony dopiero, gdy pobralismy go 14 dni po dacie
+ * (pulapka 37). Dlatego to NIE jest liczba do sum gminy — strona mowi to
+ * wprost i oznacza kazdy dzien.
+ *
+ * Wszystko idzie indeksem (teryt, dzien) i (teryt_nabywcy, data): Warszawa
+ * ma ok. 2 tys. przypadkow dziennie, wiec okno to kilkanascie tysiecy wierszy
+ * lezacych obok siebie (zapisywane dzien po dniu) — a nie cale miasto
+ * (pulapki 69 i 75).
+ *
+ * Nazwy przez te sama regule co reszta strony; prog liczony od POJEDYNCZEGO
+ * przypadku, czyli dokladnie tak, jak go definiuje art. 9 GBER. Przypadkow
+ * podmiotow, ktorych nie wymieniamy, nie wypisujemy pojedynczo nawet bez
+ * nazwy — w malej gminie data, kwota i organ moglyby wskazac osobe. Ich
+ * liczby osobno nie liczymy (w Warszawie to przebieg po kilkunastu tysiacach
+ * wierszy z REGON-em przy kazdym wejsciu) — strona podaje liczbe wszystkich
+ * przypadkow i mowi, ze wypisuje tylko te z nazwa, ktora wolno pokazac.
+ */
+export function nowosciGminy(teryt: string, ile = 8): NowosciGminy {
+  const pusto: NowosciGminy = { okno: null, przypadkow: 0, beneficjentow: 0, brutto: null, najnowsze: [], zamowienia: [] };
+  return bezTabeli(() => {
+    const ustalonyDzien = "julianday(coalesce(d.pobrano_dzien, substr(d.pobrano, 1, 10))) - julianday(d.dzien) >= 14";
+    const okno = jeden<{ od: string | null; do: string | null; dni: number; nieustalonych: number }>(
+      `select min(d.dzien) as od, max(d.dzien) as do, count(*) as dni,
+              sum(case when ${ustalonyDzien} then 0 else 1 end) as nieustalonych
+         from pomoc_publiczna_dni d
+        where d.dzien >= (select date(max(dzien), '-13 day') from pomoc_publiczna_dni)`,
+    );
+    const zamowienia = bezTabeli(() => wszystkie<ZamowienieTed>(
+      `select numer, data, tytul, nabywca, wartosc, waluta, cpv, wykonawcow
+         from ted_ogloszenia where teryt_nabywcy = ? order by data desc limit 5`,
+      teryt,
+    ), []);
+    if (!okno?.od || !okno.do) return { ...pusto, zamowienia };
+
+    const sumy = jeden<{ przypadkow: number; beneficjentow: number; z_kwota: number; brutto: number }>(
+      `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow,
+              sum(case when wartosc_brutto is null then 0 else 1 end) as z_kwota, coalesce(sum(wartosc_brutto), 0) as brutto
+         from pomoc_publiczna where teryt = ? and dzien between ? and ?`,
+      teryt, okno.od, okno.do,
+    );
+    const progAktywny = Boolean(KONTAKT);
+    type Kandydat = Omit<NowyPrzypadek, 'ustalony'> & { eur: number | null; typ_regon: string | null; ustalony: number | null };
+    const kandydaci = wszystkie<Kandydat>(
+      `select p.dzien as dzien, p.nazwa_beneficjenta as nazwa, p.nip_beneficjenta as nip, p.wartosc_brutto as brutto,
+              p.wartosc_brutto_eur as eur, p.forma as forma, p.przeznaczenie as przeznaczenie, p.udzielajacy as udzielajacy,
+              (select r.typ from regon r where r.nip = p.nip_beneficjenta) as typ_regon,
+              (select ${ustalonyDzien} from pomoc_publiczna_dni d where d.dzien = p.dzien) as ustalony
+         from pomoc_publiczna p where p.teryt = ? and p.dzien between ? and ?
+        order by p.dzien desc, p.wartosc_brutto desc nulls last limit 200`,
+      teryt, okno.od, okno.do,
+    );
+    const widoczne = kandydaci.filter((k) => k.nazwa
+      && !nazwaDoPokazania(k.nazwa, { pomocEur: k.eur, progAktywny, typRegon: k.typ_regon }).pominieta);
+    return {
+      okno: { od: okno.od, do: okno.do, dni: okno.dni, nieustalonych: okno.nieustalonych ?? 0 },
+      przypadkow: sumy?.przypadkow ?? 0,
+      beneficjentow: sumy?.beneficjentow ?? 0,
+      brutto: sumy && sumy.z_kwota > 0 ? sumy.brutto : null,
+      najnowsze: widoczne.slice(0, ile).map((k) => ({
+        dzien: k.dzien, nazwa: k.nazwa, nip: k.nip, brutto: k.brutto, forma: k.forma,
+        przeznaczenie: k.przeznaczenie, udzielajacy: k.udzielajacy, ustalony: Boolean(k.ustalony),
+      })),
+      zamowienia,
+    };
+  }, pusto);
+}
+
 export type ZamowieniaFirmy = {
   ogloszen: number;
   /** Suma wartosci ogloszen w PLN, w ktorych firma byla JEDYNYM wykonawca. */
