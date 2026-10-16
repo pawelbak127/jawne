@@ -78,7 +78,15 @@ export function Wypis({ tytul, podtytul, obraz, children }: {
 export function Podstawa({ adres, nazwa, data }: { adres: string; nazwa: string; data?: string | null }) {
   const zewnetrzny = /^https?:/.test(adres);
   return (
-    <a className="zrodlo" href={adres} {...(zewnetrzny ? { target: '_blank', rel: 'noreferrer' } : {})}>
+    <a
+      className="zrodlo"
+      href={adres}
+      // Zdarzenie analityki (dziala tylko przy wlaczonym Umami): czy ktos
+      // klika w zrodla — to nasz wyroznik i chcemy wiedziec, czy jest uzywany.
+      data-umami-event="zrodlo"
+      data-umami-event-nazwa={nazwa}
+      {...(zewnetrzny ? { target: '_blank', rel: 'noreferrer' } : {})}
+    >
       <span className="nazwa">{nazwa}</span>
       {data ? <span className="data">{data}</span> : null}
     </a>

@@ -6,6 +6,7 @@ import { Nawigacja } from '@/components/Nawigacja';
 import { ADRES_SERWISU } from '@/lib/adres';
 import { INDEKSOWANIE_WLACZONE } from '@/lib/premiera';
 import { trybBezFiltra } from '@/lib/prywatnosc';
+import { identyfikatorUmami, skryptUmami } from '@/lib/analityka';
 
 // latin-ext jest OBOWIAZKOWE: przy samym "latin" litery „ą", „ę", „ł", „ń",
 // „ś", „ź", „ż" leca na font zastepczy i naglowek rozjezdza sie w polowie
@@ -102,6 +103,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){var d=document.documentElement;d.dataset.js='';try{var m=localStorage.getItem('motyw');if(m==='jasny'||m==='ciemny')d.dataset.motyw=m;if(localStorage.getItem('styl')==='a')d.dataset.styl='a'}catch(e){}})()`,
           }}
         />
+        {/* Analityka bez ciasteczek — tylko przy ustawionym JAWNE_UMAMI_ID
+            (src/lib/analityka.ts). Liczy tylko nasza domene i szanuje
+            „Do Not Track”. Znaczniki zdarzen: atrybuty data-umami-event. */}
+        {identyfikatorUmami() ? (
+          <script
+            defer
+            src={skryptUmami()}
+            data-website-id={identyfikatorUmami()!}
+            data-domains={ADRES_SERWISU.hostname}
+            data-do-not-track="true"
+          />
+        ) : null}
       </head>
       <body className="min-h-dvh flex flex-col">
         <a

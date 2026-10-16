@@ -14,6 +14,7 @@ export function Kopiuj({ tekst }: { tekst: string }) {
     <button
       type="button"
       aria-live="polite"
+      data-umami-event="kopiuj-akapit"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(tekst);

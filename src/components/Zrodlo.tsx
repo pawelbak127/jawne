@@ -21,6 +21,8 @@ export function Zrodlo({
       target="_blank"
       rel="noreferrer"
       title={`Źródło: ${adres}`}
+      data-umami-event="zrodlo"
+      data-umami-event-nazwa={etykieta}
       className={`inline-flex min-h-6 items-center gap-1 text-xs text-atrament-3 transition-colors hover:text-akcent ${className}`}
     >
       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>

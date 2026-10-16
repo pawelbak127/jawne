@@ -32,6 +32,17 @@ sudo jawne ustaw JAWNE_INDEKSOWANIE      # wartość: tak
 
 Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
+### Decyzje Pawła z 16.10.2026
+
+- **Fundacja — później.** Patronite i otwarcie kodu (NLnet) — wracamy, gdy
+  zobaczymy ruch na stronie.
+- **Analityka: bezpłatne Umami** — konto zakłada Paweł. Kod gotowy za
+  przełącznikiem `JAWNE_UMAMI_ID` (`src/lib/analityka.ts`, znaczniki zdarzeń:
+  źródła, „Kopiuj akapit”, CSV). **Przed włączeniem:** sprawdzić w ustawieniach
+  konta Umami region przechowywania danych i umowę powierzenia, przepisać
+  w `/prywatnosc` sekcje „Kto jeszcze ma dostęp” i „Dziennik wejść” (dziś mówią,
+  że nie ma zewnętrznej analityki) i dopisać `JAWNE_UMAMI_ID` do `jawne ustaw`.
+
 ### Stan na 14.10.2026
 
 **PREMIERA 14.10.2026, ok. 20:42:** Paweł ustawił `JAWNE_INDEKSOWANIE=tak`.

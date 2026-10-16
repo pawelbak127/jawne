@@ -464,7 +464,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             <p className="pliki">
               {pliki.map(([zestaw, opis]) => (
                 // nofollow: plik pomocy duzego miasta to strumien po calej historii — nie dla robotow (robots.ts).
-                <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`} rel="nofollow">{`${opis} (CSV)`}</a>
+                <a key={zestaw} href={`/gmina/${g.teryt}/csv/${zestaw}`} rel="nofollow" data-umami-event="csv" data-umami-event-zestaw={zestaw}>{`${opis} (CSV)`}</a>
               ))}
             </p>
             {akapit ? (
