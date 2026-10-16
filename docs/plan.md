@@ -673,7 +673,19 @@ na serwerze, obok danych.
   brak wartości zawsze na końcu. Mediany sprawdzone drugą drogą z tymi na
   stronach gmin: 16 województw × 3 miary, 0 różnic. Osobna strona, nie
   sekcja spisu: tabela to ok. 115 kB HTML-a na województwo.
-- **Zamówienia gmin z BZP — DECYZJA PAWŁA z 15.10.2026: robimy, `jawne`
+- ~~**Zamówienia gmin z BZP**~~ **zrobione 16.10.2026**: etap `bzp`
+  (ogłoszenia o wyniku, najnowsze dni najpierw, budżet `--minut` = 45 na noc
+  w zadaniu `ted`, przed REGON-em; historia od 01.11.2023 domknie się przez
+  kilka-kilkanaście nocy). Tabele `bzp_ogloszenia` + `bzp_wyniki` (część
+  po części), sumy gmin i czołówka liczone w imporcie (`policzBzpGmin`,
+  `bzp_gminy`, `bzp_gminy_czolowka`) — strona tylko czyta. Na stronie gminy:
+  wiersz „Umowy krajowe (BZP)” obok TED, „Największe umowy krajowe”
+  i 5 najnowszych w „Co nowego”. Wykonawca pokazywany według tej samej
+  reguły nazw (REGON → heurystyka, bez progu kwotowego — to nie beneficjent
+  pomocy). Lokalnie 5 dni: 2 720 ogłoszeń, 4 886 części, 39 s; sumy 695 gmin
+  sprawdzone drugą drogą (JS po wierszach): 0 różnic. Wynik zamówienia
+  ↔ wykonawca: patrz pułapka 76.
+  Pierwotny wpis: **DECYZJA PAWŁA z 15.10.2026: robimy, `jawne`
   pobiera BZP samo** z publicznego API e-Zamówień (bez klucza), bez wspólnej
   bazy z `asc` (osobne serwery i schematy; asc nie jest źródłem danych dla
   jawne — RODO przy wykonawcach-osobach fizycznych). Przepis i pułapki

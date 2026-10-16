@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, nowosciGminy, organyPomocy, pomocGminy, porownanieBudzetu,
+  zamowieniaBzpGminy, type ZamowieniaBzpGminy,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type NowosciGminy, type ZamowieniaGminy,
@@ -110,8 +111,10 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const listaKlubow = kluby();
   const importFe = zrodloImportu('fundusze-2021-2027');
   const zamowienia = zamowieniaGminy(terytFunduszy);
+  const zamowieniaBzp = zamowieniaBzpGminy(terytFunduszy);
+  const importBzp = zrodloImportu('bzp');
   const nowosci = nowosciGminy(terytFunduszy);
-  const saNowosci = nowosci.przypadkow > 0 || nowosci.zamowienia.length > 0;
+  const saNowosci = nowosci.przypadkow > 0 || nowosci.zamowienia.length > 0 || nowosci.bzp.length > 0;
   const importTed = zrodloImportu('zamowienia');
   const importRegon = zrodloImportu('regon');
 
@@ -194,7 +197,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
     ...(smup.length ? [{ id: 'finanse', nazwa: 'Finanse i podatki' }] : []),
     { id: 'fundusze', nazwa: 'Fundusze UE' },
     { id: 'pomoc', nazwa: 'Pomoc publiczna' },
-    ...(zamowienia.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
+    ...(zamowienia.ogloszen || zamowieniaBzp.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
     { id: 'dane', nazwa: akapit ? 'Do pobrania i cytowania' : 'Dane do pobrania' },
   ];
   const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
@@ -441,12 +444,14 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             ) : null}
           </Dzial>
 
-          {zamowienia.ogloszen ? (
+          {zamowienia.ogloszen || zamowieniaBzp.ogloszen ? (
             <ZamowieniaWGminie
               nr={nr('zamowienia')}
               z={zamowienia}
+              bzp={zamowieniaBzp}
               dzielnica={dzielnica}
               pobrano={importTed?.kiedy ?? null}
+              pobranoBzp={importBzp?.kiedy ?? null}
               pobranoRegon={importRegon?.kiedy ?? null}
             />
           ) : null}
@@ -1100,11 +1105,13 @@ function BrakPomocy() {
  * urzad gminy, i strona musi to powiedziec, zeby nikt nie odczytal tego
  * jako „tyle wydala gmina".
  */
-function ZamowieniaWGminie({ nr, z, dzielnica, pobrano, pobranoRegon }: {
+function ZamowieniaWGminie({ nr, z, bzp, dzielnica, pobrano, pobranoBzp, pobranoRegon }: {
   nr: number;
   z: ZamowieniaGminy;
+  bzp: ZamowieniaBzpGminy;
   dzielnica: boolean;
   pobrano: string | null;
+  pobranoBzp: string | null;
   /** Data pobrania REGON-u — GUS potwierdzil (30.09.2026), ze oznaczenie
       zrodla ma ja zawierac. To inny dzien niz pobranie ogloszen z TED. */
   pobranoRegon: string | null;
@@ -1113,17 +1120,20 @@ function ZamowieniaWGminie({ nr, z, dzielnica, pobrano, pobranoRegon }: {
     <Dzial
       id="zamowienia"
       nr={nr}
-      tytul={z.suma === null
-        ? `Zamówienia publiczne: ${zOdmiana(z.ogloszen, 'ogłoszenie', 'ogłoszenia', 'ogłoszeń')} od listopada 2023`
-        : `Zamówienia publiczne: ${zlote(z.suma)} w ${zOdmiana(z.wSumie, 'ogłoszeniu', 'ogłoszeniach', 'ogłoszeniach')} od listopada 2023`}
-      obok={<Podstawa adres="https://ted.europa.eu" nazwa="TED" data={pobrano ? dataKrotko(pobrano) : null} />}
+      tytul={`Zamówienia publiczne: ${[
+        bzp.ogloszen ? zOdmiana(bzp.ogloszen, 'ogłoszenie krajowe', 'ogłoszenia krajowe', 'ogłoszeń krajowych') : null,
+        z.ogloszen ? zOdmiana(z.ogloszen, 'ogłoszenie unijne', 'ogłoszenia unijne', 'ogłoszeń unijnych') : null,
+      ].filter(Boolean).join(' i ')}`}
+      obok={<Podstawa adres="https://ezamowienia.gov.pl" nazwa="BZP" data={pobranoBzp ? dataKrotko(pobranoBzp) : null} />}
       metoda={
         <p>
-          {`Ogłoszenia o udzieleniu zamówienia od 13 listopada 2023 (początek kadencji)${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. `}
+          {`Krajowe: ogłoszenia o wyniku z Biuletynu Zamówień Publicznych${bzp.od ? ` od ${dataSlownie(bzp.od)}` : ''}; kwota części to wartość umowy, a bez niej cena wybranej oferty; cenę spoza przedziału najtańsza–najdroższa oferta uznajemy za błąd zamawiającego. `}
+          {`Unijne: ogłoszenia o udzieleniu zamówienia z TED od 13 listopada 2023 (początek kadencji)${pobrano ? `, dane pobrane ${dataSlownie(pobrano)}` : ''}. `}
           {'Siedzibę zamawiającego ustalamy po NIP-ie w rejestrze REGON '
             + `(Główny Urząd Statystyczny, licencja CC BY 4.0${pobranoRegon ? `, pobrany ${dataSlownie(pobranoRegon)}` : ''}). `}
-          Kwota dotyczy całego ogłoszenia, ze wszystkimi częściami i wykonawcami. Do TED trafiają
-          tylko zamówienia powyżej progów unijnych.
+          W TED kwota dotyczy całego ogłoszenia, ze wszystkimi częściami i wykonawcami. Do TED trafiają
+          zamówienia powyżej progów unijnych, do BZP — głównie poniżej nich, więc te dwie liczby się
+          uzupełniają, a nie dublują.
         </p>
       }
     >
@@ -1138,13 +1148,34 @@ function ZamowieniaWGminie({ nr, z, dzielnica, pobrano, pobranoRegon }: {
         {dzielnica ? ' Dzielnice nie mają osobnych zamawiających — pokazujemy całą Warszawę.' : ''}
       </p>
       <Wiersze>
-        <Wiersz
-          co="Wartość ogłoszeń w złotych"
+        {bzp.ogloszen ? (
+          <Wiersz
+            co="Umowy krajowe (BZP)"
+            ile={bzp.suma === null ? null : zlote(bzp.suma)}
+            zCzego={`z ${zOdmiana(bzp.wSumie, 'części', 'części', 'części')} z kwotą (${liczba(bzp.zawarte)} zakończonych umową, ${liczba(bzp.uniewaznione)} unieważnionych${bzp.bezKwoty ? `; ${liczba(bzp.bezKwoty)} bez kwoty` : ''}${bzp.podejrzane ? `; ${liczba(bzp.podejrzane)} z kwotą powyżej ${zlote(PROG_PODEJRZANEJ_KWOTY)} — poza sumą` : ''})${bzp.od ? `, od ${dataKrotko(bzp.od)}` : ''}`}
+            podstawa={<Podstawa adres="https://ezamowienia.gov.pl" nazwa="BZP" data={pobranoBzp ? dataKrotko(pobranoBzp) : null} />}
+          />
+        ) : null}
+        {z.ogloszen ? <Wiersz
+          co="Wartość ogłoszeń unijnych (TED)"
           ile={z.suma === null ? null : zlote(z.suma)}
           zCzego={`z ${zOdmiana(z.wSumie, 'ogłoszenia', 'ogłoszeń', 'ogłoszeń')} z kwotą w złotych (z ${liczba(z.ogloszen)} razem${z.bezKwoty ? `; ${liczba(z.bezKwoty)} bez kwoty w złotych — poza sumą` : ''})`}
           podstawa={<Podstawa adres="https://ted.europa.eu" nazwa="TED" data={pobrano ? dataKrotko(pobrano) : null} />}
-        />
+        /> : null}
       </Wiersze>
+
+      {bzp.najwieksze.length ? (
+        <>
+          <h3>Największe umowy krajowe</h3>
+          <ListaBzp pozycje={bzp.najwieksze.slice(0, 3)} />
+          {bzp.najwieksze.length > 3 ? (
+            <Wiecej napis={`Pokaż ${zOdmiana(bzp.najwieksze.length, 'największą umowę', 'największe umowy', 'największych umów')}`}>
+              <ListaBzp pozycje={bzp.najwieksze.slice(3)} />
+            </Wiecej>
+          ) : null}
+        </>
+      ) : null}
+      {z.najwieksze.length ? <h3>Największe ogłoszenia unijne</h3> : null}
 
       {z.suma && z.najwieksze[0]?.wartosc && z.najwieksze[0].wartosc / z.suma >= 0.25 ? (
         <Uwaga naglowek={`${Math.round((100 * z.najwieksze[0].wartosc) / z.suma)}% sumy to jedno ogłoszenie.`}>
@@ -1184,6 +1215,28 @@ function ZamowieniaWGminie({ nr, z, dzielnica, pobrano, pobranoRegon }: {
         </div>
       ) : null}
     </Dzial>
+  );
+}
+
+function ListaBzp({ pozycje }: { pozycje: ZamowieniaBzpGminy['najwieksze'] }) {
+  return (
+    <ul className="pozycje">
+      {pozycje.map((o) => (
+        <li key={`${o.id}-${o.czesc}`}>
+          <div className="min-w-0">
+            <p className="font-semibold leading-snug">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 120)}</p>
+            <p className="meta">
+              {`${skroc(o.zamawiajacy ?? '—', 80)} · ${dataKrotko(o.data)}${o.czesc > 1 ? ` · część ${o.czesc}` : ''} · wykonawca: `}
+              {o.wykonawca ?? <i>nazwa pominięta — może to być osoba fizyczna</i>}
+            </p>
+          </div>
+          <p className="kwota">
+            {o.wartosc === null ? '—' : zlote(o.wartosc)}
+            <small><a href={`https://ezamowienia.gov.pl/mo-board/api/v1/Board/GetNoticePdfById?noticeId=${o.id}`} target="_blank" rel="noreferrer" className="text-akcent">ogłoszenie (PDF)</a></small>
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1303,7 +1356,7 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
       obok={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={n.okno ? dataKrotko(n.okno.do) : null} />}
     >
       <p className="wstep">
-        {`Najświeższe wpisy: pomoc publiczna dla firm z siedzibą ${tutaj} i zamówienia instytucji stąd. `}
+        {`Najświeższe wpisy: pomoc publiczna dla firm z siedzibą ${tutaj} i zamówienia instytucji stąd (krajowe z BZP, unijne z TED). `}
         {'Ostatnie dni są niepełne — urzędy mają 7 dni na zgłoszenie pomocy, a dzień uznajemy za ustalony dopiero 14 dni po dacie. '}
         {'Dlatego tych przypadków nie ma jeszcze w sumach w dziale „Pomoc publiczna”.'}
         {dzielnica ? ' Rejestr nie dzieli firm na dzielnice — pokazujemy całą Warszawę.' : ''}
@@ -1353,9 +1406,34 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
         </p>
       ) : null}
 
+      {n.bzp.length ? (
+        <>
+          <h3>Najnowsze umowy krajowe (BZP)</h3>
+          <ul className="mt-2 divide-y divide-kreska">
+            {n.bzp.map((o) => (
+              <li key={`${o.id}-${o.czesc}`} className="py-2 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="liczby whitespace-nowrap text-xs text-atrament-3">{dataKrotko(o.data)}</span>
+                  <span className="liczby whitespace-nowrap">{o.wartosc === null ? '—' : zlote(o.wartosc)}</span>
+                </div>
+                <p className="mt-0.5">
+                  <a href={`https://ezamowienia.gov.pl/mo-board/api/v1/Board/GetNoticePdfById?noticeId=${o.id}`} target="_blank" rel="noreferrer" className="hover:text-akcent hover:underline">
+                    {skroc(o.tytul ?? 'bez tytułu w rejestrze', 110)}
+                  </a>
+                </p>
+                <p className="text-xs text-atrament-3">
+                  {`${o.zamawiajacy ?? '—'} · wykonawca: `}{o.wykonawca ?? <i>nazwa pominięta — może to być osoba fizyczna</i>}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2"><Podstawa adres="https://ezamowienia.gov.pl" nazwa="BZP" /></p>
+        </>
+      ) : null}
+
       {n.zamowienia.length ? (
         <>
-          <h3>Najnowsze ogłoszenia o udzieleniu zamówienia</h3>
+          <h3>Najnowsze ogłoszenia unijne (TED)</h3>
           <ul className="mt-2 divide-y divide-kreska">
             {n.zamowienia.map((o) => (
               <li key={o.numer} className="py-2 text-sm">

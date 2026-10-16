@@ -1115,6 +1115,53 @@ export function zamowieniaGminy(teryt: string, ile = 8): ZamowieniaGminy {
   }, { ogloszen: 0, suma: null, bezKwoty: 0, wSumie: 0, podejrzane: [], najwieksze: [] });
 }
 
+export type ZamowienieBzp = {
+  id: string; czesc: number; data: string; tytul: string | null; zamawiajacy: string | null;
+  wartosc: number | null;
+  /** `null` = nazwy nie pokazujemy (moze to byc osoba fizyczna, zasada 7). */
+  wykonawca: string | null;
+};
+
+export type ZamowieniaBzpGminy = {
+  /** Od kiedy mamy BZP (pierwszy kompletny dzien) — historia dochodzi przez kilka dni. */
+  od: string | null;
+  ogloszen: number; zawarte: number; uniewaznione: number;
+  suma: number | null; wSumie: number; bezKwoty: number; podejrzane: number;
+  najwieksze: ZamowienieBzp[];
+};
+
+/** Nazwa wykonawcy z BZP przez regule jawnosci (bez progu — ten jest z pomocy publicznej). */
+function wykonawcaJawny(nazwa: string | null, typ: string | null): string | null {
+  return nazwa && nazwaPodmiotuJawna(nazwa, typ) ? nazwa : null;
+}
+
+/**
+ * Zamowienia krajowe (BZP) instytucji z tej gminy — z GOTOWYCH sum liczonych
+ * w imporcie (`bzp_gminy`, `bzp_gminy_czolowka`, teryt-regon.ts), bo Warszawa
+ * to dziesiatki tysiecy czesci (pulapka 75). BZP to glownie zamowienia ponizej
+ * progow unijnych; powyzej nich wynik idzie do TED — wiec te dwie liczby sie
+ * uzupelniaja, a nie dubluja.
+ */
+export function zamowieniaBzpGminy(teryt: string): ZamowieniaBzpGminy {
+  const pusto: ZamowieniaBzpGminy = { od: null, ogloszen: 0, zawarte: 0, uniewaznione: 0, suma: null, wSumie: 0, bezKwoty: 0, podejrzane: 0, najwieksze: [] };
+  return bezTabeli(() => {
+    const od = jeden<{ od: string | null }>(
+      "select min(dzien) as od from bzp_dni where date(pobrano, 'localtime') > dzien",
+    )?.od ?? null;
+    const g = jeden<{ ogloszen: number; zawarte: number; uniewaznione: number; suma: number | null; w_sumie: number; bez_kwoty: number; podejrzane: number }>(
+      'select ogloszen, zawarte, uniewaznione, suma, w_sumie, bez_kwoty, podejrzane from bzp_gminy where teryt = ?', teryt,
+    );
+    if (!g) return { ...pusto, od };
+    const najwieksze = wszystkie<{ id: string; czesc: number; data: string; tytul: string | null; zamawiajacy: string | null; wartosc: number; wykonawca: string | null; typ_regon: string | null }>(
+      'select id, czesc, data, tytul, zamawiajacy, wartosc, wykonawca, typ_regon from bzp_gminy_czolowka where teryt = ? order by poz', teryt,
+    ).map((r) => ({ id: r.id, czesc: r.czesc, data: r.data, tytul: r.tytul, zamawiajacy: r.zamawiajacy, wartosc: r.wartosc, wykonawca: wykonawcaJawny(r.wykonawca, r.typ_regon) }));
+    return {
+      od, ogloszen: g.ogloszen, zawarte: g.zawarte, uniewaznione: g.uniewaznione,
+      suma: g.w_sumie > 0 ? g.suma : null, wSumie: g.w_sumie, bezKwoty: g.bez_kwoty, podejrzane: g.podejrzane, najwieksze,
+    };
+  }, pusto);
+}
+
 export type NowyPrzypadek = {
   dzien: string; nazwa: string; nip: string | null; brutto: number | null; forma: string | null;
   przeznaczenie: string | null; udzielajacy: string | null;
@@ -1132,6 +1179,8 @@ export type NowosciGminy = {
   /** Najnowsze przypadki firm, ktorych nazwe wolno pokazac (zasada 7). */
   najnowsze: NowyPrzypadek[];
   zamowienia: ZamowienieTed[];
+  /** Najnowsze wyniki z BZP (czesci zakonczone umowa) zamawiajacych z gminy. */
+  bzp: ZamowienieBzp[];
 };
 
 /**
@@ -1158,7 +1207,7 @@ export type NowosciGminy = {
  * przypadkow i mowi, ze wypisuje tylko te z nazwa, ktora wolno pokazac.
  */
 export function nowosciGminy(teryt: string, ile = 8): NowosciGminy {
-  const pusto: NowosciGminy = { okno: null, przypadkow: 0, beneficjentow: 0, brutto: null, najnowsze: [], zamowienia: [] };
+  const pusto: NowosciGminy = { okno: null, przypadkow: 0, beneficjentow: 0, brutto: null, najnowsze: [], zamowienia: [], bzp: [] };
   return bezTabeli(() => {
     const ustalonyDzien = "julianday(coalesce(d.pobrano_dzien, substr(d.pobrano, 1, 10))) - julianday(d.dzien) >= 14";
     const okno = jeden<{ od: string | null; do: string | null; dni: number; nieustalonych: number }>(
@@ -1172,7 +1221,18 @@ export function nowosciGminy(teryt: string, ile = 8): NowosciGminy {
          from ted_ogloszenia where teryt_nabywcy = ? order by data desc limit 5`,
       teryt,
     ), []);
-    if (!okno?.od || !okno.do) return { ...pusto, zamowienia };
+    // Indeks (teryt_nabywcy, data) — idzie od najnowszych, nie czyta calego miasta.
+    const bzp = bezTabeli(() => wszystkie<{ id: string; czesc: number; data: string; tytul: string | null; zamawiajacy: string | null; wartosc: number | null; wykonawca: string | null; typ_regon: string | null }>(
+      `select o.id as id, w.czesc as czesc, o.data as data, o.tytul as tytul, o.zamawiajacy as zamawiajacy,
+              coalesce(w.wartosc_umowy, w.cena_wybrana) as wartosc, w.wykonawca as wykonawca,
+              (select r.typ from regon r where r.nip = w.wykonawca_nip) as typ_regon
+         from bzp_ogloszenia o join bzp_wyniki w on w.id = o.id
+        where o.teryt_nabywcy = ? and w.uniewaznione = 0
+        order by o.data desc, o.id desc, w.czesc limit 5`,
+      teryt,
+    ), []).map((r) => ({ id: r.id, czesc: r.czesc, data: r.data, tytul: r.tytul, zamawiajacy: r.zamawiajacy,
+      wartosc: r.wartosc !== null && r.wartosc <= PROG_PODEJRZANEJ_KWOTY ? r.wartosc : null, wykonawca: wykonawcaJawny(r.wykonawca, r.typ_regon) }));
+    if (!okno?.od || !okno.do) return { ...pusto, zamowienia, bzp };
 
     const sumy = jeden<{ przypadkow: number; beneficjentow: number; z_kwota: number; brutto: number }>(
       `select count(*) as przypadkow, count(distinct nip_beneficjenta) as beneficjentow,
@@ -1203,6 +1263,7 @@ export function nowosciGminy(teryt: string, ile = 8): NowosciGminy {
         przeznaczenie: k.przeznaczenie, udzielajacy: k.udzielajacy, ustalony: Boolean(k.ustalony),
       })),
       zamowienia,
+      bzp,
     };
   }, pusto);
 }
