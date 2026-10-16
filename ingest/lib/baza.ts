@@ -411,6 +411,71 @@ create table if not exists pomoc_sumy_gmin_podsumowanie (
   ukrytych_z_progiem  integer not null,
   czolowka            text not null
 ) without rowid;
+/*
+  BZP — ogloszenia o wyniku z Biuletynu Zamowien Publicznych (ingest/lib/bzp.ts).
+  Bez surowego HTML-a (ok. 15 kB na ogloszenie): tylko to, co z niego
+  wyciagamy. Kwoty per CZESC, bo jedno ogloszenie to czesto kilkanascie
+  czesci z roznymi wykonawcami. Gmina zamawiajacego z REGON, jak w TED.
+*/
+create table if not exists bzp_ogloszenia (
+  id              text primary key,   -- objectId z e-Zamowien
+  numer           text,               -- '2026/BZP 00485755/01'
+  data            text not null,      -- polska data publikacji
+  tytul           text,
+  zamawiajacy     text,
+  zamawiajacy_nip text,
+  miejscowosc     text,
+  wojewodztwo     text,               -- kod z API, np. 'PL32'
+  rodzaj          text,               -- Services | Delivery | Works
+  tryb            text,
+  ponizej_ue      integer,
+  cpv             text,
+  teryt_nabywcy   text,               -- odswiezTerytNabywcow (teryt-regon.ts)
+  czesci          integer not null
+);
+create index if not exists bzp_data on bzp_ogloszenia(data);
+create index if not exists bzp_zamawiajacy on bzp_ogloszenia(zamawiajacy_nip);
+create index if not exists bzp_teryt_data on bzp_ogloszenia(teryt_nabywcy, data);
+create table if not exists bzp_wyniki (
+  id             text not null,
+  czesc          integer not null,
+  uniewaznione   integer not null,
+  ofert          integer,
+  cena_min       real,
+  cena_max       real,
+  cena_wybrana   real,              -- null, gdy spoza [min, max] (blad zamawiajacego)
+  wartosc_umowy  real,
+  wykonawca      text,
+  wykonawca_nip  text,
+  primary key (id, czesc)
+) without rowid;
+create index if not exists bzp_wyniki_nip on bzp_wyniki(wykonawca_nip);
+-- Sumy i czolowka gminy liczone w imporcie (policzBzpGmin), nie na stronie:
+-- Warszawa to dziesiatki tysiecy czesci (pulapka 75).
+create table if not exists bzp_gminy (
+  teryt        text primary key,
+  ogloszen     integer not null,
+  zawarte      integer not null,   -- czesci zakonczone umowa
+  uniewaznione integer not null,
+  suma         real,               -- null, gdy zadna czesc nie ma kwoty
+  w_sumie      integer not null,   -- czesci, ktorych kwota weszla do sumy
+  bez_kwoty    integer not null,
+  podejrzane   integer not null,   -- kwota powyzej PROG_PODEJRZANEJ_KWOTY, poza suma
+  od           text,
+  do           text
+) without rowid;
+create table if not exists bzp_gminy_czolowka (
+  teryt text not null, poz integer not null, id text not null, czesc integer not null,
+  data text not null, tytul text, zamawiajacy text, wartosc real not null,
+  wykonawca text, wykonawca_nip text, typ_regon text,
+  primary key (teryt, poz)
+) without rowid;
+-- Dzien jest kompletny, gdy pobralismy go PO jego koncu (polska data).
+create table if not exists bzp_dni (
+  dzien     text primary key,
+  ogloszen  integer not null,
+  pobrano   text not null
+);
 create table if not exists organy_gmin (
   nip    text primary key,
   teryt  text not null

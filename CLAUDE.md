@@ -90,6 +90,7 @@ npm run import kluby poslowie glosowania   # szybkie etapy, ~5 s
 npm run import procesy                     # droga ustaw przez Sejm, ~70 s (1692 procesy)
 npm run import interpelacje                # metryczka interpelacji, ~55 s (20 145 sztuk)
 npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
+npm run import bzp                         # BZP: ogloszenia o wyniku, najnowsze dni najpierw, --minut=45
 npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), 3 s na paczke 20 NIP-ow
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
@@ -990,6 +991,21 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     pomoc 2 497 gmin, 0 różnic. **Podpis czytany przy każdym wejściu musi
     być tani**: pierwsza wersja brała `max(pobrano) from regon` (przebieg
     po tabeli, 20 ms na wejście) i była wolniejsza od tego, co zastępowała.
+
+76. **BZP: wykonawca należy do CZĘŚCI, a lista `contractors` nie mówi,
+    do której.** ZMIERZONE 16.10.2026 na 250 ogłoszeniach o wyniku z 14.10:
+    `contractors[]` ma tyle wpisów, ile części, w tej samej kolejności,
+    a puste wpisy stoją dokładnie tam, gdzie część unieważniono (247/250;
+    unieważnienia zgadzają się z `procedureResult` w 100%). `asc` dopasowuje
+    po nazwie — to się myli, gdy ta sama firma figuruje dwa razy z różnymi
+    NIP-ami (literówka zamawiającego) albo gdy nazwa w treści różni się
+    zapisem. U nas pozycja rozstrzyga, nazwa z pola 7.3.1 jest kontrolą
+    (inna nazwa na pozycji = nie ufamy pozycji), a przy niezgodnej liczbie
+    wpisów wracamy do nazwy. Kwota z tej samej linii co numer pola
+    (inaczej `\s` łapie numer następnego), cena wybrana spoza [min, max]
+    odrzucana — oba od `asc`. Kwota ogłoszenia nie istnieje: sumujemy
+    części (`wartosc_umowy`, gdy brak — cena wybrana), więc „bez kwoty”
+    liczymy osobno, nie jako zero.
 
 ---
 

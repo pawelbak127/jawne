@@ -12,7 +12,8 @@ import { existsSync, statSync } from 'node:fs';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
 import { sprawdzSumy } from '../lib/sumy-pomocy.js';
-import { odswiezTerytNabywcow, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
+import { odswiezTerytNabywcow, policzBzpGmin, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
+import { PROG_PODEJRZANEJ_KWOTY } from '../../src/lib/zamowienia.js';
 import { nipZTekstu } from '../../src/lib/nip.js';
 import { wTransakcji } from '../lib/baza.js';
 import { TERYT_WARSZAWY } from '../lib/fe.js';
@@ -54,7 +55,9 @@ function main(): void {
         + `TERYT doszedl ${ter.doszlo}, POPRAWIONO ${ter.poprawione}, bez kodu zostaje ${ter.nadal}`);
     }
     const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
-    if (nabywcy) log(`   TED: gmina zamawiajacego przepisana z REGON w ${nabywcy} ogloszeniach`);
+    if (nabywcy) log(`   TED/BZP: gmina zamawiajacego przepisana z REGON w ${nabywcy} ogloszeniach`);
+    const gminBzp = wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
+    if (gminBzp) log(`   BZP: sumy zamowien dla ${gminBzp} gmin`);
 
     const start = Date.now();
     // Podsumowania gmin zawsze od nowa: w ich podpisie nie ma kodu reguly

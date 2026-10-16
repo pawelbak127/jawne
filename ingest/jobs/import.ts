@@ -24,7 +24,9 @@ import { policzAgregaty } from '../lib/agregaty.js';
 import { zbudujIndeksFirm } from '../lib/indeks-firm.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
-import { odswiezTerytNabywcow, slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
+import { adresStronyBzp, dzienPublikacji, NA_STRONE_BZP, tekstZHtml, wynikiCzesci, type OgloszenieBzp } from '../lib/bzp.js';
+import { odswiezTerytNabywcow, policzBzpGmin, slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
+import { PROG_PODEJRZANEJ_KWOTY } from '../../src/lib/zamowienia.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
 import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
@@ -1112,6 +1114,101 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
  * `--wszyscy` dokłada beneficjentow pomocy publicznej (tabela firmy_szukaj);
  * to juz dziesiatki tysiecy wywolan, wiec domyslnie tego nie robimy.
  */
+/**
+ * BZP — ogloszenia o wyniku (ingest/lib/bzp.ts), dzien po dniu.
+ *
+ * Kolejnosc: najpierw dni najnowsze (wczoraj, dzis), potem historia wstecz
+ * do `--od=` (domyslnie poczatek kadencji, jak TED). Dzien jest kompletny,
+ * gdy pobralismy go PO jego koncu; taki pomijamy. Budzet czasu (`--minut=`,
+ * domyslnie 45) — zadanie `ted` ma jeden limit systemd na TED, BZP i REGON,
+ * a historia to ok. 1 500 stron po ~9 s. Niedokonczone dni wracaja jutro.
+ * Miedzy zapytaniami przerwa: API jest publiczne i bez limitow, ale to nie
+ * powod, zeby je dociskac.
+ */
+async function importBzp(db: DatabaseSync): Promise<void> {
+  const odKiedy = process.argv.find((a) => a.startsWith('--od='))?.split('=')[1] ?? '2023-11-01';
+  const budzetMs = Number(process.argv.find((a) => a.startsWith('--minut='))?.split('=')[1] ?? 45) * 60_000;
+  const start = Date.now();
+  const dzis = dzienPublikacji(new Date().toISOString());
+  const kompletne = new Set((db.prepare('select dzien, pobrano from bzp_dni').all() as unknown as { dzien: string; pobrano: string }[])
+    .filter((d) => dzienPublikacji(d.pobrano) > d.dzien).map((d) => d.dzien));
+  const dni: string[] = [];
+  for (let d = new Date(`${dzis}T12:00:00Z`); d.toISOString().slice(0, 10) >= odKiedy; d.setUTCDate(d.getUTCDate() - 1)) {
+    const dzien = d.toISOString().slice(0, 10);
+    if (!kompletne.has(dzien)) dni.push(dzien);
+  }
+  log(`-> BZP: ${dni.length} dni do pobrania (od ${odKiedy}, najpierw najnowsze), budzet ${budzetMs / 60_000} min`);
+
+  const wstawOgl = db.prepare(
+    `insert into bzp_ogloszenia(id, numer, data, tytul, zamawiajacy, zamawiajacy_nip, miejscowosc, wojewodztwo,
+                                rodzaj, tryb, ponizej_ue, cpv, czesci)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?)
+     on conflict(id) do update set numer=excluded.numer, data=excluded.data, tytul=excluded.tytul,
+       zamawiajacy=excluded.zamawiajacy, zamawiajacy_nip=excluded.zamawiajacy_nip, miejscowosc=excluded.miejscowosc,
+       wojewodztwo=excluded.wojewodztwo, rodzaj=excluded.rodzaj, tryb=excluded.tryb, ponizej_ue=excluded.ponizej_ue,
+       cpv=excluded.cpv, czesci=excluded.czesci`,
+  );
+  const usunWyniki = db.prepare('delete from bzp_wyniki where id = ?');
+  const wstawWynik = db.prepare(
+    `insert into bzp_wyniki(id, czesc, uniewaznione, ofert, cena_min, cena_max, cena_wybrana, wartosc_umowy, wykonawca, wykonawca_nip)
+     values (?,?,?,?,?,?,?,?,?,?) on conflict(id, czesc) do nothing`,
+  );
+  const zapiszDzien = db.prepare(
+    'insert into bzp_dni(dzien, ogloszen, pobrano) values (?,?,?) on conflict(dzien) do update set ogloszen=excluded.ogloszen, pobrano=excluded.pobrano',
+  );
+
+  let pobranychDni = 0;
+  let ogloszen = 0;
+  let czesci = 0;
+  let pominietych = 0;
+  for (const dzien of dni) {
+    if (Date.now() - start > budzetMs) {
+      log(`   koniec budzetu czasu — zostalo ${dni.length - pobranychDni} dni na nastepny przebieg`);
+      break;
+    }
+    let poObiekcie: string | null = null;
+    let wDniu = 0;
+    for (;;) {
+      const strona: OgloszenieBzp[] = await pobierzJson<OgloszenieBzp[]>(adresStronyBzp(dzien, poObiekcie));
+      // Kontrola dziedziny przed zapisem (wzorzec 1); zly rekord jest
+      // RAPORTOWANY i pomijany, nie przerywa dnia (wzorzec 2).
+      wTransakcji(db, () => {
+        for (const o of strona) {
+          if (!o.objectId || !o.publicationDate || Number.isNaN(Date.parse(o.publicationDate))) { pominietych++; continue; }
+          const wyniki = wynikiCzesci(tekstZHtml(o.htmlBody), o.contractors);
+          wstawOgl.run(
+            o.objectId, o.bzpNumber, dzienPublikacji(o.publicationDate), o.orderObject?.trim() || null,
+            o.organizationName?.trim() || null, nipZTekstu(o.organizationNationalId), o.organizationCity, o.organizationProvince,
+            o.orderType, o.tenderType, o.isTenderAmountBelowEU === null ? null : o.isTenderAmountBelowEU ? 1 : 0,
+            o.cpvCode, wyniki.length,
+          );
+          usunWyniki.run(o.objectId);
+          for (const w of wyniki) {
+            wstawWynik.run(o.objectId, w.czesc, w.uniewaznione ? 1 : 0, w.ofert, w.cenaMin, w.cenaMax, w.cenaWybrana,
+              w.wartoscUmowy, w.wykonawca, w.wykonawcaNip);
+            czesci++;
+          }
+          wDniu++;
+        }
+      });
+      if (strona.length < NA_STRONE_BZP) break;
+      poObiekcie = strona[strona.length - 1]!.objectId;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    zapiszDzien.run(dzien, wDniu, new Date().toISOString());
+    pobranychDni++;
+    ogloszen += wDniu;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
+  const gmin = wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
+  log(`   sumy BZP policzone dla ${gmin} gmin`);
+  const wBazie = (db.prepare('select count(*) as c from bzp_ogloszenia').get() as { c: number }).c;
+  log(`   pobrano ${pobranychDni} dni: ${ogloszen} ogloszen, ${czesci} czesci; pominietych rekordow: ${pominietych}; `
+    + `gmina zamawiajacego zmieniona w ${nabywcy}; w bazie razem ${wBazie} ogloszen`);
+  odnotujImport(db, 'bzp', wBazie, `BZP, ogloszenia o wyniku; ${pobranychDni} dni w tym przebiegu`);
+}
+
 async function importRegon(db: DatabaseSync): Promise<void> {
   if (!kluczBir()) throw new Error('Brak GUS_BIR_KLUCZ — bez klucza BIR nie odda danych (.env.local albo /etc/jawne/jawne.env)');
   const wszyscy = process.argv.includes('--wszyscy');
@@ -1121,11 +1218,22 @@ async function importRegon(db: DatabaseSync): Promise<void> {
     "select distinct nabywca_id as nip from ted_ogloszenia where nabywca_id is not null",
     'select distinct nip_udzielajacego as nip from pomoc_publiczna where nip_udzielajacego is not null',
     'select distinct nip from ted_wykonawcy',
+    // BZP (od 16.10.2026): zamawiajacy — po gmine; wykonawcy — po Typ do
+    // reguly jawnosci nazw (bez REGON zostaje sama heurystyka nazwy).
+    'select distinct zamawiajacy_nip as nip from bzp_ogloszenia where zamawiajacy_nip is not null',
+    'select distinct wykonawca_nip as nip from bzp_wyniki where wykonawca_nip is not null',
     ...(wszyscy ? ['select distinct nip from firmy_szukaj'] : []),
   ];
   const doPytania = new Set<string>();
   for (const sql of zrodla) {
-    for (const r of db.prepare(sql).all() as unknown as { nip: string }[]) {
+    let wiersze: { nip: string }[] = [];
+    try {
+      wiersze = db.prepare(sql).all() as unknown as { nip: string }[];
+    } catch (e) {
+      // Tabela BZP moze jeszcze nie istniec (baza sprzed migracji) — pomijamy zrodlo.
+      if (!/no such table/.test(String(e))) throw e;
+    }
+    for (const r of wiersze) {
       if (/^\d{10}$/.test(r.nip)) doPytania.add(r.nip);
     }
   }
@@ -1158,8 +1266,21 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   let pusteOdpowiedzi = 0;
   let wielokrotnych = 0;
   const typy = new Map<string, number>();
+  /*
+   * Budzet czasu (16.10.2026). Etap chodzi w zadaniu `ted` razem z TED i BZP
+   * pod jednym limitem systemd (3 h). Po dolozeniu NIP-ow z BZP lista moze
+   * miec kilkadziesiat tysiecy pozycji: 20 NIP-ow na 3 s to ponad 2 h —
+   * przekroczenie limitu zabiloby caly przebieg (pulapka 64). Pobrane NIP-y
+   * sa pomijane przy nastepnym przebiegu, wiec przerwanie niczego nie gubi.
+   */
+  const budzetMs = Number(process.argv.find((a) => a.startsWith('--minut='))?.split('=')[1] ?? 75) * 60_000;
+  const start = Date.now();
   try {
     for (let i = 0; i < lista.length; i += NIPOW_NA_RAZ) {
+      if (Date.now() - start > budzetMs) {
+        log(`   koniec budzetu czasu — zostalo ${lista.length - i} NIP-ow na nastepny przebieg`);
+        break;
+      }
       const partia = lista.slice(i, i + NIPOW_NA_RAZ);
       let podmioty;
       try {
@@ -1233,7 +1354,8 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   log(`   z dopasowana gmina: ${zTerytem} (${Math.round((100 * zTerytem) / Math.max(1, znalezionych))}%)`);
   if (pusteOdpowiedzi) log(`   UWAGA: ${pusteOdpowiedzi} pelnych paczek wrocilo pustych — sprawdz limit NIPOW_NA_RAZ`);
   const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
-  log(`   gmina zamawiajacego w ogloszeniach TED: zmieniona w ${nabywcy}`);
+  log(`   gmina zamawiajacego w ogloszeniach TED i BZP: zmieniona w ${nabywcy}`);
+  if (nabywcy) wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
   odnotujImport(db, 'regon', znalezionych, `BIR 1.1, ${zTerytem} z TERYT-em`);
 }
 
@@ -2098,6 +2220,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   wystapienia: importWystapien,
   komisje: importKomisji,
   zamowienia: importZamowien,
+  bzp: importBzp,
   regon: importRegon,
   zdjecia: importZdjec,
   obecnosc: importObecnosci,

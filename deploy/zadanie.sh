@@ -80,6 +80,10 @@ case "${1:-}" in
   ted)
     # TED nie ma limitow poza rozsadkiem; miesiac juz kompletny jest pomijany.
     "$TSX" ingest/jobs/import.ts zamowienia
+    # BZP (zamowienia krajowe) — najnowsze dni najpierw, budzet 45 min na noc,
+    # wiec historia od poczatku kadencji domyka sie przez kilka nocy. Awaria
+    # e-Zamowien nie moze zabrac REGON-u, ktory sluzy tez TED i SUDOP.
+    "$TSX" ingest/jobs/import.ts bzp || echo "BZP: blad (kod $?) — REGON i tak rusza"
     # REGON mowi, kim jest NIP zamawiajacego — bez tego nie ma "zamowien
     # w gminie". Bez klucza po prostu tego nie robimy: brak klucza to stan,
     # nie awaria, a zadanie ma nie padac z tego powodu.

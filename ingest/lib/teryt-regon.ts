@@ -179,7 +179,18 @@ export function odswiezTerytNabywcow(db: DatabaseSync): number {
     `update ted_ogloszenia set teryt_nabywcy = (select r.teryt from regon r where r.nip = ted_ogloszenia.nabywca_id)
       where teryt_nabywcy is not (select r.teryt from regon r where r.nip = ted_ogloszenia.nabywca_id)`,
   ).run();
-  return Number(w.changes);
+  // To samo dla BZP (od 16.10.2026). Tabela moze jeszcze nie istniec na bazie
+  // sprzed migracji — wtedy nie ma czego odswiezac.
+  let bzp = 0;
+  try {
+    bzp = Number(db.prepare(
+      `update bzp_ogloszenia set teryt_nabywcy = (select r.teryt from regon r where r.nip = bzp_ogloszenia.zamawiajacy_nip)
+        where teryt_nabywcy is not (select r.teryt from regon r where r.nip = bzp_ogloszenia.zamawiajacy_nip)`,
+    ).run().changes);
+  } catch (e) {
+    if (!/no such table/.test(String(e))) throw e;
+  }
+  return Number(w.changes) + bzp;
 }
 
 /**
@@ -208,4 +219,48 @@ export function znormalizujNabywcow(
     else wyzerowane += 1;
   }
   return { sprawdzono: wiersze.length, poprawione, wyzerowane };
+}
+
+/**
+ * Sumy zamowien BZP i czolowka 8 najwiekszych czesci dla kazdej gminy
+ * zamawiajacych (`bzp_gminy`, `bzp_gminy_czolowka`). Od zera — tabele sa male
+ * (jedna linia na gmine), a liczenie to jeden przebieg po wynikach.
+ * Wolane po imporcie BZP, po imporcie REGON (zmienia gmine zamawiajacego)
+ * i w migracjach. Kwota czesci: wartosc umowy, a bez niej cena wybrana;
+ * powyzej `prog` (nasz prog bledow zamawiajacego, jak w TED) poza suma.
+ */
+export function policzBzpGmin(db: DatabaseSync, prog: number): number {
+  const kwota = 'coalesce(w.wartosc_umowy, w.cena_wybrana)';
+  try {
+    db.exec('delete from bzp_gminy; delete from bzp_gminy_czolowka;');
+    db.prepare(
+      `insert into bzp_gminy (teryt, ogloszen, zawarte, uniewaznione, suma, w_sumie, bez_kwoty, podejrzane, od, do)
+       select o.teryt_nabywcy, count(distinct o.id),
+              sum(case when w.uniewaznione = 0 then 1 else 0 end),
+              sum(w.uniewaznione),
+              sum(case when w.uniewaznione = 0 and ${kwota} <= ? then ${kwota} end),
+              sum(case when w.uniewaznione = 0 and ${kwota} <= ? then 1 else 0 end),
+              sum(case when w.uniewaznione = 0 and ${kwota} is null then 1 else 0 end),
+              sum(case when w.uniewaznione = 0 and ${kwota} > ? then 1 else 0 end),
+              min(o.data), max(o.data)
+         from bzp_ogloszenia o join bzp_wyniki w on w.id = o.id
+        where o.teryt_nabywcy is not null
+        group by o.teryt_nabywcy`,
+    ).run(prog, prog, prog);
+    db.prepare(
+      `insert into bzp_gminy_czolowka (teryt, poz, id, czesc, data, tytul, zamawiajacy, wartosc, wykonawca, wykonawca_nip, typ_regon)
+       select teryt, poz, id, czesc, data, tytul, zamawiajacy, wartosc, wykonawca, wykonawca_nip,
+              (select r.typ from regon r where r.nip = wykonawca_nip)
+         from (select o.teryt_nabywcy as teryt, o.id as id, w.czesc as czesc, o.data as data, o.tytul as tytul,
+                      o.zamawiajacy as zamawiajacy, ${kwota} as wartosc, w.wykonawca as wykonawca, w.wykonawca_nip as wykonawca_nip,
+                      row_number() over (partition by o.teryt_nabywcy order by ${kwota} desc, o.id, w.czesc) as poz
+                 from bzp_ogloszenia o join bzp_wyniki w on w.id = o.id
+                where o.teryt_nabywcy is not null and w.uniewaznione = 0 and ${kwota} <= ?)
+        where poz <= 8`,
+    ).run(prog);
+    return (db.prepare('select count(*) as c from bzp_gminy').get() as { c: number }).c;
+  } catch (e) {
+    if (/no such table/.test(String(e))) return 0;
+    throw e;
+  }
 }

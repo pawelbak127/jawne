@@ -93,7 +93,8 @@ export async function pobierz(url: string, opcje: OpcjeZapytania = {}): Promise<
             'Accept': opcje.json === false ? '*/*' : 'application/json',
             ...(opcje.cialo ? { 'Content-Type': opcje.typTresci ?? 'application/json' } : {}),
             ...(opcje.naglowki ?? {}),
-            'User-Agent': 'jawne.pl/0.1 (agregator danych publicznych)',
+            // Kto pyta i jak sie odezwac — urzedy proszą o to wprost (asc tak robi).
+            'User-Agent': `zrejestru.pl/0.2 (serwis obywatelski${process.env.JAWNE_KONTAKT?.trim() ? `; ${process.env.JAWNE_KONTAKT.trim()}` : ''})`,
             // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
             // Wysylamy go tylko do BDL — innym serwerom nic po nim.
             ...(kluczBdl() && url.startsWith('https://bdl.stat.gov.pl/') ? { 'X-ClientId': kluczBdl()! } : {}),
