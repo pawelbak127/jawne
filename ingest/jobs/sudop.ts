@@ -24,7 +24,7 @@
  *  - zapisujemy surowa odpowiedz, zeby powtorny zapis nie wymagal
  *    ponownego pytania urzedu (`--z-plikow`).
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -34,7 +34,7 @@ import {
 } from '../lib/nieudane-zakresy.js';
 import { odnotujImport, otworz, wTransakcji, zalozSchemat } from '../lib/baza.js';
 import {
-  dniDoZachowania, dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienWarszawa, planHistorii, stanDnia, wOknie, zakresyZPlikow,
+  dniDoZachowania, dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienneCzeka, dzienWarszawa, NA_STRONE, planHistorii, stanDnia, wOknie, zakresyZPlikow,
   type DzienPobrany,
 } from '../lib/harmonogram.js';
 import {
@@ -83,7 +83,6 @@ const HORYZONT_MS = 57 * 60_000;
  * a nie po to, zeby jej uzywac na co dzien.
  */
 const BEZ_KOLEJKI = process.argv.includes('--bez-kolejki');
-const NA_STRONE = 10_000; // instrukcja UOKiK: do 10 tys. wierszy na strone
 
 async function get(url: string) {
   // redirect: 'manual' — inaczej fetch sam idzie za 303 i gubi adres kolejki.
@@ -125,6 +124,8 @@ type Budzet = {
   maks: number;
   uzyte: number;
   okno: string | null;
+  /** Powod, dla ktorego trzeba ustapic przed nastepnym zapytaniem (np. czeka zadanie dzienne). */
+  ustap?: () => string | null;
 };
 
 /** Koniec przydzialu — nie blad. Pobrane strony zostaja na dysku do wznowienia. */
@@ -134,6 +135,31 @@ function sprawdzBudzet(b: Budzet | null): void {
   if (!b) return;
   if (b.uzyte >= b.maks) throw new KoniecPrzydzialu(`wykorzystano ${b.maks} zapytan`);
   if (b.okno && !wOknie(new Date(), b.okno)) throw new KoniecPrzydzialu(`koniec okna ${b.okno} (czas polski)`);
+  const powod = b.ustap?.();
+  if (powod) throw new KoniecPrzydzialu(powod);
+}
+
+/** Znacznik „zadanie dzienne czeka na blokade" — zapisuje go deploy/zadanie.sh. */
+const ZNACZNIK_DZIENNEGO = join(KATALOG, '.czeka-dzienne');
+
+function czekaDzienne(): boolean {
+  let tresc: string | null = null;
+  let wiekMs = 0;
+  try {
+    tresc = readFileSync(ZNACZNIK_DZIENNEGO, 'utf8');
+    wiekMs = Date.now() - statSync(ZNACZNIK_DZIENNEGO).mtimeMs;
+  } catch {
+    return false;
+  }
+  return dzienneCzeka(tresc, wiekMs, (pid) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (e) {
+      // EPERM: proces zyje, tylko nie nasz (flock chodzi jako root) — czeka.
+      return e instanceof Error && 'code' in e && e.code === 'EPERM';
+    }
+  });
 }
 
 /**
@@ -473,20 +499,45 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
   const doUstalenia = dodajDni(dzis, -DNI_DO_USTALENIA);
   // Zwykly dzien to 1–2 strony; wiecej niz 8 znaczy, ze dzieje sie cos dziwnego.
   const budzet: Budzet = { maks: 8, uzyte: 0, okno: null };
-  await przyrost(db, `${swiezy}..${swiezy}`, znane, false, budzet);
-  const w = db.prepare('select coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni where dzien = ?')
-    .get(doUstalenia) as { pobrano: string } | undefined;
-  switch (stanDnia(doUstalenia, w?.pobrano)) {
-    case 'ustalony':
-      log(`-> ${doUstalenia}: juz ustalony (pobrany ${w!.pobrano}) — nie pytam ponownie`);
-      break;
-    case 'brak':
-      log(`-> ${doUstalenia}: tego dnia w ogole nie mamy — to dziura, wezmie ja noc razem z sasiadami (jawne plan)`);
-      break;
-    default:
-      await przyrost(db, `${doUstalenia}..${doUstalenia}`, znane, true, budzet);
+  /*
+   * NAJPIERW dzien do ustalenia, kazdy krok osobno. ZMIERZONE 17 i 18.10.2026:
+   * kolejka nie oddala strony 1 swiezego dnia po 57 minutach, wyjatek konczyl
+   * zadanie i dzien sprzed 14 dni — ten, ktory wchodzi do sum — nie byl
+   * nawet zapytany. Swiezy dzien ma kilka procent ostatecznej liczby
+   * (10-05..10-09: ok. 300 przypadkow, po ustaleniu tysiace), wiec przegrana
+   * kolejnosc kosztowala wiecej niz zyskiwala.
+   */
+  const bledy: string[] = [];
+  const krok = async (opis: string, f: () => Promise<void>) => {
+    try {
+      await f();
+    } catch (e) {
+      if (e instanceof KoniecPrzydzialu) throw e;
+      const tresc = e instanceof Error ? e.message : String(e);
+      log(`BLAD (${opis}): ${tresc}`);
+      bledy.push(`${opis}: ${tresc}`);
+    }
+  };
+  try {
+    const w = db.prepare('select coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni where dzien = ?')
+      .get(doUstalenia) as { pobrano: string } | undefined;
+    switch (stanDnia(doUstalenia, w?.pobrano)) {
+      case 'ustalony':
+        log(`-> ${doUstalenia}: juz ustalony (pobrany ${w!.pobrano}) — nie pytam ponownie`);
+        break;
+      case 'brak':
+        log(`-> ${doUstalenia}: tego dnia w ogole nie mamy — to dziura, wezmie ja noc razem z sasiadami (jawne plan)`);
+        break;
+      default:
+        await krok(`dzien do ustalenia ${doUstalenia}`, () => przyrost(db, `${doUstalenia}..${doUstalenia}`, znane, true, budzet));
+    }
+    await krok(`swiezy dzien ${swiezy}`, () => przyrost(db, `${swiezy}..${swiezy}`, znane, false, budzet));
+  } finally {
+    // Historia moze ruszyc — znacznik z zadanie.sh juz nie jest potrzebny.
+    rmSync(ZNACZNIK_DZIENNEGO, { force: true });
   }
   log(`Zapytan do urzedu: ${budzet.uzyte}`);
+  if (bledy.length) throw new Error(`zadanie dzienne: ${bledy.join('; ')}`);
 }
 
 /**
@@ -540,9 +591,13 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   const plan = () => planHistorii({
     dlugosc,
     zostaloStron,
+    wynikowZakresu: (zakres) => {
+      zostaloStron(zakres); // wypelnia pamiec liczby wynikow
+      return wynikowZakresu.get(zakres) ?? null;
+    },
     pomijaj: doPominiecia(wczytajNieudane(KATALOG), new Date()),
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
-    dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
+    dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano, wierszy from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
     dzis,
     poczatekOkna: poczatekOknaDanych(new Date()),
@@ -557,7 +612,10 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     log(`Poza oknem ${o.okno} (czas polski) — nie pytam urzedu.`);
     return;
   }
-  const budzet: Budzet = { maks: o.maks, uzyte: 0, okno: o.okno };
+  const budzet: Budzet = {
+    maks: o.maks, uzyte: 0, okno: o.okno,
+    ustap: () => (czekaDzienne() ? 'czeka zadanie dzienne — ustepuje mu po biezacej stronie' : null),
+  };
   // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
   // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
   // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.

@@ -134,6 +134,12 @@ case "${1:-}" in
     df -h . | tail -1 | awk '{print "dysk: zajete " $3 " z " $2 " (" $5 "), wolne " $4}'
     ;;
   sudop-dzien)
+    # Znacznik „czekam na blokade": historia sprawdza go przed kazda strona
+    # i ustepuje, zamiast konczyc caly przydzial (17–18.10.2026 dzienne
+    # czekalo od 22:00 do 04:38, bo strona szla 20–55 minut). PID to ten
+    # proces — po `exec` sam flock, zywy az do konca zadania dziennego.
+    mkdir -p dane/zrodla/sudop
+    echo $$ > dane/zrodla/sudop/.czeka-dzienne
     sudop 79200 --dzienny
     ;;
   sudop-historia)

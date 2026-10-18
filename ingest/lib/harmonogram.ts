@@ -23,6 +23,8 @@ export const DNI_DO_USTALENIA = 14;
 
 /** Dlugosc zakresu w nocnym uzupelnianiu: tydzien to zwykle 2–6 stron odpowiedzi. */
 export const DNI_W_ZAKRESIE = 7;
+/** Wierszy na strone odpowiedzi SUDOP (instrukcja UOKiK: do 10 tys.). */
+export const NA_STRONE = 10_000;
 
 const STREFA = 'Europe/Warsaw';
 
@@ -109,7 +111,11 @@ export function zakresyZPlikow(nazwy: readonly string[]): string[] {
   return [...zakresy].sort();
 }
 
-export type DzienPobrany = { dzien: string; pobrano: string };
+export type DzienPobrany = {
+  dzien: string; pobrano: string;
+  /** Ile przypadkow ma dzien w bazie — do oceny, czy wznowienie zakresu sie oplaca. */
+  wierszy?: number | null;
+};
 
 export type ZakresDoPobrania = {
   od: string;
@@ -152,9 +158,10 @@ export function planHistorii(p: {
   /**
    * Zakresy, ktorych TERAZ nie probujemy — ich kolejka nie oddala wyniku,
    * a przerwa jeszcze nie minela (patrz `nieudane-zakresy.ts`). Pominiety
-   * zakres NIE znika z planu na zawsze: ustepuje miejsca krokowi „historia",
-   * ktory te same dni poda w mniejszych kawalkach. Wyjatek: zakres JEDNODNIOWY
-   * — mniejszych kawalkow nie ma, wiec jego dni czekaja na niego (nizej).
+   * zakres ze stronami na dysku REZERWUJE swoje brakujace dni — nikt nie
+   * zaczyna ich od strony 1 — a historia idzie w tym czasie dalej wstecz
+   * (pulapka 77). Zakres, ktorego pierwsza strona nie wrocila, na dysku nic
+   * nie ma, wiec tu nie trafia — jego dni bierze krotszy krok „historia".
    */
   pomijaj?: ReadonlySet<string>;
   /**
@@ -163,6 +170,8 @@ export function planHistorii(p: {
    * strony z dysku nie jest darmowe.
    */
   zostaloStron?: (zakres: string) => number | null;
+  /** Liczba wynikow przerwanego zakresu z jego pierwszej strony (`null` = nie wiadomo). */
+  wynikowZakresu?: (zakres: string) => number | null;
 }): ZakresDoPobrania[] {
   const dlugosc = p.dlugosc ?? DNI_W_ZAKRESIE;
   const wczoraj = dodajDni(p.dzis, -1);
@@ -186,25 +195,52 @@ export function planHistorii(p: {
    *  - z nakladajacych sie przerwanych bierzemy ten, ktoremu zostalo najmniej
    *    stron (bez tej wiedzy — najwezszy), a pozostale pomijamy.
    */
+  /*
+   * ZMIERZONE 16–18.10.2026 na serwerze: zakres 2020-05-02..2020-05-08 padl
+   * na stronie 50 z 62, bo kolejka urzedu zwolnila z 1–5 do 20–55 minut na
+   * strone. Przerwa po porazce oddawala jego dni krokowi „historia", ktory
+   * tworzyl NOWE zakresy od strony 1: 05-06..08, 05-08, 05-07, 05-01..07,
+   * 05-04..06, 04-28..05-03, 05-01..05-03 — w dwa dni ok. 120 stron na dni,
+   * ktorym brakowalo 12. Ciecie na pol (pulapka 26) pomaga, gdy kolejka nie
+   * policzy wyniku w ogole — wtedy pada strona 1 i na dysku nie ma nic.
+   * Gdy strony juz sa, kazda kolejna to osobne zapytanie o 10 tys. wierszy,
+   * wiec krotszy zakres nie skraca czekania, tylko zaczyna od nowa. Dlatego:
+   *  - zakres W PRZERWIE ze stronami na dysku REZERWUJE swoje brakujace dni
+   *    (dawniej tylko jednodniowy), a historia idzie w tym czasie dalej wstecz;
+   *  - wybor z nakladajacych sie obejmuje tez zakresy w przerwie — wygrywa
+   *    najblizszy konca, a jesli jest w przerwie, dni czekaja na niego;
+   *  - zakresu NIE wznawiamy, gdy samych brakujacych dni jest mniej stron niz
+   *    zostalo do pobrania (04-28..05-03: 74 strony, a brakujace 28–30.04
+   *    to ok. 56) — wtedy wezmie je zwykly krok, od nowa.
+   */
   const pokryte = new Set<string>();
   const zarezerwowane = new Set<string>();
-  const kandydaci: { z: string; od: string; doDnia: string; dni: string[] }[] = [];
+  const wierszyDnia = new Map(p.dni.map((d) => [d.dzien, d.wierszy ?? null]));
+  const kandydaci: { z: string; od: string; doDnia: string; dni: string[]; wPrzerwie: boolean }[] = [];
   for (const z of p.zakresyPlikow) {
     const [od, doDnia] = z.split('..') as [string, string];
     if (doDnia > wczoraj) continue;
     const dni = dniZakresu(od, doDnia);
     if (dni.every((d) => mamy.has(d))) continue;
-    if (p.pomijaj?.has(z)) {
-      // Zakres w przerwie po porazkach pomijamy. Dluzszy zostawia dni krokowi
-      // „historia" (wezmie je mniejszymi porcjami), jednodniowy je rezerwuje.
-      if (dni.length === 1) zarezerwowane.add(od);
-      continue;
-    }
-    kandydaci.push({ z, od, doDnia, dni });
+    kandydaci.push({ z, od, doDnia, dni, wPrzerwie: p.pomijaj?.has(z) ?? false });
   }
-  for (const d of zarezerwowane) pokryte.add(d);
   const zostalo = new Map(kandydaci.map((k) => [k.z, p.zostaloStron?.(k.z) ?? null]));
-  kandydaci.sort((a, b) => {
+  /** Czy wznowienie jest tansze niz pobranie od nowa samych brakujacych dni. */
+  const oplacaSie = (k: (typeof kandydaci)[number]): boolean => {
+    const zo = zostalo.get(k.z) ?? null;
+    const wynikow = p.wynikowZakresu?.(k.z) ?? null;
+    if (zo === null || wynikow === null) return true;
+    let wBazie = 0;
+    for (const d of k.dni) {
+      if (!mamy.has(d)) continue;
+      const w = wierszyDnia.get(d) ?? null;
+      if (w === null) return true; // nie wiemy, ile dzien ma — wznawiamy jak dotad
+      wBazie += w;
+    }
+    return Math.ceil(Math.max(0, wynikow - wBazie) / NA_STRONE) >= zo;
+  };
+  const wartosciowe = kandydaci.filter(oplacaSie);
+  wartosciowe.sort((a, b) => {
     const x = zostalo.get(a.z) ?? null;
     const y = zostalo.get(b.z) ?? null;
     if (x !== null && y !== null && x !== y) return x - y;
@@ -212,10 +248,14 @@ export function planHistorii(p: {
     return a.dni.length - b.dni.length || a.od.localeCompare(b.od);
   });
   const wybrane: ZakresDoPobrania[] = [];
-  for (const k of kandydaci) {
+  for (const k of wartosciowe) {
     if (k.dni.some((d) => pokryte.has(d))) continue;
-    wybrane.push({ od: k.od, do: k.doDnia, odswiez: false, powod: 'przerwane' });
     for (const d of k.dni) pokryte.add(d);
+    if (k.wPrzerwie) {
+      for (const d of k.dni) if (!mamy.has(d)) zarezerwowane.add(d);
+      continue;
+    }
+    wybrane.push({ od: k.od, do: k.doDnia, odswiez: false, powod: 'przerwane' });
   }
   // Kolejnosc w planie jak dotad — od najstarszego — zeby nie zmieniac tego,
   // co juz dziala; wybor nakladajacych sie zakresow robi sortowanie wyzej.
@@ -240,15 +280,43 @@ export function planHistorii(p: {
 
   // 4. Historia wstecz, jeden zakres. Bez zadnego dnia w bazie zaczynamy
   //    od ostatniego dnia, ktory jest juz ustalony. Dni zarezerwowane przez
-  //    jednodniowy zakres w przerwie przeskakujemy — historia idzie dalej
-  //    wstecz, a ten dzien wroci, gdy minie przerwa.
-  let start = pierwszy;
-  for (const d of zarezerwowane) if (!start || d < start) start = d;
-  while (start && zarezerwowane.has(dodajDni(start, -1))) start = dodajDni(start, -1);
-  const koniecHistorii = start ? dodajDni(start, -1) : ostatniDoUstalenia;
+  //    zakres w przerwie przeskakujemy — historia idzie dalej wstecz, a te
+  //    dni wroca razem z nim, gdy minie przerwa.
+  //    Przeskakujemy tylko blok PRZYLEGLY do pobranych dni; zarezerwowanych
+  //    dni dalej wstecz zakres historii nie obejmuje (przycinamy go), zeby
+  //    nie zaczynal od strony 1 tego, co czeka na wznowienie.
+  let start = pierwszy ?? dodajDni(ostatniDoUstalenia, 1);
+  while (zarezerwowane.has(dodajDni(start, -1))) start = dodajDni(start, -1);
+  const koniecHistorii = dodajDni(start, -1);
   if (koniecHistorii >= p.poczatekOkna) {
-    const od = dodajDni(koniecHistorii, -(dlugosc - 1));
-    plan.push({ od: od < p.poczatekOkna ? p.poczatekOkna : od, do: koniecHistorii, odswiez: false, powod: 'historia' });
+    let od = dodajDni(koniecHistorii, -(dlugosc - 1));
+    if (od < p.poczatekOkna) od = p.poczatekOkna;
+    for (let d = koniecHistorii; d >= od; d = dodajDni(d, -1)) {
+      if (zarezerwowane.has(d)) { od = dodajDni(d, 1); break; }
+    }
+    plan.push({ od, do: koniecHistorii, odswiez: false, powod: 'historia' });
   }
   return plan;
+}
+
+/**
+ * Czy zadanie dzienne czeka na blokade SUDOP — wtedy historia ustepuje po
+ * biezacej stronie, zamiast konczyc caly przydzial.
+ *
+ * ZMIERZONE 17–18.10.2026: przy kolejce urzedu po 20–55 minut na strone
+ * przebieg historii (20 zapytan) trwal 6–10 godzin, a zadanie dzienne
+ * czekalo na blokade od 22:00 do 04:38. Swiezy dzien i dzien do ustalenia
+ * spoznialy sie o caly przebieg — dwie noce pod rzad.
+ *
+ * Znacznik zapisuje `deploy/zadanie.sh` przed `flock`: PID procesu, ktory
+ * czeka (po `exec` to sam `flock`, zywy az do konca zadania dziennego).
+ * Martwy PID albo znacznik starszy niz doba to resztka po awarii — wtedy nie
+ * ustepujemy, bo historia stalaby w miejscu bez powodu.
+ */
+export function dzienneCzeka(tresc: string | null, wiekMs: number, zyje: (pid: number) => boolean): boolean {
+  if (tresc === null) return false;
+  const pid = Number(tresc.trim());
+  if (!Number.isInteger(pid) || pid <= 1) return false;
+  if (wiekMs > 24 * 3600_000) return false;
+  return zyje(pid);
 }

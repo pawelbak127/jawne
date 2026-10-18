@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dniDoZachowania, dodajDni, dzienWarszawa, planHistorii, stanDnia, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
+import { dniDoZachowania, dodajDni, dzienneCzeka, dzienWarszawa, planHistorii, stanDnia, ustalony, wOknie, zakresyZPlikow } from './harmonogram';
 
 describe('dzienWarszawa', () => {
   it('o 00:30 w Warszawie jest juz nowy dzien, choc w UTC jeszcze stary (lato, UTC+2)', () => {
@@ -123,7 +123,7 @@ describe('planHistorii', () => {
     expect(trzy.at(-1)).toMatchObject({ od: '2025-10-05', do: '2025-10-07', powod: 'historia' });
   });
 
-  it('ZAKRES W PRZERWIE PO PORAZKACH wypada z kroku „przerwane" i wraca krotszy', () => {
+  it('ZAKRES W PRZERWIE PO PORAZKACH wypada z kroku „przerwane", a jego dni czekaja na niego', () => {
     /*
      * ZGLOSZENIE PAWLA 02.10.2026: dziennik serwera pokazal DZIESIEC RAZY ten
      * sam wiersz „przerwane: 2024-12-17..2024-12-19". Timer historii chodzi
@@ -142,8 +142,110 @@ describe('planHistorii', () => {
 
     const z = planHistorii({ ...wejscie, pomijaj: new Set(['2024-12-17..2024-12-19']) });
     expect(z.some((x) => x.powod === 'przerwane')).toBe(false);
-    // Dni NIE znikaja z planu — wracaja krokiem „historia", po jednym.
-    expect(z.some((x) => x.powod === 'historia' && x.od === '2024-12-19')).toBe(true);
+    // Do 18.10.2026 te dni wracaly krokiem „historia" od strony 1 — teraz
+    // zakres ma strony na dysku, wiec je rezerwuje, a historia idzie dalej
+    // wstecz (pulapka 77).
+    expect(z.some((x) => x.od <= '2024-12-19' && x.do >= '2024-12-17')).toBe(false);
+    expect(z.at(-1)).toMatchObject({ od: '2024-12-16', do: '2024-12-16', powod: 'historia' });
+  });
+
+  describe('kolejka urzedu zwalnia — stan serwera z 16–18.10.2026', () => {
+    // W bazie od 2020-05-09 w gore. Na dysku zestaw stron 05-02..05-08:
+    // 618 979 wynikow (62 strony), pobrane 50 — padla strona 51.
+    const W_BAZIE = dni('2020-05-09', '2020-07-31', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy: 50_000 }));
+    const wejscie = {
+      dni: W_BAZIE,
+      zakresyPlikow: ['2020-05-02..2020-05-08'],
+      dzis: '2026-10-17',
+      poczatekOkna: OKNO,
+      dlugosc: 3,
+      zostaloStron: (z: string) => ({ '2020-05-02..2020-05-08': 12 } as Record<string, number>)[z] ?? null,
+      wynikowZakresu: (z: string) => ({ '2020-05-02..2020-05-08': 618_979 } as Record<string, number>)[z] ?? null,
+    };
+
+    it('zakres w przerwie ze stronami na dysku rezerwuje dni — historia nie tnie go na nowe od strony 1', () => {
+      // Dawniej: 05-06..08, 05-08, 05-07, 05-01..07, 05-04..06… kazdy od strony 1.
+      const plan = planHistorii({ ...wejscie, pomijaj: new Set(['2020-05-02..2020-05-08']) });
+      expect(plan.some((x) => x.od <= '2020-05-08' && x.do >= '2020-05-02')).toBe(false);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-04-29', do: '2020-05-01', powod: 'historia' });
+    });
+
+    it('po przerwie wraca ten sam zakres — 12 stron do konca', () => {
+      expect(planHistorii(wejscie)[0]).toMatchObject({ od: '2020-05-02', do: '2020-05-08', powod: 'przerwane' });
+    });
+
+    it('wybor z nakladajacych sie obejmuje zakresy w przerwie: blizszy konca czeka, dalszy nie rusza', () => {
+      const zostalo: Record<string, number> = { '2020-05-02..2020-05-08': 12, '2020-05-01..2020-05-07': 48 };
+      const plan = planHistorii({
+        ...wejscie,
+        zakresyPlikow: ['2020-05-02..2020-05-08', '2020-05-01..2020-05-07'],
+        zostaloStron: (z: string) => zostalo[z] ?? null,
+        wynikowZakresu: () => null,
+        pomijaj: new Set(['2020-05-02..2020-05-08']),
+      });
+      expect(plan.filter((x) => x.powod === 'przerwane')).toEqual([]);
+      // 05-02..05-08 czekaja na swoj zakres; wolny 05-01 bierze historia.
+      expect(plan.some((x) => x.od <= '2020-05-08' && x.do >= '2020-05-02')).toBe(false);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-04-29', do: '2020-05-01', powod: 'historia' });
+    });
+
+    it('nie wznawia, gdy samych brakujacych dni jest mniej stron niz zostalo (04-28..05-03 po imporcie 05-01..05-03)', () => {
+      // 920 326 wynikow, 19 stron na dysku = 74 do konca. 05-01..05-03 juz
+      // w bazie (370 059), wiec brakujace 28–30.04 to ok. 56 stron od nowa.
+      const baza = [
+        ...dni('2020-05-01', '2020-05-03', '2026-10-01T05:00:00.000Z').map((d, i) => ({ ...d, wierszy: [120_000, 125_000, 125_059][i]! })),
+        ...dni('2020-05-04', '2020-07-31', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy: 50_000 })),
+      ];
+      const plan = planHistorii({
+        dni: baza,
+        zakresyPlikow: ['2020-04-28..2020-05-03'],
+        dzis: '2026-10-18',
+        poczatekOkna: OKNO,
+        dlugosc: 3,
+        zostaloStron: () => 74,
+        wynikowZakresu: () => 920_326,
+      });
+      expect(plan.filter((x) => x.powod === 'przerwane')).toEqual([]);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-04-28', do: '2020-04-30', powod: 'historia' });
+    });
+
+    it('wznawia, gdy brakujace dni sa wieksza czescia zakresu (05-02..05-08: 12 stron wobec ok. 42)', () => {
+      const baza = [
+        ...dni('2020-05-04', '2020-05-06', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy: 49_234 })),
+        ...dni('2020-05-08', '2020-07-31', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy: 58_000 })),
+      ];
+      const plan = planHistorii({ ...wejscie, dni: baza });
+      expect(plan[0]).toMatchObject({ od: '2020-05-02', do: '2020-05-08', powod: 'przerwane' });
+    });
+
+    it('bez liczby wierszy dnia nie zgaduje — wznawia jak dotad', () => {
+      // Z liczbami: brakujace 05-02, 05-03, 05-07, 05-08 to ok. 48 stron < 60 — od nowa.
+      const baza = (wierszy: number | null) => [
+        ...dni('2020-05-04', '2020-05-06', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy })),
+        ...W_BAZIE,
+      ];
+      const z = { ...wejscie, zostaloStron: () => 60 };
+      expect(planHistorii({ ...z, dni: baza(49_234) }).some((x) => x.powod === 'przerwane')).toBe(false);
+      expect(planHistorii({ ...z, dni: baza(null) })[0]).toMatchObject({ od: '2020-05-02', do: '2020-05-08', powod: 'przerwane' });
+    });
+
+    it('historia nie siega w zarezerwowane dni, ktore nie przylegaja do bazy', () => {
+      // Rezerwacja 04-20..04-25, a 04-26..05-08 brak: historia konczy sie
+      // na 05-08 i nie schodzi ponizej 04-26.
+      const plan = planHistorii({
+        dni: W_BAZIE,
+        zakresyPlikow: ['2020-04-20..2020-04-25'],
+        dzis: '2026-10-18',
+        poczatekOkna: OKNO,
+        dlugosc: 7,
+        zostaloStron: () => 3,
+        wynikowZakresu: () => null,
+        pomijaj: new Set(['2020-04-20..2020-04-25']),
+      });
+      const h = plan.at(-1)!;
+      expect(h).toMatchObject({ do: '2020-05-08', powod: 'historia' });
+      expect(h.od >= '2020-04-26').toBe(true);
+    });
   });
 
   describe('nakladajace sie przerwane zakresy — stan serwera z 14.10.2026', () => {
@@ -319,5 +421,19 @@ describe('stanDnia', () => {
   it('rozroznia dzien ustalony od pobranego za wczesnie', () => {
     expect(stanDnia('2026-09-07', '2026-09-21T01:20:00.000Z')).toBe('ustalony');
     expect(stanDnia('2026-09-07', '2026-09-08T01:20:00.000Z')).toBe('nieustalony');
+  });
+});
+
+describe('dzienneCzeka — 17–18.10.2026 zadanie dzienne czekalo na blokade 6,5 godziny', () => {
+  const zyje = (pid: number) => pid === 4242;
+  it('zywy PID w swiezym znaczniku — historia ustepuje', () => {
+    expect(dzienneCzeka('4242\n', 60_000, zyje)).toBe(true);
+  });
+  it('brak znacznika, martwy PID, smieci albo znacznik sprzed doby — nie ustepuje', () => {
+    expect(dzienneCzeka(null, 0, zyje)).toBe(false);
+    expect(dzienneCzeka('999', 60_000, zyje)).toBe(false);
+    expect(dzienneCzeka('abc', 60_000, zyje)).toBe(false);
+    expect(dzienneCzeka('1', 60_000, () => true)).toBe(false);
+    expect(dzienneCzeka('4242', 25 * 3600_000, zyje)).toBe(false);
   });
 });

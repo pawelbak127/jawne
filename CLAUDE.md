@@ -1007,6 +1007,36 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     części (`wartosc_umowy`, gdy brak — cena wybrana), więc „bez kwoty”
     liczymy osobno, nie jako zero.
 
+77. **Kolejka urzędu zwolniła dziesięciokrotnie — a nasze cięcie zakresów
+    potroiło koszt.** ZGŁOSZENIE PAWŁA 18.10.2026 („słabo przybywa”).
+    ZMIERZONE w dzienniku: do 16.10 ok. 16:30 strona SUDOP wracała po 1–5 min
+    (mediana dnia 1–5), a urząd oddawał 500–1 850 stron na dobę; od tej chwili
+    20–55 min (mediana 20–22) i **51–88 stron na dobę**, 12 zapytań dziennie
+    bez wyniku po 57 min. Zwolnienie zaczęło się 5 godzin PRZED naszym
+    wdrożeniem z 16.10 — to strona urzędu, nie nasza. Ale my dołożyliśmy swoje:
+    zakres 2020-05-02..08 padł na stronie 51 z 62, przerwa po porażce oddała
+    jego dni krokowi „historia”, a ten tworzył NOWE zakresy od strony 1
+    (05-06..08, 05-08, 05-07, 05-01..07, 05-04..06, 04-28..05-03,
+    05-01..05-03) — na dysku leżało 50 + 10 + 19 + 34 + 5 stron na dniach,
+    którym brakowało 12. Cięcie na pół (pułapka 26) pomaga, gdy kolejka nie
+    policzy wyniku w ogóle — pada wtedy strona 1 i na dysku nie ma nic. Gdy
+    strony już są, każda następna to osobne zapytanie o 10 tys. wierszy,
+    więc krótszy zakres nie skraca czekania, tylko zaczyna od nowa. Teraz
+    (`planHistorii`): zakres w przerwie ze stronami **rezerwuje** brakujące
+    dni (dawniej tylko jednodniowy z pułapki 74), wybór „najmniej stron do
+    końca” obejmuje też zakresy w przerwie, a zakresu **nie wznawiamy**, gdy
+    samych brakujących dni jest mniej stron niż zostało (`wierszy` dni
+    w bazie wobec `liczba-wynikow` z pierwszej strony). Symulacja na danych
+    serwera: stary plan wznowiłby 04-28..05-03 z 74 stronami, z czego ok. 37
+    to dni już w bazie. **Osobno:** zadanie dzienne czekało na blokadę od
+    22:00 do 04:38, bo przebieg historii (20 stron) trwał przy tej kolejce
+    6–10 godzin — teraz historia ustępuje po bieżącej stronie, gdy
+    `zadanie.sh` zostawi znacznik `.czeka-dzienne` (PID `flock`), a zadanie
+    dzienne bierze NAJPIERW dzień do ustalenia: 17 i 18.10 padało na świeżym
+    dniu i do sum nie wszedł żaden. Zasada: **reguła „przy błędzie zmniejsz
+    porcję” musi wiedzieć, co już zapłaciła — porcja, która przepada
+    w całości, to nie mniejsza porcja, tylko ta sama od zera.**
+
 ---
 
 ## Bezpieczeństwo
