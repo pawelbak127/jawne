@@ -1161,7 +1161,7 @@ async function importBzp(db: DatabaseSync): Promise<void> {
   let ogloszen = 0;
   let czesci = 0;
   let pominietych = 0;
-  for (const dzien of dni) {
+  dni: for (const dzien of dni) {
     if (Date.now() - start > budzetMs) {
       log(`   koniec budzetu czasu — zostalo ${dni.length - pobranychDni} dni na nastepny przebieg`);
       break;
@@ -1169,7 +1169,24 @@ async function importBzp(db: DatabaseSync): Promise<void> {
     let poObiekcie: string | null = null;
     let wDniu = 0;
     for (;;) {
-      const strona: OgloszenieBzp[] = await pobierzJson<OgloszenieBzp[]>(adresStronyBzp(dzien, poObiekcie));
+      let strona: OgloszenieBzp[];
+      try {
+        strona = await pobierzJson<OgloszenieBzp[]>(adresStronyBzp(dzien, poObiekcie));
+      } catch (e) {
+        /*
+         * ZMIERZONE 18.10.2026: po 16 minutach drugiej nocy e-Zamowienia
+         * oddaly 403 na poprawny adres, a kwadrans pozniej ten sam adres
+         * dawal 200 (pierwsza noc: 45 minut bez bledu). Odmowa to prosba
+         * „zwolnij”, nie awaria: konczymy na dzis, dni pobrane do tej pory
+         * zostaja, sumy licza sie nizej. Dzien przerwany w polowie nie jest
+         * odnotowany w bzp_dni, wiec wroci w calosci nastepnej nocy.
+         */
+        if (e instanceof Error && /HTTP (403|429)\b/.test(e.message)) {
+          log(`   e-Zamowienia odmowily (${e.message.replace(/^.*-> /, '')}) — koncze na dzis, zostalo ${dni.length - pobranychDni} dni`);
+          break dni;
+        }
+        throw e;
+      }
       // Kontrola dziedziny przed zapisem (wzorzec 1); zly rekord jest
       // RAPORTOWANY i pomijany, nie przerywa dnia (wzorzec 2).
       wTransakcji(db, () => {
