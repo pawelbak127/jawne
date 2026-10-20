@@ -1036,6 +1036,13 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     dniu i do sum nie wszedł żaden. Zasada: **reguła „przy błędzie zmniejsz
     porcję” musi wiedzieć, co już zapłaciła — porcja, która przepada
     w całości, to nie mniejsza porcja, tylko ta sama od zera.**
+    **Dzień po wdrożeniu (19–20.10) wróciło to tylnymi drzwiami:** przerwa
+    po pierwszej porażce trwa godzinę, a przebieg dłużej — po godzinie plan
+    podawał zakres znowu jako „przerwane”, pętla pomijała go własną listą
+    `zBledem`, a historia tworzyła na tych dniach nowy zakres (04-25..04-30,
+    04-28..04-30, 04-11..04-17). Planujący dostaje teraz także `zBledem`
+    i `odlozone` jako `pomijaj`. **Planujący i wybierający muszą widzieć
+    ten sam stan** — inaczej każdy z nich z osobna jest poprawny, a razem nie.
 
 ---
 

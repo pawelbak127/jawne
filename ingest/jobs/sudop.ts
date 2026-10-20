@@ -588,6 +588,17 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     const liczba = wynikowZakresu.get(zakres) ?? null;
     return liczba === null ? null : Math.max(0, Math.ceil(liczba / NA_STRONE) - stron);
   };
+  // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
+  // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
+  // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
+  const odlozone = new Set<string>();
+  // Zakres, ktory skonczyl sie bledem, tez odkladamy. ZMIERZONE w nocy
+  // 22/23.09.2026: pierwszy zakres nocy padl po godzinie, wyjatek wyszedl
+  // z petli i cala noc skonczyla sie na nim — ze 150 zapytan nie zostalo
+  // wykorzystane nic. Blad jednego zakresu to za malo, zeby stracic noc
+  // (wzorzec 2 w CLAUDE.md), ale trzy pod rzad znacza awarie po tamtej
+  // stronie albo u nas i wtedy konczymy.
+  const zBledem = new Map<string, string>();
   const plan = () => planHistorii({
     dlugosc,
     zostaloStron,
@@ -595,7 +606,16 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
       zostaloStron(zakres); // wypelnia pamiec liczby wynikow
       return wynikowZakresu.get(zakres) ?? null;
     },
-    pomijaj: doPominiecia(wczytajNieudane(KATALOG), new Date()),
+    /*
+     * Do pominiecia idzie TAKZE to, co ten proces odlozyl sam. ZMIERZONE
+     * 19–20.10.2026: przerwa po pierwszej porazce trwa godzine, a przebieg
+     * dluzej — po godzinie plan podawal zakres znowu jako „przerwane"
+     * (czyli dni zajete, nie zarezerwowane), petla pomijala go przez
+     * `zBledem`, a krok „historia" tworzyl na tych samych dniach nowy zakres
+     * od strony 1: 04-25..04-30, 04-28..04-30, 04-28..04-29, 04-11..04-17.
+     * Planujacy musi widziec to samo, co wybiera petla.
+     */
+    pomijaj: new Set([...doPominiecia(wczytajNieudane(KATALOG), new Date()), ...zBledem.keys(), ...odlozone]),
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
     dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano, wierszy from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
@@ -616,17 +636,6 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
     maks: o.maks, uzyte: 0, okno: o.okno,
     ustap: () => (czekaDzienne() ? 'czeka zadanie dzienne — ustepuje mu po biezacej stronie' : null),
   };
-  // Zakres, ktory po pobraniu nadal jest w planie, odkladamy do konca nocy
-  // i idziemy dalej. ZMIERZONE 22.09.2026: pierwsza taka sytuacja (blad
-  // ze strefa czasu) zatrzymala cala noc po trzech zapytaniach z pieciudziesieciu.
-  const odlozone = new Set<string>();
-  // Zakres, ktory skonczyl sie bledem, tez odkladamy. ZMIERZONE w nocy
-  // 22/23.09.2026: pierwszy zakres nocy padl po godzinie, wyjatek wyszedl
-  // z petli i cala noc skonczyla sie na nim — ze 150 zapytan nie zostalo
-  // wykorzystane nic. Blad jednego zakresu to za malo, zeby stracic noc
-  // (wzorzec 2 w CLAUDE.md), ale trzy pod rzad znacza awarie po tamtej
-  // stronie albo u nas i wtedy konczymy.
-  const zBledem = new Map<string, string>();
   const MAKS_BLEDOW_POD_RZAD = 4;
   let bledowPodRzad = 0;
   for (const o of opisPominietych(wczytajNieudane(KATALOG), new Date())) {

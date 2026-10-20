@@ -229,6 +229,25 @@ describe('planHistorii', () => {
       expect(planHistorii({ ...z, dni: baza(null) })[0]).toMatchObject({ od: '2020-05-02', do: '2020-05-08', powod: 'przerwane' });
     });
 
+    it('serwer 19.10.2026: zakres z bledem w TYM przebiegu (przerwa juz minela) — historia go omija', () => {
+      // Petla podaje plannerowi takze swoje `zBledem`. Bez tego plan oddawal
+      // 04-24..04-30 jako „przerwane", petla go pomijala, a historia brala
+      // 04-25..04-30 od strony 1.
+      const baza = dni('2020-05-01', '2020-07-31', '2026-10-01T05:00:00.000Z').map((d) => ({ ...d, wierszy: 110_000 }));
+      const plan = planHistorii({
+        dni: baza,
+        zakresyPlikow: ['2020-04-24..2020-04-30', '2020-04-28..2020-05-03'],
+        dzis: '2026-10-19',
+        poczatekOkna: OKNO,
+        dlugosc: 6,
+        zostaloStron: (z: string) => ({ '2020-04-24..2020-04-30': 41, '2020-04-28..2020-05-03': 74 } as Record<string, number>)[z] ?? null,
+        wynikowZakresu: (z: string) => ({ '2020-04-24..2020-04-30': 595_653, '2020-04-28..2020-05-03': 920_326 } as Record<string, number>)[z] ?? null,
+        pomijaj: new Set(['2020-04-24..2020-04-30']),
+      });
+      expect(plan.some((x) => x.od <= '2020-04-30' && x.do >= '2020-04-24')).toBe(false);
+      expect(plan.at(-1)).toMatchObject({ od: '2020-04-18', do: '2020-04-23', powod: 'historia' });
+    });
+
     it('historia nie siega w zarezerwowane dni, ktore nie przylegaja do bazy', () => {
       // Rezerwacja 04-20..04-25, a 04-26..05-08 brak: historia konczy sie
       // na 05-08 i nie schodzi ponizej 04-26.
