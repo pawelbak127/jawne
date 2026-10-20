@@ -147,7 +147,11 @@ case "${1:-}" in
     # przerwy, czyli 72 min. Dwadziescia razy 72 min to niecala doba, wiec
     # przebieg na pewno skonczy sie w ciagu dnia i zwolni blokade zadaniu
     # dziennemu. Przy samych sukcesach (52 min) to ok. 17 godzin.
-    sudop 60 --historia --maks-zapytan=20 --okno=zawsze
+    # --maks-minut: jednostka ma TimeoutStartSec=11h. 20.10.2026 systemd zabil
+    # przebieg w trakcie czekania na kolejke (20–57 min na strone). 540 min
+    # to 11 h minus najdluzsze czekanie (57 min), kwadrans przerwy po bledzie
+    # i ok. 30 min na sumy po przebiegu.
+    sudop 60 --historia --maks-zapytan=20 --okno=zawsze --maks-minut=540
     ;;
   *)
     echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia|porzadki" >&2

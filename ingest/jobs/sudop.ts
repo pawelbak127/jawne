@@ -546,8 +546,11 @@ async function dzienne(db: DatabaseSync, znane: ReadonlySet<string>): Promise<vo
  * Nowego zapytania nie zaczyna poza oknem — "tylko noca" pilnuje kod,
  * nie tylko harmonogram systemd.
  */
-async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: number; okno: string; tylkoPlan: boolean }): Promise<void> {
+async function nocne(
+  db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: number; okno: string; tylkoPlan: boolean; maksMinut: number | null },
+): Promise<void> {
   const dzis = dzienWarszawa(new Date());
+  const startPrzebiegu = Date.now();
   /**
    * Ile dni bierzemy w jednym zakresie. ZMIERZONE 27.09.2026: zakres
    * 2025-10-01..2025-10-07 nie wrocil ANI RAZU w czterech probach po 57 minut,
@@ -634,7 +637,19 @@ async function nocne(db: DatabaseSync, znane: ReadonlySet<string>, o: { maks: nu
   }
   const budzet: Budzet = {
     maks: o.maks, uzyte: 0, okno: o.okno,
-    ustap: () => (czekaDzienne() ? 'czeka zadanie dzienne — ustepuje mu po biezacej stronie' : null),
+    ustap: () => {
+      if (czekaDzienne()) return 'czeka zadanie dzienne — ustepuje mu po biezacej stronie';
+      /*
+       * ZMIERZONE 20.10.2026: przy kolejce po 20–57 minut na strone 20 zapytan
+       * nie miesci sie w TimeoutStartSec=11h — systemd zabil przebieg o 10:07
+       * w trakcie czekania, a sumy po nim sie nie przeliczyly. Nowego
+       * zapytania nie zaczynamy, gdy mogloby skonczyc sie juz po limicie.
+       */
+      if (o.maksMinut !== null && Date.now() - startPrzebiegu > o.maksMinut * 60_000) {
+        return `minelo ${o.maksMinut} min przebiegu — nowe zapytanie mogloby nie zdazyc przed limitem jednostki`;
+      }
+      return null;
+    },
   };
   const MAKS_BLEDOW_POD_RZAD = 4;
   let bledowPodRzad = 0;
@@ -794,6 +809,11 @@ async function main(): Promise<void> {
     throw new Error(`--maks-zapytan musi byc liczba 1–150 (jest: ${arg('maks-zapytan')})`);
   }
   const okno = arg('okno') ?? '22:00-07:00';
+  const maksMinutArg = arg('maks-minut');
+  const maksMinut = maksMinutArg === undefined ? null : Number(maksMinutArg);
+  if (maksMinut !== null && !(Number.isInteger(maksMinut) && maksMinut > 0)) {
+    throw new Error(`--maks-minut musi byc dodatnia liczba calkowita (jest: ${maksMinutArg})`);
+  }
   wOknie(new Date(), okno); // sprawdza zapis okna, zanim cokolwiek sie zacznie
   mkdirSync(KATALOG, { recursive: true });
   // Z plikow i sam plan nie pytaja urzedu — blokada potrzebna tylko, gdy moze pojsc zapytanie.
@@ -830,7 +850,7 @@ async function main(): Promise<void> {
   if (dzienny || historia) {
     try {
       if (dzienny) await dzienne(db, znane);
-      else await nocne(db, znane, { maks, okno, tylkoPlan });
+      else await nocne(db, znane, { maks, okno, tylkoPlan, maksMinut });
       // Nawet gdy przebieg nic nie pobral, dzien moze sie w miedzyczasie
       // ustalic — wtedy sumy sie zmieniaja i agregat musi za tym nadazyc.
       if (!tylkoPlan) przeliczAgregaty();
