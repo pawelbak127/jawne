@@ -1044,6 +1044,27 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     i `odlozone` jako `pomijaj`. **Planujący i wybierający muszą widzieć
     ten sam stan** — inaczej każdy z nich z osobna jest poprawny, a razem nie.
 
+78. **„Zaraportowane w dzienniku” znaczyło „zgubione”.** Wzorzec 2 każe
+    nieznaną wartość RAPORTOWAĆ zamiast przerywać import — i przypadki SUDOP
+    bez gminy (kod samego województwa „1200000”, gmina „NZ”, albo
+    „0000000 BRAK DANYCH”) były raportowane linijką „pominięto N przypadków”,
+    a zapisywane nigdzie. ZMIERZONE 20.10.2026 przy zupełnie innym pytaniu
+    (czemu zakres zapisał 332 942 z 370 059): od 21.09 dziennik serwera miał
+    **1 025 238 pominiętych przy 15,7 mln pobranych (ok. 6,5%)**, prawie
+    wszystkie to zwolnienia ze składek ZUS z tarczy 2020, każdy z NIP-em
+    (3 maja 2020: 37 117 z 359 109, 118 mln zł); w zwykłym dniu 2019 r. —
+    4 na 126 tys. Nie było ich w sumie krajowej ani na stronach firm.
+    Teraz osobna tabela `pomoc_bez_gminy` (nie udawany TERYT w
+    `pomoc_publiczna` — wszystko, co liczy po gminach, czyta tamtą tabelę
+    i nie może takiego wiersza zobaczyć nawet przez pomyłkę) i liczba przy
+    dniu (`bez_gminy`, NULL = dzień sprzed zmiany, nie zero). Dni sprzed
+    23.10 uzupełnia `ingest/lib/bez-gminy.ts` z odpowiedzi na dysku, bez
+    zapytań do UOKiK — wyłącznie z zestawu stron, z którego dzień zapisano,
+    rozpoznanego po znaczniku `pobrano` co do milisekundy (inny zestaw tego
+    samego dnia to inna chwila rejestru). Zasada: **raport ma towarzyszyć
+    zapisaniu, nie go zastępować — wiersza, którego nie umiemy przypisać,
+    nie wyrzucamy, tylko odkładamy osobno i liczymy.**
+
 ---
 
 ## Bezpieczeństwo

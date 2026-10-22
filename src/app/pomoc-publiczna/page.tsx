@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { bazaDostepna, DNI_DO_USTALENIA, przegladPomocy, zrodloImportu } from '@/lib/dane';
+import { bazaDostepna, DNI_DO_USTALENIA, pomocBezGminy, przegladPomocy, zrodloImportu } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania } from '@/lib/prywatnosc';
@@ -32,6 +32,7 @@ const procDokladny = (x: number) => (x < 0.1 ? `${(100 * x).toFixed(1).replace('
 export default function StronaPomocy() {
   if (!bazaDostepna()) return <BrakDanych />;
   const p = przegladPomocy();
+  const bez = pomocBezGminy();
   const imp = zrodloImportu('sudop-przyrost');
 
   if (!p) {
@@ -115,6 +116,23 @@ export default function StronaPomocy() {
             zCzego={`z siedzibą w ${zOdmiana(p.gmin, 'gminie', 'gminach', 'gminach')}`}
             podstawa={podstawa}
           />
+          {/*
+            U6 (23.10.2026): przypadki, dla ktorych rejestr nie podaje gminy —
+            glownie zwolnienia ze skladek ZUS z tarczy 2020. Do 23.10 import je
+            pomijal. Stoja OSOBNO, bo kwoty i liczby powyzej oraz rozbicia nizej
+            sa po gminach; dni sprzed zmiany uzupelniamy z zapisanych odpowiedzi.
+          */}
+          {bez && (bez.przypadkow > 0 || bez.zmierzonych < bez.dni) ? (
+            <Wiersz
+              co="Poza tym: przypadki bez wskazanej gminy"
+              ile={liczba(bez.przypadkow)}
+              zCzego={`${zlote(bez.brutto)} brutto · rejestr podaje dla nich tylko województwo albo nic — nie są wliczone w kwoty powyżej ani w sumy gmin; są na stronach firm`
+                + (bez.zmierzonych < bez.dni
+                  ? ` · policzone dla ${liczba(bez.zmierzonych)} z ${zOdmiana(bez.dni, 'dnia', 'dni', 'dni')}; dla pozostałych tej liczby nie mamy (pobrane przed 23.10.2026)`
+                  : '')}
+              podstawa={podstawa}
+            />
+          ) : null}
         </WLiczbach>
 
         {/*

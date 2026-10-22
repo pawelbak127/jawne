@@ -70,6 +70,11 @@ const czytnik: Czytnik = { wszystkie, jeden };
  * Brak tabeli = brakujacy etap importu, nie awaria. Strona pokazuje wtedy
  * pusty stan, a KAZDY inny blad SQL-a przepuszczamy, bo oznacza usterke.
  */
+/** Czy tabela juz jest — dla zrodel dochodzacych migracja (tanie: sqlite_master). */
+function jestTabela(nazwa: string): boolean {
+  return Boolean(jeden<{ n: number }>("select 1 as n from sqlite_master where type = 'table' and name = ?", nazwa));
+}
+
 function bezTabeli<T>(fn: () => T, gdyBrak: T): T {
   try {
     return fn();
@@ -2308,6 +2313,11 @@ export type Firma = {
   z_dni_ustalonych: number;
   /** Przypadki z dni pobranych, ale jeszcze nieustalonych (niepelne). */
   z_dni_swiezych: number;
+  /**
+   * Z nich: przypadki, dla ktorych rejestr nie podaje gminy (U6, od 23.10.2026
+   * w bazie) — wliczone w sumy firmy, do sum zadnej gminy nie trafiaja.
+   */
+  bez_gminy: number;
   /** Ile dni kraju jest ustalonych i od kiedy do kiedy — mianownik dla powyzszych. */
   dni_kraju: number;
   dni_od: string | null;
@@ -2330,38 +2340,52 @@ export type PrzypadekFirmy = {
   srodek_numer: string | null;
   /** Podstawa prawna z SUDOP (od 04.10.2026 pokazywana na stronie firmy). */
   podstawa: string | null;
+  /** 1 = rejestr nie podaje gminy tego przypadku (U6). */
+  bez_gminy: number;
 };
 
 /** Beneficjent pomocy publicznej po NIP — podsumowanie. */
 export function firma(nip: string): Firma | null {
+  // Przypadki bez gminy (U6) leza w osobnej tabeli; do strony firmy naleza.
+  // Bez tej tabeli (baza sprzed migracji) — tylko gminne, jak dotad.
+  const bez = jestTabela('pomoc_bez_gminy');
+  const kolumny = 'nip_beneficjenta, nazwa_beneficjenta, wielkosc, wielkosc_kod, pkd, pkd_nazwa, dzien, id, wartosc_brutto, wartosc_brutto_eur';
+  const zrodlo = bez
+    ? `(select ${kolumny}, teryt, 0 as bez_gminy from pomoc_publiczna where nip_beneficjenta = ?
+        union all
+        select ${kolumny}, null as teryt, 1 as bez_gminy from pomoc_bez_gminy where nip_beneficjenta = ?)`
+    : `(select ${kolumny}, teryt, 0 as bez_gminy from pomoc_publiczna where nip_beneficjenta = ?)`;
+  const nipy = bez ? [nip, nip] : [nip];
   return bezTabeli(
     () => jeden<Firma>(
       // Nazwa, wielkosc i PKD MUSZA pochodzic z jednego wiersza: osobne max()
       // sklejalo kod PKD z nazwa z innego przypadku (74.10 opisane jako para wodna).
-      // Bierzemy najnowszy przypadek — dane sprzed lat bywaja nieaktualne.
-      `with ostatni as (
-         select nazwa_beneficjenta, wielkosc, wielkosc_kod, pkd, pkd_nazwa, teryt
-           from pomoc_publiczna where nip_beneficjenta = ? order by dzien desc, id desc limit 1
-       )
+      // Bierzemy najnowszy przypadek — dane sprzed lat bywaja nieaktualne —
+      // a gmine z najnowszego, ktory ja MA (przypadek bez gminy jej nie poda).
+      `with p as ${zrodlo},
+       ostatni as (
+         select nazwa_beneficjenta, wielkosc, wielkosc_kod, pkd, pkd_nazwa from p order by dzien desc, bez_gminy, id desc limit 1
+       ),
+       gm as (select teryt from p where teryt is not null order by dzien desc, id desc limit 1)
        select p.nip_beneficjenta as nip, o.nazwa_beneficjenta as nazwa, max(p.wartosc_brutto_eur) as max_eur,
               (select typ from regon where regon.nip = p.nip_beneficjenta) as typ_regon,
               o.wielkosc as wielkosc, o.wielkosc_kod as wielkosc_kod, o.pkd as pkd, o.pkd_nazwa as pkd_nazwa,
-              o.teryt as teryt, g.nazwa as gmina, g.rodzaj as gmina_rodzaj,
+              (select teryt from gm) as teryt, g.nazwa as gmina, g.rodzaj as gmina_rodzaj,
               count(*) as przypadkow, sum(p.wartosc_brutto) as brutto,
               min(p.dzien) as pierwszy, max(p.dzien) as ostatni,
               sum(case when p.dzien not in (select dzien from pomoc_publiczna_dni) then 1 else 0 end) as z_historii_gminy,
               sum(case when p.dzien in ${DNI_USTALONE} then 1 else 0 end) as z_dni_ustalonych,
               sum(case when p.dzien in (select dzien from pomoc_publiczna_dni)
                         and p.dzien not in ${DNI_USTALONE} then 1 else 0 end) as z_dni_swiezych,
+              sum(p.bez_gminy) as bez_gminy,
               (select count(*) from ${DNI_USTALONE}) as dni_kraju,
               (select min(dzien) from ${DNI_USTALONE}) as dni_od,
               (select max(dzien) from ${DNI_USTALONE}) as dni_do
-         from pomoc_publiczna p
+         from p
          join ostatni o
-         left join gminy g on g.teryt = o.teryt
-        where p.nip_beneficjenta = ?
+         left join gminy g on g.teryt = (select teryt from gm)
         group by p.nip_beneficjenta`,
-      nip, nip,
+      ...nipy,
     ),
     null,
   );
@@ -2410,15 +2434,20 @@ export function organyZeStrona(nipy: string[]): Set<string> {
 
 /** Pojedyncze przypadki pomocy dla firmy, od najnowszych. */
 export function przypadkiFirmy(nip: string, ile = 50): PrzypadekFirmy[] {
+  const kolumny = `dzien, wartosc_brutto as brutto, wartosc_nominalna as nominalna, przeznaczenie, forma,
+              udzielajacy, nip_udzielajacego, srodek_nazwa as srodek, srodek_numer, podstawa`;
+  const zrodlo = jestTabela('pomoc_bez_gminy')
+    ? `select ${kolumny}, 0 as bez_gminy from pomoc_publiczna where nip_beneficjenta = ?
+       union all
+       select ${kolumny}, 1 as bez_gminy from pomoc_bez_gminy where nip_beneficjenta = ?`
+    : `select ${kolumny}, 0 as bez_gminy from pomoc_publiczna where nip_beneficjenta = ?`;
+  const nipy = zrodlo.includes('union all') ? [nip, nip] : [nip];
   return bezTabeli(
     () => wszystkie<PrzypadekFirmy>(
-      `select dzien, wartosc_brutto as brutto, wartosc_nominalna as nominalna, przeznaczenie, forma,
-              udzielajacy, nip_udzielajacego,
-              (select typ from regon r where r.nip = pomoc_publiczna.nip_udzielajacego) as typ_udzielajacego,
-              srodek_nazwa as srodek, srodek_numer, podstawa
-         from pomoc_publiczna where nip_beneficjenta = ?
-        order by dzien desc, wartosc_brutto desc limit ?`,
-      nip, ile,
+      `select p.*, (select typ from regon r where r.nip = p.nip_udzielajacego) as typ_udzielajacego
+         from (${zrodlo}) p
+        order by p.dzien desc, p.brutto desc limit ?`,
+      ...nipy, ile,
     ),
     [],
   );
@@ -2470,6 +2499,36 @@ export function przegladPomocy(): PrzegladZeZnacznikiem | null {
     const p = policzPrzeglad(czytnik, TERYT_WARSZAWY);
     return p && { ...p, policzono: null, nieaktualny: false };
   }, null);
+}
+
+export type PomocBezGminy = {
+  /** Dni ustalone w przegladzie — mianownik. */
+  dni: number;
+  /** Z nich dni, dla ktorych liczba przypadkow bez gminy jest znana (reszta: NULL, uzupelniamy). */
+  zmierzonych: number;
+  przypadkow: number;
+  brutto: number;
+};
+
+/**
+ * Przypadki SUDOP, dla ktorych rejestr nie podaje gminy (U6) — w tych samych
+ * dniach ustalonych co przeglad krajowy. Z kolumn `pomoc_publiczna_dni`
+ * (kilka tysiecy wierszy), nie z tabeli przypadkow.
+ */
+export function pomocBezGminy(): PomocBezGminy | null {
+  try {
+    const r = jeden<{ dni: number; zmierzonych: number | null; przypadkow: number | null; brutto: number | null }>(
+      `select count(*) as dni, sum(bez_gminy is not null) as zmierzonych,
+              sum(bez_gminy) as przypadkow, sum(bez_gminy_brutto) as brutto
+         from pomoc_publiczna_dni where dzien in ${DNI_USTALONE}`,
+    );
+    if (!r || !r.zmierzonych) return null;
+    return { dni: r.dni, zmierzonych: r.zmierzonych, przypadkow: r.przypadkow ?? 0, brutto: r.brutto ?? 0 };
+  } catch (e) {
+    // Baza sprzed migracji z 23.10.2026 — kolumn jeszcze nie ma.
+    if (e instanceof Error && /no such (column|table)/i.test(e.message)) return null;
+    throw e;
+  }
 }
 
 // ---------------------------------------------------------------------------

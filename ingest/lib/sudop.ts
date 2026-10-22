@@ -94,6 +94,18 @@ export function terytGminyZKodu(kod: string | null | undefined): string | null {
 export const TERYT_WARSZAWY = '146501';
 
 /**
+ * Kod wojewodztwa z kodu SUDOP przypadku bez gminy: „1200000” (gmina „NZ”)
+ * to Malopolska, „0000000” (BRAK DANYCH) — nic. 16 wojewodztw ma parzyste
+ * kody 02–32; inny poczatek nie jest wojewodztwem i zostaje bez kodu.
+ */
+export function wojewodztwoZKodu(kod: string | null | undefined): string | null {
+  if (!kod || !/^\d{7}$/.test(kod)) return null;
+  const w = kod.slice(0, 2);
+  const n = Number(w);
+  return n >= 2 && n <= 32 && n % 2 === 0 ? w : null;
+}
+
+/**
  * Wszystkie 7-cyfrowe kody SUDOP, o ktore trzeba zapytac dla gminy o danym
  * TERYT. Dla miasta z dzielnicami albo delegaturami to kod miasta ORAZ kody
  * jego czesci — inaczej import Warszawy pominalby 18 dzielnic.

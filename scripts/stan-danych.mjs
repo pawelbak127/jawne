@@ -107,6 +107,14 @@ const niepelne = dni.filter((d) => poDniach(d.pobrano.slice(0, 10), d.dzien) < D
 // Do odswiezenia: niepelne, ktore JUZ zdazyly sie ustalic (minelo 14 dni).
 const doOdswiezenia = niepelne.filter((d) => poDniach(dzien(DZIS), d.dzien) >= DNI_DO_USTALENIA);
 nl(`   przypadków w bazie: ${liczba(wierszy)}`);
+// U6 (23.10.2026): przypadki, dla ktorych rejestr nie podaje gminy — osobna tabela.
+try {
+  const bez = jeden('select count(*) as c from pomoc_bez_gminy')?.c ?? 0;
+  const nieznane = jeden('select count(*) as c from pomoc_publiczna_dni where bez_gminy is null')?.c ?? 0;
+  nl(`   bez wskazanej gminy (osobno): ${liczba(bez)}${nieznane ? ` — dla ${liczba(nieznane)} dni jeszcze nieuzupełnione` : ''}`);
+} catch {
+  // baza sprzed migracji z 23.10.2026
+}
 nl(`   gminy pobrane w całości (10 lat): ${gminy.length}${gminy.length ? ` — ${gminy.map((g) => g.teryt).join(', ')}` : ''}`);
 
 if (!dni.length) {

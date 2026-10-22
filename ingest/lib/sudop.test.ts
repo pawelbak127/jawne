@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   adresPrzyrostu, adresWyszukania, kluczePorcji, kluczPrzypadku, kodySudopGminy, kwota, poczatekOknaDanych,
-  sprawdzPorcje, sprawdzPorcjePrzyrostu, terytGminyZKodu, terytZKoduSudop, type PrzypadekPomocy,
+  sprawdzPorcje, sprawdzPorcjePrzyrostu, terytGminyZKodu, terytZKoduSudop, wojewodztwoZKodu, type PrzypadekPomocy,
 } from './sudop';
 
 // Kody przepisane ze slownika /slownik/gmina-siedziby (17.09.2026).
@@ -209,6 +209,19 @@ describe('kluczePorcji', () => {
   it('rozne kwoty maja rozne skroty', () => {
     const [a, b] = kluczePorcji([w('1550'), w('200')]);
     expect(a!.split('#')[0]).not.toBe(b!.split('#')[0]);
+  });
+});
+
+describe('wojewodztwoZKodu — przypadki bez gminy (U6, 23.10.2026)', () => {
+  it('kod samego wojewodztwa („NZ”) daje wojewodztwo, BRAK DANYCH — nic', () => {
+    expect(wojewodztwoZKodu('1200000')).toBe('12');
+    expect(wojewodztwoZKodu('0200000')).toBe('02');
+    expect(wojewodztwoZKodu('3200000')).toBe('32');
+    expect(wojewodztwoZKodu('0000000')).toBeNull();
+    expect(wojewodztwoZKodu('3400000')).toBeNull();
+    expect(wojewodztwoZKodu('1300000')).toBeNull();
+    expect(wojewodztwoZKodu(null)).toBeNull();
+    expect(wojewodztwoZKodu('NZ')).toBeNull();
   });
 });
 

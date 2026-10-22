@@ -299,6 +299,48 @@ create index if not exists pomoc_teryt_dzien on pomoc_publiczna(teryt, dzien);
 create index if not exists pomoc_nip on pomoc_publiczna(nip_beneficjenta);
 create unique index if not exists pomoc_klucz on pomoc_publiczna(klucz);
 
+/*
+ * Przypadki, dla ktorych rejestr NIE PODAJE GMINY — kod samego wojewodztwa
+ * („1200000”, nazwa gminy „NZ”) albo „0000000 BRAK DANYCH”. Do 23.10.2026
+ * import je pomijal: nie bylo ich ani w sumie krajowej, ani na stronach firm.
+ * ZMIERZONE: od 21.09 dziennik serwera mial 1 025 238 pominietych przy
+ * 15,7 mln pobranych, prawie wszystkie to zwolnienia ze skladek ZUS z tarczy
+ * 2020 (dzien 03.05.2020: 37 117 z 359 109, kazdy z NIP-em); w zwyklym dniu
+ * 2019 r. — 4 na 126 tys.
+ * Osobna tabela, a nie wiersz z udawanym TERYT-em: wszystko, co liczy po
+ * gminach, czyta pomoc_publiczna i nie moze takiego wiersza zobaczyc ani
+ * przez pomylke. Kolumny jak w pomoc_publiczna, zamiast teryt — kod
+ * wojewodztwa (2 cyfry), gdy rejestr go podal.
+ */
+create table if not exists pomoc_bez_gminy (
+  id                  integer primary key,
+  wojewodztwo         text,
+  kod_gminy_sudop     text,
+  dzien               text not null,
+  nip_beneficjenta    text,
+  nazwa_beneficjenta  text,
+  wielkosc_kod        text,
+  wielkosc            text,
+  pkd                 text,
+  pkd_nazwa           text,
+  nip_udzielajacego   text,
+  udzielajacy         text,
+  srodek_numer        text,
+  srodek_nazwa        text,
+  podstawa            text,
+  przeznaczenie_kod   text,
+  przeznaczenie       text,
+  forma_kod           text,
+  forma               text,
+  wartosc_nominalna   real,
+  wartosc_brutto      real,
+  wartosc_brutto_eur  real,
+  klucz               text
+);
+create index if not exists pomoc_bez_gminy_dzien on pomoc_bez_gminy(dzien);
+create index if not exists pomoc_bez_gminy_nip on pomoc_bez_gminy(nip_beneficjenta);
+create unique index if not exists pomoc_bez_gminy_klucz on pomoc_bez_gminy(klucz);
+
 /* Kiedy i w jakim zakresie pobrano SUDOP dla gminy — do metryczki przy danych. */
 create table if not exists pomoc_publiczna_pobrania (
   teryt     text primary key,
@@ -955,6 +997,14 @@ export function zalozSchemat(db: DatabaseSync): string[] {
   if (kolumny.length && !kolumny.some((k) => k.name === 'pobrano_dzien')) {
     db.exec('alter table pomoc_publiczna_dni add column pobrano_dzien text');
     zrobione.push('dodano kolumne pomoc_publiczna_dni.pobrano_dzien');
+  }
+  // Przypadki bez gminy w danym dniu (tabela pomoc_bez_gminy). NULL = dzien
+  // zapisany przed 23.10.2026 i jeszcze nieuzupelniony — nie „zero" (zasada 4).
+  for (const [k, typ] of [['bez_gminy', 'integer'], ['bez_gminy_brutto', 'real']] as const) {
+    if (kolumny.length && !kolumny.some((x) => x.name === k)) {
+      db.exec(`alter table pomoc_publiczna_dni add column ${k} ${typ}`);
+      zrobione.push(`dodano kolumne pomoc_publiczna_dni.${k}`);
+    }
   }
   // Wiersze sprzed 22.09.2026 maja tylko znacznik UTC. Przeliczamy je raz na
   // polski kalendarz — inaczej dzien pobrany w nocy nigdy by sie nie ustalil.

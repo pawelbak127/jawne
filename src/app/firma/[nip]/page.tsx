@@ -51,12 +51,16 @@ function zakresDanych(f: Firma): string {
   const swieze = f.z_dni_swiezych
     ? ` W tym ${liczba(f.z_dni_swiezych)} z dni, dla których nie minął jeszcze termin zgłoszenia pomocy — te są niepełne.`
     : '';
+  // U6: przypadki bez gminy naleza do firmy, ale do zadnej gminy — mowimy to wprost.
+  const bezGminy = f.bez_gminy
+    ? ` ${liczba(f.bez_gminy)} z nich rejestr podaje bez gminy (tylko województwo albo nic) — wliczamy je tutaj, ale do sum żadnej gminy.`
+    : '';
 
-  if (f.z_historii_gminy && !zDni) return `Pełna historia gminy z rejestru: wszystkie przypadki, jakie podał SUDOP.`;
+  if (f.z_historii_gminy && !zDni) return `Pełna historia gminy z rejestru: wszystkie przypadki, jakie podał SUDOP.${bezGminy}`;
   if (f.z_historii_gminy) {
-    return `${liczba(f.z_historii_gminy)} z pełnej historii gminy i ${liczba(zDni)} z ${dni}.${swieze}`;
+    return `${liczba(f.z_historii_gminy)} z pełnej historii gminy i ${liczba(zDni)} z ${dni}.${swieze}${bezGminy}`;
   }
-  return `Tylko z ${dni} — nie z pełnych dziesięciu lat rejestru.${swieze}`;
+  return `Tylko z ${dni} — nie z pełnych dziesięciu lat rejestru.${swieze}${bezGminy}`;
 }
 
 function widok(nip: string) {
@@ -222,6 +226,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
                     <td>
                       {skroc(g.p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}
                       <Udzielajacy p={g.p} maStrone={maStrone(g.p)} />
+                      {g.p.bez_gminy ? <span className="block text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>rejestr nie podaje gminy</span> : null}
                     </td>
                     <td className="l" data-etykieta="przypadki">{liczba(g.ile)}</td>
                     <td className="l">{g.ile === 1 || g.min === g.max ? zlote(g.max) : `od ${zlote(g.min)} do ${zlote(g.max)}`}</td>
@@ -263,7 +268,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
 function pogrupuj(przypadki: PrzypadekFirmy[]) {
   const grupy = new Map<string, { klucz: string; p: PrzypadekFirmy; ile: number; min: number | null; max: number | null }>();
   for (const p of przypadki) {
-    const klucz = [p.dzien, p.nip_udzielajacego ?? p.udzielajacy, p.przeznaczenie, p.forma].join('|');
+    const klucz = [p.dzien, p.nip_udzielajacego ?? p.udzielajacy, p.przeznaczenie, p.forma, p.bez_gminy].join('|');
     const g = grupy.get(klucz);
     if (!g) {
       grupy.set(klucz, { klucz, p, ile: 1, min: p.brutto, max: p.brutto });

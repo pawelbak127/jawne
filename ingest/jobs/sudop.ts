@@ -25,7 +25,7 @@
  *    ponownego pytania urzedu (`--z-plikow`).
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { gunzipSync, gzipSync } from 'node:zlib';
+import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { policzAgregaty } from '../lib/agregaty.js';
@@ -34,14 +34,16 @@ import {
 } from '../lib/nieudane-zakresy.js';
 import { odnotujImport, otworz, wTransakcji, zalozSchemat } from '../lib/baza.js';
 import {
-  dniDoZachowania, dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienneCzeka, dzienWarszawa, NA_STRONE, planHistorii, stanDnia, wOknie, zakresyZPlikow,
+  dodajDni, DNI_DO_USTALENIA, DNI_W_ZAKRESIE, dzienneCzeka, dzienWarszawa, NA_STRONE, planHistorii, stanDnia, wOknie, zakresyZPlikow,
   type DzienPobrany,
 } from '../lib/harmonogram.js';
 import {
-  adresPrzyrostu, adresWyszukania, kluczePorcji, kodySudopGminy, kwota, poczatekOknaDanych,
-  sprawdzPorcje, sprawdzPorcjePrzyrostu, SUDOP_BAZA, terytGminyZKodu, TERYT_WARSZAWY,
-  type KodGminySudop, type OdpowiedzSudop, type PrzypadekPomocy,
+  adresPrzyrostu, adresWyszukania, kodySudopGminy, poczatekOknaDanych,
+  sprawdzPorcje, SUDOP_BAZA, TERYT_WARSZAWY,
+  type KodGminySudop, type OdpowiedzSudop,
 } from '../lib/sudop.js';
+import { wstawWiersze, zapisanaOdpowiedz, zapiszPrzyrost } from '../lib/sudop-zapis.js';
+import { uzupelnijBezGminy } from '../lib/bez-gminy.js';
 
 const log = (s: string) => process.stdout.write(`${s}\n`);
 const spij = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -162,16 +164,6 @@ function czekaDzienne(): boolean {
   });
 }
 
-/**
- * Zapisana wczesniej odpowiedz, zwykla albo spakowana. Spakowane pliki robi
- * `scripts/sudop-artefakty.mjs` — bez tego odczytu powtorny import pytalby
- * urzad o cos, co juz mamy na dysku.
- */
-function zapisanaOdpowiedz(plik: string): OdpowiedzSudop | null {
-  if (existsSync(plik)) return JSON.parse(readFileSync(plik, 'utf8')) as OdpowiedzSudop;
-  if (existsSync(`${plik}.gz`)) return JSON.parse(gunzipSync(readFileSync(`${plik}.gz`)).toString('utf8')) as OdpowiedzSudop;
-  return null;
-}
 
 /** Slowniki sa zasobem statycznym — nie tworza pozycji w kolejce. */
 async function slownik(nazwa: string): Promise<KodGminySudop[]> {
@@ -221,39 +213,6 @@ async function wyszukaj(url: string, opis: string, horyzontMs = HORYZONT_MS): Pr
   );
 }
 
-/**
- * Wstawia porcje. Klucz z numerem powtorzenia — zrodlo ma prawdziwe wiersze
- * identyczne na wszystkich polach (osobne transze tej samej pomocy).
- */
-function wstawWiersze(
-  db: DatabaseSync,
-  wyniki: readonly PrzypadekPomocy[],
-  terytZWiersza: (w: PrzypadekPomocy) => string,
-  // Wspolny dla CALEJ porcji, nawet gdy idzie stronami — patrz `kluczePorcji`.
-  licznik: Map<string, number> = new Map(),
-): void {
-  const wstaw = db.prepare(
-    `insert into pomoc_publiczna(teryt, kod_gminy_sudop, dzien, nip_beneficjenta, nazwa_beneficjenta,
-       wielkosc_kod, wielkosc, pkd, pkd_nazwa, nip_udzielajacego, udzielajacy, srodek_numer,
-       srodek_nazwa, podstawa, przeznaczenie_kod, przeznaczenie, forma_kod, forma,
-       wartosc_nominalna, wartosc_brutto, wartosc_brutto_eur, klucz)
-     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-  );
-  const klucze = kluczePorcji(wyniki, licznik);
-  wyniki.forEach((w, i) => {
-    const podstawa = [w['podstawa-prawna-2a-nazwa'], w['podstawa-prawna-2b'], w['podstawa-prawna-2c']]
-      .filter((x) => x && x.trim()).join(' — ') || null;
-    wstaw.run(
-      terytZWiersza(w), w['gmina-siedziby-kod'], w['dzien-udzielenia-pomocy']!, w['nip-beneficjenta'],
-      w['nazwa-beneficjenta'], w['wielkosc-beneficjenta-kod'], w['wielkosc-beneficjenta-nazwa'],
-      w['sektor-dzialalnosci-kod'], w['sektor-dzialalnosci-nazwa'], w['nip-udzielajacego-pomocy'],
-      w['nazwa-udzielajacego-pomocy'], w['srodek-pomocowy-numer'], w['srodek-pomocowy-nazwa'],
-      podstawa, w['przeznaczenie-pomocy-kod'], w['przeznaczenie-pomocy-nazwa'],
-      w['forma-pomocy-kod'], w['forma-pomocy-nazwa'], kwota(w['wartosc-nominalna-pln']),
-      kwota(w['wartosc-brutto-pln']), kwota(w['wartosc-brutto-eur']), klucze[i]!,
-    );
-  });
-}
 
 function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSudop['wyniki'], zapytan: number, sekund: number) {
   const problemy = sprawdzPorcje(wyniki, teryt);
@@ -278,106 +237,6 @@ function zapisz(db: DatabaseSync, teryt: string, od: string, wyniki: OdpowiedzSu
  * z zakresu i wstawiamy od nowa, wiec korekta po stronie urzedu zastepuje
  * nasza wersje zamiast dokladac sie do niej.
  */
-/**
- * Zapis porcji krajowej — STRONA PO STRONIE z dysku, nie z jednej tablicy.
- *
- * ZGLOSZENIE PAWLA 02.10.2026, z dziennika serwera: zakres
- * 2024-12-17..2024-12-19 ma **853 247 wynikow**. Wszystkie 86 stron lezalo
- * juz na dysku („strona N: z pliku"), a wznowienie wczytywalo je do jednej
- * tablicy — przy ~1,4 kB na przypadek to ok. 1,2 GB obiektow JS przy stercie
- * 920 MB. Proces padal na stronie 66 z „Reached heap limit", **co godzine**,
- * bo timer historii tyka co godzine. Nie zawiodla kolejka urzedu: przewracalismy
- * sie na wlasnych, juz pobranych danych.
- *
- * To ta sama lekcja co pulapka 57 (`.all()` wobec `.iterate()`), tylko po
- * stronie pobierania: **jesli liczba wierszy rosnie z zakresem, nie wolno
- * trzymac ich wszystkich naraz** — ani w SQL, ani w JSON-ie.
- *
- * Co zostaje nienaruszone:
- *  - **calosc albo nic**: wszystko idzie w JEDNEJ transakcji, wiec blad
- *    kontroli na stronie 60 wycofuje tez strony 1-59 (pulapka 56);
- *  - **kontrola dziedziny przed zapisem** (wzorzec 1) — dla kazdej strony;
- *  - **licznik powtorzen wspolny dla calej porcji** (pulapka 32): grupa
- *    identycznych wierszy potrafi lezec na granicy stron, a osobny licznik
- *    na strone nadalby obu numer #0 i jeden przepadlby na kluczu.
- */
-function zapiszPrzyrost(
-  db: DatabaseSync, od: string, doDnia: string, stron: number, znane: ReadonlySet<string>, pobrano: string | null,
-  odswiez = false,
-): { zapisanych: number; obce: number; gmin: number; zachowanych: number } {
-  const naDzien = new Map<string, number>();
-  const gminy = new Set<string>();
-  const licznik = new Map<string, number>();
-  let zapisanych = 0;
-  let obce = 0;
-
-  /*
-   * Dni JUZ USTALONE zostaja nietkniete (15.10.2026). ZMIERZONE na serwerze:
-   * zakres 13–19.06.2020 dobiegl konca godzine po krotszym 18–19.06 i przepisal
-   * te dwa dni z nowa data pobrania. Dla sum przyrostowych to „policzony dzien
-   * pobrano od nowa”, wiec stan liczyl sie od zera — 7 647 s ciezkiej pracy
-   * dysku przy tych samych danych. Dzien ustalony sie nie zmienia (pulapka 37),
-   * wiec nakladajacy sie zakres nie ma czego w nim poprawic. Jawne --odswiez
-   * dalej przepisuje wszystko.
-   */
-  const zachowane = dniDoZachowania(db.prepare(
-    'select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano from pomoc_publiczna_dni where dzien between ? and ?',
-  ).all(od, doDnia) as unknown as DzienPobrany[], odswiez);
-
-  wTransakcji(db, () => {
-    if (zachowane.size) {
-      const usun = db.prepare('delete from pomoc_publiczna where dzien = ?');
-      for (let d = od; d <= doDnia; d = dodajDni(d, 1)) if (!zachowane.has(d)) usun.run(d);
-    } else {
-      db.prepare('delete from pomoc_publiczna where dzien between ? and ?').run(od, doDnia);
-    }
-    for (let strona = 1; strona <= stron; strona++) {
-      const odp = zapisanaOdpowiedz(join(KATALOG, `przyrost-${od}-${doDnia}-s${strona}.json`));
-      if (!odp) throw new Error(`${od}..${doDnia}: brak strony ${strona} na dysku przy zapisie`);
-      const wyniki = odp.wyniki ?? [];
-      const problemy = sprawdzPorcjePrzyrostu(wyniki, od, doDnia);
-      if (problemy.length) {
-        throw new Error(`Porcja ${od}..${doDnia} strona ${strona} nie przeszla kontroli: ${problemy.slice(0, 10).join('; ')}`);
-      }
-      // Gminy spoza naszej listy (np. kod "NZ" albo jednostka, ktorej nie ma
-      // w danych PKW) sa RAPORTOWANE, nie przerywaja importu.
-      const wGminach = wyniki.filter((w) => {
-        const t = terytGminyZKodu(w['gmina-siedziby-kod']);
-        return t !== null && znane.has(t);
-      });
-      obce += wyniki.length - wGminach.length;
-      const nasze = zachowane.size ? wGminach.filter((w) => !zachowane.has(w['dzien-udzielenia-pomocy']!)) : wGminach;
-      zapisanych += nasze.length;
-      for (const w of nasze) {
-        const d = w['dzien-udzielenia-pomocy']!;
-        naDzien.set(d, (naDzien.get(d) ?? 0) + 1);
-        gminy.add(terytGminyZKodu(w['gmina-siedziby-kod'])!);
-      }
-      wstawWiersze(db, nasze, (w) => terytGminyZKodu(w['gmina-siedziby-kod'])!, licznik);
-    }
-    const wstawDzien = db.prepare(
-      `insert into pomoc_publiczna_dni(dzien, pobrano, pobrano_dzien, wierszy) values (?,?,?,?)
-       on conflict(dzien) do update set pobrano=excluded.pobrano, pobrano_dzien=excluded.pobrano_dzien,
-         wierszy=excluded.wierszy`,
-    );
-    // Dni bez ani jednego przypadku tez odnotowujemy — inaczej nie odroznimy
-    // "nie pytalismy" od "pytalismy i nic nie bylo".
-    for (let d = new Date(`${od}T00:00:00Z`); d <= new Date(`${doDnia}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
-      const dzien = d.toISOString().slice(0, 10);
-      if (zachowane.has(dzien)) continue;
-      // Stary plik bez naszej metryczki: zostawiamy date pobrania, ktora juz
-      // jest w bazie — "teraz" oznaczyloby swiezy dzien jako ustalony.
-      const istniejaca = pobrano ? null
-        : (db.prepare('select pobrano from pomoc_publiczna_dni where dzien = ?').get(dzien) as { pobrano: string } | undefined)?.pobrano;
-      const kiedy = pobrano ?? istniejaca ?? new Date().toISOString();
-      // Polska data tej samej chwili. Liczymy ja RAZ, przy zapisie: nocne
-      // zadanie o 01:17 ma w UTC jeszcze poprzedni dzien, a regula 14 dni
-      // jest kalendarzowa (ZMIERZONE 22.09.2026 — patrz ingest/lib/baza.ts).
-      wstawDzien.run(dzien, kiedy, dzienWarszawa(new Date(kiedy)), naDzien.get(dzien) ?? 0);
-    }
-  });
-  return { zapisanych, obce, gmin: gminy.size, zachowanych: zachowane.size };
-}
 
 /**
  * Samo pobranie zakresu dni — bez bazy. Uzywane przez `--tylko-pobierz`
@@ -472,10 +331,10 @@ async function przyrost(db: DatabaseSync, zakres: string, znane: ReadonlySet<str
   const [od, doDnia] = zakres.split('..');
   if (!od || !doDnia) throw new Error('Zakres podaj jako --przyrost=2026-09-15..2026-09-17');
   const { stron, wierszy, zapytan, sekund, pobrano } = await pobierzPrzyrost(od, doDnia, odswiez, budzet);
-  const { zapisanych, obce, gmin, zachowanych } = zapiszPrzyrost(db, od, doDnia, stron, znane, pobrano, odswiez);
+  const { zapisanych, obce, gmin, zachowanych } = zapiszPrzyrost(db, KATALOG, od, doDnia, stron, znane, pobrano, odswiez);
   spakujStrony(od, doDnia);
   log(`   zapisano ${zapisanych} z ${wierszy} przypadkow z ${gmin} gmin (${stron} stron, ${zapytan} zapytan, ${sekund} s)`);
-  if (obce) log(`   pominieto ${obce} przypadkow z jednostek spoza listy gmin PKW`);
+  if (obce) log(`   ${obce} przypadkow bez gminy z listy PKW — zapisane osobno (pomoc_bez_gminy)`);
   if (zachowanych) log(`   ${zachowanych} dni z tego zakresu juz bylo w bazie jako ustalone — zostaja bez zmian`);
   // ZGLOSZENIE Z PRZEGLADU 24.09.2026: /stan pokazywal „dni pobrane dla calego
   // kraju: 0", bo zapisywalismy tu wynik OSTATNIEJ porcji. Strona, ktorej
@@ -620,7 +479,9 @@ async function nocne(
      */
     pomijaj: new Set([...doPominiecia(wczytajNieudane(KATALOG), new Date()), ...zBledem.keys(), ...odlozone]),
     // pobrano_dzien to polska data; substr(pobrano) tylko dla wierszy sprzed migracji.
-    dni: db.prepare('select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano, wierszy from pomoc_publiczna_dni').all() as unknown as DzienPobrany[],
+    // Wierszy dnia z przypadkami bez gminy — liczba wynikow z pierwszej strony zawiera i te.
+    dni: db.prepare(`select dzien, coalesce(pobrano_dzien, substr(pobrano, 1, 10)) as pobrano,
+                            wierszy + coalesce(bez_gminy, 0) as wierszy from pomoc_publiczna_dni`).all() as unknown as DzienPobrany[],
     zakresyPlikow: zakresyZPlikow(readdirSync(KATALOG)),
     dzis,
     poczatekOkna: poczatekOknaDanych(new Date()),
@@ -850,7 +711,16 @@ async function main(): Promise<void> {
   if (dzienny || historia) {
     try {
       if (dzienny) await dzienne(db, znane);
-      else await nocne(db, znane, { maks, okno, tylkoPlan, maksMinut });
+      else {
+        await nocne(db, znane, { maks, okno, tylkoPlan, maksMinut });
+        if (!tylkoPlan) {
+          // Dni sprzed 23.10.2026 bez policzonych przypadkow bez gminy (U6) —
+          // po kawalku, z plikow na dysku, pod ta sama blokada. 8 minut miesci
+          // sie w zapasie --maks-minut wobec limitu jednostki.
+          const bez = uzupelnijBezGminy(db, KATALOG, znane, { maksMs: 8 * 60_000, log });
+          if (bez.uzupelnionych) log(`-> bez gminy: uzupelniono ${bez.uzupelnionych} dni (${bez.przypadkow} przypadkow), zostalo ${bez.bezZrodla}`);
+        }
+      }
       // Nawet gdy przebieg nic nie pobral, dzien moze sie w miedzyczasie
       // ustalic — wtedy sumy sie zmieniaja i agregat musi za tym nadazyc.
       if (!tylkoPlan) przeliczAgregaty();
