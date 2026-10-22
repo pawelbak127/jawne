@@ -6,7 +6,7 @@ import { PrzegladPoslow } from '@/components/PrzegladPoslow';
 import { Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 
 export const metadata: Metadata = {
-  title: 'Posłowie',
+  title: 'Posłowie Sejmu X kadencji — kluby, okręgi, głosowania',
   description: 'Wszyscy posłowie Sejmu X kadencji — z klubem, okręgiem i sposobem głosowania.',
 };
 

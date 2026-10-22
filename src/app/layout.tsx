@@ -67,6 +67,10 @@ export const metadata: Metadata = {
   // tresci (/mapa?miara=, /sala?posel=, /okreg/N?gmina=, /glosowania?strona=),
   // a bez wskazania Google sam wybieral, ktory adres liczyc.
   alternates: { canonical: './' },
+  // Podglad linku (Facebook, X, komunikatory): obrazek z src/app/opengraph-image.png
+  // (scripts/obrazek-udostepniania.html), duzy format zamiast miniatury.
+  openGraph: { siteName: 'zrejestru', locale: 'pl_PL', type: 'website' },
+  twitter: { card: 'summary_large_image' },
   // Serwis przed premiera. Rozstrzyga JEDNA zmienna, wspolna z /robots.txt —
   // patrz src/lib/premiera.ts. Dwa osobne miejsca moglyby sie rozjechac.
   ...(INDEKSOWANIE_WLACZONE ? {} : { robots: { index: false, follow: false } as const }),

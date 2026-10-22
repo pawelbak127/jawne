@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import {
   bazaDostepna, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
@@ -23,6 +24,13 @@ import { miejscePosla } from '@/lib/sala';
 
 const REJESTR_GLOSOWAN = 'https://api.sejm.gov.pl/sejm/term10/votings';
 
+/**
+ * Statystyka posla liczy sie RAZ na renderowanie, choc potrzebuja jej i opis
+ * strony (generateMetadata), i sama strona: to grupowanie ok. 4,6 tys. glosow
+ * na kazdej z 499 stron przy budowie (pulapka 54 — koszt razy liczba stron).
+ */
+const statystyki = cache(statystykiPosla);
+
 export function generateStaticParams() {
   if (!bazaDostepna()) return [];
   return slugiPoslow().map((slug) => ({ slug }));
@@ -32,9 +40,24 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const p = bazaDostepna() ? posel(slug) : null;
   if (!p) return { title: 'Nie ma takiego posła' };
+  /*
+   * Tytul i opis to to, co widac w wynikach Google. ZMIERZONE 23.10.2026
+   * w Search Console: zapytania o posla to samo imie i nazwisko („piotr
+   * kaleta”, „iwona hartwich”), a wynik mial tytul z samym nazwiskiem —
+   * nic nie mowilo, co jest na stronie. Liczba udzialu jak na stronie:
+   * z mianownikiem (zasada 3), bez slowa o powodach nieobecnosci (zasada 2).
+   */
+  const staty = statystyki(p.id);
+  const nieobecnosci = staty.rozklad.find((r) => r.glos === 'ABSENT')?.ile ?? 0;
+  const klub = p.klub_id ?? 'bez klubu';
+  const okreg = p.okreg_nr ? `okręg nr ${p.okreg_nr}${p.okreg_nazwa ? ` ${p.okreg_nazwa}` : ''}` : null;
+  const udzial = staty.mianownik > 0
+    ? ` Udział w ${liczba(staty.mianownik - nieobecnosci)} z ${zOdmiana(staty.mianownik, 'głosowania', 'głosowań', 'głosowań')} Sejmu X kadencji.`
+    : '';
   return {
-    title: p.imie_nazwisko,
-    description: `${p.imie_nazwisko} — ${p.klub_id ?? 'bez klubu'}, okręg ${p.okreg_nazwa ?? '—'}. Jak głosował(a) w Sejmie X kadencji.`,
+    title: `${p.imie_nazwisko} (${klub}) — głosowania w Sejmie`,
+    description: `${p.imie_nazwisko}, ${klub}${okreg ? `, ${okreg}` : ''}.${udzial}`
+      + ' Jak głosował(a) na tle klubu, obecność, interpelacje — z odnośnikiem do rejestru Sejmu.',
   };
 }
 
@@ -47,7 +70,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const p = posel(slug);
   if (!p) notFound();
 
-  const staty = statystykiPosla(p.id);
+  const staty = statystyki(p.id);
   const ostatnie = ostatnieGlosyPosla(p.id, 10);
   const k = kluby().find((x) => x.id === p.klub_id);
   const adresRejestru = `https://www.sejm.gov.pl/sejm10.nsf/posel.xsp?id=${String(p.id).padStart(3, '0')}`;

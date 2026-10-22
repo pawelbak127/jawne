@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { bazaDostepna, kodyKomisji, komisja, zrodloImportu, type CzlonekKomisji } from '@/lib/dane';
 import { adresKomisjiWRejestrze, etykietaTypu, rodzajFunkcji } from '@/lib/komisje';
-import { dataSlownie, liczba, zOdmiana } from '@/lib/format';
+import { dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Dzial, Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 
@@ -32,9 +32,11 @@ export async function generateMetadata({ params }: { params: Promise<{ kod: stri
   const k = bazaDostepna() ? komisja(kod) : null;
   if (!k) return { title: 'Nie ma takiej komisji', robots: { index: false, follow: false } };
   return {
-    title: `${k.nazwa} — skład i zakres`,
+    // „Sejmu” w tytule: ludzie szukaja „sejmowa komisja obrony narodowej”
+    // (Search Console, 23.10.2026), a nazwa z rejestru nie mowi, czyja to komisja.
+    title: `${k.nazwa} Sejmu — skład i zakres`,
     description: `${k.nazwa}: ${zOdmiana(k.czlonkow, 'członek', 'członków', 'członków')} według rejestru Sejmu`
-      + (k.zakres ? `. ${k.zakres.slice(0, 120)}` : '.'),
+      + (k.zakres ? `. ${skroc(k.zakres, 120)}` : '.'),
   };
 }
 
