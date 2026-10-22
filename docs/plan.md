@@ -132,6 +132,15 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
 5. `sudo jawne ustaw JAWNE_INDEKSOWANIE` → `tak`.
 6. Opcjonalnie: Google Search Console (weryfikacja rekordem TXT w DNS) —
    pokaże, z jakich wyszukiwań ludzie trafiają, czego nie widać w dzienniku.
+   **Pierwszy tydzień (14–20.10.2026, zrzuty od Pawła 22.10):** 731
+   wyświetleń, 4 kliknięcia, średnia pozycja 17,1 (druga strona wyników);
+   503 strony w indeksie, 901 poza nim: 640 „zeskanowana, jeszcze nie
+   zindeksowana” (zwykłe dla nowej domeny), 245 `noindex` (nasza decyzja:
+   strony osób fizycznych, wyszukiwarka, druki i głosowania z nazwiskiem
+   osoby prywatnej — żadnej z nich nie ma w mapie strony), 16 „duplikat bez
+   strony kanonicznej” → od 22.10 każda strona ma `rel=canonical` (ścieżka
+   bez parametrów; listy dzielone na strony — sama siebie). 7 wyświetleń
+   w odpowiedziach AI Google.
 
 Znana, świadoma luka: brak adresu korespondencyjnego (uśude art. 5 ust. 2),
 opisana w `/prywatnosc` i w `docs/test-rownowagi.md`. Zdjęcie `noindex` jej

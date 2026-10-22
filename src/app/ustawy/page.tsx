@@ -6,11 +6,6 @@ import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Okruszek, Podstawa, Stronicowanie, Wypis, Zakladki } from '@/components/Szablon';
 
-export const metadata: Metadata = {
-  title: 'Ustawy',
-  description: 'Co się stało z projektem ustawy: droga przez Sejm, etap po etapie, z odnośnikiem do imiennego głosowania.',
-};
-
 const NA_STRONIE = 40;
 const REJESTR = 'https://www.sejm.gov.pl/sejm10.nsf/proces.xsp';
 
@@ -20,6 +15,23 @@ const STANY: { klucz: string; etykieta: string }[] = [
   { klucz: 'w-toku', etykieta: 'w toku' },
   { klucz: 'zakonczone-inaczej', etykieta: 'odrzucone i wycofane' },
 ];
+
+/** Stronicowanie: kazda strona listy jest kanoniczna sama dla siebie (jak /glosowania). */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ strona?: string; stan?: string }>;
+}): Promise<Metadata> {
+  const { strona, stan: wybranyStan = '' } = await searchParams;
+  const filtr = STANY.some((s) => s.klucz === wybranyStan) ? wybranyStan : '';
+  const nr = Number.parseInt(strona ?? '1', 10) || 1;
+  const q = new URLSearchParams({ ...(filtr ? { stan: filtr } : {}), ...(nr > 1 ? { strona: String(nr) } : {}) }).toString();
+  return {
+    title: 'Ustawy',
+    description: 'Co się stało z projektem ustawy: droga przez Sejm, etap po etapie, z odnośnikiem do imiennego głosowania.',
+    alternates: { canonical: q ? `/ustawy?${q}` : '/ustawy' },
+  };
+}
 
 /** Stan słowami rejestru — ta sama reguła co na stronie druku. */
 function stan(p: ProcesSkrot): string {

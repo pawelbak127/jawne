@@ -5,10 +5,28 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { PozycjaGlosowania } from '@/components/PozycjaGlosowania';
 import { Okruszek, Podstawa, Stronicowanie, Wypis, Zakladki } from '@/components/Szablon';
 
-export const metadata: Metadata = {
-  title: 'Głosowania',
-  description: 'Wszystkie głosowania Sejmu X kadencji, od najnowszego.',
-};
+/**
+ * Lista dzielona na strony: kazda strona wskazuje SAMA SIEBIE jako kanoniczna
+ * (zalecenie Google dla stronicowania) — a nie pierwsza, jak layout dla
+ * pozostalych parametrow. Inaczej strony 2+ wypadlyby z indeksu.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ strona?: string; rodzaj?: string }>;
+}): Promise<Metadata> {
+  const { strona, rodzaj } = await searchParams;
+  const nr = Number.parseInt(strona ?? '1', 10) || 1;
+  const q = new URLSearchParams({
+    ...(rodzaj === 'calosc' ? { rodzaj: 'calosc' } : {}),
+    ...(nr > 1 ? { strona: String(nr) } : {}),
+  }).toString();
+  return {
+    title: 'Głosowania',
+    description: 'Wszystkie głosowania Sejmu X kadencji, od najnowszego.',
+    alternates: { canonical: q ? `/glosowania?${q}` : '/glosowania' },
+  };
+}
 
 const NA_STRONE = 40;
 

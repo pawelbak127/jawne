@@ -60,6 +60,13 @@ export const metadata: Metadata = {
   // w gminach, ktore byly polowa serwisu.
   description:
     'Kto jak głosował, co się stało z ustawą i ile publicznych pieniędzy trafiło do Twojej gminy. Każda liczba z odnośnikiem do rejestru, z którego pochodzi.',
+  // Adres kanoniczny KAZDEJ strony = jej sciezka bez parametrow. Next rozwiazuje
+  // „./" wzgledem sciezki biezacej strony (resolveRelativeUrl w resolve-url.js).
+  // ZMIERZONE 22.10.2026 w Search Console: „Duplikat, uzytkownik nie oznaczyl
+  // strony kanonicznej" — 16 adresow. Parametry zmieniaja tylko widok tej samej
+  // tresci (/mapa?miara=, /sala?posel=, /okreg/N?gmina=, /glosowania?strona=),
+  // a bez wskazania Google sam wybieral, ktory adres liczyc.
+  alternates: { canonical: './' },
   // Serwis przed premiera. Rozstrzyga JEDNA zmienna, wspolna z /robots.txt —
   // patrz src/lib/premiera.ts. Dwa osobne miejsca moglyby sie rozjechac.
   ...(INDEKSOWANIE_WLACZONE ? {} : { robots: { index: false, follow: false } as const }),
