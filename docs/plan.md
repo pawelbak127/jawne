@@ -746,7 +746,17 @@ na serwerze, obok danych.
   Komunikacji Społecznej przekazane przez Pawła 19.10.2026: „trwa gromadzenie
   informacji”, art. 13 ust. 2 ustawy o dostępie do informacji publicznej —
   to dokładnie ustawowe maksimum, dwa miesiące od wniosku; powód podany,
-  więc nie ma czego kwestionować). Do tego czasu: próba OCR na kilku oświadczeniach pobranych
+  więc nie ma czego kwestionować). **Odpowiedź 24.10.2026 (BKSP.115.15322.2026):**
+  Kancelaria nie ma plików z warstwą tekstową — oświadczenia są wypełniane
+  ręcznie na papierze i publikowane jako skany po ustawowych wyłączeniach
+  (dane adresowe); jawne jest to, co opublikowane. Zasady ponownego
+  wykorzystania: sejm.gov.pl/Sejm10.nsf/page.xsp/copyright. **Wyjątku od
+  ochrony serwisów przed ruchem automatycznym nie będzie** — więc żadnego
+  pobierania PDF-ów skryptem z orka.sejm.gov.pl. W załączniku **wykaz
+  oświadczeń w CSV** (u Pawła w poczcie). Następny krok: wykaz na stronie
+  posła jako lista odnośników do skanów w Sejmie (otwiera czytelnik, nie my);
+  OCR tylko na plikach pobranych ręcznie, poza serwerem. Dotąd było:
+  Do tego czasu: próba OCR na kilku oświadczeniach pobranych
   ręcznie w przeglądarce (Tesseract 5.5 z polskim słownikiem jest na
   komputerze Pawła; część oświadczeń jest pisana ręcznie — tam porównać
   z odczytem przez model).
