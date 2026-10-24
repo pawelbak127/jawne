@@ -192,6 +192,22 @@ export function posel(slug: string): Posel | null {
   return jeden<Posel>('select * from poslowie where slug = ?', slug);
 }
 
+export type OswiadczeniePosla = { rodzaj: string; data: string; plik: string; adres: string };
+
+/**
+ * Oswiadczenia majatkowe posla z wykazu Kancelarii Sejmu (24.10.2026):
+ * tylko metryczka i adres skanu. Skanow nie pobieramy i kwot z nich nie
+ * czytamy — ingest/zrodla/sejm-oswiadczenia/ZRODLO.md.
+ */
+export function oswiadczeniaPosla(poselId: number): OswiadczeniePosla[] {
+  return bezTabeli(
+    () => wszystkie<OswiadczeniePosla>(
+      'select rodzaj, data, plik, adres from oswiadczenia where posel_id = ? order by data, plik', poselId,
+    ),
+    [],
+  );
+}
+
 export function slugiPoslow(): string[] {
   return wszystkie<{ slug: string }>('select slug from poslowie').map((r) => r.slug);
 }

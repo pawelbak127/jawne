@@ -30,6 +30,7 @@ import { PROG_PODEJRZANEJ_KWOTY } from '../../src/lib/zamowienia.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
 import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
+import { wykazOswiadczen } from '../lib/oswiadczenia.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
@@ -279,6 +280,33 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
  * `zdjecia`. Przy okazji ustawiamy `ma_zdjecie`, bo to jest jedyny moment,
  * w ktorym naprawde wiemy, czy rejestr zdjecie ma.
  */
+/**
+ * Wykaz oswiadczen majatkowych z Kancelarii Sejmu — z pliku w repozytorium,
+ * bez sieci (ingest/zrodla/sejm-oswiadczenia/ZRODLO.md). Wiersz, ktory nie
+ * przejdzie kontroli, odpada ze zgloszeniem; wiecej niz 1% odrzuconych
+ * zatrzymuje etap — to juz nie pojedyncza literowka, tylko inny plik.
+ */
+async function importOswiadczen(db: DatabaseSync): Promise<void> {
+  const plik = 'ingest/zrodla/sejm-oswiadczenia/osw10.csv';
+  const poslowie = new Map((db.prepare('select id, imie_nazwisko from poslowie').all() as unknown as { id: number; imie_nazwisko: string }[])
+    .map((r) => [r.id, r.imie_nazwisko]));
+  if (!poslowie.size) throw new Error('Najpierw: npm run import poslowie');
+  const w = wykazOswiadczen(readFileSync(plik, 'utf8'), poslowie);
+  for (const p of w.problemy.slice(0, 20)) log(`   ODRZUCONY ${p}`);
+  if (w.nieznaneRodzaje.length) log(`   UWAGA: nowe rodzaje oswiadczen: ${w.nieznaneRodzaje.join(', ')} — zapisane, do opisania w interfejsie`);
+  if (w.problemy.length > w.oswiadczenia.length / 100) {
+    throw new Error(`oswiadczenia: odrzucono ${w.problemy.length} z ${w.problemy.length + w.oswiadczenia.length} wierszy — to inny plik niz ten, ktory znamy`);
+  }
+  const wstaw = db.prepare('insert into oswiadczenia(posel_id, rodzaj, data, plik, adres) values (?,?,?,?,?)');
+  wTransakcji(db, () => {
+    db.exec('delete from oswiadczenia');
+    for (const o of w.oswiadczenia) wstaw.run(o.poselId, o.rodzaj, o.data, o.plik, o.adres);
+  });
+  const poslow = new Set(w.oswiadczenia.map((o) => o.poselId)).size;
+  log(`-> oswiadczenia: ${w.oswiadczenia.length} z wykazu Kancelarii Sejmu, ${poslow} poslow${w.problemy.length ? `, odrzuconych ${w.problemy.length}` : ''}`);
+  odnotujImport(db, 'oswiadczenia', w.oswiadczenia.length, `wykaz Kancelarii Sejmu z 24.10.2026 (BKSP.115.15322.2026), ${poslow} poslow`);
+}
+
 async function importZdjec(db: DatabaseSync): Promise<void> {
   log('-> zdjecia poslow');
   const poslowie = db.prepare('select id from poslowie order by id').all() as unknown as { id: number }[];
@@ -2240,6 +2268,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   bzp: importBzp,
   regon: importRegon,
   zdjecia: importZdjec,
+  oswiadczenia: importOswiadczen,
   obecnosc: importObecnosci,
   okregi: importOkregow,
   wykaz: importWykazuGmin,

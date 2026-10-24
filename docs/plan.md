@@ -762,7 +762,12 @@ na serwerze, obok danych.
   pobierania PDF-ów skryptem z orka.sejm.gov.pl. W załączniku **wykaz
   oświadczeń w CSV** (u Pawła w poczcie). Następny krok: wykaz na stronie
   posła jako lista odnośników do skanów w Sejmie (otwiera czytelnik, nie my);
-  OCR tylko na plikach pobranych ręcznie, poza serwerem. Dotąd było:
+  OCR tylko na plikach pobranych ręcznie, poza serwerem. **Zrobione 24.10.2026:**
+  plik w `ingest/zrodla/sejm-oswiadczenia/` (bajt w bajt, SHA-256 w ZRODLO.md),
+  etap `oswiadczenia` (1 874 oświadczenia, 499 posłów, 0 odrzuconych — numer
+  legitymacji = id posła w API, nazwisko i pierwsze imię zgodne 499/499),
+  dział „Oświadczenia majątkowe” na stronie posła: rodzaj, data złożenia,
+  odnośnik do skanu w Sejmie; bez kwot. Dotąd było:
   Do tego czasu: próba OCR na kilku oświadczeniach pobranych
   ręcznie w przeglądarce (Tesseract 5.5 z polskim słownikiem jest na
   komputerze Pawła; część oświadczeń jest pisana ręcznie — tam porównać

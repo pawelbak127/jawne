@@ -93,6 +93,7 @@ npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (1
 npm run import bzp                         # BZP: ogloszenia o wyniku, najnowsze dni najpierw, --minut=45
 npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), 3 s na paczke 20 NIP-ow
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
+npm run import oswiadczenia                # wykaz oświadczeń majątkowych z Kancelarii Sejmu (plik w ingest/zrodla), bez sieci
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
 npm run import wykaz                       # uzgodnienie wykazu gmin z PRG i GUS, ~80 s

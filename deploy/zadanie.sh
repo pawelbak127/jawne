@@ -54,7 +54,8 @@ sudop() {
 
 case "${1:-}" in
   sejm)
-    etapy="kluby poslowie glosowania glosy procesy streszczenia interpelacje zapytania wystapienia komisje obecnosc"
+    # oswiadczenia: z pliku w repozytorium (wykaz Kancelarii Sejmu), bez sieci, ulamek sekundy.
+    etapy="kluby poslowie glosowania glosy procesy streszczenia interpelacje zapytania wystapienia komisje obecnosc oswiadczenia"
     # Zdjecia to 499 zapytan do API Sejmu — raz w tygodniu wystarczy.
     if [ "$(date +%u)" = 1 ]; then etapy="$etapy zdjecia"; fi
     # shellcheck disable=SC2086

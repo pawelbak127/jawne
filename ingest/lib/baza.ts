@@ -312,6 +312,20 @@ create unique index if not exists pomoc_klucz on pomoc_publiczna(klucz);
  * przez pomylke. Kolumny jak w pomoc_publiczna, zamiast teryt — kod
  * wojewodztwa (2 cyfry), gdy rejestr go podal.
  */
+/*
+ * Wykaz oswiadczen majatkowych poslow (Kancelaria Sejmu, 24.10.2026, plik
+ * ingest/zrodla/sejm-oswiadczenia). Tylko metryczka i adres skanu — skanow nie
+ * pobieramy i kwot z nich nie odczytujemy (ZRODLO.md obok pliku).
+ */
+create table if not exists oswiadczenia (
+  posel_id  integer not null,
+  rodzaj    text not null,
+  data      text not null,
+  plik      text not null,
+  adres     text not null,
+  primary key (posel_id, plik)
+) without rowid;
+
 create table if not exists pomoc_bez_gminy (
   id                  integer primary key,
   wojewodztwo         text,

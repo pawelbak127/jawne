@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, porownanieZKlubem,
+  bazaDostepna, kluby, komisjePosla, obecnoscPosla, ostatnieGlosyPosla, oswiadczeniaPosla, porownanieZKlubem,
   posel, pytaniaPosla, slugiPoslow, statystykiPosla, wystapieniaPosla, zrodloImportu,
   type InterpelacjePosla, type RodzajPytan,
 } from '@/lib/dane';
@@ -85,6 +85,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
   const wystapienia = wystapieniaPosla(p.id, 8);
   const komisje = komisjePosla(p.id);
   const komisjeZ = zrodloImportu('komisje');
+  const oswiadczenia = oswiadczeniaPosla(p.id);
+  const oswiadczeniaZ = zrodloImportu('oswiadczenia');
   const glosyZ = zrodloImportu('glosy');
   const obecnoscZ = zrodloImportu('obecnosc');
   const udzial = staty.mianownik > 0 ? ((staty.mianownik - nieobecnosci) / staty.mianownik) * 100 : null;
@@ -98,6 +100,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
     ...(wystapienia ? [{ id: 'wystapienia', nazwa: 'Wystąpienia' }] : []),
     ...(komisje !== null ? [{ id: 'komisje', nazwa: 'Komisje' }] : []),
     ...(jestPytan ? [{ id: 'pytania', nazwa: 'Interpelacje i zapytania' }] : []),
+    ...(oswiadczenia.length ? [{ id: 'oswiadczenia', nazwa: 'Oświadczenia majątkowe' }] : []),
   ];
   const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
@@ -474,6 +477,41 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                     {'Pokazujemy metryczkę, nie treść: pełny tekst i odpowiedź są w rejestrze Sejmu, pod odnośnikiem przy każdej pozycji.'}
                   </p>
                 ) : null}
+              </Dzial>
+            ) : null}
+
+            {/*
+              Oswiadczenia majatkowe (24.10.2026): wykaz z Kancelarii Sejmu,
+              odpowiedz na wniosek o informacje publiczna. Same odnosniki —
+              skany sa recznie wypelnionymi formularzami, Kancelaria nie robi
+              wyjatkow od ochrony przed ruchem automatycznym, wiec ich nie
+              pobieramy i nie odczytujemy z nich zadnych kwot.
+            */}
+            {oswiadczenia.length ? (
+              <Dzial
+                id="oswiadczenia"
+                nr={nr('oswiadczenia')}
+                tytul={`Oświadczenia majątkowe: ${liczba(oswiadczenia.length)} w X kadencji`}
+                obok={<Podstawa adres={adresRejestru} nazwa="strona posła w Sejmie" data={oswiadczeniaZ ? dataKrotko(oswiadczeniaZ.kiedy) : null} />}
+              >
+                <ul className="pozycje">
+                  {oswiadczenia.map((o) => (
+                    <li key={o.plik}>
+                      <div className="min-w-0">
+                        <p className="font-semibold leading-snug">{o.rodzaj}</p>
+                        <p className="meta">
+                          {`złożone ${dataSlownie(o.data)} · `}
+                          <a href={o.adres} target="_blank" rel="noreferrer" className="text-akcent underline underline-offset-4 hover:no-underline" data-umami-event="oswiadczenie">
+                            skan (PDF) w Sejmie
+                          </a>
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+                  {'Oświadczenia są wypełniane ręcznie i publikowane jako skany, po usunięciu danych adresowych. Kwot z nich nie przepisujemy — odczyt ręcznego pisma bywa błędny, a liczba przy nazwisku musi być pewna. Wykaz przekazała nam Kancelaria Sejmu w odpowiedzi na wniosek o informację publiczną.'}
+                </p>
               </Dzial>
             ) : null}
           </div>
