@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, glosyOkregu, gminyOkregu, kluby, okreg, podsumowaniaPorownan, poslowieOkregu, zrodloImportu,
+  bazaDostepna, dniUstalonePomocy, glosyOkregu, gminyOkregu, kluby, okreg, pieniadzeOkregow, podsumowaniaPorownan, poslowieOkregu, zrodloImportu,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, liczba, procent, skroc, wojewodztwoWMiejscowniku, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, procent, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { mediana } from '@/lib/porownanie-gmin';
+import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { stylGlosu } from '@/lib/barwy-glosu';
 import { opisGminy } from '@/lib/wyszukiwanie';
@@ -15,6 +17,7 @@ import { SpisDzialow } from '@/components/SpisDzialow';
 
 const ZRODLO_PKW = 'https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/dane_w_arkuszach';
 const REJESTR_POSLOW = 'https://api.sejm.gov.pl/sejm/term10/MP';
+const ZRODLO_FE_2127 = 'https://dane.gov.pl/pl/dataset/13939';
 
 function numerOkregu(nr: string): number | null {
   return /^\d{1,2}$/.test(nr) ? Number(nr) : null;
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ nr: strin
   if (!o) return { title: 'Nie ma takiego okręgu' };
   return {
     title: `Okręg nr ${o.nr}${o.nazwa ? ` — ${o.nazwa}` : ''}`,
-    description: `Posłowie z okręgu wyborczego nr ${o.nr} (${o.wojewodztwo}) i to, jak głosowali w Sejmie.`,
+    description: `Posłowie z okręgu wyborczego nr ${o.nr} (${o.wojewodztwo}), to, jak głosowali w Sejmie, i publiczne pieniądze w gminach okręgu.`,
   };
 }
 
@@ -58,6 +61,24 @@ export default async function StronaOkregu({
   const importPoslow = zrodloImportu('poslowie');
   const nazwa = `Okręg nr ${o.nr}${o.nazwa ? ` ${o.nazwa}` : ''}`;
 
+  /*
+   * Klamra „posłowie — pieniądze” (plan: „Okręg wyborczy jako klamra”).
+   * Kwoty dotyczą GMIN okręgu i nie mówią nic o pracy posłów — o funduszach
+   * decydują instytucje zarządzające programami, o pomocy publicznej podmioty,
+   * które jej udzielają. Mówimy to wprost przy liczbach. Zawsze na mieszkańca
+   * i z medianą 41 okręgów (zasada 9) — wszystkie mają te same szanse
+   * na niezerową wartość, bo każdy obejmuje kilkadziesiąt gmin.
+   */
+  const wszystkieOkregi = pieniadzeOkregow();
+  const pieniadze = wszystkieOkregi.find((x) => x.okreg === o.nr) ?? null;
+  const ueNaOsobe = pieniadze ? pieniadze.ue / pieniadze.osob : null;
+  const pomocNaOsobe = pieniadze?.pomoc != null ? pieniadze.pomoc / pieniadze.osob : null;
+  const medUe = mediana(wszystkieOkregi.map((x) => x.ue / x.osob));
+  const medPomoc = mediana(wszystkieOkregi.map((x) => (x.pomoc === null ? null : x.pomoc / x.osob)));
+  const dniPomocy = pomocNaOsobe !== null ? dniUstalonePomocy() : null;
+  const importFe = zrodloImportu('fundusze-2021-2027');
+  const importSudop = zrodloImportu('sudop-przyrost');
+
   const powiaty = new Map<string, typeof gminy>();
   for (const g of gminy) {
     const lista = powiaty.get(g.powiat) ?? [];
@@ -85,7 +106,7 @@ export default async function StronaOkregu({
           </Uwaga>
         ) : null}
 
-        <WLiczbach tytul="Okręg w liczbach">
+        <WLiczbach tytul="Okręg w liczbach" stopka={pomocNaOsobe !== null ? <WarunkiSudop pobrano={importSudop?.kiedy ?? null} /> : undefined}>
           <Wiersz
             duzy
             co="Posłowie sprawujący mandat"
@@ -116,7 +137,32 @@ export default async function StronaOkregu({
               podstawa={<Podstawa adres={ZRODLO_PKW} nazwa="PKW, wybory 2023" />}
             />
           ) : null}
+          {pieniadze && ueNaOsobe !== null ? (
+            <Wiersz
+              co="Fundusze Europejskie 2021–2027 na mieszkańca gmin okręgu"
+              ile={zlote(ueNaOsobe)}
+              zCzego={`${zlote(pieniadze.ue)} dofinansowania UE w projektach realizowanych w jednej gminie ÷ ${liczba(pieniadze.osob)} mieszkańców (GUS)`}
+              porownanie={medUe ? `Mediana ${liczba(medUe.z)} okręgów: ${zlote(medUe.wartosc)} na mieszkańca.` : null}
+              podstawa={<Podstawa adres={ZRODLO_FE_2127} nazwa="lista projektów FE" data={importFe ? dataKrotko(importFe.kiedy) : null} />}
+            />
+          ) : null}
+          {pieniadze && pomocNaOsobe !== null && dniPomocy?.od && dniPomocy.do ? (
+            <Wiersz
+              co="Pomoc publiczna dla firm na mieszkańca gmin okręgu"
+              ile={zlote(pomocNaOsobe)}
+              zCzego={`${zlote(pieniadze.pomoc)} brutto dla firm z siedzibą w gminach okręgu, w ${zOdmiana(dniPomocy.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')} od ${dataKrotko(dniPomocy.od)} do ${dataKrotko(dniPomocy.do)} — nie w całym roku`}
+              porownanie={medPomoc ? `Mediana ${liczba(medPomoc.z)} okręgów: ${zlote(medPomoc.wartosc)} na mieszkańca.` : null}
+              podstawa={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={importSudop ? dataKrotko(importSudop.kiedy) : null} />}
+            />
+          ) : null}
         </WLiczbach>
+        {pieniadze ? (
+          <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
+            Kwoty dotyczą gmin okręgu, nie posłów: o funduszach decydują instytucje zarządzające programami,
+            o pomocy publicznej — podmioty, które jej udzielają. Szczegóły i odnośniki do rejestrów są na
+            stronie każdej gminy (lista niżej).
+          </p>
+        ) : null}
 
         <p className="stan-danych">
           <span>{`stan danych: posłowie ${importPoslow ? dataKrotko(importPoslow.kiedy) : '—'} · okręgi i gminy: PKW 2023`}</span>

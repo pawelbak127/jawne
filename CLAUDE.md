@@ -494,9 +494,8 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     (`src/lib/przeglad.ts` + tabela `agregaty`), a strona czyta gotowy wynik:
     1 338 ms → 0 ms, te same liczby. Zasada ogólna: **jeśli zapytanie skaluje
     się z liczbą wierszy, a strona jest odbudowywana automatycznie, to jego
-    miejsce jest w imporcie.** Kolejny kandydat: `wartosciMapy('pomoc')`
-    (508 ms lokalnie, `/mapa` jest trasą dynamiczną, więc płaci za to każdy
-    czytelnik).
+    miejsce jest w imporcie.** `wartosciMapy('pomoc')` czyta już gotowy wynik
+    z `agregaty` (`/mapa` na serwerze 0,3–0,5 s, zmierzone 24.10.2026).
 
 53. **Rejestr podaje, czy nieobecność była USPRAWIEDLIWIONA** — i jest to
     jedyne takie miejsce w całym API: pole `absenceExcuse`

@@ -527,6 +527,58 @@ export function gminyOkregu(nr: number): Gmina[] {
   );
 }
 
+export type PieniadzeOkregu = {
+  okreg: number;
+  /** Mieszkancy gmin okregu (GUS) — mianownik kwot na mieszkanca. */
+  osob: number;
+  /** FE 2021–2027: projekty realizowane TYLKO w jednej gminie okregu (jak na mapie). */
+  ue: number;
+  /** Pomoc publiczna brutto w dniach ustalonych (stan sum przyrostowych); null = nie liczylismy. */
+  pomoc: number | null;
+};
+
+/**
+ * Pieniadze publiczne w gminach kazdego z 41 okregow — naraz, zeby strona okregu
+ * mogla podac mediane okregow jako punkt odniesienia (zasada 9).
+ *
+ * Warszawa jest w PKW 18 dzielnicami (okreg 19), a fundusze i pomoc maja ja
+ * pod jednym kodem 146501 — skladamy ja RAZ, inaczej okreg 19 dostalby
+ * Warszawe osiemnascie razy. Ludnosc liczymy z dzielnic.
+ * Kilka tysiecy wierszy w sumie; tabele pomocy czytamy ze stanu sum, nie
+ * z `pomoc_publiczna` (pulapka 69).
+ */
+export function pieniadzeOkregow(): PieniadzeOkregu[] {
+  return bezTabeli(() => {
+    const zPomoca = (jeden<{ c: number }>('select count(*) as c from pomoc_sumy_gmin')?.c ?? 0) > 0;
+    return wszystkie<PieniadzeOkregu>(
+      `with g as (
+         select okreg_nr as okreg, teryt,
+                case when rodzaj = 'dzielnica Warszawy' then '${TERYT_WARSZAWY}' else teryt end as klucz
+           from gminy where okreg_nr is not null
+       ),
+       klucze as (select distinct okreg, klucz from g),
+       lud as (select g.okreg, sum(l.osob) as osob from g join ludnosc l on l.teryt = g.teryt group by g.okreg),
+       ue as (select k.okreg, sum(coalesce(f.tylko_tu_ue, 0)) as ue
+                from klucze k left join fe_gminy f on f.teryt = k.klucz and f.okres = '2021-2027' group by k.okreg),
+       pom as (select k.okreg, coalesce(sum(s.brutto), 0) as pomoc
+                 from klucze k left join pomoc_sumy_gmin s on s.teryt = k.klucz group by k.okreg)
+       select lud.okreg as okreg, lud.osob as osob, ue.ue as ue, ${zPomoca ? 'pom.pomoc' : 'null'} as pomoc
+         from lud join ue on ue.okreg = lud.okreg join pom on pom.okreg = lud.okreg
+        where lud.osob > 0 order by lud.okreg`,
+    );
+  }, []);
+}
+
+/** Dni ustalone SUDOP — mianownik czasowy pomocy w okregu (te same co w przegladzie krajowym). */
+export function dniUstalonePomocy(): { dni: number; od: string | null; do: string | null } {
+  return bezTabeli(
+    () => jeden<{ dni: number; od: string | null; do: string | null }>(
+      `select count(*) as dni, min(dzien) as od, max(dzien) as "do" from pomoc_publiczna_dni where dzien in ${DNI_USTALONE}`,
+    ) ?? { dni: 0, od: null, do: null },
+    { dni: 0, od: null, do: null },
+  );
+}
+
 export function poslowieOkregu(nr: number): PoselSkrot[] {
   return wszystkie<PoselSkrot>(
     `select id, slug, imie_nazwisko, nazwisko, klub_id, okreg_nr, okreg_nazwa,

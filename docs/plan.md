@@ -716,7 +716,12 @@ na serwerze, obok danych.
   Indeksy (teryt, dzien) i (teryt_nabywcy, data). Powiadomienia e-mail — później.
   Pierwotny wpis: Skoro przyrost SUDOP jest dzienny, da się
   pokazać świeże wpisy, a docelowo powiadomienia e-mail dla gminy.
-- **Okręg wyborczy jako klamra.** Ile pieniędzy trafia do okręgu i jak głosowali
+- ~~**Okręg wyborczy jako klamra.**~~ **zrobione 24.10.2026**: na stronie
+  okręgu (obok posłów i ich głosowań) fundusze UE 2021–2027 i pomoc publiczna
+  na mieszkańca gmin okręgu, z medianą 41 okręgów (`pieniadzeOkregow`;
+  Warszawa złożona raz z 18 dzielnic) i zdaniem, że kwoty dotyczą gmin, nie
+  posłów. Sumy po okręgach zgodne z sumami po gminach co do grosza.
+  Pierwotny wpis: Ile pieniędzy trafia do okręgu i jak głosowali
   posłowie z tego okręgu. **Uwaga:** dane nie mówią, że to zasługa posła.
   Bez zdania sugerującego sprawczość.
 - ~~**Interpelacje poselskie**~~ **zrobione 30.09.2026**: etap `interpelacje`
