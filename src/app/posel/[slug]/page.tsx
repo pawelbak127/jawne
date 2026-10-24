@@ -10,7 +10,6 @@ import {
 import { adresWystapienia, minutyWystapienia, opisCzasu } from '@/lib/stenogramy';
 import { etykietaTypu } from '@/lib/komisje';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
-import { MIN_RESZTY } from '@/lib/niezaleznosc';
 import { stylGlosu } from '@/lib/barwy-glosu';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
 import { dataKrotko, dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
@@ -18,7 +17,8 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Dzial, ListaPaskow, Okruszek, Podstawa, Uwaga, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
-import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
+import { ListaOdstepstw, MetodaPorownania } from '@/components/PorownanieZKlubem';
+import { opisGlosowania } from '@/lib/opis-glosowania';
 import { MIEJSCA } from '@/lib/plan-sali';
 import { miejscePosla } from '@/lib/sala';
 
@@ -263,19 +263,7 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 id="inaczej"
                 nr={nr('inaczej')}
                 tytul={`Inaczej niż klub: ${liczba(porownanie.odmiennych)} z ${zOdmiana(porownanie.porownywalnych, 'głosowania', 'głosowań', 'głosowań')}`}
-                metoda={
-                  <ul>
-                    <li>Porównujemy tylko głosy „za”, „przeciw” i „wstrzymał się”. Nieobecność nie jest stanowiskiem.</li>
-                    <li>Punktem odniesienia jest najczęstszy głos pozostałych członków klubu — bez samego posła.</li>
-                    <li>{`Głosowanie liczymy, gdy reszta klubu oddała co najmniej ${MIN_RESZTY} głosy i miała jeden wyraźnie najczęstszy głos. Przy remisie nie ma z czym porównać.`}</li>
-                    <li>Posłowie niezrzeszeni nie tworzą klubu, więc ich głosów nie porównujemy.</li>
-                    <li>Każdy głos porównujemy z klubem z dnia głosowania.</li>
-                    <li>
-                      Głos inny niż klub może wynikać z przekonań, z umowy w klubie albo z pomyłki
-                      przy przycisku. Rejestr tego nie podaje — i my też tego nie rozstrzygamy.
-                    </li>
-                  </ul>
-                }
+                metoda={<MetodaPorownania />}
               >
                 {porownanie.kluby.length > 1 ? (
                   <p className="wstep">
@@ -292,9 +280,11 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                         <ListaOdstepstw odstepstwa={porownanie.odstepstwa.slice(NA_WIERZCHU, 8)} klub={p.klub_id} />
                       </Wiecej>
                     ) : null}
-                    {porownanie.odstepstwa.length > 8 ? (
-                      <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
-                        {`Na stronie 8 najnowszych z ${liczba(porownanie.odstepstwa.length)}.`}
+                    {porownanie.odstepstwa.length > NA_WIERZCHU ? (
+                      <p className="mt-3">
+                        <Link href={`/posel/${p.slug}/inaczej`} className="text-akcent underline underline-offset-4 hover:no-underline">
+                          {`Wszystkie ${zOdmiana(porownanie.odstepstwa.length, 'głosowanie', 'głosowania', 'głosowań')} inaczej niż klub →`}
+                        </Link>
                       </p>
                     ) : null}
                   </>
@@ -528,28 +518,6 @@ function tytulRozkladu(rozklad: { glos: string; ile: number }[], mianownik: numb
   const proc = (x: number) => procent((x / mianownik) * 100);
   const pierwszy = `Najczęściej „${etykietaGlosu(a.glos).krotka}”: ${proc(a.ile)} głosów`;
   return b ? `${pierwszy}, dalej „${etykietaGlosu(b.glos).krotka}” — ${proc(b.ile)}` : pierwszy;
-}
-
-function ListaOdstepstw({ odstepstwa, klub }: {
-  odstepstwa: NonNullable<ReturnType<typeof porownanieZKlubem>>['odstepstwa'];
-  klub: string | null;
-}) {
-  return (
-    <ul className="pozycje">
-      {odstepstwa.map((o) => (
-        <li key={`${o.posiedzenie}-${o.numer}`}>
-          <div className="min-w-0">
-            <p className="meta">{`${dataSlownie(o.data)}${o.klub_id !== klub ? ` · wtedy w klubie ${o.klub_id}` : ''}`}</p>
-            <Link href={`/glosowanie/${o.posiedzenie}-${o.numer}`} className="tytul-poz">{skroc(opisJednaLinia(o), 140)}</Link>
-            <p className="meta mt-1 flex flex-wrap gap-x-4">
-              <span><span className="miejsce-probka kropka" style={stylGlosu(o.glos)} />{`poseł: ${etykietaGlosu(o.glos).krotka}`}</span>
-              <span><span className="miejsce-probka kropka" style={stylGlosu(o.wiekszosc)} />{`reszta klubu: ${etykietaGlosu(o.wiekszosc).krotka}`}</span>
-            </p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
 }
 
 function ListaGlosow({ glosy }: { glosy: ReturnType<typeof ostatnieGlosyPosla> }) {
