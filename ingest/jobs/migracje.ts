@@ -9,9 +9,7 @@
  * uruchamia to zanim ruszy `next build`, a nie dopiero przy nocnym imporcie.
  */
 import { existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
 import { policzAgregaty } from '../lib/agregaty.js';
-import { uzupelnijBezGminy } from '../lib/bez-gminy.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
 import { sprawdzSumy } from '../lib/sumy-pomocy.js';
 import { odswiezTerytNabywcow, policzBzpGmin, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
@@ -62,21 +60,11 @@ function main(): void {
     if (gminBzp) log(`   BZP: sumy zamowien dla ${gminBzp} gmin`);
 
     /*
-     * Przypadki SUDOP bez gminy (U6) dla dni zapisanych przed 23.10.2026 —
-     * z odpowiedzi na dysku, bez zapytan do UOKiK. Zadania danych sa teraz
-     * zatrzymane, wiec nic nie pisze rownolegle. 15 minut (calosc to ok. 147 GB
-     * JSON-u po rozpakowaniu, 1–2 h na serwerze): reszte dokonczy
-     * zadanie historii (po kawalku przy kazdym przebiegu) albo nastepne wdrozenie.
+     * Uzupelnienia przypadkow SUDOP bez gminy (U6) TU NIE MA, choc bylo:
+     * 23.10.2026 jadro zabilo w nim wdrozenie (pulapka 79) i strona zostala
+     * na starej wersji. Do budowy nie jest potrzebne — robi je zadanie historii,
+     * po kawalku i juz po przeliczeniu sum (ingest/jobs/sudop.ts).
      */
-    const znane = new Set((db.prepare('select teryt from gminy').all() as unknown as { teryt: string }[]).map((r) => r.teryt));
-    znane.add(TERYT_WARSZAWY);
-    const tBez = Date.now();
-    const bez = uzupelnijBezGminy(db, join(process.cwd(), 'dane', 'zrodla', 'sudop'), znane, { maksMs: 15 * 60_000, log });
-    if (bez.dniDoUzupelnienia) {
-      log(`   SUDOP bez gminy: uzupelniono ${bez.uzupelnionych} z ${bez.dniDoUzupelnienia} dni (${bez.przypadkow} przypadkow); `
-        + `bez zrodla na dysku zostaje ${bez.bezZrodla} (${Math.round((Date.now() - tBez) / 1000)} s)`);
-    }
-
     const start = Date.now();
     // Podsumowania gmin zawsze od nowa: w ich podpisie nie ma kodu reguly
     // jawnosci, a wdrozenie to jedyna chwila, w ktorej ten kod sie zmienia.

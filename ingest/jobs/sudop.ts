@@ -711,19 +711,22 @@ async function main(): Promise<void> {
   if (dzienny || historia) {
     try {
       if (dzienny) await dzienne(db, znane);
-      else {
-        await nocne(db, znane, { maks, okno, tylkoPlan, maksMinut });
-        if (!tylkoPlan) {
-          // Dni sprzed 23.10.2026 bez policzonych przypadkow bez gminy (U6) —
-          // po kawalku, z plikow na dysku, pod ta sama blokada. 8 minut miesci
-          // sie w zapasie --maks-minut wobec limitu jednostki.
-          const bez = uzupelnijBezGminy(db, KATALOG, znane, { maksMs: 8 * 60_000, log });
-          if (bez.uzupelnionych) log(`-> bez gminy: uzupelniono ${bez.uzupelnionych} dni (${bez.przypadkow} przypadkow), zostalo ${bez.bezZrodla}`);
-        }
-      }
+      else await nocne(db, znane, { maks, okno, tylkoPlan, maksMinut });
       // Nawet gdy przebieg nic nie pobral, dzien moze sie w miedzyczasie
       // ustalic — wtedy sumy sie zmieniaja i agregat musi za tym nadazyc.
       if (!tylkoPlan) przeliczAgregaty();
+      if (historia && !tylkoPlan) {
+        /*
+         * Dni sprzed 23.10.2026 bez policzonych przypadkow bez gminy (U6) —
+         * po kawalku, z plikow na dysku, pod ta sama blokada. PO agregatach,
+         * nie przed: ZMIERZONE 24.10.2026 — jadro zabilo ten krok trzy razy
+         * (pulapka 79), a stojac przed agregatami zabieral je ze soba, wiec
+         * sumy przestaly sie przeliczac. 8 minut miesci sie w zapasie
+         * --maks-minut wobec limitu jednostki.
+         */
+        const bez = uzupelnijBezGminy(db, KATALOG, znane, { maksMs: 8 * 60_000, log });
+        if (bez.uzupelnionych) log(`-> bez gminy: uzupelniono ${bez.uzupelnionych} dni (${bez.przypadkow} przypadkow), zostalo ${bez.bezZrodla}`);
+      }
     } finally {
       db.close();
     }

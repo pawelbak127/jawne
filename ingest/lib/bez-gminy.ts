@@ -24,10 +24,24 @@ import { wTransakcji } from './baza.js';
 import { terytGminyZKodu, wojewodztwoZKodu, kwota, type OdpowiedzSudop, type PrzypadekPomocy } from './sudop.js';
 import { wstawWiersze } from './sudop-zapis.js';
 
-/** Znacznik `pobrano` z konca zapisanej odpowiedzi — bez parsowania 10 tys. wierszy. */
-export function pobranoZKonca(tekst: string): string | null {
-  const m = /"pobrano":"([^"]+)"\s*\}\s*$/.exec(tekst.slice(-300));
-  return m ? m[1]! : null;
+/**
+ * Znacznik `pobrano` z konca zapisanej odpowiedzi — bez parsowania 10 tys.
+ * wierszy i BEZ zamiany calej strony na napis.
+ *
+ * ZMIERZONE 23–24.10.2026 (pulapka 79): pierwsza wersja brala `tekst.slice(-300)`
+ * z napisu calej strony. W V8 wycinek dluzszy niz kilkanascie znakow to
+ * odnosnik do napisu zrodlowego, a nie kopia — znaczniki wszystkich stron
+ * zakresu trzymaly wiec w pamieci CALE strony (do 121 po ok. 28 MB w UTF-16).
+ * Jadro zabilo wdrozenie przy 1,5 GB RAM + 1,7 GB swapu i trzy przebiegi
+ * historii. Teraz koniec bierzemy z BUFORA (`toString` tworzy nowy, maly
+ * napis), a wynik kopiujemy jeszcze raz przez Buffer — na wszelki wypadek.
+ */
+export function pobranoZKonca(dane: string | Buffer): string | null {
+  const koniec = typeof dane === 'string'
+    ? Buffer.from(dane.slice(-300), 'utf8').toString('utf8')
+    : dane.subarray(Math.max(0, dane.length - 300)).toString('utf8');
+  const m = /"pobrano":"([^"]+)"\s*\}\s*$/.exec(koniec);
+  return m ? Buffer.from(m[1]!, 'utf8').toString('utf8') : null;
 }
 
 /** Strony zakresow przyrostu na dysku: zakres → nazwy plikow w kolejnosci stron. */
@@ -44,10 +58,11 @@ export function stronyZakresow(nazwy: readonly string[]): Map<string, string[]> 
   return new Map([...wynik].map(([z, l]) => [z, l.sort((a, b) => a.nr - b.nr).map((x) => x.plik)]));
 }
 
-const czytaj = (sciezka: string) => {
+const rozpakuj = (sciezka: string): Buffer => {
   const buf = readFileSync(sciezka);
-  return (sciezka.endsWith('.gz') ? gunzipSync(buf) : buf).toString('utf8');
+  return sciezka.endsWith('.gz') ? gunzipSync(buf) : buf;
 };
+const czytaj = (sciezka: string) => rozpakuj(sciezka).toString('utf8');
 
 export type WynikUzupelnienia = { dniDoUzupelnienia: number; uzupelnionych: number; przypadkow: number; bezZrodla: number };
 
@@ -82,7 +97,7 @@ export function uzupelnijBezGminy(
     // Najwczesniejszy znacznik stron = znacznik, ktory import nadal dniom zakresu.
     // Dwa przejscia, strona po stronie: zakres bywa 121 stron po ~15 MB, a trzymanie
     // ich naraz to 1,8 GB przy stercie 1,4 GB (pulapka 61).
-    const znaczniki = pliki.map((p) => pobranoZKonca(czytaj(join(katalog, p))));
+    const znaczniki = pliki.map((p) => pobranoZKonca(rozpakuj(join(katalog, p))));
     if (znaczniki.some((z) => z === null)) continue;
     const pobrano = (znaczniki as string[]).reduce((a, b) => (b < a ? b : a));
     const dni = new Set(kandydaci.filter((d) => doUzupelnienia.get(d) === pobrano));

@@ -1065,6 +1065,23 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     zapisaniu, nie go zastępować — wiersza, którego nie umiemy przypisać,
     nie wyrzucamy, tylko odkładamy osobno i liczymy.**
 
+79. **Wycinek napisu w V8 trzyma cały napis — a duże napisy z bufora leżą
+    POZA stertą.** ZMIERZONE 23–24.10.2026: uzupełnienie z pułapki 78 brało
+    znacznik `pobrano` przez `tekst.slice(-300)` z napisu całej strony
+    (ok. 14 MB). W V8 wycinek dłuższy niż kilkanaście znaków to odnośnik
+    do napisu źródłowego, nie kopia, więc tablica znaczników zakresu trzymała
+    w pamięci WSZYSTKIE jego strony. Jądro zabiło wdrożenie (1,5 GB RAM
+    + 1,7 GB swapu, w migracjach) i trzy przebiegi historii — a krok stał
+    przed agregatami, więc sumy przestały się przeliczać. `--max-old-space-size`
+    nie pomógł: duży napis z `Buffer.toString` siedzi w pamięci zewnętrznej
+    procesu, nie w stercie, dlatego zamiast „heap out of memory” był
+    `oom-kill`. Zmierzone na sztucznym zakresie 40 stron przy stercie 300 MB:
+    stary kod 1 014 MB RSS (bez żadnego błędu sterty), nowy 295 MB.
+    Teraz koniec strony bierzemy z BUFORA, a wynik kopiujemy; krok idzie PO
+    agregatach i nie ma go w migracjach przy wdrożeniu. Zasady: **mały
+    napis wycięty z dużego trzeba skopiować, zanim się go zachowa**, i
+    **krok opcjonalny nie może stać przed krokiem, od którego zależy strona.**
+
 ---
 
 ## Bezpieczeństwo
