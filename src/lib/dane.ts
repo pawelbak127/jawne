@@ -1331,6 +1331,64 @@ export function zamowieniaFirmy(nip: string, ile = 12): ZamowieniaFirmy {
   }, { ogloszen: 0, sumaSama: null, ogloszenSama: 0, ogloszenWSumie: 0, ogloszenZInnymi: 0, lista: [] });
 }
 
+export type ZamowienieBzpFirmy = {
+  id: string; czesc: number; data: string; tytul: string | null; zamawiajacy: string | null;
+  wartosc: number | null;
+  /** Ile czesci ma cale ogloszenie — „czesc 3 z 12” mowi, ze to nie caly przetarg. */
+  czesci: number | null;
+};
+
+export type ZamowieniaBzpFirmy = {
+  /** Od kiedy mamy BZP (pierwszy pobrany dzien) — mianownik czasowy. */
+  od: string | null;
+  /** Czesci zamowien zakonczonych umowa, w ktorych firma jest wykonawca. */
+  czesci: number;
+  ogloszen: number;
+  suma: number | null;
+  /** Ile czesci weszlo do sumy — z kwota i nie powyzej progu bledu. */
+  wSumie: number;
+  bezKwoty: number;
+  podejrzane: number;
+  najnowsze: ZamowienieBzpFirmy[];
+};
+
+/**
+ * Zamowienia krajowe (BZP) wygrane przez firme, po NIP-ie wykonawcy czesci.
+ *
+ * Inaczej niz w TED kwota NALEZY do firmy: ogloszenie o wyniku podaje wartosc
+ * umowy dla kazdej czesci osobno, a wykonawce przypisujemy do czesci (pulapka
+ * 76). Bez kwoty i powyzej `PROG_PODEJRZANEJ_KWOTY` — osobno, nie jako zero
+ * (zasada 4) i nie w sumie (pulapka 47).
+ */
+export function zamowieniaBzpFirmy(nip: string, ile = 12): ZamowieniaBzpFirmy {
+  const pusto: ZamowieniaBzpFirmy = { od: null, czesci: 0, ogloszen: 0, suma: null, wSumie: 0, bezKwoty: 0, podejrzane: 0, najnowsze: [] };
+  return bezTabeli(() => {
+    const kwota = 'coalesce(w.wartosc_umowy, w.cena_wybrana)';
+    const s = jeden<{ czesci: number; ogloszen: number; suma: number | null; wsumie: number; bez: number; podejrzane: number }>(
+      `select count(*) as czesci, count(distinct w.id) as ogloszen,
+              sum(case when ${kwota} <= ${PROG_PODEJRZANEJ_KWOTY} then ${kwota} end) as suma,
+              sum(case when ${kwota} is not null and ${kwota} <= ${PROG_PODEJRZANEJ_KWOTY} then 1 else 0 end) as wsumie,
+              sum(case when ${kwota} is null then 1 else 0 end) as bez,
+              sum(case when ${kwota} > ${PROG_PODEJRZANEJ_KWOTY} then 1 else 0 end) as podejrzane
+         from bzp_wyniki w where w.wykonawca_nip = ? and w.uniewaznione = 0`,
+      nip,
+    );
+    if (!s?.czesci) return pusto;
+    const najnowsze = wszystkie<ZamowienieBzpFirmy & { surowa: number | null }>(
+      `select w.id, w.czesc, o.data, o.tytul, o.zamawiajacy, o.czesci, ${kwota} as surowa
+         from bzp_wyniki w join bzp_ogloszenia o on o.id = w.id
+        where w.wykonawca_nip = ? and w.uniewaznione = 0
+        order by o.data desc, w.id, w.czesc limit ?`,
+      nip, ile,
+    ).map(({ surowa, ...r }) => ({ ...r, wartosc: surowa !== null && surowa <= PROG_PODEJRZANEJ_KWOTY ? surowa : null }));
+    const od = jeden<{ od: string | null }>('select min(dzien) as od from bzp_dni')?.od ?? null;
+    return {
+      od, czesci: s.czesci, ogloszen: s.ogloszen, suma: s.wsumie > 0 ? s.suma : null,
+      wSumie: s.wsumie, bezKwoty: s.bez, podejrzane: s.podejrzane, najnowsze,
+    };
+  }, pusto);
+}
+
 // ---------------------------------------------------------------------------
 // Proces legislacyjny: co sie stalo z projektem
 // ---------------------------------------------------------------------------

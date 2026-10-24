@@ -695,7 +695,9 @@ na serwerze, obok danych.
   reguły nazw (REGON → heurystyka, bez progu kwotowego — to nie beneficjent
   pomocy). Lokalnie 5 dni: 2 720 ogłoszeń, 4 886 części, 39 s; sumy 695 gmin
   sprawdzone drugą drogą (JS po wierszach): 0 różnic. Wynik zamówienia
-  ↔ wykonawca: patrz pułapka 76.
+  ↔ wykonawca: patrz pułapka 76. **24.10.2026:** wygrane części także na
+  stronie firmy (sekcja „Zamówienia krajowe”, suma wartości umów dla części tej
+  firmy, bez kwoty osobno).
   Pierwotny wpis: **DECYZJA PAWŁA z 15.10.2026: robimy, `jawne`
   pobiera BZP samo** z publicznego API e-Zamówień (bez klucza), bez wspólnej
   bazy z `asc` (osobne serwery i schematy; asc nie jest źródłem danych dla

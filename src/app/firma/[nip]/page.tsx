@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, organyZeStrona, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaFirmy, zrodloImportu, type Firma, type PrzypadekFirmy, type ZamowieniaFirmy } from '@/lib/dane';
+import { bazaDostepna, firma, organyZeStrona, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaBzpFirmy, zamowieniaFirmy, zrodloImportu, type Firma, type PrzypadekFirmy, type ZamowieniaBzpFirmy, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
 import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
@@ -100,8 +100,10 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
   const przypadki = przypadkiFirmy(nip, 50);
   const zeStrona = organyZeStrona(przypadki.map((p) => p.nip_udzielajacego ?? ''));
   const zamowienia = zamowieniaFirmy(nip);
+  const bzp = zamowieniaBzpFirmy(nip);
   const imp = zrodloImportu('sudop');
   const impTed = zrodloImportu('zamowienia');
+  const impBzp = zrodloImportu('bzp');
   const grupy = pogrupuj(przypadki);
   const maStrone = (p: PrzypadekFirmy) => Boolean(p.nip_udzielajacego && zeStrona.has(p.nip_udzielajacego));
   const roznaNominalna = przypadki.some((p) => p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1);
@@ -115,7 +117,8 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
 
   const dzialy = [
     { id: 'przypadki', nazwa: 'Przypadki pomocy' },
-    ...(zamowienia.ogloszen > 0 ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
+    ...(bzp.czesci > 0 ? [{ id: 'bzp', nazwa: 'Zamówienia krajowe' }] : []),
+    ...(zamowienia.ogloszen > 0 ? [{ id: 'zamowienia', nazwa: 'Zamówienia unijne' }] : []),
   ];
   const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
 
@@ -153,6 +156,20 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
             porownanie={f.przypadkow > 1 && f.brutto !== null ? `Średnio ${zlote(f.brutto / f.przypadkow)} na jeden przypadek pomocy.` : null}
             podstawa={<Podstawa adres={`${ZRODLO_SUDOP}/search/aidBeneficiary`} nazwa="SUDOP, UOKiK" data={imp ? dataKrotko(imp.kiedy) : null} />}
           />
+          {bzp.czesci > 0 ? (
+            <Wiersz
+              duzy
+              co="Umowy z zamówień krajowych (BZP)"
+              ile={bzp.suma === null ? null : zlote(bzp.suma)}
+              zCzego={
+                <>
+                  {`z ${zOdmiana(bzp.wSumie, 'części z kwotą', 'części z kwotą', 'części z kwotą')} (${zOdmiana(bzp.czesci, 'część zakończona', 'części zakończone', 'części zakończonych')} umową${bzp.bezKwoty ? `, ${liczba(bzp.bezKwoty)} bez kwoty` : ''})${bzp.od ? `, od ${dataKrotko(bzp.od)}` : ''} `}
+                  <a href="#bzp">zamówienia krajowe ↓</a>
+                </>
+              }
+              podstawa={<Podstawa adres="https://ezamowienia.gov.pl" nazwa="BZP" data={impBzp ? dataKrotko(impBzp.kiedy) : null} />}
+            />
+          ) : null}
           {zamowienia.ogloszen > 0 ? (
             <Wiersz
               duzy
@@ -179,7 +196,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
           {f.pkd ? <span>{`PKD ${f.pkd}`}</span> : null}
           <span>
             {'stan danych: '}
-            {[imp ? `SUDOP ${dataKrotko(imp.kiedy)}` : null, zamowienia.ogloszen > 0 && impTed ? `TED ${dataKrotko(impTed.kiedy)}` : null].filter(Boolean).join(' · ')}
+            {[imp ? `SUDOP ${dataKrotko(imp.kiedy)}` : null, bzp.czesci > 0 && impBzp ? `BZP ${dataKrotko(impBzp.kiedy)}` : null, zamowienia.ogloszen > 0 && impTed ? `TED ${dataKrotko(impTed.kiedy)}` : null].filter(Boolean).join(' · ')}
           </span>
         </p>
       </div>
@@ -251,6 +268,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
             ) : null}
           </Dzial>
 
+          {bzp.czesci > 0 ? <ZamowieniaBzp nr={nr('bzp')} z={bzp} /> : null}
           {zamowienia.ogloszen > 0 ? <Zamowienia nr={nr('zamowienia')} z={zamowienia} /> : null}
         </div>
       </div>
@@ -324,6 +342,63 @@ function PrzypadekOsobno({ p, maStrone }: { p: PrzypadekFirmy; maStrone: boolean
  * a przy pozostalych piszemy, ilu ich bylo, i kwoty nie przypisujemy.
  * Zmierzone: 90 na 250 polskich ogloszen ma wiecej niz jednego wykonawce.
  */
+/**
+ * Zamowienia krajowe (BZP): czesci zakonczone umowa, w ktorych firma jest
+ * wykonawca. Kwota to wartosc umowy DLA TEJ CZESCI — w odroznieniu od TED nalezy
+ * do tej firmy (pulapka 76). BZP to glownie zamowienia ponizej progow unijnych,
+ * wiec z sekcja TED nizej sie uzupelniaja, a nie dubluja.
+ */
+function ZamowieniaBzp({ nr, z }: { nr: number; z: ZamowieniaBzpFirmy }) {
+  return (
+    <Dzial
+      id="bzp"
+      nr={nr}
+      tytul={`Zamówienia krajowe: ${zOdmiana(z.czesci, 'umowa', 'umowy', 'umów')}${z.suma !== null ? `, ${zlote(z.suma)}` : ''}`}
+      obok={<Podstawa adres="https://ezamowienia.gov.pl" nazwa="BZP — Biuletyn Zamówień Publicznych" />}
+      metoda={
+        <ul>
+          <li>
+            Źródłem są ogłoszenia o wyniku postępowania w Biuletynie Zamówień Publicznych
+            {z.od ? ` — pobieramy je od ${dataKrotko(z.od)}` : ''}. Trafiają tam głównie zamówienia poniżej progów unijnych.
+          </li>
+          <li>
+            Kwota to wartość umowy dla tej części zamówienia (gdy jej brak — cena wybranej oferty).
+            Część bez kwoty liczymy osobno, nie jako zero.
+          </li>
+          {z.podejrzane ? <li>{`${zOdmiana(z.podejrzane, 'część ma', 'części mają', 'części ma')} kwotę powyżej progu błędu i nie wchodzi do sumy.`}</li> : null}
+        </ul>
+      }
+    >
+      <p className="wstep">
+        {`${zOdmiana(z.czesci, 'część zamówienia zakończona', 'części zamówień zakończone', 'części zamówień zakończonych')} umową z tą firmą, w ${zOdmiana(z.ogloszen, 'ogłoszeniu', 'ogłoszeniach', 'ogłoszeniach')} o wyniku.`}
+      </p>
+      <ul className="pozycje">
+        {z.najnowsze.map((o) => (
+          <li key={`${o.id}-${o.czesc}`}>
+            <div className="min-w-0">
+              <p className="font-semibold leading-snug">{skroc(o.tytul ?? 'bez tytułu w rejestrze', 130)}</p>
+              <p className="meta">
+                {`${skroc(o.zamawiajacy ?? '—', 80)} · ${dataKrotko(o.data)}${o.czesci && o.czesci > 1 ? ` · część ${o.czesc} z ${o.czesci}` : ''}`}
+              </p>
+            </div>
+            <p className="kwota">
+              {o.wartosc === null ? '—' : zlote(o.wartosc)}
+              <small>
+                <a href={`https://ezamowienia.gov.pl/mo-board/api/v1/Board/GetNoticePdfById?noticeId=${o.id}`} target="_blank" rel="noreferrer" className="text-akcent underline underline-offset-4 hover:no-underline">
+                  ogłoszenie (PDF)
+                </a>
+              </small>
+            </p>
+          </li>
+        ))}
+      </ul>
+      {z.najnowsze.length < z.czesci ? (
+        <p className="mt-3 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>{`Pokazujemy ${liczba(z.najnowsze.length)} najnowszych z ${liczba(z.czesci)}.`}</p>
+      ) : null}
+    </Dzial>
+  );
+}
+
 function Zamowienia({ nr, z }: { nr: number; z: ZamowieniaFirmy }) {
   return (
     <Dzial
