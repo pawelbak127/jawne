@@ -38,7 +38,7 @@ budowie na serwerze (pułapka 58).
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/sala`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/gmina/[teryt]/organy`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/sala`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
 | `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023, plan sali Sejmu) i opisy źródeł zbyt dużych na repozytorium (PRG), z sumą SHA-256 |
@@ -92,7 +92,9 @@ npm run import interpelacje                # metryczka interpelacji, ~55 s (20 1
 npm run import zamowienia                  # TED: polskie zamowienia, ~13 min (129 tys. ogloszen)
 npm run import bzp                         # BZP: ogloszenia o wyniku, najnowsze dni najpierw, --minut=45
 npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KLUCZ), 3 s na paczke 20 NIP-ow
-npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB
+npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB (+ miniatury)
+npm run import miniatury                   # miniatury portretów z bazy, bez sieci, tylko brakujące (~4 s)
+npm run import cordis                      # CORDIS: Horyzont Europa i H2020, polscy uczestnicy (2 ZIP-y, 93 MB, ~10 s)
 npm run import oswiadczenia                # wykaz oświadczeń majątkowych z Kancelarii Sejmu (plik w ingest/zrodla), bez sieci
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
@@ -1081,6 +1083,30 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     agregatach i nie ma go w migracjach przy wdrożeniu. Zasady: **mały
     napis wycięty z dużego trzeba skopiować, zanim się go zachowa**, i
     **krok opcjonalny nie może stać przed krokiem, od którego zależy strona.**
+
+80. **CORDIS: numer kolejny uczestnika NIE jest kluczem, a współrzędne
+    bywają błędne o cały powiat.** ZMIERZONE 25.10.2026 na archiwach
+    z 08.10.2026. (1) Para (projekt, `order`) powtarza się: podmioty powiązane
+    („thirdParty”) dzielą numer z głównym uczestnikiem — 25 powtórzeń wśród
+    polskich wierszy Horyzontu Europa, 54 w H2020. Klucz z organizacją
+    i rolą: 0 powtórzeń na 5 498 wierszach (pułapka 32 w nowym miejscu).
+    (2) Sumujemy `netEcContribution`, nie `ecContribution`: według słownika
+    pól CORDIS netto to kwota po odjęciu części przekazanej podmiotom
+    powiązanym, które mają WŁASNE wiersze — suma `ecContribution` po wszystkich
+    wierszach liczyłaby te pieniądze dwa razy. Kwoty są w EUR i są
+    PRZYZNANE w umowie, nie wypłacone. (3) `geolocation` z CORDIS na 3 600
+    udziałach z REGON-em: 284 rozjazdy gminy, z tego **283 w innym
+    powiecie** — Politechnika Łódzka „w Warszawie” (geokoder najwyraźniej
+    ustawia stolicę, gdy nie znajdzie adresu), Akademia Tarnowska
+    „w Tarnowskich Górach”, Jawor „w Jaworznie”. Kontur PRG jest dokładny,
+    to punkt jest zły. Teraz gmina = siedziba z REGON, a bez niego punkt
+    z CORDIS tylko wtedy, gdy nazwa gminy zgadza się z miastem z adresu
+    (na tej samej próbie 3 179 z 3 185 zgodnych; 6 to adres inny niż
+    siedziba). Reszta zostaje bez gminy i liczy się tylko do sumy krajowej.
+    Kontrola drugą drogą: suma 168 gmin + „bez gminy” = suma krajowa co do
+    eurocenta = niezależny pomiar w Pythonie (1 038,8 + 743,2 mln EUR).
+    Zasada: **współrzędne z cudzego geokodera to hipoteza, nie adres — sprawdź
+    je na próbie, dla której znasz prawdę, zanim na nich oprzesz liczbę.**
 
 ---
 

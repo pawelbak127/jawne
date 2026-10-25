@@ -25,13 +25,16 @@ import { zbudujIndeksFirm } from '../lib/indeks-firm.js';
 import { poPolsku, szukaj as szukajTed, zapytanieMiesiaca } from '../lib/ted.js';
 import { kluczBir, NIPOW_NA_RAZ, szukajPoNipach, wyloguj, zaloguj } from '../lib/bir.js';
 import { adresStronyBzp, dzienPublikacji, NA_STRONE_BZP, tekstZHtml, wynikiCzesci, type OgloszenieBzp } from '../lib/bzp.js';
-import { odswiezTerytNabywcow, policzBzpGmin, slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
+import { odswiezTerytCordis, odswiezTerytNabywcow, policzBzpGmin, slownikGmin, terytZNazw } from '../lib/teryt-regon.js';
 import { PROG_PODEJRZANEJ_KWOTY } from '../../src/lib/zamowienia.js';
 import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js';
 import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
 import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
 import { wykazOswiadczen } from '../lib/oswiadczenia.js';
 import { uzupelnijMiniatury } from '../lib/miniatury.js';
+import { projektyCordis, uczestnicyPolscy, type Program } from '../lib/cordis.js';
+import { KonturyGmin, type PlikKonturow } from '../lib/kontury.js';
+import { plikiZZip } from '../lib/zip.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
@@ -1292,6 +1295,9 @@ async function importRegon(db: DatabaseSync): Promise<void> {
     // reguly jawnosci nazw (bez REGON zostaje sama heurystyka nazwy).
     'select distinct zamawiajacy_nip as nip from bzp_ogloszenia where zamawiajacy_nip is not null',
     'select distinct wykonawca_nip as nip from bzp_wyniki where wykonawca_nip is not null',
+    // CORDIS (od 25.10.2026): siedziba z rejestru rozstrzyga o gminie uczestnika,
+    // a typ F/P — o tym, czy jego nazwe wolno pokazac (regula 7).
+    'select distinct nip from cordis_uczestnicy where nip is not null',
     ...(wszyscy ? ['select distinct nip from firmy_szukaj'] : []),
   ];
   const doPytania = new Set<string>();
@@ -1425,6 +1431,8 @@ async function importRegon(db: DatabaseSync): Promise<void> {
   if (pusteOdpowiedzi) log(`   UWAGA: ${pusteOdpowiedzi} pelnych paczek wrocilo pustych — sprawdz limit NIPOW_NA_RAZ`);
   const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
   log(`   gmina zamawiajacego w ogloszeniach TED i BZP: zmieniona w ${nabywcy}`);
+  const uczestnicy = wTransakcji(db, () => odswiezTerytCordis(db));
+  if (uczestnicy) log(`   gmina uczestnikow CORDIS z REGON: zmieniona w ${uczestnicy} wierszach`);
   if (nabywcy) wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
   odnotujImport(db, 'regon', znalezionych, `BIR 1.1, ${zTerytem} z TERYT-em`);
 }
@@ -2278,6 +2286,128 @@ async function etapAgregatow(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'agregaty', w.policzono ? 1 : 0, `${w.opis}; liczone ${sekund} s`);
 }
 
+/**
+ * CORDIS — Horyzont Europa (2021–2027) i Horyzont 2020: projekty z polskimi
+ * uczestnikami (ingest/lib/cordis.ts, docs/zrodla.md). Dwa archiwa Komisji
+ * (37,5 i 55 MB), odswiezane co miesiac — etap chodzi w zadaniu `fundusze`.
+ * Kazdy program zastepujemy w calosci jedna transakcja: CORDIS poprawia wstecz
+ * kwoty i role, wiec dopisywanie zostawiloby stare wartosci obok nowych.
+ *
+ * Gmina: `teryt_wsp` z konturu PRG po wspolrzednych (droga zapasowa); strona
+ * bierze najpierw siedzibe z REGON. Zgodnosc obu drog jest mierzona na koncu.
+ * `--z-plikow` czyta archiwa zapisane wczesniej w dane/zrodla/cordis/, bez sieci.
+ */
+const ZRODLA_CORDIS: { program: Program; adres: string }[] = [
+  { program: 'HORIZON', adres: 'https://cordis.europa.eu/data/cordis-HORIZONprojects-csv.zip' },
+  { program: 'H2020', adres: 'https://cordis.europa.eu/data/cordis-h2020projects-csv.zip' },
+];
+
+async function importCordis(db: DatabaseSync): Promise<void> {
+  log('-> CORDIS: Horyzont Europa i Horyzont 2020, polscy uczestnicy');
+  const katalog = join(process.cwd(), 'dane', 'zrodla', 'cordis');
+  mkdirSync(katalog, { recursive: true });
+  const zPlikow = process.argv.includes('--z-plikow');
+  const kontury = new KonturyGmin(JSON.parse(readFileSync(join(process.cwd(), 'public', 'mapa', 'gminy.json'), 'utf8')) as PlikKonturow);
+  // Warszawa jest w PRG jedna jednostka (146501), a w tabeli gmin — 18 dzielnicami.
+  const nazwyGmin = new Map((db.prepare('select teryt, nazwa from gminy').all() as unknown as { teryt: string; nazwa: string }[])
+    .map((g) => [g.teryt, g.nazwa]));
+  nazwyGmin.set(TERYT_WARSZAWY, 'Warszawa');
+
+  const wstawProjekt = db.prepare(
+    `insert into cordis_projekty(program, id, akronim, tytul, start, koniec, status, schemat, wklad_max)
+     values (?,?,?,?,?,?,?,?,?)`,
+  );
+  const wstawUczestnika = db.prepare(
+    `insert into cordis_uczestnicy(program, projekt_id, kolejnosc, organizacja_id, rola, nip, nazwa, typ, msp,
+       kod_pocztowy, miasto, nuts3, szerokosc, dlugosc, wklad_netto, wklad, koszt, zakonczony, teryt_wsp)
+     values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  );
+
+  let razem = 0;
+  const opisy: string[] = [];
+  for (const z of ZRODLA_CORDIS) {
+    const plik = join(katalog, `${z.program}.zip`);
+    let zip: Buffer;
+    if (zPlikow && existsSync(plik)) {
+      zip = readFileSync(plik);
+      log(`   ${z.program}: archiwum z dysku (${(zip.length / 1024 / 1024).toFixed(1)} MB)`);
+    } else {
+      zip = await pobierzBajty(z.adres);
+      writeFileSync(plik, zip);
+      log(`   ${z.program}: pobrano ${(zip.length / 1024 / 1024).toFixed(1)} MB`);
+    }
+    const pliki = await plikiZZip(zip, ['organization.csv', 'project.csv']);
+    const u = uczestnicyPolscy(pliki['organization.csv']!.toString('utf8'), z.program);
+    // Kontrola dziedziny przed zapisem (wzorzec 1): zmieniony naglowek albo
+    // nagle kilka polskich wierszy zamiast ok. 2,7 tys. to inny plik, nie dane.
+    if (u.brakKolumn.length) throw new Error(`CORDIS ${z.program}: brak kolumn ${u.brakKolumn.join(', ')} — format pliku sie zmienil`);
+    if (u.wiersze.length < 1000) throw new Error(`CORDIS ${z.program}: tylko ${u.wiersze.length} polskich wierszy z ${u.wszystkich} — to nie ten plik`);
+    for (const p of u.problemy.slice(0, 10)) log(`   ODRZUCONY ${p}`);
+    const potrzebne = new Set(u.wiersze.map((w) => w.projektId));
+    const projekty = projektyCordis(pliki['project.csv']!.toString('utf8'), z.program, potrzebne);
+    const sa = new Set(projekty.map((p) => p.id));
+    const bezProjektu = [...potrzebne].filter((id) => !sa.has(id));
+    if (bezProjektu.length) log(`   UWAGA: ${bezProjektu.length} projektow uczestnikow nie ma w project.csv (np. ${bezProjektu.slice(0, 3).join(', ')}) — uczestnicy zostaja`);
+
+    let zGmina = 0;
+    let odrzuconych = 0;
+    wTransakcji(db, () => {
+      db.prepare('delete from cordis_uczestnicy where program = ?').run(z.program);
+      db.prepare('delete from cordis_projekty where program = ?').run(z.program);
+      for (const p of projekty) {
+        wstawProjekt.run(p.program, p.id, p.akronim, p.tytul, p.start, p.koniec, p.status, p.schemat, p.wkladMax);
+      }
+      for (const w of u.wiersze) {
+        const zKonturu = w.dlugosc !== null && w.szerokosc !== null ? kontury.gmina(w.dlugosc, w.szerokosc) : null;
+        // WSPOLRZEDNE CORDIS BYWAJA BLEDNE (zmierzone 25.10.2026 na 3 600
+        // udzialach z REGON-em: 284 rozjazdy, 283 w innym powiecie —
+        // Politechnika Lodzka „w Warszawie”, Akademia Tarnowska „w Tarnowskich
+        // Gorach”, Jawor „w Jaworznie”). Gmine z konturu bierzemy wiec tylko
+        // wtedy, gdy nazywa sie tak jak miasto z adresu: na tej samej probie
+        // 3 179 z 3 185 zgodnych z REGON (6 rozjazdow to adres inny niz
+        // siedziba, nie blad geokodera). Reszta zostaje bez gminy.
+        const teryt = zKonturu && w.miasto && uprosc(nazwyGmin.get(zKonturu) ?? '') === uprosc(w.miasto) ? zKonturu : null;
+        if (zKonturu && !teryt) odrzuconych++;
+        if (teryt) zGmina++;
+        wstawUczestnika.run(w.program, w.projektId, w.kolejnosc, w.organizacjaId, w.rola, w.nip, w.nazwa, w.typ, w.msp,
+          w.kodPocztowy, w.miasto, w.nuts3, w.szerokosc, w.dlugosc, w.wkladNetto, w.wklad, w.koszt, w.zakonczony, teryt);
+      }
+    });
+    const suma = u.wiersze.reduce((a, w) => a + (w.wkladNetto ?? 0), 0);
+    const zNipem = u.wiersze.filter((w) => w.nip).length;
+    log(`   ${z.program}: ${u.wiersze.length} polskich udzialow z ${u.wszystkich}, ${projekty.length} projektow, `
+      + `${(suma / 1e6).toFixed(1)} mln EUR netto; z NIP-em ${zNipem}, z gmina ze wspolrzednych ${zGmina} `
+      + `(odrzuconych ${odrzuconych}: nazwa gminy inna niz miasto z adresu)`
+      + (u.problemy.length ? `, odrzuconych ${u.problemy.length}` : ''));
+    opisy.push(`${z.program} ${u.wiersze.length} udzialow`);
+    razem += u.wiersze.length;
+  }
+
+  // Druga droga dla gminy: tam, gdzie REGON zna NIP, porownujemy siedzibe
+  // z rejestru z gmina wyliczona ze wspolrzednych. Warszawa jest w PRG jedna
+  // jednostka, a REGON podaje dzielnice — sprowadzamy do miasta (pulapka 24).
+  try {
+    const zgodnosc = db.prepare(
+      `with r as (select nip, min(teryt) as teryt from regon where teryt is not null group by nip)
+       select count(*) as oba,
+              sum(case when (case when substr(r.teryt, 1, 4) = '1465' then '146501' else r.teryt end) = u.teryt_wsp then 1 else 0 end) as zgodne
+         from cordis_uczestnicy u join r on r.nip = u.nip
+        where u.teryt_wsp is not null`,
+    ).get() as { oba: number; zgodne: number | null };
+    if (zgodnosc.oba) {
+      log(`   gmina druga droga: REGON i wspolrzedne zgodne w ${zgodnosc.zgodne ?? 0} z ${zgodnosc.oba} udzialow `
+        + `(${(100 * (zgodnosc.zgodne ?? 0) / zgodnosc.oba).toFixed(1)}%) — strona bierze REGON, gdy jest`);
+    }
+  } catch (e) {
+    if (!/no such (table|column)/i.test((e as Error).message)) throw e;
+  }
+  const gmin = wTransakcji(db, () => odswiezTerytCordis(db));
+  const bez = db.prepare('select count(*) as n, sum(wklad_netto) as eur from cordis_uczestnicy where teryt is null').get() as { n: number; eur: number | null };
+  log(`   gmina koncowa (REGON, inaczej wspolrzedne): ustawiona w ${gmin} wierszach; bez gminy ${bez.n} udzialow, `
+    + `${((bez.eur ?? 0) / 1e6).toFixed(1)} mln EUR — licza sie do sumy krajowej, nie do zadnej gminy`);
+  odnotujImport(db, 'cordis', razem, `CORDIS: ${opisy.join(', ')}`);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -2303,6 +2433,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   dzialy: importDzialow,
   smup: importSmup,
   fundusze: importFunduszy,
+  cordis: importCordis,
   wyliczenia,
   agregaty: etapAgregatow,
 };

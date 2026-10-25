@@ -327,6 +327,58 @@ create table if not exists oswiadczenia (
   primary key (posel_id, plik)
 ) without rowid;
 
+/*
+  CORDIS (25.10.2026) — projekty Horyzont Europa i Horyzont 2020 z polskimi
+  uczestnikami, ingest/lib/cordis.ts. Kwoty w EUR, przyznane w umowie, nie
+  wyplacone. KLUCZ ZMIERZONY: para (projekt, kolejnosc) NIE jest jednoznaczna
+  — podmioty powiazane („thirdParty”) dziela numer z glownym uczestnikiem
+  (25 powtorzen wsrod polskich wierszy HE, 54 w H2020); z organizacja i rola
+  — 0 powtorzen na 5 498 wierszach.
+  teryt_wsp to gmina z konturu PRG po wspolrzednych z CORDIS, zapisana TYLKO
+  gdy nazywa sie tak jak miasto z adresu (wspolrzedne CORDIS bywaja bledne
+  o cale powiaty — import.ts, importCordis). Strona bierze najpierw siedzibe
+  z REGON (dane.ts, horyzontGminy); bez obu — uczestnik bez gminy.
+  (Bez odwroconych apostrofow w tym komentarzu: SCHEMAT to szablon JS.)
+*/
+create table if not exists cordis_projekty (
+  program       text not null,     -- HORIZON | H2020
+  id            text not null,
+  akronim       text,
+  tytul         text not null,
+  start         text,
+  koniec        text,
+  status        text,
+  schemat       text,
+  wklad_max     real,              -- EUR, cala umowa
+  primary key (program, id)
+) without rowid;
+
+create table if not exists cordis_uczestnicy (
+  program        text not null,
+  projekt_id     text not null,
+  kolejnosc      integer not null,
+  organizacja_id text not null,
+  rola           text not null,
+  nip            text,
+  nazwa          text not null,
+  typ            text,              -- HES, REC, PRC, PUB, OTH
+  msp            integer,
+  kod_pocztowy   text,
+  miasto         text,
+  nuts3          text,
+  szerokosc      real,
+  dlugosc        real,
+  wklad_netto    real,              -- EUR, netEcContribution — TO sumujemy
+  wklad          real,              -- EUR, ecContribution — tylko do kontroli
+  koszt          real,
+  zakonczony     integer,
+  teryt_wsp      text,
+  teryt          text,              -- gmina koncowa: REGON, inaczej teryt_wsp (odswiezTerytCordis)
+  primary key (program, projekt_id, kolejnosc, organizacja_id, rola)
+) without rowid;
+create index if not exists cordis_uczestnicy_nip on cordis_uczestnicy(nip);
+create index if not exists cordis_uczestnicy_teryt on cordis_uczestnicy(teryt);
+
 create table if not exists pomoc_bez_gminy (
   id                  integer primary key,
   wojewodztwo         text,

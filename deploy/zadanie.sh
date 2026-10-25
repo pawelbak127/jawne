@@ -77,7 +77,11 @@ case "${1:-}" in
     exec "$TSX" ingest/jobs/import.ts wykaz ludnosc budzety dzialy smup wyliczenia
     ;;
   fundusze)
-    exec "$TSX" ingest/jobs/import.ts fundusze wyliczenia
+    "$TSX" ingest/jobs/import.ts fundusze wyliczenia || exit $?
+    # CORDIS (Horyzont Europa i Horyzont 2020) — Komisja odswieza archiwa raz
+    # w miesiacu, ok. 8. dnia. Osobnym krokiem i PO listach FE: blad CORDIS
+    # nie zabiera list FE, ale konczy zadanie bledem, wiec widac go w `jawne stan`.
+    exec "$TSX" ingest/jobs/import.ts cordis
     ;;
   ted)
     # TED nie ma limitow poza rozsadkiem; miesiac juz kompletny jest pomijany.

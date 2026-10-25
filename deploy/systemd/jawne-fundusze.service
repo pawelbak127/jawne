@@ -1,5 +1,5 @@
 [Unit]
-Description=jawne — listy projektów Funduszy Europejskich (dane.gov.pl)
+Description=jawne — listy projektów Funduszy Europejskich (dane.gov.pl) i CORDIS (Horyzont)
 After=network-online.target
 Wants=network-online.target
 

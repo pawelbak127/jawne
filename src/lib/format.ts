@@ -117,17 +117,30 @@ export function skroc(tekst: string, ile: number): string {
  * tylko udaje precyzje, ktorej zrodlo i tak nie gwarantuje.
  */
 export function zlote(n: number | null | undefined): string {
+  return kwotaWJednostce(n, 'zł');
+}
+
+/**
+ * Kwota w euro, ta sama skala co `zlote`: „1,04 mld euro”, „350 tys. euro”.
+ * Euro piszemy OSOBNO od zlotych i nigdy ich nie sumujemy (pulapka 23) —
+ * dotyczy to CORDIS (Horyzont), ktory podaje wylacznie euro.
+ */
+export function euro(n: number | null | undefined): string {
+  return kwotaWJednostce(n, 'euro');
+}
+
+function kwotaWJednostce(n: number | null | undefined, waluta: string): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '—';
   const abs = Math.abs(n);
   const skala = (dzielnik: number, jedn: string) => {
     const v = n / dzielnik;
     const miejsc = Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2;
-    return `${v.toFixed(miejsc).replace('.', ',')} ${jedn} zł`;
+    return `${v.toFixed(miejsc).replace('.', ',')} ${jedn} ${waluta}`;
   };
   if (abs >= 1e9) return skala(1e9, 'mld');
   if (abs >= 1e6) return skala(1e6, 'mln');
   if (abs >= 1e4) return skala(1e3, 'tys.');
-  return `${liczba(Math.round(n))} zł`;
+  return `${liczba(Math.round(n))} ${waluta}`;
 }
 
 /**

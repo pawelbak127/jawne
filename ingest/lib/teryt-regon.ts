@@ -194,6 +194,31 @@ export function odswiezTerytNabywcow(db: DatabaseSync): number {
 }
 
 /**
+ * Gmina uczestnika CORDIS (Horyzont) — kopia przy wierszu, jak gmina
+ * zamawiajacego wyzej, zeby strona gminy nie laczyla 5,5 tys. uczestnikow
+ * z REGON-em przy kazdym wejsciu (pulapki 67 i 75).
+ *
+ * Kolejnosc zrodel: siedziba z REGON (Warszawa sprowadzona do miasta,
+ * pulapka 24), a gdy REGON nie zna NIP-u — `teryt_wsp`, czyli gmina ze
+ * wspolrzednych CORDIS przyjeta tylko przy zgodnej nazwie (importCordis).
+ * Bez obu — NULL: uczestnik bez ustalonej gminy, liczony w sumie krajowej.
+ * Zwraca liczbe zmienionych wierszy; bez tabeli (baza sprzed etapu) — 0.
+ */
+export function odswiezTerytCordis(db: DatabaseSync): number {
+  const zRegon = `(select case when substr(r.teryt, 1, 4) = '${TERYT_WARSZAWY.slice(0, 4)}' then '${TERYT_WARSZAWY}' else r.teryt end
+                     from regon r where r.nip = cordis_uczestnicy.nip and r.teryt is not null)`;
+  try {
+    return Number(db.prepare(
+      `update cordis_uczestnicy set teryt = coalesce(${zRegon}, teryt_wsp)
+        where teryt is not coalesce(${zRegon}, teryt_wsp)`,
+    ).run().changes);
+  } catch (e) {
+    if (/no such (table|column)/.test(String(e))) return 0;
+    throw e;
+  }
+}
+
+/**
  * Normalizuje `ted_ogloszenia.nabywca_id` tym samym filtrem, ktorym od poczatku
  * szedl NIP wykonawcy. BEZ SIECI — pole jest w bazie, tylko w surowej postaci.
  *

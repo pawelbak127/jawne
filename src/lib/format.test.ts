@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial, euro } from './format';
 
 describe('wojewodztwoWMiejscowniku', () => {
   it.each([
@@ -141,5 +141,15 @@ describe('udzial — dwie cyfry znaczace (przeglad tresci 24.10.2026)', () => {
     expect(udzial(0)).toBe('0%');
     expect(udzial(0.0002)).toBe('poniżej 0,1%');
     expect(udzial(null)).toBe('—');
+  });
+});
+
+describe('euro — ta sama skala co zlote, osobna waluta', () => {
+  it('formatuje jak zlote, z twarda spacja przed jednostka', () => {
+    expect(euro(1_038_800_000)).toBe('1,04 mld euro');
+    expect(euro(350_267.5)).toBe('350 tys. euro');
+    expect(euro(4486)).toBe(`${liczba(4486)} euro`);
+    expect(euro(null)).toBe('—');
+    expect(zlote(350_267.5)).toBe('350 tys. zł');
   });
 });

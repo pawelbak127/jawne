@@ -5,12 +5,13 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, nowosciGminy, organyPomocy, pomocGminy, porownanieBudzetu,
+  horyzontGminy, type HoryzontGminy, type OrganizacjaHoryzontu,
   zamowieniaBzpGminy, type ZamowieniaBzpGminy,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type NowosciGminy, type ZamowieniaGminy,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, euro, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
@@ -98,6 +99,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const fundusze = funduszeGminy(terytFunduszy);
   const funduszeLata = funduszeGminyLata(terytFunduszy);
   const projekty = najwiekszeProjektyGminy(terytFunduszy, 8);
+  // Horyzont (CORDIS) — Warszawa jako miasto, jak fundusze UE i pomoc.
+  const horyzont = horyzontGminy(terytFunduszy);
   // Warszawa jest w SUDOP jednym miastem (146501), a jej dzielnice maja wlasne
   // kody — wszystkie trzymamy pod miastem, tak jak fundusze UE i budzet.
   const pomoc = pomocGminy(terytFunduszy);
@@ -110,6 +113,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const poslowie = poslowieOkregu(g.okreg_nr).filter((p) => p.aktywny === 1);
   const listaKlubow = kluby();
   const importFe = zrodloImportu('fundusze-2021-2027');
+  const importCordis = zrodloImportu('cordis');
   const zamowienia = zamowieniaGminy(terytFunduszy);
   const zamowieniaBzp = zamowieniaBzpGminy(terytFunduszy);
   const importBzp = zrodloImportu('bzp');
@@ -344,13 +348,23 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
               ? `Fundusze UE: ${zlote(ueNaOsobe)} na mieszkańca w latach 2021–2027`
               : 'Fundusze Europejskie'}
             metoda={
-              <p>
-                Liczymy projekty realizowane wyłącznie w tej gminie; projektów prowadzonych w kilku
-                gminach nie dzielimy — podajemy ich liczbę. Dla lat 2014–2020 porównujemy z miastami
-                na prawach powiatu, bo lista z tych lat podaje miejsce realizacji tylko do powiatu.
-                Wykres lat pokazuje rok rozpoczęcia projektu, nie rok wydatku: rejestr podaje jedną
-                kwotę na cały projekt.
-              </p>
+              <>
+                <p>
+                  Liczymy projekty realizowane wyłącznie w tej gminie; projektów prowadzonych w kilku
+                  gminach nie dzielimy — podajemy ich liczbę. Dla lat 2014–2020 porównujemy z miastami
+                  na prawach powiatu, bo lista z tych lat podaje miejsce realizacji tylko do powiatu.
+                  Wykres lat pokazuje rok rozpoczęcia projektu, nie rok wydatku: rejestr podaje jedną
+                  kwotę na cały projekt.
+                </p>
+                {horyzont ? (
+                  <p className="mt-2">
+                    {'Horyzont Europa i Horyzont 2020: liczymy wkład UE netto, czyli to, co uczestnik dostaje po odjęciu części przekazanej podmiotom z nim powiązanym (te mają własne wiersze). Gmina to siedziba uczestnika według rejestru REGON, a gdy REGON nie zna jego NIP-u — adres z CORDIS, jeśli nazwa gminy zgadza się z miejscowością; współrzędne w CORDIS bywają błędne o cały powiat, więc innych nie przyjmujemy. '}
+                    {horyzont.kraj.bezGminy
+                      ? `W całej Polsce ${zOdmiana(horyzont.kraj.bezGminy, 'udział', 'udziały', 'udziałów')} (${euro(horyzont.kraj.bezGminyEur)}) nie ma ustalonej gminy — liczą się tylko do sumy krajowej.`
+                      : ''}
+                  </p>
+                ) : null}
+              </>
             }
           >
             {dzielnica ? (
@@ -386,6 +400,10 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
               <Podstawa adres={ZRODLO_FE_2127} nazwa="lista 2021–2027" />
               <Podstawa adres={ZRODLO_FE_1420} nazwa="lista 2014–2020" />
             </p>
+
+            {horyzont ? (
+              <HoryzontWGminie h={horyzont} ludnosc={ludnoscDoPrzeliczen} dzielnica={dzielnica} pobrano={importCordis?.kiedy ?? null} />
+            ) : null}
           </Dzial>
 
           <Dzial
@@ -486,6 +504,88 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
           </span>
         </p>
       </div>
+    </>
+  );
+}
+
+/**
+ * Horyzont Europa i Horyzont 2020 (CORDIS) — pieniadze UE, ktore Komisja
+ * przyznaje uczestnikom bezposrednio, wiec nie ma ich na listach MFiPR wyzej.
+ * EUR osobno od zlotych (pulapka 23), kwoty z umow, nie wyplaty.
+ * Punkt odniesienia (zasada 9): na mieszkanca i srednia w Polsce. Mediany
+ * gmin w wojewodztwie tu nie ma — prawie wszystkie gminy maja zero, wiec
+ * wyszlaby zerem i nie mowila nic (ten sam blad co pulapka 21).
+ */
+function HoryzontWGminie({ h, ludnosc, dzielnica, pobrano }: {
+  h: HoryzontGminy;
+  ludnosc: number | null;
+  dzielnica: boolean;
+  pobrano: string | null;
+}) {
+  const naOsobe = ludnosc && h.eur !== null ? h.eur / ludnosc : null;
+  const krajNaOsobe = h.kraj.osob && h.kraj.eur !== null ? h.kraj.eur / h.kraj.osob : null;
+  // Ta sama regula nazw co przy pomocy publicznej; progu kwotowego nie ma —
+  // dotyczy pomocy publicznej (art. 9 GBER), nie grantow badawczych.
+  const progAktywny = Boolean(KONTAKT);
+  const nazwa = (o: OrganizacjaHoryzontu) => nazwaDoPokazania(o.nazwa, { pomocEur: null, progAktywny, typRegon: o.typ_regon });
+  const podstawa = <Podstawa adres="https://cordis.europa.eu/projects" nazwa="CORDIS, Komisja Europejska" data={pobrano ? dataKrotko(pobrano) : null} />;
+  const programy = h.programy
+    .map((p) => `${p.program === 'HORIZON' ? 'Horyzont Europa' : 'Horyzont 2020'}: ${euro(p.eur)}`)
+    .join(' · ');
+  return (
+    <>
+      <h3>{`Programy badawcze UE: ${euro(h.eur)} dla ${zOdmiana(h.organizacji, 'organizacji', 'organizacji', 'organizacji')} stąd`}</h3>
+      <p className="wstep">
+        {'Horyzont Europa (2021–2027) i Horyzont 2020 — Komisja Europejska przyznaje te pieniądze uczestnikom projektów bezpośrednio, więc nie ma ich na listach projektów wyżej. Kwoty z umów o dofinansowanie, w euro; liczy się siedziba uczestnika.'}
+        {dzielnica ? ' Pokazujemy całą Warszawę.' : ''}
+      </p>
+      <Wiersze>
+        <Wiersz
+          co="Wkład UE przyznany uczestnikom z siedzibą tutaj"
+          ile={euro(h.eur)}
+          zCzego={`${zOdmiana(h.udzialow, 'udział', 'udziały', 'udziałów')} w ${zOdmiana(h.projektow, 'projekcie', 'projektach', 'projektach')} · ${programy}`
+            + (h.eur !== null && h.kraj.eur ? ` · ${udzial(h.eur / h.kraj.eur)} kwoty dla całej Polski (${euro(h.kraj.eur)})` : '')}
+          porownanie={naOsobe !== null && krajNaOsobe !== null
+            ? `Na mieszkańca ${euro(naOsobe)}; w całej Polsce średnio ${euro(krajNaOsobe)}.`
+            : null}
+          podstawa={podstawa}
+        />
+      </Wiersze>
+      <ul className="mt-3 divide-y divide-kreska">
+        {h.czolowka.slice(0, NA_WIERZCHU).map((o) => {
+          const n = nazwa(o);
+          return (
+            <li key={o.organizacja_id} className="flex items-baseline gap-4 py-2 text-sm">
+              <span className={`min-w-0 flex-1 ${n.pominieta ? 'text-atrament-3 italic' : ''}`}>{n.tekst}</span>
+              <span className="liczby shrink-0 text-xs text-atrament-3">{zOdmiana(o.projektow, 'projekt', 'projekty', 'projektów')}</span>
+              <span className="liczby w-28 shrink-0 text-right font-medium">{euro(o.eur)}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {h.organizacji > NA_WIERZCHU ? (
+        <p className="mt-1 text-xs text-atrament-3">{`Pokazujemy ${NA_WIERZCHU} z ${zOdmiana(h.organizacji, 'organizacji', 'organizacji', 'organizacji')} — według kwoty.`}</p>
+      ) : null}
+      {h.projekty.length ? (
+        <Wiecej napis={`Pokaż ${zOdmiana(h.projekty.length, 'największy projekt', 'największe projekty', 'największych projektów')}`}>
+          <ul className="pozycje">
+            {h.projekty.map((p) => (
+              <li key={`${p.program}-${p.id}`}>
+                <div className="min-w-0">
+                  <p className="meta">{[p.program === 'HORIZON' ? 'Horyzont Europa' : 'Horyzont 2020', p.start ? `od ${dataKrotko(p.start)}` : null, p.uczestnikow > 1 ? `${p.uczestnikow} uczestników stąd` : null].filter(Boolean).join(' · ')}</p>
+                  <a href={`https://cordis.europa.eu/project/id/${encodeURIComponent(p.id)}`} target="_blank" rel="noreferrer" className="tytul-poz">
+                    {`${p.akronim ? `${p.akronim} — ` : ''}${skroc(p.tytul, 140)}`}
+                  </a>
+                </div>
+                <p className="kwota">{euro(p.eur)}<small>dla uczestników stąd</small></p>
+              </li>
+            ))}
+          </ul>
+        </Wiecej>
+      ) : null}
+      <p className="podpis-wykresu">
+        {`Źródło: CORDIS, Komisja Europejska — dane o projektach Horyzont Europa i Horyzont 2020${pobrano ? `, pobrane ${dataSlownie(pobrano)}` : ''}; licencja CC BY 4.0.`}
+      </p>
     </>
   );
 }

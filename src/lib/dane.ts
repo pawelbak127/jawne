@@ -2886,6 +2886,107 @@ export function najwiekszeProjektyGminy(teryt: string, ile = 8): ProjektGminy[] 
   );
 }
 
+export type OrganizacjaHoryzontu = {
+  organizacja_id: string;
+  nip: string | null;
+  nazwa: string;
+  typ: string | null;
+  /** Typ z REGON — rozstrzyga o jawnosci nazwy, jak przy pomocy publicznej (regula 7). */
+  typ_regon: string | null;
+  eur: number | null;
+  udzialow: number;
+  projektow: number;
+};
+
+export type ProjektHoryzontu = {
+  program: string;
+  id: string;
+  akronim: string | null;
+  tytul: string;
+  start: string | null;
+  eur: number | null;
+  uczestnikow: number;
+};
+
+export type HoryzontGminy = {
+  eur: number | null;
+  udzialow: number;
+  projektow: number;
+  organizacji: number;
+  programy: { program: string; eur: number | null; udzialow: number }[];
+  czolowka: OrganizacjaHoryzontu[];
+  projekty: ProjektHoryzontu[];
+  kraj: { eur: number | null; udzialow: number; bezGminyEur: number | null; bezGminy: number; osob: number | null };
+};
+
+/**
+ * Horyzont Europa i Horyzont 2020 (CORDIS) dla uczestnikow z siedziba w gminie.
+ * Kwota: `wklad_netto` (netEcContribution) — tyle uczestnik dostaje po odjeciu
+ * czesci przekazanej podmiotom powiazanym, ktore maja wlasne wiersze; suma
+ * `ecContribution` liczylaby te pieniadze dwa razy (ingest/lib/cordis.ts).
+ * EUR, przyznane w umowie — nie wyplacone. Gmina: `teryt` przy wierszu
+ * (REGON, inaczej wspolrzedne przy zgodnej nazwie — odswiezTerytCordis).
+ * `null`, gdy etapu `cordis` nie bylo albo nikt stad nie uczestniczy.
+ */
+export function horyzontGminy(teryt: string): HoryzontGminy | null {
+  return bezTabeli(() => {
+    const razem = jeden<{ eur: number | null; udzialow: number; projektow: number; organizacji: number }>(
+      `select sum(wklad_netto) as eur, count(*) as udzialow,
+              count(distinct program || ':' || projekt_id) as projektow, count(distinct organizacja_id) as organizacji
+         from cordis_uczestnicy where teryt = ?`,
+      teryt,
+    );
+    if (!razem?.udzialow) return null;
+    const programy = wszystkie<{ program: string; eur: number | null; udzialow: number }>(
+      `select program, sum(wklad_netto) as eur, count(*) as udzialow
+         from cordis_uczestnicy where teryt = ? group by program order by program desc`,
+      teryt,
+    );
+    // Organizacja po identyfikatorze CORDIS (PIC), nie po NIP-ie: NIP-u brak
+    // w 3% wierszy, a jedna uczelnia to jeden PIC we wszystkich projektach.
+    // Dwa kroki: SQLite nie pozwala na max() wewnatrz podzapytania z REGON-em.
+    const czolowka = wszystkie<OrganizacjaHoryzontu>(
+      `with o as (
+         select organizacja_id, max(nip) as nip, max(nazwa) as nazwa, max(typ) as typ,
+                sum(wklad_netto) as eur, count(*) as udzialow,
+                count(distinct program || ':' || projekt_id) as projektow
+           from cordis_uczestnicy where teryt = ?
+          group by organizacja_id
+       )
+       select o.organizacja_id as organizacja_id, o.nip as nip, o.nazwa as nazwa, o.typ as typ,
+              (select r.typ from regon r where r.nip = o.nip) as typ_regon,
+              o.eur as eur, o.udzialow as udzialow, o.projektow as projektow
+         from o
+        order by o.eur desc nulls last, o.udzialow desc
+        limit 10`,
+      teryt,
+    );
+    const projekty = wszystkie<ProjektHoryzontu>(
+      `select u.program as program, u.projekt_id as id, p.akronim as akronim,
+              coalesce(p.tytul, u.projekt_id) as tytul, p.start as start,
+              sum(u.wklad_netto) as eur, count(*) as uczestnikow
+         from cordis_uczestnicy u
+         left join cordis_projekty p on p.program = u.program and p.id = u.projekt_id
+        where u.teryt = ?
+        group by u.program, u.projekt_id
+        order by eur desc nulls last
+        limit 8`,
+      teryt,
+    );
+    const kraj = jeden<{ eur: number | null; udzialow: number; bezGminyEur: number | null; bezGminy: number }>(
+      `select sum(wklad_netto) as eur, count(*) as udzialow,
+              sum(case when teryt is null then wklad_netto end) as bezGminyEur,
+              sum(case when teryt is null then 1 else 0 end) as bezGminy
+         from cordis_uczestnicy`,
+    )!;
+    // Ludnosc kraju z tej samej tabeli, z ktorej strona gminy bierze mianownik.
+    const osob = bezTabeli(() => jeden<{ osob: number | null }>(
+      'select sum(l.osob) as osob from gminy g join ludnosc l on l.teryt = g.teryt',
+    )?.osob ?? null, null);
+    return { ...razem, programy, czolowka, projekty, kraj: { ...kraj, osob } };
+  }, null);
+}
+
 export type ZrodloImportu = { kiedy: string; uwagi: string | null } | null;
 
 export function zrodloImportu(co: string): ZrodloImportu {

@@ -12,7 +12,7 @@ import { existsSync, statSync } from 'node:fs';
 import { policzAgregaty } from '../lib/agregaty.js';
 import { otworz, SCIEZKA_BAZY, zalozSchemat } from '../lib/baza.js';
 import { sprawdzSumy } from '../lib/sumy-pomocy.js';
-import { odswiezTerytNabywcow, policzBzpGmin, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
+import { odswiezTerytCordis, odswiezTerytNabywcow, policzBzpGmin, przeliczTerytRegon, znormalizujNabywcow } from '../lib/teryt-regon.js';
 import { PROG_PODEJRZANEJ_KWOTY } from '../../src/lib/zamowienia.js';
 import { nipZTekstu } from '../../src/lib/nip.js';
 import { wTransakcji } from '../lib/baza.js';
@@ -56,6 +56,8 @@ function main(): void {
     }
     const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
     if (nabywcy) log(`   TED/BZP: gmina zamawiajacego przepisana z REGON w ${nabywcy} ogloszeniach`);
+    const uczestnicy = wTransakcji(db, () => odswiezTerytCordis(db));
+    if (uczestnicy) log(`   CORDIS: gmina uczestnika przepisana z REGON w ${uczestnicy} wierszach`);
     const gminBzp = wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
     if (gminBzp) log(`   BZP: sumy zamowien dla ${gminBzp} gmin`);
 

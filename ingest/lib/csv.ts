@@ -7,8 +7,17 @@
  * wie, ze "20101" to kod TERYT z obcietym zerem, a nie liczba.
  */
 export function parsujCsv(tekst: string, separator = ';'): string[][] {
+  return [...wierszeCsvPoKolei(tekst, separator)];
+}
+
+/**
+ * To samo, wiersz po wierszu. Dla duzych plikow, z ktorych bierzemy ulamek:
+ * CORDIS ma 179 tys. wierszy uczestnikow, a polskich jest 2 863 — tablica
+ * wszystkich wierszy to setki MB obiektow (pulapki 57 i 61), a generator
+ * trzyma jeden wiersz naraz.
+ */
+export function* wierszeCsvPoKolei(tekst: string, separator = ';'): Generator<string[]> {
   const zrodlo = tekst.charCodeAt(0) === 0xfeff ? tekst.slice(1) : tekst;
-  const wiersze: string[][] = [];
   let wiersz: string[] = [];
   let pole = '';
   let wCudzyslowie = false;
@@ -35,7 +44,7 @@ export function parsujCsv(tekst: string, separator = ';'): string[][] {
     } else if (z === '\n' || z === '\r') {
       if (z === '\r' && zrodlo[i + 1] === '\n') i++;
       wiersz.push(pole);
-      wiersze.push(wiersz);
+      yield wiersz;
       wiersz = [];
       pole = '';
     } else {
@@ -45,7 +54,6 @@ export function parsujCsv(tekst: string, separator = ';'): string[][] {
   // Ostatni wiersz bez konca linii — inaczej zginalby po cichu.
   if (pole !== '' || wiersz.length > 0) {
     wiersz.push(pole);
-    wiersze.push(wiersz);
+    yield wiersz;
   }
-  return wiersze;
 }

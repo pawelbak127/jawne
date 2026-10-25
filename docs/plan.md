@@ -781,9 +781,20 @@ na serwerze, obok danych.
 - **Rolnictwo: SRPP i dopłaty ARiMR.** Gminy wiejskie mają dziś mało treści:
   funduszy UE niewiele, pomocy publicznej też. Tam idą pieniądze rolne.
   Uwaga: to dane osobowe rolników — ta sama reguła progu.
-- **CORDIS** (projekty Horizon z polskimi uczestnikami) — pieniądze, których
-  nie ma w polskich listach, bo Komisja płaci beneficjentowi bezpośrednio.
-- **Kohesio** — porównanie gminy z regionami w innych krajach UE.
+  **Rozpoznane 25.10.2026** (`docs/zrodla.md`): płatności rolne po gminie są
+  tylko w ministerialnym wykazie beneficjentów WPR — **wstrzymany**, powód
+  poza repozytorium (`prywatne/`), decyzja i kontakt z ministerstwem po
+  stronie Pawła. ARiMR na dane.gov.pl nie ma nic po gminach. SRPP (pomoc
+  rolna) ma wyszukiwarkę z kodem gminy, ale z zabezpieczeniem przed
+  automatami — droga przez wniosek do Ministerstwa Rolnictwa, jak przy
+  oświadczeniach z Kancelarii Sejmu.
+- ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
+  i H2020, 5 498 polskich udziałów, 1,78 mld EUR netto), dział „Programy
+  badawcze UE” na stronie gminy (168 gmin), w zadaniu `fundusze`. Gmina
+  z REGON, inaczej ze współrzędnych przy zgodnej nazwie (pułapka 80).
+  **Po wdrożeniu** etap ruszy sam 5. listopada; od razu:
+  `sudo -u jawne bash -c 'cd /srv/jawne && npx tsx ingest/jobs/import.ts cordis'`,
+  a nocne zadanie `ted` dopyta REGON o NIP-y uczestników.
 - ~~**Wersja dla mediów lokalnych**~~ **zrobione 14.10.2026**: na stronie gminy,
   w dziale „Do pobrania i cytowania”, akapit z tymi samymi liczbami co
   „W liczbach” — zdaniami, z sumą i mianownikiem przy każdej kwocie,
@@ -796,6 +807,10 @@ na serwerze, obok danych.
 ---
 
 ## Odrzucone
+
+- **Kohesio** — 25.10.2026. Dla Polski to te same dane, które instytucje
+  zarządzające publikują w listach MFiPR (mamy je, i to do gminy);
+  porównanie z innymi krajami byłoby na poziomie regionu, nie gminy.
 
 - **TAM (unijny rejestr pomocy państwa)** — 18.09.2026. Polska z niego nie
   korzysta, publikuje w SUDOP i SRPP. Sprawdzone, ślepy zaułek.
