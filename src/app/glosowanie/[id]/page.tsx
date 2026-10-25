@@ -6,7 +6,7 @@ import { BARWY_GLOSU, stylGlosu } from '@/lib/barwy-glosu';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
-import { wynikGlosowania } from '@/lib/wynik-glosowania';
+import { wynikGlosowania, OBJASNIENIE_POPRAWKI_SENATU, skutekPoprawkiSenatu } from '@/lib/wynik-glosowania';
 import { klubyWgGlosu } from '@/lib/glosy-klubow';
 import { TabelaKlubow } from '@/components/TabelaKlubow';
 import { dataKrotko, dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
@@ -72,6 +72,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
     .sort((a, b) => (kolejnoscKlubow.get(a.klub_id) ?? 999) - (kolejnoscKlubow.get(b.klub_id) ?? 999));
   const o = opisGlosowania(g);
   const wynik = wynikGlosowania(g);
+  const skutekSenatu = skutekPoprawkiSenatu(g, wynik);
   const importGlosowan = zrodloImportu('glosowania');
   const adresRejestru = `https://api.sejm.gov.pl/sejm/term10/votings/${g.posiedzenie}/${g.numer}`;
   const bezNazwisk = pominietoNazwiska(g.tytul) || pominietoNazwiska(g.temat) || pominietoNazwiska(g.opis);
@@ -198,6 +199,16 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
                 ? 'Głosów „za” było więcej niż „przeciw”, a mimo to wymaganej większości nie było.'
                 : null}
               podstawa={<Podstawa adres={adresRejestru} nazwa="dane głosowania" data={importGlosowan ? dataKrotko(importGlosowan.kiedy) : null} />}
+            />
+          ) : null}
+          {skutekSenatu ? (
+            <Wiersz
+              duzy
+              co="Skutek głosowania"
+              ile={skutekSenatu.startsWith('Poprawki')
+                ? (skutekSenatu.includes('odrzucon') ? 'odrzucone' : 'przyjęte')
+                : (skutekSenatu.includes('odrzucon') ? 'odrzucona' : 'przyjęta')}
+              zCzego={`${skutekSenatu}. ${OBJASNIENIE_POPRAWKI_SENATU}`}
             />
           ) : null}
           {oddanych > 0 ? (

@@ -74,3 +74,31 @@ export function wynikGlosowania(g: {
     regula: typ.regula,
   };
 }
+
+/**
+ * Skutek glosowania nad poprawka Senatu — inny niz „wymagana wiekszosc osiagnieta”.
+ *
+ * Sejm glosuje WNIOSEK O ODRZUCENIE poprawki Senatu, a poprawke uwaza sie za
+ * przyjeta, jesli Sejm jej nie odrzuci bezwzgledna wiekszoscia (art. 121 ust. 3
+ * Konstytucji). Rejestr podaje tylko „poprawka 10” i typ wiekszosci, wiec
+ * „wiekszosc nieosiagnieta” czytelnik bral za „poprawka upadla” — a znaczy
+ * odwrotnie (przeglad tresci 24.10.2026). Zmierzone 24.10.2026: przy
+ * „poprawkach nr 2-3” do ustawy o VAT 0 „za” i 431 „przeciw” — taki wynik
+ * ma sens tylko wtedy, gdy „za” to „za odrzuceniem”; w 90 glosowaniach
+ * „poprawka 1” razem 6 677 „za” wobec 28 246 „przeciw”.
+ * Tylko poprawki (temat „poprawk…”) przy wiekszosci bezwzglednej — inne
+ * glosowania nad uchwalami Senatu zostawiamy bez dopowiedzenia.
+ */
+export function skutekPoprawkiSenatu(
+  g: { tytul: string | null; temat: string | null; typ_wiekszosci: string | null },
+  w: WynikGlosowania | null,
+): string | null {
+  if (!w || g.typ_wiekszosci !== 'ABSOLUTE_MAJORITY') return null;
+  if (!/uchwa\p{L}*\s+senatu/iu.test(g.tytul ?? '') || !/poprawk/iu.test(g.temat ?? '')) return null;
+  const mnoga = /poprawki/iu.test(g.temat ?? '');
+  if (w.osiagnieta) return mnoga ? 'Poprawki Senatu odrzucone' : 'Poprawka Senatu odrzucona';
+  return mnoga ? 'Poprawki Senatu przyjęte — Sejm ich nie odrzucił' : 'Poprawka Senatu przyjęta — Sejm jej nie odrzucił';
+}
+
+/** Zdanie objasniajace przy skutku — zeby „za” nie czytac jako „za poprawka”. */
+export const OBJASNIENIE_POPRAWKI_SENATU = 'Głosuje się wniosek o odrzucenie poprawki Senatu: „za” znaczy za odrzuceniem. Poprawkę uważa się za przyjętą, jeśli Sejm nie odrzuci jej bezwzględną większością (art. 121 ust. 3 Konstytucji).';

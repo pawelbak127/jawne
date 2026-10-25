@@ -2,15 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, etapyProcesu, glosowanie, kluby, proces, streszczenieUstawy, wynikiKlubow, zrodloImportu,
+  bazaDostepna, etapyProcesu, glosowanie, glosowaniaPoDruku, kluby, proces, streszczenieUstawy, wynikiKlubow, zrodloImportu,
   type EtapProcesu, type ProcesSkrot,
 } from '@/lib/dane';
 import { klubyWgGlosu } from '@/lib/glosy-klubow';
 import { TabelaKlubow } from '@/components/TabelaKlubow';
 import { dataKrotko, dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
-import { opisGlosowania } from '@/lib/opis-glosowania';
-import { wynikGlosowania } from '@/lib/wynik-glosowania';
+import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
+import { skutekPoprawkiSenatu, wynikGlosowania } from '@/lib/wynik-glosowania';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Dzial, Okruszek, Podstawa, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
@@ -70,6 +70,12 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
   const glosowaniaEtapow = etapy
     .filter((e) => e.glos_posiedzenie !== null && e.glos_numer !== null)
     .map((e) => ({ e, g: e.glosowanie_mamy > 0 ? glosowanie(e.glos_posiedzenie!, e.glos_numer!) : null }));
+  /*
+   * Gdy rejestr NIE powiazal glosowan z etapami — glosowania, ktorych tytul
+   * wymienia ten druk (przeglad tresci 24.10.2026: ustawa 3147 „uchwalona”
+   * pisala „jeszcze zadnego glosowania”). Mowimy wprost, skad je wzielismy.
+   */
+  const poDruku = glosowaniaEtapow.length ? [] : glosowaniaPoDruku(p.numer);
 
   /*
    * KTO BYL ZA (14.10.2026) — z przegladu w chmurze: pierwszy krok w temacie
@@ -78,9 +84,8 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
    * kluby z dnia glosowania — liczby z rejestru, bez naszej klasyfikacji.
    * Najczestszy glos klubu, remis to brak stanowiska (src/lib/glosy-klubow.ts).
    */
-  const nadCaloscia = [...glosowaniaEtapow]
+  const nadCaloscia = [...glosowaniaEtapow.map(({ g }) => g), ...poDruku]
     .reverse()
-    .map(({ g }) => g)
     .find((g) => g && opisGlosowania(g).nadCaloscia) ?? null;
   const listaKlubow = kluby();
   const kolejnosc = new Map(listaKlubow.map((k, i) => [k.id, i]));
@@ -227,14 +232,25 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
             nr={nr('glosowania')}
             tytul={glosowaniaEtapow.length
               ? `Głosowania: ${zOdmiana(glosowaniaEtapow.length, 'głosowanie', 'głosowania', 'głosowań')} nad tym projektem`
-              : 'Głosowania: jeszcze żadnego nad tym projektem'}
+              : poDruku.length
+                ? `Głosowania z drukiem nr ${p.numer} w tytule: ${liczba(poDruku.length)}`
+                : 'Głosowania: rejestr nie wskazuje żadnego'}
           >
-            {glosowaniaEtapow.length === 0 ? (
-              <p className="wstep">Rejestr nie wskazuje przy etapach tego procesu żadnego głosowania.</p>
-            ) : (
+            {glosowaniaEtapow.length ? (
               <ul className="pozycje">
                 {glosowaniaEtapow.map(({ e, g }) => <GlosowanieEtapu key={e.kolejnosc} e={e} g={g} />)}
               </ul>
+            ) : poDruku.length ? (
+              <>
+                <p className="wstep">
+                  {`Rejestr procesów nie powiązał głosowań z etapami tego projektu. Poniżej głosowania, których tytuł w rejestrze głosowań wymienia druk nr ${p.numer}.`}
+                </p>
+                <ul className="pozycje">
+                  {poDruku.map((g) => <GlosowaniePoDruku key={`${g.posiedzenie}-${g.numer}`} g={g} />)}
+                </ul>
+              </>
+            ) : (
+              <p className="wstep">{`Rejestr nie wskazuje przy etapach tego procesu żadnego głosowania i żaden tytuł głosowania w bazie nie wymienia druku nr ${p.numer}.`}</p>
             )}
           </Dzial>
         </div>
@@ -291,6 +307,31 @@ function tytulGlosowania(nazwa: string, przedmiot: string | null): string {
   return `${n} — ${przedmiot}`;
 }
 
+/** Glosowanie znalezione po druku w tytule — bez nazwy etapu, bo rejestr jej nie podal. */
+function GlosowaniePoDruku({ g }: { g: NonNullable<ReturnType<typeof glosowanie>> }) {
+  const w = wynikGlosowania(g);
+  // Najpierw to, co roznicuje glosowania nad jednym drukiem („poprawki nr 1-3”,
+  // „wniosek o odrzucenie”), a sprawa z tytulu pod spodem — inaczej kazda pozycja
+  // ma ten sam uciety tytul (przeglad tresci 24.10.2026).
+  const o = opisGlosowania(g);
+  const glowny = o.przedmiot ? o.przedmiot.charAt(0).toLocaleUpperCase('pl-PL') + o.przedmiot.slice(1) : opisJednaLinia(g);
+  return (
+    <li>
+      <div className="min-w-0">
+        <p className="meta">{`${dataSlownie(g.data)} · posiedzenie ${g.posiedzenie}`}</p>
+        <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">
+          {skroc(bezNazwiskOsobPrywatnych(glowny), 150)}
+        </Link>
+        {o.przedmiot ? <p className="meta">{skroc(bezNazwiskOsobPrywatnych(o.sprawa), 120)}</p> : null}
+        <p className="meta">
+          {`za ${liczba(g.za)}, przeciw ${liczba(g.przeciw)}, wstrzymało się ${liczba(g.wstrzymalo)}`}
+          {w ? ` · ${skutekPoprawkiSenatu(g, w) ?? (w.osiagnieta ? 'przyjęto' : 'odrzucono')}` : ''}
+        </p>
+      </div>
+    </li>
+  );
+}
+
 function GlosowanieEtapu({ e, g }: { e: EtapProcesu; g: ReturnType<typeof glosowanie> }) {
   if (!g) {
     return (
@@ -316,7 +357,7 @@ function GlosowanieEtapu({ e, g }: { e: EtapProcesu; g: ReturnType<typeof glosow
           {`za ${liczba(g.za)}, przeciw ${liczba(g.przeciw)}, wstrzymało się ${liczba(g.wstrzymalo)}`}
           {w ? ` · ${w.nazwa}: wymagane ${liczba(w.wymagane)} „za”` : ''}
         </p>
-        {w ? <p className="meta"><b className="text-atrament">{w.osiagnieta ? 'Wymagana większość osiągnięta.' : 'Wymagana większość nieosiągnięta.'}</b></p> : null}
+        {w ? <p className="meta"><b className="text-atrament">{`${skutekPoprawkiSenatu(g, w) ?? (w.osiagnieta ? 'Przyjęto' : 'Odrzucono')}.`}</b></p> : null}
       </div>
     </li>
   );

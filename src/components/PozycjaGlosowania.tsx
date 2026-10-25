@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import type { GlosowanieSkrot } from '@/lib/dane';
 import { opisGlosowania } from '@/lib/opis-glosowania';
-import { wynikGlosowania } from '@/lib/wynik-glosowania';
-import { dataSlownie, liczba, skroc } from '@/lib/format';
+import { skutekPoprawkiSenatu, wynikGlosowania } from '@/lib/wynik-glosowania';
+import { dataSlownie, skroc } from '@/lib/format';
 import { PaseczekGlosow } from '@/components/PaseczekGlosow';
 
 /**
@@ -22,10 +22,16 @@ export function PozycjaGlosowania({ g }: { g: GlosowanieSkrot }) {
         {rodzaj ? <p className="meta"><b className="text-atrament">{skroc(rodzaj, 110)}</b></p> : null}
         <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">{skroc(o.sprawa, 170)}</Link>
         <PaseczekGlosow g={g} className="mt-2 max-w-xl" zOpisem />
+        {/*
+          Na liscie sam wynik („przyjęto / odrzucono”), rodzaj wiekszosci na stronie
+          glosowania — przeglad tresci 24.10.2026: „większość zwykła: wymagane 3 „za”
+          — osiągnięta” przy 433 : 2 brzmialo dziwnie. Przy poprawkach Senatu skutek
+          jest odwrotny do „wiekszosci” (art. 121 ust. 3 Konstytucji), wiec mowimy skutek.
+        */}
         {w ? (
           <p className="meta mt-1">
-            {`${w.nazwa}: wymagane ${liczba(w.wymagane)} „za” — `}
-            <b className="text-atrament">{w.osiagnieta ? 'osiągnięta' : 'nieosiągnięta'}</b>
+            <b className="text-atrament">{skutekPoprawkiSenatu(g, w) ?? (w.osiagnieta ? 'Przyjęto' : 'Odrzucono')}</b>
+            {w.nazwa !== 'większość zwykła' ? ` · ${w.nazwa}` : ''}
           </p>
         ) : null}
       </div>

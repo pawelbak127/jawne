@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wynikGlosowania } from './wynik-glosowania';
+import { skutekPoprawkiSenatu, wynikGlosowania } from './wynik-glosowania';
 
 const g = (o: Partial<Parameters<typeof wynikGlosowania>[0]>) => ({
   rodzaj: 'ELECTRONIC', typ_wiekszosci: 'SIMPLE_MAJORITY', wiekszosc_glosow: 1, za: 0, przeciw: 0, wstrzymalo: 0, ...o,
@@ -28,5 +28,31 @@ describe('wynikGlosowania', () => {
     const w = wynikGlosowania(g({ typ_wiekszosci: 'NOWY_TYP', wiekszosc_glosow: 300, za: 310, przeciw: 5 }))!;
     expect(w.osiagnieta).toBe(true);
     expect(w.regula).toContain('NOWY_TYP');
+  });
+});
+
+describe('skutekPoprawkiSenatu — art. 121 ust. 3 Konstytucji (przeglad tresci 24.10.2026)', () => {
+  const tytul = 'Pkt. 36 Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy o zmianie ustawy o podatku od towarów i usług (druki nr 3132 i 3167)';
+  const glos = (temat: string, za: number, przeciw: number) => ({
+    tytul, temat, typ_wiekszosci: 'ABSOLUTE_MAJORITY',
+    w: wynikGlosowania(g({ typ_wiekszosci: 'ABSOLUTE_MAJORITY', wiekszosc_glosow: 216, za, przeciw })),
+  });
+
+  it('0 „za” i 431 „przeciw” (VAT, 08.10.2026) — poprawki ZOSTAJĄ, bo Sejm ich nie odrzucił', () => {
+    const x = glos('poprawki nr 2-3', 0, 431);
+    expect(skutekPoprawkiSenatu(x, x.w)).toBe('Poprawki Senatu przyjęte — Sejm ich nie odrzucił');
+  });
+
+  it('bezwzględna większość „za” — poprawka odrzucona', () => {
+    const x = glos('poprawka 1', 240, 200);
+    expect(skutekPoprawkiSenatu(x, x.w)).toBe('Poprawka Senatu odrzucona');
+  });
+
+  it('bez uchwały Senatu w tytule albo bez „poprawk” w temacie albo inna większość — nic nie dopowiadamy', () => {
+    const x = glos('poprawka 1', 240, 200);
+    expect(skutekPoprawkiSenatu({ ...x, tytul: 'Pkt. 5 Sprawozdanie Komisji o projekcie ustawy' }, x.w)).toBeNull();
+    expect(skutekPoprawkiSenatu({ ...x, temat: 'wniosek o odrzucenie uchwały Senatu' }, x.w)).toBeNull();
+    expect(skutekPoprawkiSenatu({ ...x, typ_wiekszosci: 'SIMPLE_MAJORITY' }, x.w)).toBeNull();
+    expect(skutekPoprawkiSenatu(x, null)).toBeNull();
   });
 });

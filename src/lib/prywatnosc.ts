@@ -111,6 +111,10 @@ const INSTYTUCJA: readonly RegExp[] = [
   // nigdy nie ma „z” po „ąd”.
   /(?<![\p{L}])(gmin[ayę]|miast[oa]|powiat\p{L}*|województw\p{L}*|urz(?:ąd(?!z)|ęd)\p{L}*|starostw\p{L}*|marszał\p{L}*|wojewod\p{L}*)(?![\p{L}])/iu,
   /ministerstw|(?<![\p{L}])minist(er|ra)(?![\p{L}])|komend[ay]|policj|prokuratur|skarb\s+państwa|generaln\p{L}*\s+dyrekcj/iu,
+  // Rzecznik Praw Obywatelskich / Dziecka / Pacjenta, Rzecznik Finansowy, Rzecznik MSP (24.10.2026).
+  /(?<![\p{L}])rzecznik\p{L}*\s+(praw|finansow|małych|ubezpieczon|patentow)/iu,
+  // Rada miasta, gminy, powiatu, ministrow — organ (patrz PRZED_RADA / PO_RADA wyzej).
+  /(?<![\p{L}])rad[ayz]\s+(gminy|miasta|powiatu|ministrów|dzielnicy|osiedla|województwa)(?![\p{L}])/iu,
   /(?<![\p{L}])(szef|prezes|dyrektor)(?![\p{L}])|straż\p{L}*\s+pożarn|ochotnicz\p{L}*\s+straż/iu,
   // organy udzielajace pomocy: "Burmistrz Zelowa", "Starosta Tatrzański"
   /(?<![\p{L}])(burmistrz\p{L}*|starost\p{L}*|prezydent\p{L}*|wójt\p{L}*|inspektor\p{L}*|komendant\p{L}*|zarząd\p{L}*\s+(województwa|powiatu|gminy|miasta)|fundusz\p{L}*|przewodnicząc\p{L}*\s+zarządu|metropoli\p{L}*)(?![\p{L}])/iu,
@@ -152,6 +156,23 @@ const SPOLKA_CYWILNA = /(?<![\p{L}\p{N}])s\.?\s?c\.?(?![\p{L}\p{N}])|spółka\s+
 const WSPOLNOTA = /wspólnot\p{L}*\s+mieszkaniow/iu;
 const KOD_POCZTOWY = /(?<!\d)\d{2}-\d{3}(?!\d)/;
 
+/*
+ * „Rada” jest w rejestrze PESEL rzadkim imieniem zenskim, a w nazwach instytucji
+ * — organem. ZMIERZONE 24.10.2026 (przeglad tresci): Krajowa Rada Radiofonii
+ * i Telewizji, udzielajaca TVP 16,6 mld zl pomocy, wychodzila na /pomoc-publiczna
+ * jako „nazwa pominieta — moze to byc osoba fizyczna”, bo krok imienia stoi PRZED
+ * znacznikami instytucji. Slowo RADA nie jest imieniem, gdy stoi po przymiotniku
+ * organu („KRAJOWA RADA”, „NACZELNA RADA”) albo przed nazwa tego, czego organem
+ * jest („RADA MIASTA”, „RADA GMINY”). Waskie listy, nie „kazda rada”: osoba
+ * o imieniu Rada w nazwie firmy dalej zatrzymuje nazwe.
+ */
+const PRZED_RADA = new Set(['KRAJOWA', 'NACZELNA', 'OKRĘGOWA', 'WOJEWÓDZKA', 'POWIATOWA', 'GMINNA', 'MIEJSKA', 'REGIONALNA',
+  'PAŃSTWOWA', 'NARODOWA', 'GŁÓWNA', 'NAUKOWA', 'NADZORCZA', 'PROGRAMOWA', 'PEDAGOGICZNA', 'SOŁECKA', 'DZIELNICOWA', 'OSIEDLOWA']);
+const PO_RADA = new Set(['GMINY', 'MIASTA', 'POWIATU', 'MINISTRÓW', 'DZIELNICY', 'OSIEDLA', 'SOŁECKA', 'RODZICÓW', 'PEDAGOGICZNA',
+  'NADZORCZA', 'PROGRAMOWA', 'NAUKOWA', 'POWIATOWA', 'GMINNA', 'MIEJSKA', 'SZKOŁY', 'WOJEWÓDZTWA', 'SEJMIKU', 'FUNDACJI', 'STOWARZYSZENIA']);
+const radaOrganu = (slowa: readonly string[], i: number) =>
+  slowa[i] === 'RADA' && (PRZED_RADA.has(slowa[i - 1] ?? '') || PO_RADA.has(slowa[i + 1] ?? ''));
+
 // Po tych slowach stoi patron w dopelniaczu: "im. Jana Pawła II", "pw. św. Józefa".
 const PATRON = new Set(['IM', 'IMIENIA', 'ŚW', 'ŚWIĘTEGO', 'ŚWIĘTEJ', 'ŚWIĘTYCH', 'BŁ', 'BŁOGOSŁAWIONEGO', 'BŁOGOSŁAWIONEJ', 'PW', 'WEZWANIEM']);
 const OKNO_PATRONA = 4;
@@ -172,7 +193,7 @@ function dopelniaczMeskiego(slowo: string): boolean {
 export function zawieraImie(nazwa: string): boolean {
   const slowa = nazwa.toLocaleUpperCase('pl').split(/[^\p{L}]+/u).filter(Boolean);
   let okno = 0;
-  for (const s of slowa) {
+  for (const [i, s] of slowa.entries()) {
     if (PATRON.has(s)) {
       okno = OKNO_PATRONA;
       continue;
@@ -180,6 +201,7 @@ export function zawieraImie(nazwa: string): boolean {
     const wOknie = okno > 0;
     if (okno > 0) okno--;
     if (s.length < 2 || !IMIONA_PESEL.has(s)) continue;
+    if (radaOrganu(slowa, i)) continue;
     if (wOknie && dopelniaczMeskiego(s)) continue;
     return true;
   }

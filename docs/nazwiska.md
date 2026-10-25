@@ -124,3 +124,23 @@ Profilaktyki”, które jest instytucją. Imię z PESEL i tak taką nazwę zatrz
 bez imienia zostaje samo nazwisko.
 Poprawka schowałaby prawdziwe instytucje, a ryzyko dotyczy tylko nazw
 z samym nazwiskiem, bez imienia.
+
+## 24.10.2026 — „Rada” jako organ, „Rzecznik Praw …”
+
+Przegląd treści: Krajowa Rada Radiofonii i Telewizji (16,6 mld zł pomocy dla
+TVP) wychodziła na /pomoc-publiczna jako „nazwa pominięta — może to być osoba
+fizyczna”. Powód: „RADA” jest na liście imion PESEL (rzadkie imię żeńskie),
+a krok imienia stoi przed znacznikami instytucji. Lista udzielających
+w przeglądzie idzie po nazwie, bez REGON — strona organu (z typem „P”) była
+w porządku.
+
+Zmiana: RADA nie jest imieniem po przymiotniku organu (KRAJOWA, NACZELNA,
+OKRĘGOWA, WOJEWÓDZKA, …) albo przed nazwą tego, czego organem jest (MIASTA,
+GMINY, MINISTRÓW, …) — wąskie listy w `prywatnosc.ts`. Doszły znaczniki
+„Rzecznik Praw/Finansowy/…” i „Rada Gminy/Miasta/…”.
+
+Porównanie na wszystkich nazwach (zasada 7): lokalna baza 173 243 nazwy —
+0 zmian; nazwy z bazy serwera (3 371 939 firm, 5 543 organy) — **5 odsłonięte,
+0 schowane**: „BIURO RZECZNIKA PATENTOWEGO”, „KANCELARIA RZECZNIKA
+PATENTOWEG”, „Wojewódzka Rada Koordynacyjna ZSMP”, „REGIONALNA RADA POLSKIEGO
+KOMITETU OLIMPIJSKIEGO”, „KRAJOWA RADA IZB ROLNICZYCH” — same instytucje.

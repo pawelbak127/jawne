@@ -1,4 +1,6 @@
 import 'server-only';
+import { poPolsku, porownajPl } from './sortowanie';
+import { drukiZTytulu } from './druki';
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -167,12 +169,12 @@ export type PoselSkrot = {
 };
 
 export function listaPoslow(): PoselSkrot[] {
-  return wszystkie<PoselSkrot>(
+  // Kolejnosc po polsku w kodzie — SQLite stawial „Ł” po „Z” (src/lib/sortowanie.ts).
+  return poPolsku(wszystkie<PoselSkrot>(
     `select id, slug, imie_nazwisko, nazwisko, klub_id, okreg_nr, okreg_nazwa,
             wojewodztwo, aktywny, ma_zdjecie
-       from poslowie
-      order by nazwisko collate nocase, imie_nazwisko collate nocase`,
-  );
+       from poslowie`,
+  ), (p) => p.nazwisko, (p) => p.imie_nazwisko);
 }
 
 export type Posel = PoselSkrot & {
@@ -370,6 +372,20 @@ export function glosowanie(posiedzenie: number, numer: number): Glosowanie | nul
   );
 }
 
+/**
+ * Glosowania, ktorych TYTUL wymienia dany druk — gdy rejestr procesow nie
+ * powiazal glosowan z etapami (ustawa 3147: zero przy etapach, choc glosowania
+ * „(druki nr 3147 i 3225)” byly w bazie). Wstepny filtr LIKE, potem dokladne
+ * dopasowanie numeru (`drukiZTytulu`), zeby 3147 nie lapalo 31470.
+ */
+export function glosowaniaPoDruku(druk: string): Glosowanie[] {
+  if (!/^\d+$/.test(druk)) return [];
+  return wszystkie<Glosowanie>(
+    `select * from glosowania where tytul like ? order by data, posiedzenie, numer`,
+    `%${druk}%`,
+  ).filter((g) => drukiZTytulu(g.tytul).includes(druk));
+}
+
 export type GlosPosla = {
   posel_id: number;
   glos: string;
@@ -385,10 +401,9 @@ export function glosyWGlosowaniu(posiedzenie: number, numer: number): GlosPosla[
             p.slug as slug, p.imie_nazwisko as imie_nazwisko, p.nazwisko as nazwisko
        from glosy s
        join poslowie p on p.id = s.posel_id
-      where s.posiedzenie = ? and s.numer = ?
-      order by p.nazwisko collate nocase`,
+      where s.posiedzenie = ? and s.numer = ?`,
     posiedzenie, numer,
-  );
+  ).sort((a, b) => porownajPl(a.nazwisko, b.nazwisko) || porownajPl(a.imie_nazwisko, b.imie_nazwisko));
 }
 
 /** Czy glosowanie ma juz zaimportowane glosy imienne. */
@@ -536,9 +551,9 @@ export function gminyOkregu(nr: number): Gmina[] {
   return bezTabeli(
     () => wszystkie<Gmina>(
       `select teryt, nazwa, rodzaj, powiat, wojewodztwo, okreg_nr, uprawnionych
-         from gminy where okreg_nr = ? order by powiat collate nocase, nazwa collate nocase`,
+         from gminy where okreg_nr = ?`,
       nr,
-    ),
+    ).sort((a, b) => porownajPl(a.powiat, b.powiat) || porownajPl(a.nazwa, b.nazwa)),
     [],
   );
 }
@@ -599,10 +614,9 @@ export function poslowieOkregu(nr: number): PoselSkrot[] {
   return wszystkie<PoselSkrot>(
     `select id, slug, imie_nazwisko, nazwisko, klub_id, okreg_nr, okreg_nazwa,
             wojewodztwo, aktywny, ma_zdjecie
-       from poslowie where okreg_nr = ?
-      order by aktywny desc, nazwisko collate nocase`,
+       from poslowie where okreg_nr = ?`,
     nr,
-  );
+  ).sort((a, b) => b.aktywny - a.aktywny || porownajPl(a.nazwisko, b.nazwisko) || porownajPl(a.imie_nazwisko, b.imie_nazwisko));
 }
 
 export type GlosWOkregu = { posiedzenie: number; numer: number; posel_id: number; glos: string };
@@ -1741,8 +1755,8 @@ export function wojewodztwaGmin(): WojewodztwoZeSpisem[] {
                 as gmin,
               sum(l.osob) as osob, max(l.rok) as rok
          from gminy g left join ludnosc l on l.teryt = g.teryt
-        group by g.wojewodztwo order by g.wojewodztwo collate nocase`,
-    ),
+        group by g.wojewodztwo`,
+    ).sort((a, b) => porownajPl(a.wojewodztwo, b.wojewodztwo)),
     [],
   );
 }
@@ -1755,10 +1769,9 @@ export function gminyWojewodztwa(wojewodztwo: string): GminaSpisu[] {
     () => wszystkie<GminaSpisu>(
       `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat, l.osob as osob, l.rok as rok
          from gminy g left join ludnosc l on l.teryt = g.teryt
-        where g.wojewodztwo = ?
-        order by g.powiat collate nocase, g.nazwa collate nocase`,
+        where g.wojewodztwo = ?`,
       wojewodztwo,
-    ),
+    ).sort((a, b) => porownajPl(a.powiat, b.powiat) || porownajPl(a.nazwa, b.nazwa)),
     [],
   );
 }
@@ -2052,14 +2065,14 @@ export function komisja(kod: string): Komisja | null {
         kod,
       );
       if (!k) return null;
-      const sklad = wszystkie<CzlonekKomisji>(
+      const sklad = wszystkie<CzlonekKomisji & { ranga: number; nazwisko: string | null }>(
         `select s.posel_id as posel_id, p.slug as slug, p.imie_nazwisko as imie_nazwisko,
-                s.klub as klub, s.funkcja as funkcja, s.od as od
+                s.klub as klub, s.funkcja as funkcja, s.od as od,
+                ${RANGA_FUNKCJI.replaceAll('funkcja', 's.funkcja')} as ranga, p.nazwisko as nazwisko
            from komisje_sklad s join poslowie p on p.id = s.posel_id
-          where s.kod = ?
-          order by ${RANGA_FUNKCJI.replaceAll('funkcja', 's.funkcja')}, p.nazwisko, p.imie`,
+          where s.kod = ?`,
         kod,
-      );
+      ).sort((a, b) => a.ranga - b.ranga || porownajPl(a.nazwisko, b.nazwisko) || porownajPl(a.imie_nazwisko, b.imie_nazwisko));
       return { ...k, sklad };
     },
     null,
