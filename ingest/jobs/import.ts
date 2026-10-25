@@ -1230,8 +1230,11 @@ async function importBzp(db: DatabaseSync): Promise<void> {
          * „zwolnij”, nie awaria: konczymy na dzis, dni pobrane do tej pory
          * zostaja, sumy licza sie nizej. Dzien przerwany w polowie nie jest
          * odnotowany w bzp_dni, wiec wroci w calosci nastepnej nocy.
+         * Od 23.10.2026 cala platforma oddaje strone „Przerwa techniczna”
+         * (403 albo 503 z bramy Azure — informacja od asc, 25.10.2026): ten sam
+         * przypadek, wiec 503 tez konczy przebieg zdaniem, a nie bledem etapu.
          */
-        if (e instanceof Error && /HTTP (403|429)\b/.test(e.message)) {
+        if (e instanceof Error && /HTTP (403|429|503)\b/.test(e.message)) {
           log(`   e-Zamowienia odmowily (${e.message.replace(/^.*-> /, '')}) — koncze na dzis, zostalo ${dni.length - pobranychDni} dni`);
           break dni;
         }
