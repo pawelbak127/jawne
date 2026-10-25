@@ -35,6 +35,18 @@ const OPISY: Record<string, string> = {
   zamowienia: 'Zamówienia publiczne (TED — dziennik zamówień UE)',
   regon: 'Rejestr REGON — kim jest podmiot o danym NIP-ie (GUS)',
   'szukaj-firmy': 'Indeks wyszukiwania firm',
+  // Dopisane 25.10.2026 — te etapy pokazywaly sie tu jako surowy klucz „bez opisu”.
+  bzp: 'Zamówienia krajowe (Biuletyn Zamówień Publicznych — ogłoszenia o wyniku)',
+  cordis: 'Projekty badawcze UE — Horyzont Europa i Horyzont 2020 (CORDIS, Komisja Europejska)',
+  komisje: 'Składy komisji sejmowych',
+  obecnosc: 'Obecność posłów — dni obrad i usprawiedliwione nieobecności',
+  oswiadczenia: 'Oświadczenia majątkowe posłów — wykaz Kancelarii Sejmu',
+  streszczenia: 'Streszczenia projektów ustaw (model językowy, wyłącznie z opisu rejestru)',
+  'szukaj-ustawy': 'Indeks wyszukiwania ustaw',
+  'wykaz-gmin': 'Wykaz gmin uzgodniony z granicami PRG i wykazem jednostek GUS',
+  wystapienia: 'Wystąpienia posłów na sali (stenogramy Sejmu)',
+  zapytania: 'Zapytania poselskie — metryczka',
+  agregaty: 'Zestawienia liczone przy imporcie (przegląd pomocy publicznej, mapa, lista firm)',
 };
 
 /**
@@ -65,6 +77,10 @@ export default function StronaStanu() {
       ],
     },
     { co: 'Pomoc publiczna dla przedsiębiorców', linki: [{ adres: 'https://sudop.uokik.gov.pl', nazwa: 'SUDOP — UOKiK' }] },
+    {
+      co: 'Projekty badawcze UE (Horyzont Europa, Horyzont 2020)',
+      linki: [{ adres: 'https://cordis.europa.eu/projects', nazwa: 'CORDIS — Komisja Europejska (CC BY 4.0)' }],
+    },
     // Jedyne zrodlo, ktorego NIE odswieza zadne zadanie: kazde wydanie
     // rysunku ma inny adres, wiec nowy plan dodaje sie recznie.
     { co: `Plan sali posiedzeń (stan na ${dataSlownie(STAN_PLANU)}, odświeżany ręcznie)`, linki: [{ adres: ZRODLO_PLANU, nazwa: 'Kancelaria Sejmu — rysunek sali' }] },
