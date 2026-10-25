@@ -115,3 +115,19 @@ export function zlote(n: number | null | undefined): string {
   if (abs >= 1e4) return skala(1e3, 'tys.');
   return `${liczba(Math.round(n))} zł`;
 }
+
+/**
+ * Okres danych pobieranych dzien po dniu (SUDOP). Przeglad tresci 24.10.2026:
+ * „w 3240 pobranych dniach … nie w całym roku” przy prawie 9 latach ciaglych
+ * danych wprowadzalo w blad, a rozne liczby dni na roznych stronach (3240,
+ * 3289, 3317) gryzly sie ze soba. Gdy dni sa CIAGLE, wystarczy zakres dat;
+ * gdy sa dziury, mowimy ile dni brakuje — wtedy zakres sam by klamal.
+ */
+export function okresDni(dni: number, od: string, doDnia: string): string {
+  const kalendarz = Math.round((Date.parse(`${doDnia.slice(0, 10)}T00:00:00Z`) - Date.parse(`${od.slice(0, 10)}T00:00:00Z`)) / 86_400_000) + 1;
+  const zakres = `od ${dataKrotko(od)} do ${dataKrotko(doDnia)}`;
+  if (!Number.isFinite(kalendarz) || kalendarz <= 0) return zakres;
+  if (dni >= kalendarz) return zakres;
+  const braki = kalendarz - dni;
+  return `${zakres}, bez ${zOdmiana(braki, 'dnia', 'dni', 'dni')}, ${braki === 1 ? 'którego' : 'których'} jeszcze nie pobraliśmy`;
+}

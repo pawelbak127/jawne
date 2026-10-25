@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni } from './format';
 
 describe('wojewodztwoWMiejscowniku', () => {
   it.each([
@@ -118,5 +118,14 @@ describe('zlote', () => {
   it('brak kwoty to polpauza, nie zero', () => {
     expect(zlote(null)).toBe('—');
     expect(zlote(0)).toBe('0 zł');
+  });
+});
+
+describe('okresDni — przegląd treści 24.10.2026', () => {
+  it('dni ciągłe: sam zakres dat', () => {
+    expect(okresDni(3, '2026-10-01', '2026-10-03')).toBe('od 01.10.2026 do 03.10.2026');
+  });
+  it('dziury: zakres i ile dni brakuje', () => {
+    expect(okresDni(2, '2026-10-01', '2026-10-03')).toBe('od 01.10.2026 do 03.10.2026, bez 1 dnia, którego jeszcze nie pobraliśmy');
   });
 });

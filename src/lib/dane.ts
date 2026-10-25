@@ -1,6 +1,7 @@
 import 'server-only';
 import { poPolsku, porownajPl } from './sortowanie';
 import { drukiZTytulu } from './druki';
+import { opisGlosowania } from './opis-glosowania';
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -1562,6 +1563,27 @@ export function ostatnioUchwalone(ile: number): ProcesSkrot[] {
     ),
     [],
   );
+}
+
+export type UstawaZWynikiem = { p: ProcesSkrot; glosowanie: Glosowanie | null };
+
+/**
+ * Ostatnio uchwalone ustawy razem z OSTATNIM glosowaniem nad calosc — na
+ * strone glowna („Ostatnio w Sejmie”, przeglad tresci 24.10.2026). Najpierw
+ * glosowania wskazane przez rejestr przy etapach, a gdy ich nie ma — po
+ * druku w tytule (glosowaniaPoDruku, ten sam wybor co na stronie ustawy).
+ * „Nad calosc” rozpoznaje `opisGlosowania` po slowach rejestru (zasada 8).
+ * Kilka zapytan po kluczu na ustawe — strona glowna pyta o 3–4.
+ */
+export function ostatnioUchwaloneZWynikiem(ile: number): UstawaZWynikiem[] {
+  return ostatnioUchwalone(ile).map((p) => {
+    const zEtapow = etapyProcesu(p.numer)
+      .filter((e) => e.glos_posiedzenie !== null && e.glos_numer !== null && e.glosowanie_mamy > 0)
+      .map((e) => glosowanie(e.glos_posiedzenie!, e.glos_numer!))
+      .filter((g): g is Glosowanie => g !== null);
+    const kandydaci = zEtapow.length ? zEtapow : glosowaniaPoDruku(p.numer);
+    return { p, glosowanie: [...kandydaci].reverse().find((g) => opisGlosowania(g).nadCaloscia) ?? null };
+  });
 }
 
 export type Streszczenie = { tekst: string; model: string; przygotowano: string };

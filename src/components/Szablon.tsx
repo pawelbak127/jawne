@@ -134,18 +134,19 @@ export function Wiersze({ children }: { children: ReactNode }) {
 /** Dzial strony: numer, naglowek od tresci (F7), na koncu zwiniete „Jak to liczymy”. */
 export function Dzial({ id, nr, tytul, obok, metoda, children }: {
   id: string;
-  nr: number;
+  /** Bez numeru na stronie glownej — tam numeracja robila ze strony spis tresci (przeglad 24.10.2026). */
+  nr?: number;
   tytul: ReactNode;
   obok?: ReactNode;
   metoda?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="dzial" id={id} aria-labelledby={`${id}-t`}>
-      <div className="nr" aria-hidden="true">{nr}</div>
+    <section className={nr !== undefined ? 'dzial' : 'dzial bez-nr'} id={id} aria-labelledby={`${id}-t`}>
+      {nr !== undefined ? <div className="nr" aria-hidden="true">{nr}</div> : null}
       <div className="min-w-0">
         <div className="tytul">
-          <h2 id={`${id}-t`}><span className="nr-tel">{`${nr}. `}</span>{tytul}</h2>
+          <h2 id={`${id}-t`}>{nr !== undefined ? <span className="nr-tel">{`${nr}. `}</span> : null}{tytul}</h2>
           {obok}
         </div>
         {children}

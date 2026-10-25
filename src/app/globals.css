@@ -470,6 +470,7 @@
     [data-styl="a"] .dzial > .nr { display: block; }
     [data-styl="a"] .dzial > .nr::before { content: "Dział "; display: block; font-family: var(--f-znak); font-size: var(--drobny); font-weight: 500; }
     [data-styl="a"] .dzial .tytul .nr-tel { display: none; }
+    [data-styl="a"] .dzial.bez-nr { grid-template-columns: minmax(0, 1fr); }
   }
 
   /* uwaga — wyglada jak uwaga, nie jak kolejna karta */
@@ -506,21 +507,51 @@
   .pasek i.miejsce-probka { background: var(--b); }
   .kropka { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 6px; flex: none; }
 
-  /* strona glowna: trzy „drzwi” (najczestsze pytania) i legenda ukladu izby */
-  .drzwi { display: grid; margin-top: 24px; border-top: 2px solid var(--atrament); }
-  @media (min-width: 760px) { .drzwi { grid-template-columns: repeat(3, 1fr); } }
-  .drzwi a { display: block; padding: 16px 18px 18px 0; border-bottom: 1px solid var(--kreska); color: var(--atrament); text-decoration: none; }
-  @media (min-width: 760px) {
-    .drzwi a { border-bottom: 0; border-right: 1px solid var(--kreska); padding-left: 18px; }
-    .drzwi a:first-child { padding-left: 0; }
-    .drzwi a:last-child { border-right: 0; }
+  /* strona glowna (przeglad tresci 24.10.2026): obietnica, duze pole, trzy karty z obrazem */
+  .bohater { padding: 28px 0 4px; }
+  .bohater h1 { font-weight: 600; font-size: 1.75rem; line-height: 1.12; max-width: 24em; }
+  @media (min-width: 1024px) { .bohater h1 { font-size: 2.4rem; } }
+  .bohater .podtytul { margin-top: 12px; color: var(--atrament-2); max-width: var(--miara); }
+  .bohater-szukaj { display: flex; margin-top: 18px; max-width: 40rem; }
+  .bohater-szukaj .pole, .karta-firma .pole { min-height: 52px; font-size: 1rem; }
+  .bohater-szukaj button, .karta-firma button {
+    flex: none; min-height: 52px; padding: 0 20px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--atrament); color: var(--papier); border: 2px solid var(--atrament);
   }
-  .drzwi b { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.2rem; display: block; color: var(--akcent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
-  .drzwi span { display: block; margin-top: 4px; color: var(--atrament-2); font-size: var(--sredni); }
-  .drzwi a:hover b { text-decoration-thickness: 3px; }
-  .legenda { list-style: none; padding: 0; margin: 14px 0 0; max-width: 46rem; columns: 2; column-gap: 28px; font-size: var(--sredni); }
-  .legenda li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--kreska); break-inside: avoid; }
+  :root:not([data-styl="a"]) .bohater-szukaj button,
+  :root:not([data-styl="a"]) .karta-firma button { background: var(--akcent); border-color: var(--akcent); color: var(--papier-2); }
+  .bohater-przyklady { margin-top: 10px; font-size: var(--drobny); color: var(--atrament-2); }
+  .bohater-przyklady a { color: var(--akcent); text-decoration: underline; text-underline-offset: 4px; }
+  .karty { display: grid; gap: 14px; margin-top: 28px; }
+  @media (min-width: 760px) { .karty { grid-template-columns: repeat(3, 1fr); } }
+  .karta { display: flex; flex-direction: column; padding: 16px 18px 18px; border: 1px solid var(--kreska); border-top: 3px solid var(--atrament); background: var(--papier-2); color: var(--atrament); text-decoration: none; }
+  .karta-obraz { display: flex; align-items: center; justify-content: center; height: 150px; margin-bottom: 12px; }
+  .karta-obraz svg { max-height: 150px; width: auto; max-width: 100%; }
+  .karta-firma { flex-direction: column; align-items: stretch; gap: 8px; }
+  .karta-firma button { width: 100%; }
+  .karta b { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.2rem; display: block; }
+  a.karta b { color: var(--akcent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+  a.karta:hover b { text-decoration-thickness: 3px; }
+  a.karta:hover { border-color: var(--kreska-2); }
+  .karta > span { display: block; margin-top: 4px; color: var(--atrament-2); font-size: var(--sredni); }
+  /* telefon: obraz obok tekstu, inaczej trzy karty zajmuja trzy ekrany */
+  @media (max-width: 759px) {
+    a.karta { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 14px; align-items: start; }
+    a.karta .karta-obraz { grid-row: span 2; height: auto; margin: 4px 0 0; }
+  }
   .pozycje .streszczenie { margin-top: 6px; max-width: var(--miara); color: var(--atrament-2); font-size: var(--sredni); }
+  .etykieta-zrodla { color: var(--atrament-3); font-size: var(--drobny); white-space: nowrap; }
+  /* polkole pierwszej ustawy: obok tekstu na komputerze; na telefonie wystarcza pasek pod opisem */
+  .ustawy-glowna > li.z-polkolem { grid-template-columns: minmax(0, 1fr); }
+  .polkole-ustawy { display: none; }
+  @media (min-width: 760px) {
+    .ustawy-glowna > li.z-polkolem { grid-template-columns: minmax(0, 1fr) 210px; align-items: center; }
+    .polkole-ustawy { display: block; width: 210px; }
+  }
+  .pieniadze-glowna { display: grid; gap: 18px; margin-top: 14px; }
+  @media (min-width: 760px) { .pieniadze-glowna { grid-template-columns: 260px minmax(0, 1fr); align-items: start; gap: 28px; } }
+  .mapa-glowna { max-width: 300px; }
+  .mapa-glowna .meta { margin-top: 6px; color: var(--atrament-2); font-size: var(--drobny); }
 
   /* listy: zakladki-filtry, pola filtrow, litery, stronicowanie */
   .zakladki { display: flex; flex-wrap: wrap; gap: 0 4px; margin-top: 18px; border-bottom: 2px solid var(--atrament); }
@@ -667,4 +698,13 @@
   }
   :root[data-motyw="ciemny"] .miejsce { fill: var(--bc); }
   :root[data-motyw="ciemny"] .miejsce-probka { background: var(--bc); }
+
+  /* Miniatury strony glownej (src/components/Miniatury.tsx). */
+  .mini-blok { stroke: var(--b); }
+  .mini-woj { stroke: var(--papier); stroke-width: 0.8; stroke-linejoin: round; }
+  .mini-woj.pusty { fill: color-mix(in srgb, var(--akcent) 22%, var(--papier-2)); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-motyw="jasny"]) .mini-blok { stroke: var(--bc); }
+  }
+  :root[data-motyw="ciemny"] .mini-blok { stroke: var(--bc); }
 }
