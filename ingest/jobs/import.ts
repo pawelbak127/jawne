@@ -31,6 +31,7 @@ import { porownajZKlubem, type GlosZKlubem } from '../../src/lib/niezaleznosc.js
 import { sprawdzStreszczenie } from '../../src/lib/streszczenia.js';
 import { skrotOpisu, type WpisStreszczenia } from '../lib/streszczenia.js';
 import { wykazOswiadczen } from '../lib/oswiadczenia.js';
+import { uzupelnijMiniatury } from '../lib/miniatury.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
@@ -276,11 +277,6 @@ async function importGlosow(db: DatabaseSync): Promise<void> {
 }
 
 /**
- * Zdjecia posiadanie u siebie zamiast linkowania — patrz komentarz przy tabeli
- * `zdjecia`. Przy okazji ustawiamy `ma_zdjecie`, bo to jest jedyny moment,
- * w ktorym naprawde wiemy, czy rejestr zdjecie ma.
- */
-/**
  * Wykaz oswiadczen majatkowych z Kancelarii Sejmu — z pliku w repozytorium,
  * bez sieci (ingest/zrodla/sejm-oswiadczenia/ZRODLO.md). Wiersz, ktory nie
  * przejdzie kontroli, odpada ze zgloszeniem; wiecej niz 1% odrzuconych
@@ -307,12 +303,20 @@ async function importOswiadczen(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'oswiadczenia', w.oswiadczenia.length, `wykaz Kancelarii Sejmu z 24.10.2026 (BKSP.115.15322.2026), ${poslow} poslow`);
 }
 
+/**
+ * Zdjecia posiadanie u siebie zamiast linkowania — patrz komentarz przy tabeli
+ * `zdjecia`. Przy okazji ustawiamy `ma_zdjecie`, bo to jest jedyny moment,
+ * w ktorym naprawde wiemy, czy rejestr zdjecie ma.
+ */
 async function importZdjec(db: DatabaseSync): Promise<void> {
   log('-> zdjecia poslow');
   const poslowie = db.prepare('select id from poslowie order by id').all() as unknown as { id: number }[];
 
   const wstaw = db.prepare(
-    'insert into zdjecia(posel_id, typ, bajty) values (?,?,?) on conflict(posel_id) do update set typ=excluded.typ, bajty=excluded.bajty',
+    // Miniatura zerowana TYLKO przy zmianie bajtow — etap `miniatury` dorobi ja od nowa.
+    `insert into zdjecia(posel_id, typ, bajty) values (?,?,?)
+       on conflict(posel_id) do update set typ=excluded.typ, bajty=excluded.bajty,
+         miniatura = case when zdjecia.bajty = excluded.bajty then zdjecia.miniatura end`,
   );
   const oznacz = db.prepare('update poslowie set ma_zdjecie = ? where id = ?');
 
@@ -341,6 +345,24 @@ async function importZdjec(db: DatabaseSync): Promise<void> {
   const bajtow = wyniki.reduce((a, w) => a + (w.bajty?.length ?? 0), 0);
   log(`   ${maja} z ${poslowie.length} poslow ma zdjecie (${(bajtow / 1024 / 1024).toFixed(1)} MB)`);
   odnotujImport(db, 'zdjecia', maja, `bez zdjecia: ${poslowie.length - maja}`);
+  await importMiniatur(db);
+}
+
+/**
+ * Miniatury portretow — bez sieci, z zapisanych zdjec (ingest/lib/miniatury.ts).
+ * Etap opcjonalny: bez niego strona pokazuje oryginaly, wiec brak `sharp`
+ * na maszynie to ostrzezenie, nie blad (pulapka 79: krok opcjonalny nie moze
+ * wywracac tego, od czego zalezy strona).
+ */
+async function importMiniatur(db: DatabaseSync): Promise<void> {
+  const w = await uzupelnijMiniatury(db);
+  if (w === null) {
+    log('-> miniatury: biblioteka sharp niedostepna — strona pokaze oryginalne zdjecia');
+    return;
+  }
+  log(w.dorobiono
+    ? `-> miniatury: dorobiono ${w.dorobiono} (${(w.bajtow / 1024).toFixed(0)} kB, srednio ${(w.bajtow / w.dorobiono / 1024).toFixed(1)} kB)`
+    : '-> miniatury: wszystkie aktualne');
 }
 
 /**
@@ -2268,6 +2290,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   bzp: importBzp,
   regon: importRegon,
   zdjecia: importZdjec,
+  miniatury: importMiniatur,
   oswiadczenia: importOswiadczen,
   obecnosc: importObecnosci,
   okregi: importOkregow,

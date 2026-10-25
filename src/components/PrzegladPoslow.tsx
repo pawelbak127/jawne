@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { liczba, zOdmiana } from '@/lib/format';
+import { Portret } from '@/components/Portret';
 
 export type PoselNaLiscie = {
   id: number;
@@ -123,8 +124,15 @@ export function PrzegladPoslow({
               return (
                 <tr key={p.slug}>
                   <td>
-                    <Link href={`/posel/${p.slug}`} className="font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">{p.nazwa}</Link>
-                    {!p.aktywny ? <span className="ml-2 text-atrament-2">· mandat wygasł</span> : null}
+                    {/* Portret z miniatury (ok. 3 kB, leniwie) — przeglad tresci
+                        24.10.2026: na liscie 499 nazwisk twarz szybciej mowi, kto to. */}
+                    <span className="flex items-center gap-2.5">
+                      <Portret slug={p.slug} imieNazwisko={p.nazwa} maZdjecie={p.maZdjecie} rozmiar="maly" ozdobny />
+                      <span>
+                        <Link href={`/posel/${p.slug}`} className="font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">{p.nazwa}</Link>
+                        {!p.aktywny ? <span className="ml-2 text-atrament-2">· mandat wygasł</span> : null}
+                      </span>
+                    </span>
                   </td>
                   <td>
                     {k ? <span className="miejsce-probka kropka" style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties} /> : null}

@@ -180,7 +180,7 @@ export default async function StronaOkregu({
                         {/* Portret (przeglad tresci 24.10.2026): na liscie dwudziestu
                             nazwisk twarz szybciej mowi, kto to. Maly i leniwy — jak na gminie. */}
                         <Link href={`/posel/${p.slug}`} className="flex items-center gap-2.5 font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">
-                          <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="maly" />
+                          <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="maly" ozdobny />
                           <span>{p.imie_nazwisko}</span>
                         </Link>
                       </td>

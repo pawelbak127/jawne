@@ -5,7 +5,10 @@ import { inicjaly } from '@/lib/format';
  *
  * ZWYKLY <img>, nie next/image — swiadomie. Optymalizator liczy kazdy obraz
  * jako transformacje, a 499 portretow zjadaloby darmowy limit w kilka dni.
- * Pliki sa male (~50 kB) i lezą u nas w bazie, wiec nie ma czego optymalizowac.
+ * Zdjecia leza u nas w bazie: 110 x 137 px, srednio 14 kB (zmierzone
+ * 25.10.2026 — wczesniej pisalismy tu „~50 kB” bez pomiaru). Male i zwykle
+ * portrety biora miniature z importu (ok. 3 kB, ingest/lib/miniatury.ts),
+ * duzy — oryginal.
  *
  * `ma_zdjecie === 0` znaczy "sprawdzilismy i rejestr go nie ma" — wtedy od razu
  * inicjaly, zamiast polamanej ikonki. `null` znaczy "jeszcze nie sprawdzalismy",
@@ -16,11 +19,14 @@ export function Portret({
   imieNazwisko,
   maZdjecie,
   rozmiar = 'zwykly',
+  ozdobny = false,
 }: {
   slug: string;
   imieNazwisko: string;
   maZdjecie: number | null;
   rozmiar?: 'maly' | 'zwykly' | 'duzy';
+  /** Portret obok nazwiska w tym samym odnosniku — pusty `alt`, inaczej czytnik powie nazwisko dwa razy. */
+  ozdobny?: boolean;
 }) {
   const klasy = {
     maly: 'h-11 w-11 text-xs',
@@ -44,8 +50,8 @@ export function Portret({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/posel/${slug}/zdjecie`}
-      alt={`Portret: ${imieNazwisko}`}
+      src={rozmiar === 'duzy' ? `/posel/${slug}/zdjecie` : `/posel/${slug}/miniatura`}
+      alt={ozdobny ? '' : `Portret: ${imieNazwisko}`}
       loading="lazy"
       decoding="async"
       className={wspolne}

@@ -162,9 +162,10 @@ create index if not exists glosy_posel on glosy(posel_id);
   Zmierzone: 499 zdjec to 6,8 MB, w pliku, ktory i tak nie idzie do repozytorium.
 */
 create table if not exists zdjecia (
-  posel_id integer primary key,
-  typ      text not null,          -- rozpoznany z SYGNATURY bajtow, nie z naglowka
-  bajty    blob not null,
+  posel_id  integer primary key,
+  typ       text not null,          -- rozpoznany z SYGNATURY bajtow, nie z naglowka
+  bajty     blob not null,
+  miniatura blob,                   -- JPEG do malych portretow (ingest/lib/miniatury.ts); NULL = jeszcze nie ma
   foreign key (posel_id) references poslowie(id)
 );
 
@@ -1028,6 +1029,14 @@ export function zalozSchemat(db: DatabaseSync): string[] {
       db.exec(`alter table budzety_gmin add column ${k} integer`);
       zrobione.push(`dodano kolumne budzety_gmin.${k}`);
     }
+  }
+
+  // Miniatury portretow (25.10.2026). Bez kolumny trasa /posel/[slug]/miniatura
+  // oddaje oryginal, ale dane.ts pyta o nia wprost — wiec migracja, nie etap.
+  const kolumnyZdjec = db.prepare('pragma table_info(zdjecia)').all() as unknown as { name: string }[];
+  if (kolumnyZdjec.length && !kolumnyZdjec.some((k) => k.name === 'miniatura')) {
+    db.exec('alter table zdjecia add column miniatura blob');
+    zrobione.push('dodano kolumne zdjecia.miniatura');
   }
 
   const kolumnyGlosowan = db.prepare('pragma table_info(glosowania)').all() as unknown as { name: string }[];

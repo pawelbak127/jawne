@@ -452,6 +452,23 @@ export function zdjeciePosla(id: number): Zdjecie | null {
   }, null);
 }
 
+/**
+ * Miniatura portretu (ingest/lib/miniatury.ts) — ok. 3 kB zamiast 14 kB.
+ * Gdy jej nie ma (etap `miniatury` nie chodzil albo `sharp` niedostepny),
+ * oddajemy oryginal: miniatura to optymalizacja wagi, nie inna tresc.
+ * Brak KOLUMNY (baza sprzed migracji) tez konczy sie oryginalem, a nie bledem
+ * trasy — `bezTabeli` lapie tylko brak tabeli (pulapka 42).
+ */
+export function miniaturaPosla(id: number): Zdjecie | null {
+  try {
+    const w = jeden<{ miniatura: Uint8Array | null }>('select miniatura from zdjecia where posel_id = ?', id);
+    if (w?.miniatura) return { typ: 'image/jpeg', bajty: w.miniatura };
+  } catch (e) {
+    if (!/no such (column|table)/i.test((e as Error).message)) throw e;
+  }
+  return zdjeciePosla(id);
+}
+
 // ---------------------------------------------------------------------------
 // Porownanie z klubem
 // ---------------------------------------------------------------------------
