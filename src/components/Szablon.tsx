@@ -67,7 +67,8 @@ export function Wypis({ tytul, podtytul, obraz, children }: {
       {children}
       <p className="skad">
         <b>zrejestru.pl</b>
-        {' — niezależny serwis obywatelski: dane z oficjalnych rejestrów, przy każdej liczbie jej źródło, bez ocen. '}
+        {/* Krocej po przegladzie tresci 24.10.2026 — na telefonie zdanie zajmowalo trzy linie pod kazdym naglowkiem. */}
+        {' — niezależny serwis: dane z rejestrów publicznych, przy każdej liczbie źródło. '}
         <Link href="/o-serwisie">Jak to działa</Link>
       </p>
     </header>

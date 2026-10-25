@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { bazaDostepna, liczbaProcesow, stronaProcesow, zrodloImportu, type ProcesSkrot } from '@/lib/dane';
 import { dataKrotko, liczba, zOdmiana } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
+import { tytulUstawy } from '@/lib/tytul-ustawy';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Okruszek, Podstawa, Stronicowanie, Wypis, Zakladki } from '@/components/Szablon';
 
@@ -80,17 +81,22 @@ export default async function StronaUstaw({
       </p>
 
       <ul className="pozycje">
-        {lista.map((p) => (
+        {lista.map((p) => {
+          // „Rzadowy projekt ustawy o zmianie…” — przedrostek do metryczki
+          // (przeglad tresci 24.10.2026, src/lib/tytul-ustawy.ts).
+          const t = tytulUstawy(bezNazwiskOsobPrywatnych(p.tytul));
+          return (
           <li key={p.numer}>
             <div className="min-w-0">
               <p className="meta">
                 <span className="znak">{`druk ${p.numer}`}</span>
+                {t.autor ? ` · projekt ${t.autor}` : ''}
                 {' · '}
                 <b className={p.koniec === 'Uchwalono' ? 'text-atrament' : undefined}>{stan(p)}</b>
                 {p.ostatnia_data ? ` · ${dataKrotko(p.ostatnia_data)}` : ''}
                 {p.adres_publikacji ? ` · ${p.adres_publikacji}` : ''}
               </p>
-              <Link href={`/ustawa/${p.numer}`} className="tytul-poz">{bezNazwiskOsobPrywatnych(p.tytul)}</Link>
+              <Link href={`/ustawa/${p.numer}`} className="tytul-poz">{t.krotki}</Link>
               {/*
                 Pierwsze zdanie opisu Z REJESTRU. Tytul druku ma srednio 118
                 znakow prawniczej polszczyzny, po ktorym nie wiadomo, o co chodzi;
@@ -103,7 +109,8 @@ export default async function StronaUstaw({
               ) : null}
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <Stronicowanie biezaca={biezaca} stron={stron} adres={(nr) => adres(nr)} nowsze="← nowsze" starsze="starsze →" />

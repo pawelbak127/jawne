@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { bazaDostepna, DNI_DO_USTALENIA, pomocBezGminy, przegladPomocy, zrodloImportu } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
-import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, okresDni, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
@@ -69,7 +69,11 @@ export default function StronaPomocy() {
   const pierwszyWoj = wojZWartoscia[0];
   const ostatniWoj = wojZWartoscia[wojZWartoscia.length - 1];
 
-  const okres = `w ${zOdmiana(p.dni, 'dniu', 'dniach', 'dniach')} od ${dataKrotko(p.od)} do ${dataKrotko(p.do)}`;
+  // Zakres dat zamiast „w N pobranych dniach … nie w calym roku” (przeglad tresci
+  // 24.10.2026): dni sa ciagle, wiec zakres mowi to samo krocej, a dziury, jesli
+  // sa, nazywa okresDni. W naglowkach sam zakres, przy liczbie — pelny opis.
+  const okres = `od ${dataKrotko(p.od)} do ${dataKrotko(p.do)}`;
+  const okresPelny = okresDni(p.dni, p.od, p.do);
 
   const dzialy = [
     { id: 'kto', nazwa: 'Kto udzielił' },
@@ -79,7 +83,7 @@ export default function StronaPomocy() {
     { id: 'formy', nazwa: 'Formy pomocy' },
     { id: 'najwieksze', nazwa: 'Największe przypadki' },
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>
@@ -95,12 +99,12 @@ export default function StronaPomocy() {
           po dniu, wiec suma dotyczy tylko tych dni, a nie roku. Dlatego okres
           stoi w naglowku bloku i przy kazdej liczbie, a nie w przypisie.
         */}
-        <WLiczbach tytul={`W ${zOdmiana(p.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')}`} stopka={<WarunkiSudop pobrano={pobrano} />}>
+        <WLiczbach tytul={`W liczbach, ${okres}`} stopka={<WarunkiSudop pobrano={pobrano} />}>
           <Wiersz
             duzy
             co={naOsobe !== null ? 'Wartość pomocy brutto na mieszkańca' : 'Wartość pomocy brutto'}
             ile={naOsobe !== null ? zlote(naOsobe) : zlote(p.brutto)}
-            zCzego={<b>{`${zlote(p.brutto)}${ludnosc ? ` ÷ ${liczba(ludnosc)} mieszkańców (GUS)` : ''} · ${okres} — nie w całym roku`}</b>}
+            zCzego={`${zlote(p.brutto)}${ludnosc ? ` ÷ ${liczba(ludnosc)} mieszkańców (GUS)` : ''} · ${okresPelny}`}
             porownanie={zdanieDuzych}
             podstawa={podstawa}
           />
@@ -141,11 +145,6 @@ export default function StronaPomocy() {
           (src/lib/przeglad.ts). Skoro pokazujemy wynik sprzed chwili, a nie
           z tej sekundy, to trzeba napisac, z ktorej chwili.
         */}
-        <p className="stan-danych">
-          <span>{`stan danych: ${zOdmiana(p.dni, 'dzień', 'dni', 'dni')} (${dataKrotko(p.od)}–${dataKrotko(p.do)}) z 10 lat rejestru`}</span>
-          {p.policzono ? <span>{`zestawienie z ${dataKrotko(p.policzono)}${p.nieaktualny ? ' — od tego czasu doszły nowe dni, wejdą po najbliższym imporcie' : ''}`}</span> : null}
-          {p.swiezych ? <span>{`pominięto ${zOdmiana(p.swiezych, 'świeży dzień', 'świeże dni', 'świeżych dni')} (dzień wliczamy ${DNI_DO_USTALENIA} dni po dacie)`}</span> : null}
-        </p>
 
         <form role="search" action="/firmy" className="mt-6 max-w-xl">
           <label htmlFor="szukaj-firmy" className="mb-1.5 block font-semibold">Sprawdź firmę</label>
@@ -213,10 +212,9 @@ export default function StronaPomocy() {
               </p>
             }
           >
-            <ListaPaskow
-              tytul={pierwszyWoj ? `Najwięcej na mieszkańca w ${wojewodztwoWMiejscowniku(pierwszyWoj.wojewodztwo)}: ${zlote(pierwszyWoj.naOsobe)} — liczy się siedziba firmy` : undefined}
-              pozycje={pozycjeWoj(woj.slice(0, NA_WIERZCHU), pierwszyWoj?.naOsobe ?? null)}
-            />
+            {/* Bez drugiego naglowka nad lista — powtarzal tytul dzialu
+                (przeglad tresci 24.10.2026); o siedzibie mowi „Jak to liczymy”. */}
+            <ListaPaskow pozycje={pozycjeWoj(woj.slice(0, NA_WIERZCHU), pierwszyWoj?.naOsobe ?? null)} />
             {woj.length > NA_WIERZCHU ? (
               <Wiecej napis={`Pokaż wszystkie ${zOdmiana(woj.length, 'województwo', 'województwa', 'województw')}`}>
                 <ListaPaskow pozycje={pozycjeWoj(woj.slice(NA_WIERZCHU), pierwszyWoj?.naOsobe ?? null)} />
@@ -235,6 +233,15 @@ export default function StronaPomocy() {
             ) : null}
           </Dzial>
         </div>
+      </div>
+      {/* Stan danych na dole (przeglad tresci 24.10.2026), nie pod odpowiedzia. */}
+      <div className="obszar">
+        <p className="stan-danych mt-8">
+          <span>{`stan danych: ${zOdmiana(p.dni, 'dzień', 'dni', 'dni')} (${dataKrotko(p.od)}–${dataKrotko(p.do)}) z 10 lat rejestru`}</span>
+          {p.policzono ? <span>{`zestawienie z ${dataKrotko(p.policzono)}${p.nieaktualny ? ' — od tego czasu doszły nowe dni, wejdą po najbliższym imporcie' : ''}`}</span> : null}
+          {p.swiezych ? <span>{`pominięto ${zOdmiana(p.swiezych, 'świeży dzień', 'świeże dni', 'świeżych dni')} (dzień wliczamy ${DNI_DO_USTALENIA} dni po dacie)`}</span> : null}
+          <Link href="/stan">co i kiedy pobraliśmy →</Link>
+        </p>
       </div>
     </>
   );
@@ -280,13 +287,11 @@ function ZestawienieDzialu({ id, nr, naglowek, wiersze, suma, ukrywajOsoby = fal
       id={id}
       nr={nr}
       tytul={pierwszy && pierwszaNazwa
-        ? `${naglowek}: najwięcej ${pierwszaNazwa.pominieta ? 'podmiot bez nazwy' : skroc(pierwszaNazwa.tekst, 60)} — ${zlote(pierwszy.brutto)}`
+        ? `${naglowek}: najwięcej ${pierwszaNazwa.pominieta ? 'podmiot bez nazwy' : skroc(pierwszaNazwa.tekst, 60)} — ${zlote(pierwszy.brutto)}${suma && pierwszy.brutto !== null ? `, ${proc(pierwszy.brutto / suma)} całości` : ''}`
         : naglowek}
     >
-      <ListaPaskow
-        tytul={pierwszy && suma && pierwszy.brutto !== null ? `Pierwsza pozycja to ${proc(pierwszy.brutto / suma)} całej kwoty` : undefined}
-        pozycje={pozycje.slice(0, NA_WIERZCHU)}
-      />
+      {/* Jeden naglowek: udzial pierwszej pozycji dawniej stal osobno nad lista. */}
+      <ListaPaskow pozycje={pozycje.slice(0, NA_WIERZCHU)} />
       {pozycje.length > NA_WIERZCHU ? (
         <Wiecej napis={`Pokaż ${pozycje.length} największych ${napisWiecej}`}>
           <ListaPaskow pozycje={pozycje.slice(NA_WIERZCHU)} />

@@ -9,6 +9,7 @@ import { klubyWgGlosu } from '@/lib/glosy-klubow';
 import { TabelaKlubow } from '@/components/TabelaKlubow';
 import { dataKrotko, dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
+import { tytulUstawy } from '@/lib/tytul-ustawy';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { skutekPoprawkiSenatu, wynikGlosowania } from '@/lib/wynik-glosowania';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -61,6 +62,10 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
   const etapy = etapyProcesu(numer);
   const streszczenie = streszczenieUstawy(numer);
   const tytul = bezNazwiskOsobPrywatnych(p.tytul);
+  // H1 bez „Rzadowy projekt ustawy o zmianie…”, przedrostek w podtytule
+  // (przeglad tresci 24.10.2026). Pelny tytul druku zostaje w tytule strony
+  // i w wynikach wyszukiwania — tam szuka sie po urzedowym brzmieniu.
+  const t = tytulUstawy(tytul);
   const importProcesow = zrodloImportu('procesy');
   const ostatni = [...etapy].reverse().find((e) => e.data) ?? null;
 
@@ -102,18 +107,19 @@ export default async function StronaUstawy({ params }: { params: Promise<{ numer
     { id: 'droga', nazwa: 'Droga przez Sejm' },
     { id: 'glosowania', nazwa: 'Głosowania' },
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>
       <div className="obszar">
         <Okruszek ogniwa={[{ nazwa: 'Sejm' }, { adres: '/ustawy', nazwa: 'Ustawy' }, { nazwa: `druk nr ${p.numer}` }]} />
         <Wypis
-          tytul={tytul}
+          tytul={t.krotki}
           podtytul={
             <>
               <b className="text-atrament">{stan(p)}</b>
-              {p.rodzaj ? ` · ${p.rodzaj}` : ''}
+              {/* „projekt rządowy” mowi juz, ze to projekt ustawy — bez „· projekt ustawy” obok. */}
+              {t.autor ? ` · projekt ${t.autor}` : p.rodzaj ? ` · ${p.rodzaj}` : ''}
               {!p.koniec && ostatni ? ` · ostatni etap: ${bezNazwiskOsobPrywatnych(ostatni.nazwa)} (${dataKrotko(ostatni.data)})` : ''}
             </>
           }

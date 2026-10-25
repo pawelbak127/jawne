@@ -102,3 +102,19 @@ export function skutekPoprawkiSenatu(
 
 /** Zdanie objasniajace przy skutku — zeby „za” nie czytac jako „za poprawka”. */
 export const OBJASNIENIE_POPRAWKI_SENATU = 'Głosuje się wniosek o odrzucenie poprawki Senatu: „za” znaczy za odrzuceniem. Poprawkę uważa się za przyjętą, jeśli Sejm nie odrzuci jej bezwzględną większością (art. 121 ust. 3 Konstytucji).';
+
+/**
+ * Krotki tytul glosowania nad poprawka Senatu: „Poprawka Senatu nr 1 do ustawy
+ * o zmianie ustawy o podatku od towarow i uslug” zamiast „Sprawozdanie Komisji
+ * o uchwale Senatu w sprawie ustawy o … (druki nr 3132 i 3167)” z „poprawka 1”
+ * gdzies w podtytule (przeglad tresci 24.10.2026: dziesiec glosowan jednego
+ * punktu mialo ten sam H1). Slowa z rejestru — tylko przestawione; pelny tytul
+ * zostaje w podtytule. `null`, gdy ksztalt jest inny — wtedy H1 bez zmian.
+ */
+export function tytulPoprawkiSenatu(sprawa: string, przedmiot: string | null): string | null {
+  if (!przedmiot || !/^poprawk/iu.test(przedmiot.trim())) return null;
+  const ustawa = sprawa.match(/uchwa\p{L}*\s+senatu\s+w\s+sprawie\s+(ustawy\b.*?)(?:\s*\(druki?\b[^)]*\))?\s*$/iu)?.[1];
+  if (!ustawa) return null;
+  const poprawka = przedmiot.trim().replace(/^poprawk(a|i)\s+(?:nr\s+)?/iu, (_, k: string) => `Poprawk${k.toLowerCase()} Senatu nr `);
+  return `${poprawka} do ${ustawa}`;
+}

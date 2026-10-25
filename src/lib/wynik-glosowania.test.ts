@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { skutekPoprawkiSenatu, wynikGlosowania } from './wynik-glosowania';
+import { skutekPoprawkiSenatu, tytulPoprawkiSenatu, wynikGlosowania } from './wynik-glosowania';
 
 const g = (o: Partial<Parameters<typeof wynikGlosowania>[0]>) => ({
   rodzaj: 'ELECTRONIC', typ_wiekszosci: 'SIMPLE_MAJORITY', wiekszosc_glosow: 1, za: 0, przeciw: 0, wstrzymalo: 0, ...o,
@@ -54,5 +54,20 @@ describe('skutekPoprawkiSenatu — art. 121 ust. 3 Konstytucji (przeglad tresci 
     expect(skutekPoprawkiSenatu({ ...x, temat: 'wniosek o odrzucenie uchwały Senatu' }, x.w)).toBeNull();
     expect(skutekPoprawkiSenatu({ ...x, typ_wiekszosci: 'SIMPLE_MAJORITY' }, x.w)).toBeNull();
     expect(skutekPoprawkiSenatu(x, null)).toBeNull();
+  });
+});
+
+describe('tytulPoprawkiSenatu — krotki H1 (przeglad tresci 24.10.2026)', () => {
+  const vat = 'Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy o zmianie ustawy o podatku od towarów i usług (druki nr 3132 i 3167)';
+  it('slowa z rejestru, przestawione', () => {
+    expect(tytulPoprawkiSenatu(vat, 'poprawka 1')).toBe('Poprawka Senatu nr 1 do ustawy o zmianie ustawy o podatku od towarów i usług');
+    expect(tytulPoprawkiSenatu(vat, 'poprawki nr 2-3')).toBe('Poprawki Senatu nr 2-3 do ustawy o zmianie ustawy o podatku od towarów i usług');
+    expect(tytulPoprawkiSenatu('Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy - Kodeks pracy', 'poprawka 4'))
+      .toBe('Poprawka Senatu nr 4 do ustawy - Kodeks pracy');
+  });
+  it('inny ksztalt — bez zmian', () => {
+    expect(tytulPoprawkiSenatu(vat, 'wniosek o odrzucenie uchwały Senatu')).toBeNull();
+    expect(tytulPoprawkiSenatu('Sprawozdanie Komisji o rządowym projekcie ustawy o …', 'poprawka 1')).toBeNull();
+    expect(tytulPoprawkiSenatu(vat, null)).toBeNull();
   });
 });

@@ -70,7 +70,7 @@ export default async function Strona({ params }: { params: Promise<{ nip: string
     { id: 'rodzaje', nazwa: 'Rodzaje pomocy' },
     ...(o.gminy.length ? [{ id: 'gdzie', nazwa: 'Gdzie trafiła' }] : []),
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { bazaDostepna, firma, organyZeStrona, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaBzpFirmy, zamowieniaFirmy, zrodloImportu, type Firma, type PrzypadekFirmy, type ZamowieniaBzpFirmy, type ZamowieniaFirmy } from '@/lib/dane';
+import { bazaDostepna, firma, organyZeStrona, przeznaczeniaFirmy, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaBzpFirmy, zamowieniaFirmy, zrodloImportu, type Firma, type PrzeznaczenieFirmy, type PrzypadekFirmy, type ZamowieniaBzpFirmy, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
-import { dataKrotko, liczba, skroc, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, liczba, okresDni, skroc, udzial, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
-import { Dzial, Okruszek, Podstawa, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
+import { Dzial, ListaPaskow, Okruszek, Podstawa, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { adresSprawyKE, numerSprawyKE } from '@/lib/sprawy-ke';
@@ -46,8 +46,10 @@ export async function generateStaticParams(): Promise<{ nip: string }[]> {
  */
 function zakresDanych(f: Firma): string {
   const zDni = f.z_dni_ustalonych + f.z_dni_swiezych;
-  const okres = f.dni_od && f.dni_do ? ` (${dataKrotko(f.dni_od)} – ${dataKrotko(f.dni_do)})` : '';
-  const dni = `${zOdmiana(f.dni_kraju, 'dnia', 'dni', 'dni')} pobranych dla całego kraju${okres}`;
+  // Zakres dat zamiast liczby pobranych dni (przeglad tresci 24.10.2026).
+  const dni = f.dni_od && f.dni_do
+    ? `dni ${okresDni(f.dni_kraju, f.dni_od, f.dni_do)}, pobranych dla całego kraju`
+    : `${zOdmiana(f.dni_kraju, 'dnia', 'dni', 'dni')} pobranych dla całego kraju`;
   const swieze = f.z_dni_swiezych
     ? ` W tym ${liczba(f.z_dni_swiezych)} z dni, dla których nie minął jeszcze termin zgłoszenia pomocy — te są niepełne.`
     : '';
@@ -60,7 +62,7 @@ function zakresDanych(f: Firma): string {
   if (f.z_historii_gminy) {
     return `${liczba(f.z_historii_gminy)} z pełnej historii gminy i ${liczba(zDni)} z ${dni}.${swieze}${bezGminy}`;
   }
-  return `Tylko z ${dni} — nie z pełnych dziesięciu lat rejestru.${swieze}${bezGminy}`;
+  return `Z ${dni}; starsze dni rejestru pobieramy po kolei.${swieze}${bezGminy}`;
 }
 
 function widok(nip: string) {
@@ -105,8 +107,8 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
   const impTed = zrodloImportu('zamowienia');
   const impBzp = zrodloImportu('bzp');
   const grupy = pogrupuj(przypadki);
+  const przeznaczenia = przeznaczeniaFirmy(nip);
   const maStrone = (p: PrzypadekFirmy) => Boolean(p.nip_udzielajacego && zeStrona.has(p.nip_udzielajacego));
-  const roznaNominalna = przypadki.some((p) => p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1);
   const podstawy = [...new Set(przypadki.map((p) => p.podstawa).filter((x): x is string => Boolean(x)))];
   const gmina = f.teryt && f.gmina
     ? <Link href={`/gmina/${f.teryt}`}>{`${f.gmina_rodzaj === 'gmina' ? `gmina ${f.gmina}` : f.gmina} — publiczne pieniądze w gminie`}</Link>
@@ -120,7 +122,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
     ...(bzp.czesci > 0 ? [{ id: 'bzp', nazwa: 'Zamówienia krajowe' }] : []),
     ...(zamowienia.ogloszen > 0 ? [{ id: 'zamowienia', nazwa: 'Zamówienia unijne' }] : []),
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>
@@ -186,19 +188,6 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
           ) : null}
         </WLiczbach>
 
-        <p className="stan-danych">
-          <span>{`NIP ${f.nip}`}</span>
-          {/*
-            Zrodlo opisuje kategorie 3 jako "przedsiebiorstwo nienalezace do
-            kategorii okreslonych kodem od 0 do 2" — czyli po ludzku: duze.
-          */}
-          {f.wielkosc ? <span>{f.wielkosc_kod === '3' ? 'duży przedsiębiorca' : f.wielkosc}</span> : null}
-          {f.pkd ? <span>{`PKD ${f.pkd}`}</span> : null}
-          <span>
-            {'stan danych: '}
-            {[imp ? `SUDOP ${dataKrotko(imp.kiedy)}` : null, bzp.czesci > 0 && impBzp ? `BZP ${dataKrotko(impBzp.kiedy)}` : null, zamowienia.ogloszen > 0 && impTed ? `TED ${dataKrotko(impTed.kiedy)}` : null].filter(Boolean).join(' · ')}
-          </span>
-        </p>
       </div>
 
       <div className="obszar z-spisem">
@@ -217,7 +206,7 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
                   Podstawa prawna i sprawa w Komisji Europejskiej (04.10.2026) —
                   prosba Pawla „czy da sie wejsc glebiej w te pomoc". Oba pola sa
                   w SUDOP; dokumentow (decyzji, umow) rejestr nie udostepnia.
-                  Przy kazdym przypadku osobno — w liscie „osobno” nizej.
+                  Przy kazdym wierszu tabeli, gdy cala grupa ma te sama.
                 */}
                 {podstawy.slice(0, 6).map((x) => <li key={x}>{`Podstawa prawna: ${x}`}</li>)}
                 <li>
@@ -229,6 +218,23 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
               </ul>
             }
           >
+            {/*
+              Podsumowanie ze WSZYSTKICH przypadkow, zanim pojdzie lista
+              najnowszych (przeglad tresci 24.10.2026). Przy jednym
+              przeznaczeniu nic nie wnosi — tabela mowi to samo.
+            */}
+            {przeznaczenia.length > 1 ? (
+              <>
+                <h3>{`Na co: ${zOdmiana(przeznaczenia.length, 'przeznaczenie', 'przeznaczenia', 'przeznaczeń')}, wszystkie przypadki`}</h3>
+                <ListaPaskow pozycje={pozycjePrzeznaczen(przeznaczenia.slice(0, 5), f.brutto)} />
+                {przeznaczenia.length > 5 ? (
+                  <Wiecej napis={`Pokaż wszystkie ${zOdmiana(przeznaczenia.length, 'przeznaczenie', 'przeznaczenia', 'przeznaczeń')}`}>
+                    <ListaPaskow pozycje={pozycjePrzeznaczen(przeznaczenia.slice(5), f.brutto, przeznaczenia[0]?.brutto ?? null)} />
+                  </Wiecej>
+                ) : null}
+                <h3>{przypadki.length < f.przypadkow ? `Najnowsze przypadki: ${liczba(przypadki.length)} z ${liczba(f.przypadkow)}` : 'Przypadki'}</h3>
+              </>
+            ) : null}
             {grupy.length < przypadki.length ? (
               <p className="wstep">Zgrupowane, gdy data, podmiot udzielający i przeznaczenie pomocy są te same.</p>
             ) : null}
@@ -244,20 +250,27 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
                       {skroc(g.p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}
                       <Udzielajacy p={g.p} maStrone={maStrone(g.p)} />
                       {g.p.bez_gminy ? <span className="block text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>rejestr nie podaje gminy</span> : null}
+                      {g.podstawa ? <span className="block text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>{`Podstawa prawna: ${g.podstawa}`}</span> : null}
+                      {/* Odnosnik do Komisji tylko przy numerze „SA.…” — patrz sprawy-ke.ts. */}
+                      {g.sprawa ? (
+                        <a href={adresSprawyKE(g.sprawa)} target="_blank" rel="noreferrer" className="block" style={{ fontSize: 'var(--drobny)' }}>
+                          {`decyzja Komisji Europejskiej w sprawie ${g.sprawa}`}
+                        </a>
+                      ) : null}
                     </td>
                     <td className="l" data-etykieta="przypadki">{liczba(g.ile)}</td>
-                    <td className="l">{g.ile === 1 || g.min === g.max ? zlote(g.max) : `od ${zlote(g.min)} do ${zlote(g.max)}`}</td>
+                    <td className="l">
+                      {g.ile === 1 || g.min === g.max ? zlote(g.max) : `od ${zlote(g.min)} do ${zlote(g.max)}`}
+                      {/* Nominalna bywa inna niz brutto (pozyczka, gwarancja) — tylko wtedy,
+                          bo powtorzona ta sama liczba tylko myli. */}
+                      {g.ile === 1 && g.p.nominalna !== null && g.p.brutto !== null && Math.abs(g.p.nominalna - g.p.brutto) > 1 ? (
+                        <span className="block text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>{`nominalnie ${zlote(g.p.nominalna)}`}</span>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {grupy.length < przypadki.length || roznaNominalna || podstawy.length ? (
-              <Wiecej napis={`Pokaż ${zOdmiana(przypadki.length, 'przypadek', 'przypadki', 'przypadków')} osobno, z podstawą prawną`}>
-                <ul className="pozycje">
-                  {przypadki.map((p, i) => <PrzypadekOsobno key={`${p.dzien}-${i}`} p={p} maStrone={maStrone(p)} />)}
-                </ul>
-              </Wiecej>
-            ) : null}
 
             {!w.osobaPrawna && KONTAKT ? (
               <p className="mt-4 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
@@ -272,6 +285,22 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
           {zamowienia.ogloszen > 0 ? <Zamowienia nr={nr('zamowienia')} z={zamowienia} /> : null}
         </div>
       </div>
+      {/* NIP, PKD i stan danych na dole (przeglad tresci 24.10.2026). */}
+      <div className="obszar">
+        <p className="stan-danych mt-8">
+          <span>{`NIP ${f.nip}`}</span>
+          {/*
+            Zrodlo opisuje kategorie 3 jako "przedsiebiorstwo nienalezace do
+            kategorii okreslonych kodem od 0 do 2" — czyli po ludzku: duze.
+          */}
+          {f.wielkosc ? <span>{f.wielkosc_kod === '3' ? 'duży przedsiębiorca' : f.wielkosc}</span> : null}
+          {f.pkd ? <span>{`PKD ${f.pkd}`}</span> : null}
+          <span>
+            {'stan danych: '}
+            {[imp ? `SUDOP ${dataKrotko(imp.kiedy)}` : null, bzp.czesci > 0 && impBzp ? `BZP ${dataKrotko(impBzp.kiedy)}` : null, zamowienia.ogloszen > 0 && impTed ? `TED ${dataKrotko(impTed.kiedy)}` : null].filter(Boolean).join(' · ')}
+          </span>
+        </p>
+      </div>
     </>
   );
 }
@@ -280,19 +309,27 @@ export default async function StronaFirmy({ params }: { params: Promise<{ nip: s
  * Przypadki z ta sama data, podmiotem udzielajacym, przeznaczeniem i forma
  * w jednym wierszu. ZMIERZONE 08.10.2026: PGE GiEK ma w 50 najnowszych
  * po 15–16 transz rynku mocy z jednego dnia od jednego podmiotu — lista
- * pozycja po pozycji to 50 prawie identycznych wierszy. Kazdy przypadek
- * z osobna (z podstawa prawna i sprawa KE) zostaje w liscie „osobno”.
+ * pozycja po pozycji to 50 prawie identycznych wierszy.
+ *
+ * Podstawa prawna i sprawa KE stoja przy wierszu, gdy cala grupa ma te sama
+ * (przeglad tresci 24.10.2026: osobna lista „pokaz przypadki osobno” dublowala
+ * tabele tylko po to, zeby je pokazac). Gdy w grupie sa rozne — pole puste
+ * zamiast zgadywania, ktora jest „ta”.
  */
 function pogrupuj(przypadki: PrzypadekFirmy[]) {
-  const grupy = new Map<string, { klucz: string; p: PrzypadekFirmy; ile: number; min: number | null; max: number | null }>();
+  type Grupa = { klucz: string; p: PrzypadekFirmy; ile: number; min: number | null; max: number | null; podstawa: string | null; sprawa: string | null };
+  const grupy = new Map<string, Grupa>();
   for (const p of przypadki) {
     const klucz = [p.dzien, p.nip_udzielajacego ?? p.udzielajacy, p.przeznaczenie, p.forma, p.bez_gminy].join('|');
+    const sprawa = numerSprawyKE(p.srodek_numer);
     const g = grupy.get(klucz);
     if (!g) {
-      grupy.set(klucz, { klucz, p, ile: 1, min: p.brutto, max: p.brutto });
+      grupy.set(klucz, { klucz, p, ile: 1, min: p.brutto, max: p.brutto, podstawa: p.podstawa, sprawa });
       continue;
     }
     g.ile++;
+    if (g.podstawa !== p.podstawa) g.podstawa = null;
+    if (g.sprawa !== sprawa) g.sprawa = null;
     // null to brak kwoty, nie zero (zasada 4) — nie wchodzi do „od … do …”.
     if (p.brutto !== null) {
       g.min = g.min === null ? p.brutto : Math.min(g.min, p.brutto);
@@ -302,36 +339,13 @@ function pogrupuj(przypadki: PrzypadekFirmy[]) {
   return [...grupy.values()];
 }
 
-function PrzypadekOsobno({ p, maStrone }: { p: PrzypadekFirmy; maStrone: boolean }) {
-  const sprawa = numerSprawyKE(p.srodek_numer);
-  return (
-    <li>
-      <div className="min-w-0">
-        <p className="font-semibold leading-snug">{skroc(p.przeznaczenie ?? 'przeznaczenie nieokreślone', 130)}</p>
-        <Udzielajacy p={p} maStrone={maStrone} />
-        <p className="meta">
-          {`${dataKrotko(p.dzien)}${p.forma ? ` · ${skroc(p.forma, 60)}` : ''}${p.srodek ? ` · ${skroc(p.srodek, 60)}` : ''}`}
-        </p>
-        {p.podstawa ? <p className="meta">{`Podstawa prawna: ${p.podstawa}`}</p> : null}
-        {/* Odnosnik do Komisji tylko przy numerze „SA.…" — patrz sprawy-ke.ts. */}
-        {sprawa ? (
-          <a href={adresSprawyKE(sprawa)} target="_blank" rel="noreferrer" className="meta text-akcent underline underline-offset-4 hover:no-underline">
-            {`decyzja Komisji Europejskiej w sprawie ${sprawa}`}
-          </a>
-        ) : null}
-      </div>
-      <p className="kwota">
-        {zlote(p.brutto)}
-        {/*
-          Nominalna bywa inna niz brutto (pozyczka, gwarancja) — pokazujemy
-          ja tylko wtedy, bo powtorzona ta sama liczba tylko myli.
-        */}
-        {p.nominalna !== null && p.brutto !== null && Math.abs(p.nominalna - p.brutto) > 1 ? (
-          <small>{`nominalnie ${zlote(p.nominalna)}`}</small>
-        ) : null}
-      </p>
-    </li>
-  );
+function pozycjePrzeznaczen(wiersze: PrzeznaczenieFirmy[], suma: number | null, max = wiersze[0]?.brutto ?? null) {
+  return wiersze.map((w) => ({
+    klucz: w.nazwa,
+    nazwa: w.nazwa,
+    opis: `${zlote(w.brutto)} · ${zOdmiana(w.przypadkow, 'przypadek', 'przypadki', 'przypadków')}${suma && w.brutto !== null ? ` · ${udzial(w.brutto / suma)}` : ''}`,
+    udzial: max && w.brutto !== null ? w.brutto / max : 0,
+  }));
 }
 
 /**

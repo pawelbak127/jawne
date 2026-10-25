@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import {
   bazaDostepna, dniUstalonePomocy, glosyOkregu, gminyOkregu, kluby, okreg, pieniadzeOkregow, podsumowaniaPorownan, poslowieOkregu, zrodloImportu,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, liczba, procent, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, okresDni, procent, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { mediana } from '@/lib/porownanie-gmin';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
@@ -12,6 +12,7 @@ import { stylGlosu } from '@/lib/barwy-glosu';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { BrakDanych } from '@/components/BrakDanych';
+import { Portret } from '@/components/Portret';
 import { Dzial, Okruszek, Podstawa, Uwaga, Wiersz, WLiczbach, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
 
@@ -91,7 +92,7 @@ export default async function StronaOkregu({
     ...(glosowania.length && aktywni.length ? [{ id: 'ostatnie-okregu', nazwa: 'Ostatnie głosowania' }] : []),
     { id: 'gminy-okregu', nazwa: 'Gminy' },
   ];
-  const nrDzialu = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nrDzialu = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>
@@ -127,16 +128,6 @@ export default async function StronaOkregu({
             zCzego={<>{`w ${zOdmiana(powiaty.size, 'powiecie', 'powiatach', 'powiatach')}, według PKW z 2023 r. `}<a href="#gminy-okregu">gminy ↓</a></>}
             podstawa={<Podstawa adres={ZRODLO_PKW} nazwa="PKW, wybory 2023" />}
           />
-          {o.uprawnionych_kraj ? (
-            <Wiersz
-              co="Uprawnieni do głosowania w 2023 r."
-              ile={liczba(o.uprawnionych_kraj)}
-              zCzego={o.uprawnionych_zagr
-                ? `do tego ${liczba(o.uprawnionych_zagr)} za granicą i na statkach — PKW dolicza ich głosy do tego okręgu`
-                : 'wybory do Sejmu 15 października 2023'}
-              podstawa={<Podstawa adres={ZRODLO_PKW} nazwa="PKW, wybory 2023" />}
-            />
-          ) : null}
           {pieniadze && ueNaOsobe !== null ? (
             <Wiersz
               co="Fundusze Europejskie 2021–2027 na mieszkańca gmin okręgu"
@@ -150,7 +141,7 @@ export default async function StronaOkregu({
             <Wiersz
               co="Pomoc publiczna dla firm na mieszkańca gmin okręgu"
               ile={zlote(pomocNaOsobe)}
-              zCzego={`${zlote(pieniadze.pomoc)} brutto dla firm z siedzibą w gminach okręgu, w ${zOdmiana(dniPomocy.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')} od ${dataKrotko(dniPomocy.od)} do ${dataKrotko(dniPomocy.do)} — nie w całym roku`}
+              zCzego={`${zlote(pieniadze.pomoc)} brutto dla firm z siedzibą w gminach okręgu, ${okresDni(dniPomocy.dni, dniPomocy.od, dniPomocy.do)}`}
               porownanie={medPomoc ? `Mediana ${liczba(medPomoc.z)} okręgów: ${zlote(medPomoc.wartosc)} na mieszkańca.` : null}
               podstawa={<Podstawa adres={ZRODLO_SUDOP} nazwa="SUDOP, UOKiK" data={importSudop ? dataKrotko(importSudop.kiedy) : null} />}
             />
@@ -164,9 +155,6 @@ export default async function StronaOkregu({
           </p>
         ) : null}
 
-        <p className="stan-danych">
-          <span>{`stan danych: posłowie ${importPoslow ? dataKrotko(importPoslow.kiedy) : '—'} · okręgi i gminy: PKW 2023`}</span>
-        </p>
       </div>
 
       <div className="obszar z-spisem">
@@ -188,7 +176,14 @@ export default async function StronaOkregu({
                   const por = porownania.get(p.id);
                   return (
                     <tr key={p.slug}>
-                      <td><Link href={`/posel/${p.slug}`} className="font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">{p.imie_nazwisko}</Link></td>
+                      <td>
+                        {/* Portret (przeglad tresci 24.10.2026): na liscie dwudziestu
+                            nazwisk twarz szybciej mowi, kto to. Maly i leniwy — jak na gminie. */}
+                        <Link href={`/posel/${p.slug}`} className="flex items-center gap-2.5 font-semibold text-atrament underline decoration-kreska-2 underline-offset-4 hover:text-akcent">
+                          <Portret slug={p.slug} imieNazwisko={p.imie_nazwisko} maZdjecie={p.ma_zdjecie} rozmiar="maly" />
+                          <span>{p.imie_nazwisko}</span>
+                        </Link>
+                      </td>
                       <td>
                         {k ? <span className="miejsce-probka kropka" style={{ '--b': k.barwa, '--bc': k.barwaCiemna } as React.CSSProperties} /> : null}
                         {p.klub_id ?? 'bez klubu'}
@@ -202,7 +197,7 @@ export default async function StronaOkregu({
               </tbody>
             </table>
             <p className="mt-2 text-atrament-2" style={{ fontSize: 'var(--drobny)' }}>
-              Kolejność alfabetyczna, nie według liczby — to nie jest ranking (zasada „nie oceniamy”).
+              Kolejność alfabetyczna.
             </p>
             {byli.length ? (
               <p className="mt-3" style={{ fontSize: 'var(--sredni)' }}>
@@ -323,6 +318,12 @@ export default async function StronaOkregu({
             </div>
           </Dzial>
         </div>
+      </div>
+      {/* Stan danych na dole (przeglad tresci 24.10.2026). */}
+      <div className="obszar">
+        <p className="stan-danych mt-8">
+          <span>{`stan danych: posłowie ${importPoslow ? dataKrotko(importPoslow.kiedy) : '—'} · okręgi i gminy: PKW 2023`}</span>
+        </p>
       </div>
     </>
   );

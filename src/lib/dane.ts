@@ -2552,6 +2552,34 @@ export function firma(nip: string): Firma | null {
   );
 }
 
+export type PrzeznaczenieFirmy = { nazwa: string; przypadkow: number; brutto: number | null };
+
+/**
+ * Na co firma dostala pomoc — ze WSZYSTKICH jej przypadkow, nie z 50
+ * najnowszych (przeglad tresci 24.10.2026: PGE GiEK miala na stronie 50
+ * prawie identycznych wierszy rynku mocy, a podsumowania nie bylo wcale).
+ * Ten sam zbior co `firma()`: przypadki gminne i bez gminy (U6), wiec suma
+ * brutto rowna sie `firma().brutto`. Po indeksie `pomoc_nip` — jedna firma.
+ */
+export function przeznaczeniaFirmy(nip: string): PrzeznaczenieFirmy[] {
+  const bez = jestTabela('pomoc_bez_gminy');
+  const zrodlo = bez
+    ? `(select przeznaczenie, wartosc_brutto from pomoc_publiczna where nip_beneficjenta = ?
+        union all
+        select przeznaczenie, wartosc_brutto from pomoc_bez_gminy where nip_beneficjenta = ?)`
+    : '(select przeznaczenie, wartosc_brutto from pomoc_publiczna where nip_beneficjenta = ?)';
+  return bezTabeli(
+    () => wszystkie<PrzeznaczenieFirmy>(
+      `select coalesce(przeznaczenie, 'przeznaczenie nieokreślone') as nazwa, count(*) as przypadkow, sum(wartosc_brutto) as brutto
+         from ${zrodlo}
+        group by 1
+        order by brutto desc nulls last, przypadkow desc`,
+      ...(bez ? [nip, nip] : [nip]),
+    ),
+    [],
+  );
+}
+
 /**
  * Beneficjenci do mapy strony: NIP i nazwa, zeby mapa wzieła tylko tych,
  * ktorych nazwe wolno pokazac BEZ progu kwotowego. Osoby fizyczne odslaniane

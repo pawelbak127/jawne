@@ -13,7 +13,7 @@ import { ZRODLO_SUDOP } from '@/components/WarunkiSudop';
  */
 export const metadata: Metadata = {
   title: 'Firmy — pomoc publiczna i zamówienia',
-  description: 'Czy firma dostała pomoc publiczną albo zamówienie publiczne — szukaj po nazwie albo numerze NIP.',
+  description: 'Czy firma dostała pomoc publiczną — szukaj po nazwie albo numerze NIP. Na stronie firmy także wygrane zamówienia publiczne.',
   robots: { index: false, follow: true },
 };
 
@@ -40,7 +40,10 @@ export default async function StronaFirm({ searchParams }: { searchParams: Promi
       <Okruszek ogniwa={[{ nazwa: 'Pieniądze publiczne' }, { nazwa: 'Firmy' }]} />
       <Wypis
         tytul="Firmy"
-        podtytul="Czy firma dostała pomoc publiczną albo zamówienie publiczne. Szukaj po nazwie albo numerze NIP."
+        // Wyszukiwarka zna firmy z rejestru pomocy publicznej (indeks firm) — sam
+        // wykonawca zamowienia bez pomocy sie tu nie znajdzie, wiec podtytul tego
+        // nie obiecuje (przeglad tresci 24.10.2026). Zamowienia sa na stronie firmy.
+        podtytul="Czy firma dostała pomoc publiczną. Szukaj po nazwie albo numerze NIP — na stronie firmy są też wygrane przez nią zamówienia publiczne."
       />
 
       {/* Zwykly formularz GET: dziala bez JavaScriptu, a adres z fraza da sie wyslac. */}

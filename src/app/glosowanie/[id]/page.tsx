@@ -6,17 +6,16 @@ import { BARWY_GLOSU, stylGlosu } from '@/lib/barwy-glosu';
 import { opisGlosowania, opisJednaLinia } from '@/lib/opis-glosowania';
 import { bezNazwiskOsobPrywatnych, pominietoNazwiska } from '@/lib/prywatnosc';
 import { etykieta as etykietaGlosu } from '@/lib/glosy';
-import { wynikGlosowania, OBJASNIENIE_POPRAWKI_SENATU, skutekPoprawkiSenatu } from '@/lib/wynik-glosowania';
+import { wynikGlosowania, OBJASNIENIE_POPRAWKI_SENATU, skutekPoprawkiSenatu, tytulPoprawkiSenatu } from '@/lib/wynik-glosowania';
 import { klubyWgGlosu } from '@/lib/glosy-klubow';
 import { TabelaKlubow } from '@/components/TabelaKlubow';
-import { dataKrotko, dataSlownie, liczba, procent, skroc, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, skroc, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Polkole, type Blok } from '@/components/Polkole';
 import { PaseczekGlosow } from '@/components/PaseczekGlosow';
 import { TabelaGlosow } from '@/components/TabelaGlosow';
 import { Dzial, Okruszek, Podstawa, Uwaga, Wiecej, Wiersz, WLiczbach, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
-import { Zgadnij } from '@/components/Zgadnij';
 
 /*
  * Pusta lista = strona generuje sie przy pierwszym wejsciu i zostaje w pamieci
@@ -73,6 +72,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
   const o = opisGlosowania(g);
   const wynik = wynikGlosowania(g);
   const skutekSenatu = skutekPoprawkiSenatu(g, wynik);
+  const krotkiTytul = skutekSenatu ? tytulPoprawkiSenatu(o.sprawa, o.przedmiot) : null;
   const importGlosowan = zrodloImportu('glosowania');
   const adresRejestru = `https://api.sejm.gov.pl/sejm/term10/votings/${g.posiedzenie}/${g.numer}`;
   const bezNazwisk = pominietoNazwiska(g.tytul) || pominietoNazwiska(g.temat) || pominietoNazwiska(g.opis);
@@ -118,7 +118,6 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
     });
 
   const oddanych = g.za + g.przeciw + g.wstrzymalo;
-  const poparcie = oddanych > 0 ? (g.za / oddanych) * 100 : null;
 
   /*
    * Najczestszy glos kazdego klubu — do tytulu-wniosku nad tabela (F7)
@@ -131,17 +130,16 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
   const tytulKlubow = grupy.length
     ? `Kluby: ${grupy.slice(0, 2).map((gr, i) => `${i === 0 ? `w ${gr.kluby.length} z ${klubow}` : `w ${gr.kluby.length}`} najczęściej „${gr.glos}”`).join(', ')}`
     : 'Jak głosowały kluby';
-  const pytanyGlos = grupy[0]?.glos ?? null;
-  const pytaneKluby = grupy[0]?.kluby ?? [];
 
   const dzialy = glosy.length
     ? [
-        ...(wynikiWgKlubow.length ? [{ id: 'kluby', nazwa: 'Kluby' }] : []),
+        // Polkole zaraz pod wynikiem (przeglad tresci 24.10.2026), potem kluby.
         { id: 'sala', nazwa: 'Na sali' },
+        ...(wynikiWgKlubow.length ? [{ id: 'kluby', nazwa: 'Kluby' }] : []),
         { id: 'wszyscy', nazwa: 'Głosy imienne' },
       ]
     : [];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   return (
     <>
@@ -154,11 +152,12 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
           ]}
         />
         <Wypis
-          tytul={o.sprawa}
+          tytul={krotkiTytul ?? o.sprawa}
           podtytul={
             <>
               {dataSlownie(g.data)}
-              {o.przedmiot ? <>{' · '}<b className="text-atrament">{o.przedmiot}</b></> : null}
+              {krotkiTytul ? ` · ${o.sprawa}` : null}
+              {o.przedmiot && !krotkiTytul ? <>{' · '}<b className="text-atrament">{o.przedmiot}</b></> : null}
               {o.nadCaloscia ? <>{' · '}<b className="text-atrament">głosowanie nad całością projektu</b></> : null}
               {o.porzadkowe ? ' · sprawa porządkowa' : ''}
             </>
@@ -182,6 +181,15 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
         >
           <div className="py-3">
             <PaseczekGlosow g={g} zOpisem />
+            {/* Kafel „Głosy „za” wśród oddanych” zniknal po przegladzie tresci
+                24.10.2026 — powtarzal pasek nad nim. Liczby z mianownikiem sa
+                w legendzie paska; odnosnik do klubow i podstawa zostaja tutaj. */}
+            {oddanych > 0 ? (
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1" style={{ fontSize: 'var(--drobny)' }}>
+                {wynikiWgKlubow.length ? <a href="#kluby">jak głosowały kluby ↓</a> : null}
+                {!wynik ? <Podstawa adres={adresRejestru} nazwa="dane głosowania" data={importGlosowan ? dataKrotko(importGlosowan.kiedy) : null} /> : null}
+              </p>
+            ) : null}
           </div>
           {/*
             Wymagana wiekszosc PRZED procentem „za”: przy wecie (3/5) i przy
@@ -211,21 +219,7 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
               zCzego={`${skutekSenatu}. ${OBJASNIENIE_POPRAWKI_SENATU}`}
             />
           ) : null}
-          {oddanych > 0 ? (
-            <Wiersz
-              duzy={!wynik}
-              co="Głosy „za” wśród oddanych"
-              ile={procent(poparcie)}
-              zCzego={
-                <>
-                  {/* Mianownik nie jest ozdoba: 60% z 90 glosow to co innego niz 60% z 460. */}
-                  {`${liczba(g.za)} z ${zOdmiana(oddanych, 'oddanego głosu', 'oddanych głosów', 'oddanych głosów')}${g.nieobecnych > 0 ? ` · nie głosowało ${liczba(g.nieobecnych)}` : ''} `}
-                  {wynikiWgKlubow.length ? <a href="#kluby">jak głosowały kluby ↓</a> : null}
-                </>
-              }
-              podstawa={wynik ? null : <Podstawa adres={adresRejestru} nazwa="dane głosowania" data={importGlosowan ? dataKrotko(importGlosowan.kiedy) : null} />}
-            />
-          ) : (
+          {oddanych > 0 ? null : (
             // Kworum i wybory na liscie nie maja glosow za/przeciw. Procent
             // "za" bylby tu polpauza bez wyjasnienia — mowimy wiec wprost.
             <Wiersz
@@ -275,34 +269,6 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
         <div className="obszar z-spisem">
           <SpisDzialow dzialy={dzialy.map((d) => ({ ...d, nr: nr(d.id) }))} />
           <div className="dzialy">
-            {wynikiWgKlubow.length ? (
-              <Dzial
-                id="kluby"
-                nr={nr('kluby')}
-                tytul={tytulKlubow}
-                obok={<Podstawa adres={adresRejestru} nazwa="rejestr głosowań" />}
-              >
-                <p className="wstep">Kluby z dnia głosowania — także te, których dziś już nie ma. Posłowie niezrzeszeni nie tworzą klubu, więc ich wiersz nie wchodzi do liczby klubów.</p>
-                {pytanyGlos && klubow >= 4 ? (
-                  <Zgadnij
-                    id="zg-kluby"
-                    pytanie={`Jak myślisz: w ilu z ${klubow} klubów najczęstszym głosem było „${pytanyGlos}”?`}
-                    prawda={pytaneKluby.length}
-                    min={0}
-                    max={klubow}
-                    jednostka=""
-                    odpowiedz={
-                      <p>
-                        <b>{liczba(pytaneKluby.length)}</b>
-                        {` — ${pytaneKluby.join(', ')}`.replace(/\.?$/, '.')}
-                      </p>
-                    }
-                  />
-                ) : null}
-                <TabelaKlubow wyniki={wynikiWgKlubow} kluby={listaKlubow} />
-              </Dzial>
-            ) : null}
-
             <Dzial id="sala" nr={nr('sala')} tytul={`Na sali: ${zOdmiana(glosy.length, 'poseł', 'posłów', 'posłów')}, kolor to oddany głos`}>
               <p className="wstep">
                 Miejsca ułożone klubami. Jednolity blok znaczy, że klub głosował razem.
@@ -323,6 +289,18 @@ export default async function StronaGlosowania({ params }: { params: Promise<{ i
                 <Polkole bloki={bloki} podpis={`Głosy imienne: ${glosy.length} posłów`} probkiBlokow={false} />
               </div>
             </Dzial>
+
+            {wynikiWgKlubow.length ? (
+              <Dzial
+                id="kluby"
+                nr={nr('kluby')}
+                tytul={tytulKlubow}
+                obok={<Podstawa adres={adresRejestru} nazwa="rejestr głosowań" />}
+              >
+                <p className="wstep">Kluby z dnia głosowania — także te, których dziś już nie ma. Posłowie niezrzeszeni nie tworzą klubu, więc ich wiersz nie wchodzi do liczby klubów.</p>
+                <TabelaKlubow wyniki={wynikiWgKlubow} kluby={listaKlubow} />
+              </Dzial>
+            ) : null}
 
             <Dzial id="wszyscy" nr={nr('wszyscy')} tytul={`Głosy imienne: ${zOdmiana(glosy.length, 'poseł', 'posłów', 'posłów')}`}>
               <p className="wstep">

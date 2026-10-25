@@ -102,7 +102,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
     ...(jestPytan ? [{ id: 'pytania', nazwa: 'Interpelacje i zapytania' }] : []),
     ...(oswiadczenia.length ? [{ id: 'oswiadczenia', nazwa: 'Oświadczenia majątkowe' }] : []),
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const grupyOstatnich = grupujPoPunkcie(ostatnie);
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   const metryczka = ([
     ['Głosów w wyborach', p.glosow_w_wyborach ? liczba(p.glosow_w_wyborach) : null],
@@ -210,9 +211,8 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 ile={`${liczba(obecnosc.dniUsprawiedliwione)} z ${liczba(obecnosc.dniZNieobecnoscia)}`}
                 zCzego={
                   <>
-                    {'Mianownik: dni obrad, w których posła zabrakło przy głosowaniu. Usprawiedliwienie dotyczy całego dnia, nie pojedynczego głosowania — dlatego liczymy dni. '}
-                    <b>Rejestr nie podaje, dlaczego posła nie było</b>
-                    {' — i my tego nie rozstrzygamy.'}
+                    {'mianownik: dni obrad, w których posła zabrakło przy głosowaniu · rejestr nie podaje, dlaczego posła nie było '}
+                    <a href="#rozklad">jak to liczymy ↓</a>
                   </>
                 }
                 podstawa={<Podstawa adres={`https://api.sejm.gov.pl/sejm/term10/MP/${p.id}/votings/stats`} nazwa="statystyka posła" data={obecnoscZ ? dataKrotko(obecnoscZ.kiedy) : null} />}
@@ -223,19 +223,6 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
           <Uwaga naglowek="Brak głosów.">Nie mamy jeszcze zaimportowanych głosów imiennych dla tego posła.</Uwaga>
         )}
 
-        {/* Stan danych i sygnatura — zaraz pod odpowiedzia (F13). */}
-        <p className="stan-danych">
-          {k?.nazwa ? <span>{k.nazwa}</span> : null}
-          <span>
-            {'stan danych: '}
-            {[
-              glosyZ ? `głosowania ${dataKrotko(glosyZ.kiedy)}` : null,
-              obecnoscZ ? `obecność ${dataKrotko(obecnoscZ.kiedy)}` : null,
-              komisjeZ ? `komisje ${dataKrotko(komisjeZ.kiedy)}` : null,
-            ].filter(Boolean).join(' · ')}
-          </span>
-          <span><Podstawa adres={adresRejestru} nazwa="strona posła w Sejmie" /></span>
-        </p>
 
         {metryczka.length ? (
           <details className="metoda">
@@ -298,11 +285,11 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 nr={nr('ostatnie')}
                 tytul={ostatnie.length ? `Ostatnie głosowania, od ${dataSlownie(ostatnie[ostatnie.length - 1].data)}` : 'Ostatnie głosowania'}
               >
-                <p className="wstep">Wszystkie, także porządkowe — rodzaj głosowania przy każdym.</p>
-                <ListaGlosow glosy={ostatnie.slice(0, NA_WIERZCHU)} />
-                {ostatnie.length > NA_WIERZCHU ? (
-                  <Wiecej napis={`Pokaż ${ostatnie.length} ostatnich`}>
-                    <ListaGlosow glosy={ostatnie.slice(NA_WIERZCHU)} />
+                <p className="wstep">Wszystkie, także porządkowe; głosowania w jednym punkcie obrad pod wspólnym tytułem.</p>
+                <ListaGlosow grupy={grupyOstatnich.slice(0, NA_WIERZCHU)} />
+                {grupyOstatnich.length > NA_WIERZCHU ? (
+                  <Wiecej napis={`Pokaż ${zOdmiana(ostatnie.length, 'ostatnie głosowanie', 'ostatnie głosowania', 'ostatnich głosowań')}`}>
+                    <ListaGlosow grupy={grupyOstatnich.slice(NA_WIERZCHU)} />
                   </Wiecej>
                 ) : null}
               </Dzial>
@@ -315,11 +302,19 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                 tytul={`Rozkład głosów w ${zOdmiana(staty.mianownik, 'głosowaniu', 'głosowaniach', 'głosowaniach')}`}
                 obok={<Podstawa adres={REJESTR_GLOSOWAN} nazwa="rejestr głosowań" />}
                 metoda={
-                  <p>
-                    Rejestr nie podaje, <i>dlaczego</i> posła nie było.
-                    Wyjazd służbowy, choroba i nieobecność bez powodu wyglądają w danych
-                    tak samo — więc nie rozstrzygamy tego za rejestr.
-                  </p>
+                  <>
+                    <p>
+                      Rejestr nie podaje, <i>dlaczego</i> posła nie było.
+                      Wyjazd służbowy, choroba i nieobecność bez powodu wyglądają w danych
+                      tak samo — więc nie rozstrzygamy tego za rejestr.
+                    </p>
+                    {/* Z kafla „W liczbach” (przeglad tresci 24.10.2026): objasnienie
+                        mianownika bylo dluzsze niz sama liczba. */}
+                    <p className="mt-2">
+                      Usprawiedliwienie dotyczy całego dnia obrad, nie pojedynczego głosowania —
+                      dlatego dni z nieobecnością liczymy w dniach, a nie w głosowaniach.
+                    </p>
+                  </>
                 }
               >
                 <ListaPaskow
@@ -388,8 +383,9 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
 
             {/*
               KOMISJE (03.10.2026). Odpowiedz rejestru na „na czym komu zalezy"
-              bez naszej klasyfikacji: posel sam wybral komisje, a jej zakres
-              opisal urzad (to zdanie pod nazwa jest cytatem z rejestru).
+              bez naszej klasyfikacji: posel sam wybral komisje. Opis zakresu
+              komisji (cytat z rejestru) zniknal stad po przegladzie tresci
+              24.10.2026 — jest na /komisja/[kod], a tu powtarzal sie przy kazdej.
               Tylko JEGO komisje — pelny sklad jest na /komisja/[kod] (pulapka 54).
 
               Trzy stany i kazdy mowi co innego (zasada 4):
@@ -423,7 +419,6 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
                             <span className={c.funkcja ? 'font-semibold text-atrament' : undefined}>{c.funkcja ?? 'członek'}</span>
                             {c.od ? ` · od ${dataSlownie(c.od)}` : ''}
                           </p>
-                          {c.zakres ? <p className="meta mt-1">{c.zakres}</p> : null}
                         </div>
                         <p className="meta">{etykietaTypu(c.typ)}</p>
                       </li>
@@ -507,6 +502,21 @@ export default async function StronaPosla({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       ) : null}
+      <div className="obszar">
+        {/* Stan danych na dole (przeglad tresci 24.10.2026). */}
+        <p className="stan-danych mt-8">
+          {k?.nazwa ? <span>{k.nazwa}</span> : null}
+          <span>
+            {'stan danych: '}
+            {[
+              glosyZ ? `głosowania ${dataKrotko(glosyZ.kiedy)}` : null,
+              obecnoscZ ? `obecność ${dataKrotko(obecnoscZ.kiedy)}` : null,
+              komisjeZ ? `komisje ${dataKrotko(komisjeZ.kiedy)}` : null,
+            ].filter(Boolean).join(' · ')}
+          </span>
+          <span><Podstawa adres={adresRejestru} nazwa="strona posła w Sejmie" /></span>
+        </p>
+      </div>
     </>
   );
 }
@@ -520,21 +530,67 @@ function tytulRozkladu(rozklad: { glos: string; ile: number }[], mianownik: numb
   return b ? `${pierwszy}, dalej „${etykietaGlosu(b.glos).krotka}” — ${proc(b.ile)}` : pierwszy;
 }
 
-function ListaGlosow({ glosy }: { glosy: ReturnType<typeof ostatnieGlosyPosla> }) {
+type GlosPosla = ReturnType<typeof ostatnieGlosyPosla>[number];
+type GrupaGlosow = { klucz: string; data: string; posiedzenie: number; punkt: string | null; sprawa: string; glosy: { g: GlosPosla; o: ReturnType<typeof opisGlosowania> }[] };
+
+/**
+ * Kolejne glosowania tego samego punktu obrad pod jednym tytulem (przeglad
+ * tresci 24.10.2026): dziesiec poprawek do jednej ustawy dawalo dziesiec
+ * pozycji z tym samym, dlugim tytulem. Grupujemy tylko SASIEDNIE glosowania
+ * z tego samego posiedzenia i tej samej sprawy — nic nie przestawiamy.
+ */
+function grupujPoPunkcie(glosy: GlosPosla[]): GrupaGlosow[] {
+  const grupy: GrupaGlosow[] = [];
+  for (const g of glosy) {
+    const o = opisGlosowania(g);
+    const ost = grupy[grupy.length - 1];
+    if (ost && ost.posiedzenie === g.posiedzenie && ost.sprawa === o.sprawa) {
+      ost.glosy.push({ g, o });
+      continue;
+    }
+    grupy.push({ klucz: `${g.posiedzenie}-${g.numer}`, data: g.data, posiedzenie: g.posiedzenie, punkt: o.punkt, sprawa: o.sprawa, glosy: [{ g, o }] });
+  }
+  return grupy;
+}
+
+function rodzajGlosowania(o: ReturnType<typeof opisGlosowania>, dlugosc: number): string | null {
+  return o.nadCaloscia ? 'głosowanie nad całością projektu' : o.porzadkowe ? 'sprawa porządkowa' : o.przedmiot ? skroc(o.przedmiot, dlugosc) : null;
+}
+
+function ListaGlosow({ grupy }: { grupy: GrupaGlosow[] }) {
   return (
     <ul className="pozycje">
-      {glosy.map((g) => {
-        const o = opisGlosowania(g);
+      {grupy.map((gr) => {
+        const meta = [dataSlownie(gr.data), `posiedzenie ${gr.posiedzenie}`, gr.punkt ? `pkt ${gr.punkt}` : null].filter(Boolean).join(' · ');
+        if (gr.glosy.length === 1) {
+          const { g, o } = gr.glosy[0]!;
+          return (
+            <li key={gr.klucz}>
+              <div className="min-w-0">
+                <p className="meta">{meta}</p>
+                <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">{skroc(o.sprawa, 170)}</Link>
+                <p className="meta">{rodzajGlosowania(o, 110)}</p>
+              </div>
+              <p className="glos"><span className="miejsce-probka kropka" style={stylGlosu(g.glos)} />{etykietaGlosu(g.glos).krotka}</p>
+            </li>
+          );
+        }
         return (
-          <li key={`${g.posiedzenie}-${g.numer}`}>
+          <li key={gr.klucz} className="grupa-glosow">
             <div className="min-w-0">
-              <p className="meta">{[dataSlownie(g.data), `posiedzenie ${g.posiedzenie}`, o.punkt ? `pkt ${o.punkt}` : null].filter(Boolean).join(' · ')}</p>
-              <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="tytul-poz">{skroc(o.sprawa, 170)}</Link>
-              <p className="meta">
-                {o.nadCaloscia ? 'głosowanie nad całością projektu' : o.porzadkowe ? 'sprawa porządkowa' : o.przedmiot ? skroc(o.przedmiot, 110) : null}
-              </p>
+              <p className="meta">{`${meta} · ${zOdmiana(gr.glosy.length, 'głosowanie', 'głosowania', 'głosowań')}`}</p>
+              <p className="font-semibold leading-snug">{skroc(gr.sprawa, 170)}</p>
+              <ul className="mt-1.5">
+                {gr.glosy.map(({ g, o }) => (
+                  <li key={`${g.posiedzenie}-${g.numer}`} className="flex items-baseline justify-between gap-4 border-t border-kreska py-1.5">
+                    <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`} className="min-w-0 text-akcent underline underline-offset-4 hover:no-underline" style={{ fontSize: 'var(--sredni)' }}>
+                      {rodzajGlosowania(o, 90) ?? `głosowanie nr ${g.numer}`}
+                    </Link>
+                    <span className="glos shrink-0"><span className="miejsce-probka kropka" style={stylGlosu(g.glos)} />{etykietaGlosu(g.glos).krotka}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="glos"><span className="miejsce-probka kropka" style={stylGlosu(g.glos)} />{etykietaGlosu(g.glos).krotka}</p>
           </li>
         );
       })}
@@ -553,7 +609,9 @@ function ListaWystapien({ wystapienia }: { wystapienia: NonNullable<ReturnType<t
               {dataSlownie(w.dzien)}
               <span className="text-atrament-2">
                 {` · posiedzenie ${w.posiedzenie}`}
-                {w.funkcja ? ` · ${w.funkcja}` : ''}
+                {/* Funkcja tylko, gdy inna niz „Poseł” — przy kazdej pozycji
+                    powtarzala to, co wiadomo z naglowka strony. */}
+                {w.funkcja && !/^pose[lł]$/iu.test(w.funkcja.trim()) ? ` · ${w.funkcja}` : ''}
                 {czas ? ` · ${czas}` : ''}
                 {w.na_pismie ? ' · złożone na piśmie' : ''}
                 {w.sprawozdawca ? ' · sprawozdawca' : ''}
