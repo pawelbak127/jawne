@@ -39,6 +39,20 @@ export function procent(n: number | null | undefined, miejsc = 1): string {
   return `${n.toFixed(miejsc).replace('.', ',')} %`;
 }
 
+/**
+ * Udzial (ulamek 0–1) do zdania: „34%”, „8,5%”, „0,4%”. Dwie cyfry znaczace —
+ * przeglad tresci 24.10.2026: obok siebie stalo „62%” i „37,4%”, a dziesiate
+ * czesci przy kilkudziesieciu procentach tylko udaja precyzje. Ponizej 0,05%
+ * piszemy „poniżej 0,1%”, nie „0,0%” (zasada 4: to nie jest zero).
+ */
+export function udzial(ulamek: number | null | undefined): string {
+  if (ulamek === null || ulamek === undefined || !Number.isFinite(ulamek)) return '—';
+  const p = 100 * ulamek;
+  if (p === 0) return '0%';
+  if (p < 0.05) return 'poniżej 0,1%';
+  return `${(p >= 9.95 ? Math.round(p).toString() : p.toFixed(1).replace('.', ','))}%`;
+}
+
 const MIESIACE = [
   'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
   'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',

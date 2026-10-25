@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial } from './format';
 
 describe('wojewodztwoWMiejscowniku', () => {
   it.each([
@@ -127,5 +127,19 @@ describe('okresDni — przegląd treści 24.10.2026', () => {
   });
   it('dziury: zakres i ile dni brakuje', () => {
     expect(okresDni(2, '2026-10-01', '2026-10-03')).toBe('od 01.10.2026 do 03.10.2026, bez 1 dnia, którego jeszcze nie pobraliśmy');
+  });
+});
+
+describe('udzial — dwie cyfry znaczace (przeglad tresci 24.10.2026)', () => {
+  it('od 10% calosci, ponizej jedno miejsce po przecinku', () => {
+    expect(udzial(0.3741)).toBe('37%');
+    expect(udzial(0.0996)).toBe('10%');
+    expect(udzial(0.085)).toBe('8,5%');
+    expect(udzial(0.004)).toBe('0,4%');
+  });
+  it('zero, prawie zero i brak to trzy rozne rzeczy', () => {
+    expect(udzial(0)).toBe('0%');
+    expect(udzial(0.0002)).toBe('poniżej 0,1%');
+    expect(udzial(null)).toBe('—');
   });
 });

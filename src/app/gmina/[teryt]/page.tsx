@@ -10,7 +10,7 @@ import {
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type NowosciGminy, type ZamowieniaGminy,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, liczba, skroc, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
@@ -22,9 +22,9 @@ import { BrakDanych } from '@/components/BrakDanych';
 import { Portret } from '@/components/Portret';
 import { Zrodlo } from '@/components/Zrodlo';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
-import { OPIS_KATEGORII } from '@/lib/formy-pomocy';
 import { SlupkiLat } from '@/components/SlupkiLat';
 import { Zestawienie } from '@/components/Zestawienie';
+import { LegendaKategorii, ListaOrganow, OpisOrganow, OrganyBezNazwy } from '@/components/OrganyGminy';
 import { Dzial, ListaPaskow, Okruszek, Podstawa, Uwaga, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
 import { SpisDzialow } from '@/components/SpisDzialow';
 import { Zgadnij } from '@/components/Zgadnij';
@@ -141,11 +141,11 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
    */
   const najwiekszy = jestPomoc ? pomoc.beneficjenci[0] ?? null : null;
   const udzialNajwiekszego = najwiekszy?.brutto && pomoc.razem?.brutto ? najwiekszy.brutto / pomoc.razem.brutto : 0;
-  const nazwaNajwiekszego = najwiekszy && !nazwaDoPokazania(najwiekszy.nazwa, {
-    pomocEur: najwiekszy.max_eur, progAktywny: Boolean(KONTAKT), typRegon: najwiekszy.typ_regon,
-  }).pominieta ? najwiekszy.nazwa : null;
+  // Bez nazwy w kaflu (decyzja Pawla 25.10.2026, przeglad tresci): kafel to
+  // odpowiedz o gminie, a nazwa firmy — tym bardziej z imieniem w firmie —
+  // stoi na liscie w dziale „Pomoc publiczna”, z kwota i odnosnikiem.
   const zdanieKoncentracji = udzialNajwiekszego >= 0.25
-    ? `${Math.round(100 * udzialNajwiekszego)}% tej kwoty trafiło do jednego podmiotu${nazwaNajwiekszego ? `: ${skroc(nazwaNajwiekszego, 70)}` : ''}`.replace(/…?$/, (k) => k || '.')
+    ? `${Math.round(100 * udzialNajwiekszego)}% tej kwoty trafiło do jednego podmiotu — który, w dziale „Pomoc publiczna”.`
     : null;
   const czyje = miasto ? 'miasta' : 'gminy';
 
@@ -200,7 +200,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
     ...(zamowienia.ogloszen || zamowieniaBzp.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
     { id: 'dane', nazwa: akapit ? 'Do pobrania i cytowania' : 'Dane do pobrania' },
   ];
-  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 2;
+  const nr = (id: string) => dzialy.findIndex((d) => d.id === id) + 1;
 
   const dlug = smup.find((w) => w.klucz === 'dlug' && w.wartosc !== null && w.jednostka === 'zl_na_mieszkanca');
 
@@ -276,11 +276,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
               zCzego={
                 <>
                   {pomoc.zrodlo!.rodzaj === 'dni'
-                    ? <b>{`tylko z ${zOdmiana(pomoc.zrodlo!.dni, 'dnia pobranego', 'dni pobranych', 'dni pobranych')} dla całego kraju`}</b>
-                    : <b>pełna historia z rejestru</b>}
-                  {pomoc.zrodlo!.rodzaj === 'dni'
-                    ? ` (${dataKrotko(pomoc.zrodlo!.od)}–${dataKrotko(pomoc.zrodlo!.do)}), nie z 10 lat`
-                    : ` od ${dataKrotko(pomoc.zrodlo!.od)}`}
+                    ? okresDni(pomoc.zrodlo!.dni, pomoc.zrodlo!.od, pomoc.zrodlo!.do)
+                    : `pełna historia z rejestru od ${dataKrotko(pomoc.zrodlo!.od)}`}
                   {` · ${zlote(pomoc.razem!.brutto)}${ludnoscDoPrzeliczen ? ` ÷ ${liczba(ludnoscDoPrzeliczen)} mieszkańców` : ''}`}
                   {` · ${zOdmiana(pomoc.razem!.przypadkow, 'przypadek', 'przypadki', 'przypadków')}`}
                   {medianaPomocy ? ` · mediana w województwie (${zOdmiana(medianaPomocy.jednostek, 'gmina', 'gminy', 'gmin')}): ${zlote(medianaPomocy.mediana)}` : ''}
@@ -319,21 +316,6 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
           />
         </WLiczbach>
 
-        {/* Stan danych i sygnatura — zaraz pod odpowiedzia (F13, Stanford 8). */}
-        <p className="stan-danych">
-          <span>{`TERYT ${g.teryt}`}</span>
-          <span>{`okręg wyborczy nr ${g.okreg_nr}`}</span>
-          <span>
-            {'stan danych: '}
-            {[
-              g.ludnosc_rok ? `GUS ${budzet?.rok ?? g.ludnosc_rok}` : null,
-              importFe ? `fundusze UE ${dataKrotko(importFe.kiedy)}` : null,
-              pomoc.zrodlo?.rodzaj === 'dni' ? `SUDOP ${zOdmiana(pomoc.zrodlo.dni, 'dzień', 'dni', 'dni')} do ${dataKrotko(pomoc.zrodlo.do)}` : null,
-              importTed ? `TED ${dataKrotko(importTed.kiedy)}` : null,
-              importRegon ? `REGON ${dataKrotko(importRegon.kiedy)}` : null,
-            ].filter(Boolean).join(' · ')}
-          </span>
-        </p>
       </div>
 
       <div className="obszar z-spisem">
@@ -410,7 +392,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             id="pomoc"
             nr={nr('pomoc')}
             tytul={jestPomoc
-              ? `Pomoc publiczna: ${pomocNaOsobe === null ? zlote(pomoc.razem!.brutto) : `${zlote(pomocNaOsobe)} na mieszkańca`} ${pomoc.zrodlo!.rodzaj === 'dni' ? `w ${zOdmiana(pomoc.zrodlo!.dni, 'pobranym dniu', 'pobranych dniach', 'pobranych dniach')}` : 'w pełnej historii'}`
+              ? `Pomoc publiczna: ${pomocNaOsobe === null ? zlote(pomoc.razem!.brutto) : `${zlote(pomocNaOsobe)} na mieszkańca`} ${pomoc.zrodlo!.rodzaj === 'dni' ? `od ${dataKrotko(pomoc.zrodlo!.od)} do ${dataKrotko(pomoc.zrodlo!.do)}` : 'w pełnej historii'}`
               : 'Pomoc publiczna dla firm z tej gminy'}
             obok={<Podstawa adres="/pomoc-publiczna" nazwa="cała Polska" />}
             metoda={
@@ -432,14 +414,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             {organy.organy.length || organy.bezNazwy ? (
               <>
                 <h3>{`Kto przyznał pomoc: ${zOdmiana(organy.organy.length + organy.bezNazwy, 'organ', 'organy', 'organów')}`}</h3>
-                <p className="wstep">
-                  Każda pomoc z rejestru ma organ, który ją przyznał — z liczbą decyzji i kwotą,
-                  osobno dla każdego rodzaju pomocy.{' '}
-                  {organy.pelna
-                    ? 'Liczone z pełnej historii tej gminy w rejestrze — z tego samego zbioru, co liczby wyżej.'
-                    : 'Liczone z tych samych dni, co liczby wyżej, czyli z dni już ustalonych.'}
-                </p>
-                <OrganyDecyzji organy={organy} />
+                <OpisOrganow pelna={organy.pelna} />
+                <OrganyDecyzji organy={organy} teryt={g.teryt} />
               </>
             ) : null}
           </Dzial>
@@ -491,6 +467,24 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             ) : null}
           </Dzial>
         </div>
+      </div>
+      <div className="obszar">
+        {/* Stan danych i sygnatura NA DOLE (przeglad tresci 24.10.2026): pod
+            odpowiedzia, pismem maszynowym, czytaly sie jak jej czesc. */}
+        <p className="stan-danych mt-8">
+          <span>{`TERYT ${g.teryt}`}</span>
+          <span>{`okręg wyborczy nr ${g.okreg_nr}`}</span>
+          <span>
+            {'stan danych: '}
+            {[
+              g.ludnosc_rok ? `GUS ${budzet?.rok ?? g.ludnosc_rok}` : null,
+              importFe ? `fundusze UE ${dataKrotko(importFe.kiedy)}` : null,
+              pomoc.zrodlo?.rodzaj === 'dni' ? `SUDOP ${zOdmiana(pomoc.zrodlo.dni, 'dzień', 'dni', 'dni')} do ${dataKrotko(pomoc.zrodlo.do)}` : null,
+              importTed ? `TED ${dataKrotko(importTed.kiedy)}` : null,
+              importRegon ? `REGON ${dataKrotko(importRegon.kiedy)}` : null,
+            ].filter(Boolean).join(' · ')}
+          </span>
+        </p>
       </div>
     </>
   );
@@ -690,7 +684,7 @@ function Budzet({ nr, teryt, budzet, ludnosc, mediana, dzielnica, czyje }: {
           odpowiedz={
             <>
               <p>
-                <b>{`${(100 * oswiata.udzial).toFixed(1).replace('.', ',')}%`}</b>
+                <b>{udzial(oswiata.udzial)}</b>
                 {` — ${zlote(oswiata.kwota)} z ${zlote(dzialy.ogolem)} wydatków w ${dzialy.rok} r.${ludnosc ? `, czyli ${zlote(Math.round(oswiata.kwota / ludnosc))} na mieszkańca` : ''}.`}
               </p>
               <p><Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="GUS BDL, wydatki według działów" data={String(dzialy.rok)} /></p>
@@ -740,7 +734,7 @@ function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: num
   const pozycje = wiersze.map((w) => ({
     klucz: w.dzial,
     nazwa: w.nazwa,
-    opis: `${(100 * w.udzial).toFixed(1).replace('.', ',')}% · ${zlote(w.kwota)}${naOsobe(w.kwota)}`,
+    opis: `${udzial(w.udzial)} · ${zlote(w.kwota)}${naOsobe(w.kwota)}`,
     udzial: w.udzial,
     blady: w.dzial === 'pozostale',
   }));
@@ -749,7 +743,7 @@ function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: num
     <>
       <ListaPaskow
         tytul={pierwszy
-          ? `Najwięcej, ${(100 * pierwszy.udzial).toFixed(1).replace('.', ',')}% wydatków ${dzialy.rok} r., idzie na: ${pierwszy.nazwa.toLowerCase()}`
+          ? `Najwięcej, ${udzial(pierwszy.udzial)} wydatków ${dzialy.rok} r., idzie na: ${pierwszy.nazwa.toLowerCase()}`
           : `Na co gmina wydaje — ${dzialy.rok}`}
         pozycje={pozycje.slice(0, NA_WIERZCHU)}
         podpis={pozycje.length > NA_WIERZCHU ? undefined : podpis}
@@ -772,6 +766,11 @@ function KartaOkresu({ f, lata, ludnosc, wojewodztwo, tylkoPowiat }: {
 }) {
   const naOsobe = naMieszkanca(f.tylko_tu_ue, ludnosc);
   const mediana = ludnosc ? medianaUeNaMieszkanca(wojewodztwo, f.okres) : null;
+  // Wykres od pierwszego roku z kwota (przeglad tresci 24.10.2026): puste lata
+  // na poczatku perspektywy wygladaly jak „zero”, a to tylko brak projektow
+  // realizowanych wylacznie tutaj. Lata pomiedzy zostaja — tam zero jest zerem.
+  const pierwszy = lata.findIndex((l) => (l.tylko_tu_ue ?? 0) > 0);
+  const lataWykresu = pierwszy < 0 ? [] : lata.slice(pierwszy);
   return (
     <div className="border-t-2 border-atrament pt-4">
       <p className="text-xs font-medium tracking-wider text-atrament-3 uppercase">{`Perspektywa ${f.okres.replace('-', '–')}`}</p>
@@ -813,11 +812,11 @@ function KartaOkresu({ f, lata, ludnosc, wojewodztwo, tylkoPowiat }: {
             rejestr podaje jedna kwote na caly projekt, wiec rozlozenie jej
             na lata trwania byloby naszym wymyslem — i podpis to mowi.
           */}
-          {lata.length >= 2 ? (
+          {lataWykresu.length >= 2 ? (
             <div className="mt-5 border-t border-kreska pt-4">
               <SlupkiLat
                 tytul="Dofinansowanie według roku rozpoczęcia projektu"
-                wiersze={lata.map((l) => ({ rok: l.rok, wartosc: l.tylko_tu_ue }))}
+                wiersze={lataWykresu.map((l) => ({ rok: l.rok, wartosc: l.tylko_tu_ue }))}
               />
               <p className="mt-2 text-xs leading-relaxed text-atrament-3">
                 {`Rok, w którym projekt ruszył, a nie rok wydatku: rejestr podaje jedną kwotę na cały projekt. Te same ${zOdmiana(f.tylko_tu, 'projekt', 'projekty', 'projektów')} co wyżej, bez wspólnych z innymi gminami.`}
@@ -848,6 +847,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
   const widoczna = (nazwa: string, maxEur: number | null, typRegon: string | null) =>
     !nazwaDoPokazania(nazwa, { pomocEur: maxEur, progAktywny, typRegon }).pominieta;
   const jawni = pomoc.beneficjenci.filter((b) => widoczna(b.nazwa, b.max_eur, b.typ_regon));
+  const najwiekszy = pomoc.beneficjenci[0] ?? null;
   // Liczone po WSZYSTKICH beneficjentach, nie po pokazanej czolowce — inaczej
   // spolki spoza czolowki trafialy do "niewymienionych z nazwy". Liczba
   // przychodzi gotowa (import), w obu wariantach progu.
@@ -861,8 +861,8 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
       */}
       {z.rodzaj === 'dni' ? (
         <p className="uwaga text-atrament-2">
-          <span className="font-medium text-atrament">To nie jest cała historia tej gminy.</span>
-          {` Pełnych danych jeszcze nie pobraliśmy — poniżej jest wyłącznie pomoc udzielona ${z.dni === 1 ? 'w jednym dniu, który pobraliśmy' : `w ${liczba(z.dni)} dniach, które pobraliśmy`} dla całego kraju (${dataSlownie(z.od)}${z.od === z.do ? '' : ` – ${dataSlownie(z.do)}`}).`}
+          <span className="font-medium text-atrament">{`Pomoc udzielona ${okresDni(z.dni, z.od, z.do)}.`}</span>
+          {' Rejestr sięga dziesięciu lat wstecz; starsze dni pobieramy po kolei, dla całego kraju naraz.'}
         </p>
       ) : (
         /*
@@ -887,7 +887,7 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
           {/* Mianownik przy samej liczbie, nie tylko w ramce obok — to liczba,
               ktora ktos wytnie do udostepnienia. */}
           <p className="mt-1 text-sm font-medium">
-            {z.rodzaj === 'dni' ? 'wartość pomocy brutto w pobranych dniach' : 'wartość pomocy brutto'}
+            wartość pomocy brutto
           </p>
           <p className="mt-0.5 text-xs text-atrament-2">
             {`${zOdmiana(r.przypadkow, 'przypadek pomocy', 'przypadki pomocy', 'przypadków pomocy')} dla ${zOdmiana(r.beneficjentow, 'beneficjenta', 'beneficjentów', 'beneficjentów')}, udzielonych od ${dataSlownie(r.pierwszy)} do ${dataSlownie(r.ostatni)}`}
@@ -920,11 +920,15 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
         cztery listy nizej. Jedna liczba potrafi opisywac jedna firme, a czyta
         sie jak opis calej gminy.
       */}
-      {r.brutto && jawni[0]?.brutto && jawni[0].brutto / r.brutto >= 0.25 ? (
+      {/* Ten sam podmiot co w kaflu „W liczbach” (najwiekszy ze WSZYSTKICH),
+          a nie najwiekszy z tych, ktorych nazwe wolno podac — inaczej kafel
+          mowilby o 40%, a tu stalaby nazwa firmy z 30%. */}
+      {r.brutto && najwiekszy?.brutto && najwiekszy.brutto / r.brutto >= 0.25 ? (
         <p className="uwaga text-atrament-2">
-          {`Z tej kwoty ${Math.round((100 * jawni[0].brutto) / r.brutto)}% (${zlote(jawni[0].brutto)}) trafiło do jednego podmiotu: `}
-          <span className="font-medium text-atrament">{skroc(jawni[0].nazwa, 70)}</span>
-          {'. Reszta rozkłada się na pozostałych.'}
+          {`Z tej kwoty ${Math.round((100 * najwiekszy.brutto) / r.brutto)}% (${zlote(najwiekszy.brutto)}) trafiło do jednego podmiotu`}
+          {widoczna(najwiekszy.nazwa, najwiekszy.max_eur, najwiekszy.typ_regon)
+            ? <>{': '}<span className="font-medium text-atrament">{skroc(najwiekszy.nazwa, 70)}</span>{`${skroc(najwiekszy.nazwa, 70).endsWith('…') ? '' : '.'} Reszta rozkłada się na pozostałych.`}</>
+            : ', którego nazwy nie wymieniamy (może to być osoba prowadząca działalność na własne nazwisko). Reszta rozkłada się na pozostałych.'}
         </p>
       ) : null}
 
@@ -982,102 +986,18 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
  *  3. **Nie ocenia i nie szereguje organow miedzy gminami.** Kolejnosc jest
  *     tylko w obrebie tej gminy i tylko po liczbie decyzji (zasada 6).
  */
-function OrganyDecyzji({ organy }: { organy: ReturnType<typeof organyPomocy> }) {
+function OrganyDecyzji({ organy, teryt }: { organy: ReturnType<typeof organyPomocy>; teryt: string }) {
+  const naWierzchu = organy.organy.slice(0, NA_WIERZCHU);
   return (
     <>
-      <ListaOrganow organy={organy.organy.slice(0, NA_WIERZCHU)} />
+      <LegendaKategorii organy={naWierzchu} />
+      <ListaOrganow organy={naWierzchu} />
       {organy.organy.length > NA_WIERZCHU ? (
-        <Wiecej napis={`Pokaż wszystkie ${zOdmiana(organy.organy.length, 'organ', 'organy', 'organów')}`}>
-          <ListaOrganow organy={organy.organy.slice(NA_WIERZCHU)} />
-        </Wiecej>
-      ) : null}
-      {organy.bezNazwy ? (
-        <p className="mt-4 max-w-(--miara) text-sm leading-relaxed text-atrament-2">
-          {`Do tego ${zOdmiana(organy.bezNazwy, 'organ', 'organy', 'organów')}, których nazw nie pokazujemy, bo rejestr wskazuje osoby fizyczne — razem ${zOdmiana(organy.przypadkowBezNazwy, 'decyzja', 'decyzje', 'decyzji')}. Liczby zostają, nazwiska nie.`}
+        <p className="pliki">
+          <Link href={`/gmina/${teryt}/organy`}>{`Wszystkie ${zOdmiana(organy.organy.length, 'organ', 'organy', 'organów')} →`}</Link>
         </p>
       ) : null}
-    </>
-  );
-}
-
-function ListaOrganow({ organy }: { organy: ReturnType<typeof organyPomocy>['organy'] }) {
-  return (
-    <>
-      <ul className="mt-4">
-        {organy.map((o) => (
-          <li
-            key={o.nip}
-            className={`py-4 ${o.wlasny ? 'border-t-4 border-akcent' : 'border-t border-kreska'}`}
-          >
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              {/* Nazwa byla do 02.10.2026 zwyklym tekstem, czyli slepa uliczka:
-                  „a co ten organ robi w innych gminach" to pierwsze pytanie,
-                  jakie sie ciśnie. Teraz prowadzi na strone organu. */}
-              <Link
-                href={`/organ/${o.nip}`}
-                /* py-1 daje cel 30 px zamiast 22. Link jest dzieckiem
-                   kontenera flex, wiec jest blokowany i padding POWIEKSZA
-                   wiersz — zmierzony koszt to 8 px na organ, czyli ok. 600 px
-                   na najwyzszej stronie serwisu (Zakopane, 44 164 px).
-                   Tyle wolno: cel ponizej 24 px jest dla czesci czytelnikow
-                   nietrafialny, a dodatkowy ekran przewijania to niewygoda. */
-                className="py-1 leading-snug font-medium text-akcent underline underline-offset-4 hover:no-underline"
-              >
-                {o.nazwa}
-              </Link>
-              {o.wlasny ? (
-                <p className="shrink-0 text-xs font-medium text-akcent">organ tej gminy</p>
-              ) : null}
-            </div>
-            <p className="liczby mt-1 text-sm text-atrament-2">
-              {o.przypadkow
-                ? zOdmiana(o.przypadkow, 'decyzja', 'decyzje', 'decyzji')
-                : 'Żadnej decyzji dla firm z tej gminy w tych dniach.'}
-            </p>
-            {o.kategorie.length ? <ul className="mt-3 space-y-2 border-t border-kreska pt-3">
-              {o.kategorie.map((k) => (
-                <li key={k.kategoria}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                    <p className="text-sm font-medium">{OPIS_KATEGORII[k.kategoria].etykieta}</p>
-                    <p className="liczby text-sm">
-                      {`${zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${
-                        k.brutto === null ? 'bez kwoty w rejestrze' : zlote(k.brutto)
-                      }`}
-                    </p>
-                  </div>
-                  <p className="mt-0.5 text-xs leading-relaxed text-atrament-3">
-                    {OPIS_KATEGORII[k.kategoria].wyjasnienie}
-                  </p>
-                </li>
-              ))}
-            </ul> : null}
-            {/* Firmy SPOZA gminy — sekcja wyzej liczy tylko te z siedziba tutaj,
-                a wojt zwalnia z podatku takze firme zarejestrowana obok. */}
-            {o.pozaGmina ? (
-              <div className="mt-3 border-t border-kreska pt-3">
-                <p className="text-sm leading-relaxed text-atrament-2">
-                  {o.przypadkow ? 'Poza tym ' : 'Za to '}
-                  {o.pozaGmina.gmin === 1
-                    ? `${zOdmiana(o.pozaGmina.przypadkow, 'decyzja', 'decyzje', 'decyzji')} dla ${o.pozaGmina.przypadkow === 1 ? 'firmy' : 'firm'} z siedzibą w innej gminie, w tych samych dniach. `
-                    : `${zOdmiana(o.pozaGmina.przypadkow, 'decyzja', 'decyzje', 'decyzji')} dla firm z siedzibą w innych gminach (${liczba(o.pozaGmina.gmin)}), w tych samych dniach. `}
-                  {o.przypadkow ? 'Tych kwot nie ma w liczbach wyżej. ' : 'Tej kwoty nie ma w liczbach wyżej, bo liczą firmy z siedzibą tutaj. '}
-                  <Link href={`/organ/${o.nip}`} className="text-akcent underline underline-offset-4 hover:no-underline">{o.pozaGmina.gmin === 1 ? 'w której →' : 'w których →'}</Link>
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {o.pozaGmina.kategorie.map((k) => (
-                    <li key={k.kategoria} className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
-                      <span>{OPIS_KATEGORII[k.kategoria].etykieta}</span>
-                      <span className="liczby">
-                        {`${zOdmiana(k.przypadkow, 'decyzja', 'decyzje', 'decyzji')} · ${k.brutto === null ? 'bez kwoty w rejestrze' : zlote(k.brutto)}`}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <OrganyBezNazwy organy={organy} />
     </>
   );
 }
@@ -1316,7 +1236,7 @@ function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }
     { nazwa: 'w tym podatek od nieruchomości', kwota: budzet.podatek_nieruchomosc },
   ].filter((p) => p.kwota !== null) as { nazwa: string; kwota: number }[];
   const udzial = (k: number) => k / razem;
-  const opis = (k: number) => `${((100 * k) / razem).toFixed(1).replace('.', ',')}% · ${zlote(k)}`;
+  const opis = (k: number) => `${udzial(k / razem)} · ${zlote(k)}`;
   const wlasne = budzet.dochody_wlasne;
   const pozycje = glowne.flatMap((p) => [
     { klucz: p.nazwa, nazwa: p.nazwa, opis: opis(p.kwota), udzial: udzial(p.kwota) },
@@ -1330,7 +1250,7 @@ function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }
   return (
     <ListaPaskow
       tytul={wlasne !== null
-        ? `${((100 * wlasne) / razem).toFixed(1).replace('.', ',')}% dochodów ${budzet.rok} r. to dochody własne ${czyje}`
+        ? `${udzial(wlasne / razem)} dochodów ${budzet.rok} r. to dochody własne ${czyje}`
         : `Z czego składają się dochody — ${budzet.rok}`}
       pozycje={pozycje}
       podpis="Pozycje wcięte są częścią dochodów własnych. Kredyty i obligacje nie są dochodem i nie ma ich w tej kwocie."
@@ -1338,14 +1258,35 @@ function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }
   );
 }
 
+/** Czesci jednego ogloszenia BZP jako jedna pozycja; kolejnosc pierwszego wystapienia. */
+function grupujCzesci(bzp: NowosciGminy['bzp']) {
+  const wg = new Map<string, { id: string; data: string; tytul: string | null; zamawiajacy: string | null; czesci: number; wartosc: number | null; bezKwoty: boolean; wykonawcy: (string | null)[] }>();
+  for (const o of bzp) {
+    const id = String(o.id);
+    const w = wg.get(id) ?? { id, data: o.data, tytul: o.tytul, zamawiajacy: o.zamawiajacy, czesci: 0, wartosc: 0, bezKwoty: false, wykonawcy: [] };
+    w.czesci += 1;
+    if (o.wartosc === null) w.bezKwoty = true;
+    else w.wartosc = (w.wartosc ?? 0) + o.wartosc;
+    if (!w.wykonawcy.includes(o.wykonawca)) w.wykonawcy.push(o.wykonawca);
+    wg.set(id, w);
+  }
+  return [...wg.values()].map((w) => ({ ...w, wartosc: w.bezKwoty ? null : w.wartosc }));
+}
+
 /**
  * CO NOWEGO (16.10.2026) — najswiezsze wpisy z rejestrow dla czytelnika,
  * ktory wraca. Ostatnie dni SUDOP sa NIEUSTALONE (pulapka 37), wiec ta sekcja
- * niczego nie sumuje do dzialu „Pomoc publiczna” i mowi to wprost, a kazdy
- * niepelny dzien jest oznaczony. Dane: `nowosciGminy` w dane.ts.
+ * niczego nie sumuje do dzialu „Pomoc publiczna” i mowi to wprost — raz,
+ * we wstepie i w liczbie niepelnych dni. Dopisek „dzien niepelny” przy KAZDYM
+ * wierszu zniknal po przegladzie tresci 24.10.2026: powtarzal wstep, a przy
+ * swiezych dniach stal przy wszystkich. Dane: `nowosciGminy` w dane.ts.
+ *
+ * Umowy BZP grupujemy po ogloszeniu: jedno ogloszenie z dziesiecioma czesciami
+ * dawalo dziesiec wierszy z tym samym tytulem i ta sama data.
  */
 function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; miasto: boolean; dzielnica: boolean }) {
   const tutaj = miasto ? 'w tym mieście' : 'w tej gminie';
+  const umowyBzp = grupujCzesci(n.bzp);
   return (
     <Dzial
       id="nowe"
@@ -1381,7 +1322,7 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
               <li key={`${p.dzien}-${p.nip ?? p.nazwa}-${i}`} className="py-2 text-sm">
                 <div className="flex items-baseline justify-between gap-4">
                   <span className="liczby whitespace-nowrap text-xs text-atrament-3">
-                    {dataKrotko(p.dzien)}{p.ustalony ? '' : ' · dzień niepełny'}
+                    {dataKrotko(p.dzien)}
                   </span>
                   <span className="liczby whitespace-nowrap font-medium">{zlote(p.brutto)}</span>
                 </div>
@@ -1396,7 +1337,7 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
           </ul>
           <p className="mt-2 text-xs leading-relaxed text-atrament-3">
             Wypisujemy przypadki firm, których nazwę wolno podać; pozostałe są w liczbie wyżej, ale nie
-            pojedynczo — w małej gminie data, kwota i organ mogłyby wskazać konkretną osobę.
+            pojedynczo — data, kwota i organ mogłyby wskazać konkretną osobę.
           </p>
         </>
       ) : n.przypadkow ? (
@@ -1406,14 +1347,18 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
         </p>
       ) : null}
 
-      {n.bzp.length ? (
+      {umowyBzp.length ? (
         <>
           <h3>Najnowsze umowy krajowe (BZP)</h3>
           <ul className="mt-2 divide-y divide-kreska">
-            {n.bzp.map((o) => (
-              <li key={`${o.id}-${o.czesc}`} className="py-2 text-sm">
+            {umowyBzp.map((o) => (
+              <li key={o.id} className="py-2 text-sm">
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="liczby whitespace-nowrap text-xs text-atrament-3">{dataKrotko(o.data)}</span>
+                  <span className="liczby whitespace-nowrap text-xs text-atrament-3">
+                    {dataKrotko(o.data)}{o.czesci > 1 ? ` · ${zOdmiana(o.czesci, 'część', 'części', 'części')}` : ''}
+                  </span>
+                  {/* Suma czesci tylko wtedy, gdy kazda ma kwote — inaczej czesc bez
+                      kwoty liczylaby sie jak zero (zasada 4). */}
                   <span className="liczby whitespace-nowrap">{o.wartosc === null ? '—' : zlote(o.wartosc)}</span>
                 </div>
                 <p className="mt-0.5">
@@ -1422,7 +1367,9 @@ function CoNowego({ nr, n, miasto, dzielnica }: { nr: number; n: NowosciGminy; m
                   </a>
                 </p>
                 <p className="text-xs text-atrament-3">
-                  {`${o.zamawiajacy ?? '—'} · wykonawca: `}{o.wykonawca ?? <i>nazwa pominięta — może to być osoba fizyczna</i>}
+                  {o.wykonawcy.length > 1
+                    ? `${o.zamawiajacy ?? '—'} · ${zOdmiana(o.wykonawcy.length, 'wykonawca', 'wykonawców', 'wykonawców')}`
+                    : <>{`${o.zamawiajacy ?? '—'} · wykonawca: `}{o.wykonawcy[0] ?? <i>nazwa pominięta — może to być osoba fizyczna</i>}</>}
                 </p>
               </li>
             ))}
