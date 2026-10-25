@@ -106,6 +106,12 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    Do ewentualnej dalszej pracy: wyszukiwanie firm przegląda cały indeks
    (`instr` po 2,24 mln wierszy) — to jest koszt pierwszego wejścia na
    `/szukaj` i `/firmy` z planu U3; kandydat: indeks trygramowy FTS5.
+6. ~~Przegląd treści i strona główna~~ — **zrobione 25.10** (`c1ca90e`,
+   `bceeefa`, `c7d24f2`, `d8229bc`): nowa strona główna (obietnica, karty
+   z miniaturą mapy i półkolem, „Ostatnio w Sejmie”), organy gminy na
+   osobnej stronie (Kraków miał 2 MB HTML-u), zakres dat zamiast „pobranych
+   dni”, stan danych na dole. Co pominięte i dlaczego —
+   `docs/przebudowa/przeglad-tresci-2026-10-24.md`, ostatnia sekcja.
 
 ### Kolejność przed zdjęciem `noindex` (ustalona 03.10.2026)
 

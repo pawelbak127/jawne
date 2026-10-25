@@ -103,3 +103,29 @@ potwierdzić na brzmieniu `temat` w rejestrze, zanim napiszemy skutek.
 9. „Stan danych” i stopka metodyczna na dół; zwarte warunki UOKiK.
 10. Typografia: bez maszynowego dla liczb, bez podkreśleń tytułów, bez
     numeracji działów; portrety na /poslowie i /okreg.
+
+## Wdrożone 25.10.2026
+
+Trzy rundy: błędy wiarygodności (`c1ca90e`), nowa strona główna (`bceeefa`,
+układ zaakceptowany przez Pawła), odchudzenie podstron (`c7d24f2`, `d8229bc`).
+Z rankingu: 1–9 w całości, z 10 — portrety na `/okreg`.
+
+## Czego nie wdrożyłem i dlaczego
+
+- **Pismo maszynowe liczb i numeracja działów (pkt 10)** to cecha wyglądu
+  z decyzji Pawła z 07.10.2026 (dwa style, „Wypis z rejestru” z numerowanym
+  spisem). Zdjąłem numery tylko na stronie głównej (nie jest dokumentem)
+  i poprawiłem spis, który zaczynał się od „2”. Reszta — do decyzji Pawła.
+- **Bez podkreśleń tytułów na listach** — podkreślenie to jedyny znak, że
+  tytuł jest odnośnikiem (styl standardowy, WCAG 1.4.1); bez decyzji Pawła
+  nie zmieniam.
+- **Portrety na `/poslowie`** — pliki mają ok. 50 kB, więc przewinięcie listy
+  499 posłów to ok. 25 MB. Najpierw miniatury (np. 96 px przy imporcie).
+- **Odwrócona macierz głosowań na `/okreg`** — przy 12–20 posłach w okręgu
+  kolumnami byliby posłowie, a tabela i tak przewijałaby się w bok na
+  telefonie; zysk niepewny, zostaje do pomiaru na prawdziwym okręgu.
+- **Krótkie etykiety przeznaczeń** pisane przez nas — to byłby nasz tekst
+  w miejscu rejestru. Zamiast tego etykiety bez ucinania przy 110 znakach.
+- **Opis z rejestru pod H1 ustawy** — strona ma już streszczenie i dział
+  „Opis z rejestru”; trzeci raz ten sam tekst byłby powtórzeniem, które
+  przegląd sam wytykał. Zrobiłem przedrostek do metryczki.
