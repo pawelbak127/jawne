@@ -9,7 +9,7 @@ const POLUDNIE = Date.UTC(2026, 9, 3, 10, 0, 0) / 1000;
 
 const wpis = (o: {
   ts?: number; ip?: string; ua?: string; uri?: string; status?: number;
-  typ?: string; ref?: string; metoda?: string; rsc?: boolean;
+  typ?: string; ref?: string; metoda?: string; rsc?: boolean; jezyk?: string;
 }): WpisDziennika => ({
   ts: o.ts ?? POLUDNIE,
   status: o.status ?? 200,
@@ -20,6 +20,8 @@ const wpis = (o: {
     uri: o.uri ?? '/',
     headers: {
       'User-Agent': o.ua === '' ? undefined : [o.ua ?? CHROME],
+      // Kazda prawdziwa przegladarka wysyla Accept-Language; '' = bez naglowka.
+      ...(o.jezyk === '' ? {} : { 'Accept-Language': [o.jezyk ?? 'pl-PL,pl;q=0.9,en-US;q=0.8'] }),
       ...(o.ref ? { Referer: [o.ref] } : {}),
       ...(o.rsc ? { RSC: ['1'] } : {}),
     },
@@ -46,7 +48,7 @@ describe('co jest odsłoną', () => {
   });
   it('API, pliki Next, mapa strony, obrazki podglądu i zdjęcia posłów — nie', () => {
     for (const uri of ['/api/szukaj', '/_next/static/x.js', '/sitemap.xml', '/robots.txt',
-      '/gmina/121701/opengraph-image', '/posel/jan-kowalski/zdjecie', '/mapa/gminy.json']) {
+      '/gmina/121701/opengraph-image', '/posel/jan-kowalski/zdjecie', '/posel/jan-kowalski/miniatura', '/mapa/gminy.json']) {
       expect(czyOdslona(wpis({ uri })), uri).toBe(false);
     }
   });
@@ -75,6 +77,13 @@ describe('roboty', () => {
   it('zwykłe przeglądarki — nie', () => {
     expect(czyRobot(wpis({ ua: CHROME }))).toBe(false);
     expect(czyRobot(wpis({ ua: SAFARI }))).toBe(false);
+  });
+  it('podpis Chrome bez Accept-Language — robot (zmierzone 26.10.2026: 23 302 „wejścia z Google”)', () => {
+    const udawany = wpis({ ua: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36',
+      jezyk: '', ref: 'https://www.google.com/', uri: '/firma/5260152844' });
+    expect(czyRobot(udawany)).toBe(true);
+    const p = podsumuj([udawany, wpis({ uri: '/' })], OPCJE);
+    expect([p.odslon, p.robotow, p.zrodla]).toEqual([1, 1, []]);
   });
 });
 

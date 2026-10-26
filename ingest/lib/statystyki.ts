@@ -51,7 +51,7 @@ export type Podsumowanie = {
 const ROBOT = /bot\b|bot\/|crawl|spider|slurp|scrap|curl|wget|python|httpx|go-http|java\/|okhttp|axios|node-fetch|undici|headless|lighthouse|pagespeed|monitor|uptime|pingdom|preview|facebookexternalhit|externalagent|embedly|whatsapp|telegram|discord|slack|semrush|ahrefs|mj12|dotbot|petal|bytespider|gptbot|claude|perplexity|ccbot|dataforseo|censys|zgrab|masscan|nmap/i;
 
 /** Pliki, ktore nie sa „strona" — nawet jesli przegladarka je pobrala. */
-const NIE_STRONA = /^\/(api|_next)\/|^\/(robots\.txt|sitemap\.xml|favicon\.ico)$|\/opengraph-image|\/zdjecie$|\.(png|jpe?g|svg|webp|ico|json|txt|xml|css|js|map|woff2?)$/i;
+const NIE_STRONA = /^\/(api|_next)\/|^\/(robots\.txt|sitemap\.xml|favicon\.ico)$|\/opengraph-image|\/zdjecie$|\/miniatura$|\.(png|jpe?g|svg|webp|ico|json|txt|xml|css|js|map|woff2?)$/i;
 
 const dobaPolska = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -91,9 +91,20 @@ export function czyOdslona(w: WpisDziennika): boolean {
   return rsc || typ === '' || typ.startsWith('text/html') || typ.startsWith('text/x-component');
 }
 
+/*
+ * BRAK Accept-Language TO ROBOT, nawet z podpisem Chrome'a. ZMIERZONE
+ * 26.10.2026 na dzienniku z 7 dni: 23 302 z 23 304 odslon stron firm
+ * „z Google” przyszly z siedmiu sieci 47.79.x.x z podrobionym
+ * `Referer: https://www.google.com/` i podpisem zwyklej przegladarki — bez
+ * Accept-Language i bez naglowkow Sec-Fetch-*, ktore kazda wspolczesna
+ * przegladarka wysyla przy kazdym zapytaniu. Raport liczyl je jako ludzi:
+ * 776 osob i 28 750 odslon zamiast 544 osob i 619 odslon. Lista nazw
+ * w ROBOT tego nie zlapie — robot, ktory chce byc liczony jako czlowiek,
+ * nie przedstawia sie jako robot.
+ */
 export function czyRobot(w: WpisDziennika): boolean {
   const ua = naglowek(w.request.headers, 'User-Agent');
-  return ua === '' || ROBOT.test(ua);
+  return ua === '' || ROBOT.test(ua) || naglowek(w.request.headers, 'Accept-Language') === '';
 }
 
 export function podsumuj(

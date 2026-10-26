@@ -1108,6 +1108,20 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     Zasada: **współrzędne z cudzego geokodera to hipoteza, nie adres — sprawdź
     je na próbie, dla której znasz prawdę, zanim na nich oprzesz liczbę.**
 
+81. **Robot podszywał się pod wejścia z Google i raport liczył go jako ludzi.**
+    ZMIERZONE 26.10.2026 na dzienniku Caddy z 7 dni: `sudo jawne statystyki`
+    pokazywało 776 osób i 28 750 odsłon, w tym 22 743 odsłony stron firm
+    i 27 903 „wejścia z google.com”. 23 302 z nich przyszły z siedmiu sieci
+    `47.79.x.x` z podrobionym `Referer: https://www.google.com/` i podpisem
+    zwykłego Chrome'a — ale **bez `Accept-Language` i bez `Sec-Fetch-*`**,
+    które każda współczesna przeglądarka wysyła przy każdym zapytaniu.
+    Prawdziwy ruch: **544 osoby, 619 odsłon**; prawdziwych wejść z Google
+    na strony firm — dwa. Lista nazw robotów (`ROBOT`) z pułapki 73 tego
+    nie łapie: robot, który chce być liczony jako człowiek, nie przedstawia
+    się jako robot. Teraz brak `Accept-Language` = robot (`czyRobot`, test
+    na tym przypadku). Zasada: **statystykę, która rośnie skokowo, sprawdź
+    po stronie źródła ruchu (sieć, nagłówki), zanim uwierzysz w czytelników.**
+
 ---
 
 ## Bezpieczeństwo
