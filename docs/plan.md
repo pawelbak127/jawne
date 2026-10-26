@@ -810,11 +810,11 @@ na serwerze, obok danych.
   rolna) ma wyszukiwarkę z kodem gminy, ale z zabezpieczeniem przed
   automatami — droga przez wniosek do Ministerstwa Rolnictwa, jak przy
   oświadczeniach z Kancelarii Sejmu.
-  **Pisma przygotowane 26.10.2026** (`prywatne/mail-2…`, `mail-3…`, do wklejenia
-  w Gmailu z zrejestrupl@gmail.com): wniosek o dane SRPP w formie pliku
-  (do kancelaria@minrol.gov.pl, 14 dni na odpowiedź) i wniosek o wykaz WPR
-  w formie pliku bez danych osobowych rolników (wysłać po odpowiedzi
-  ministerstwa w sprawie opisanej w `podatnosci/`). W obu prosimy
+  **Wniosek o dane SRPP w formie pliku — wysłany 26.10.2026**
+  (kancelaria@minrol.gov.pl, 14 dni na odpowiedź; `prywatne/mail-2-minrol-srpp.html`).
+  **Wniosek o wykaz WPR w formie pliku** (`prywatne/mail-3-minrol-wpr.html`)
+  czeka — wyślemy po odpowiedzi ministerstwa w sprawie opisanej w `podatnosci/`,
+  żeby plik nie powstał z tego samego wadliwego eksportu. W obu prosimy
   o pominięcie imion, nazwisk i numerów osób fizycznych — pokazujemy
   rolnictwo wyłącznie zbiorczo, po gminach.
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
