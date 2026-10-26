@@ -61,6 +61,12 @@ scratchpad/
 # do zbudowania serwisu, a bywaja w nich poswiadczenia i dane osobowe.
 # Trzymaj je w prywatne/ — ten katalog nie idzie do repozytorium.
 prywatne/
+
+# Znalezione podatnosci w CUDZYCH systemach (urzedy, rejestry). Repozytorium
+# jest publiczne, a opis podatnosci przed jej usunieciem to gotowa instrukcja
+# dla kazdego. Nie przenosic stad nic do docs/ ani do commitow, dopoki
+# wlasciciel systemu jej nie usunie — zasady w podatnosci/README.md.
+podatnosci/
 *.eml
 *.msg
 *.docx

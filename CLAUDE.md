@@ -1153,6 +1153,13 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
   tym tempie ok. **cztery miesiące** zamiast 20–30 nocy sprzed spowolnienia.
   Tempa nie stroimy parametrem; zmiana to decyzja Pawła, a pismo do UOKiK
   (`docs/pismo-uokik.md`) musi opisywać stan faktyczny w dniu wysłania.
+- **Podatności w cudzych systemach** (urzędy, rejestry) zapisujemy w katalogu
+  `podatnosci/` — jest w `.gitignore`, bo repozytorium `jawne` jest publiczne,
+  a opis przed usunięciem to instrukcja dla każdego. Spis i zasady:
+  `podatnosci/README.md` (nie testujemy cudzych systemów, bierzemy minimum
+  do potwierdzenia, dane osobowe kasujemy od razu, źródło wstrzymujemy,
+  zgłaszamy właścicielowi z kopią do CERT Polska, publicznie nic do czasu
+  usunięcia). W `docs/` najwyżej „wstrzymane, powód poza repozytorium”.
 - Repozytorium starego projektu jest publiczne. Przy zakładaniu zdalnego dla
   tego — decyzja świadoma, żadnych sekretów w workflow.
 - **Klucze mają dwa miejsca i tylko dwa**: `.env.local` na komputerze
