@@ -82,6 +82,18 @@ ADRES {
 	@lamie_robots header_regexp User-Agent (?i)meta-externalagent
 	respond @lamie_robots "robots.txt: Disallow: /" 403
 
+	# ROBOT, KTORY UDAJE WEJSCIA Z GOOGLE. ZMIERZONE 26.10.2026 na dzienniku
+	# z 7 dni: 34 020 zapytan z sieci 47.79.x.x (Alibaba Cloud, zakres
+	# 47.74.0.0–47.87.255.255 wg RDAP) z podrobionym Referer google.com,
+	# podpisem zwyklego Chrome'a i bez Accept-Language — 85% calego czasu
+	# pracy serwera (6,4 h z 7,5 h), 27 605 stron renderowanych od zera.
+	# Prawdziwy Googlebot w tym czasie: 2 420 zapytan, 20 minut, z adresow
+	# Google — tej blokady nie dotyczy. Z 47.79.x.x przyszlo 28 zapytan
+	# z Accept-Language na 34 020 (pulapka 81). Blokujemy tylko te /16, ktora
+	# zmierzylismy, nie caly zakres Alibaby.
+	@udaje_google remote_ip 47.79.0.0/16
+	respond @udaje_google "Automated traffic from this network is blocked." 403
+
 	reverse_proxy 127.0.0.1:3000
 }
 
