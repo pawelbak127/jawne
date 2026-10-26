@@ -147,6 +147,28 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    strony kanonicznej” → od 22.10 każda strona ma `rel=canonical` (ścieżka
    bez parametrów; listy dzielone na strony — sama siebie). 7 wyświetleń
    w odpowiedziach AI Google.
+   **Raport indeksowania z 26.10.2026 (`dane/GSC`, dane do 23.10):**
+   3 703 strony w indeksie, 49 265 poza nim; wyświetlenia rosną z 29/dobę
+   (15.10) do 331/dobę (22.10). Przyczyny: 46 857 „wykryta — obecnie
+   niezindeksowana” (mapa strony ma 50 000 adresów, w tym 34 918 stron firm
+   i 5 047 organów — Google przegląda nową domenę po 200–600 stron dziennie
+   z własnego wyboru; serwer odpowiadał mu z medianą 0,05–0,09 s, więc to
+   nie nasza szybkość), 1 252 `noindex` (nasza decyzja, jak wyżej, plus
+   strony odwiedzone przed 14.10, gdy `noindex` był wszędzie), 645 zablokowane
+   w `robots.txt` (`/szukaj`, `/firmy?`, CSV gmin, API — celowo), 471
+   „zeskanowana, jeszcze nie zindeksowana”, 38 „duplikat bez kanonicznej”
+   (znaczniki są — sprawdzone 26.10 na adresach z parametrami; najpewniej
+   strony odwiedzone przed 22.10). **Do zrobienia:** przykładowe adresy
+   z GSC dla „duplikat” i „zeskanowana, niezindeksowana” (wiersz → Eksportuj),
+   wtedy wiadomo, czy jest co poprawiać. Do rozważenia, jeśli za 2–3 tygodnie
+   indeks dalej stoi: mniej stron firm w mapie strony (tylko z treścią ponad
+   jeden–dwa przypadki), żeby Google nie oceniał serwisu po tysiącach
+   cienkich stron.
+   **Robot z Alibaba Cloud (26.10.2026):** 34 020 zapytań w 7 dni z sieci
+   47.79.x.x z podrobionym „wejściem z Google” — 85% czasu pracy serwera,
+   a w raporcie odwiedzin liczony jako ludzie (pułapka 81). Zablokowany
+   w Caddy (`9d787e9`), raport poprawiony (`77514c9`). Prawdziwy ruch
+   20–26.10: 544 osoby, 619 odsłon, rośnie z dnia na dzień.
 
 Znana, świadoma luka: brak adresu korespondencyjnego (uśude art. 5 ust. 2),
 opisana w `/prywatnosc` i w `docs/test-rownowagi.md`. Zdjęcie `noindex` jej
@@ -788,6 +810,13 @@ na serwerze, obok danych.
   rolna) ma wyszukiwarkę z kodem gminy, ale z zabezpieczeniem przed
   automatami — droga przez wniosek do Ministerstwa Rolnictwa, jak przy
   oświadczeniach z Kancelarii Sejmu.
+  **Pisma przygotowane 26.10.2026** (`prywatne/mail-*.html`, do wklejenia
+  w Gmailu z zrejestrupl@gmail.com): wniosek o dane SRPP w formie pliku
+  (do kancelaria@minrol.gov.pl, 14 dni na odpowiedź) i wniosek o wykaz WPR
+  w formie pliku bez danych osobowych rolników (wysłać po odpowiedzi
+  ministerstwa w sprawie opisanej w `prywatne/`). W obu prosimy
+  o pominięcie imion, nazwisk i numerów osób fizycznych — pokazujemy
+  rolnictwo wyłącznie zbiorczo, po gminach.
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
   i H2020, 5 498 polskich udziałów, 1,78 mld EUR netto), dział „Programy
   badawcze UE” na stronie gminy (168 gmin), w zadaniu `fundusze`. Gmina
