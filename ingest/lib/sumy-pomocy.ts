@@ -711,11 +711,24 @@ export function firmyDoMapy(
     return { nip, nazwa: wieksza(s?.nazwa ?? null, f.nazwa), brutto: (s?.brutto ?? 0) + f.brutto };
   }).sort((a, b) => b.brutto - a.brutto || (a.nip < b.nip ? -1 : 1));
 
+  /*
+   * Regule jawnosci oceniamy na TEJ nazwie, ktora pokaze strona firmy — z
+   * najnowszego przypadku (`firmy_szukaj`), a nie na `nazwa` ze stanu sum,
+   * ktora jest najwieksza alfabetycznie. ZMIERZONE 27.10.2026 na serwerze:
+   * 727 z 50 000 firm z tej listy prowadzilo do strony z noindex albo 404,
+   * bo jedna wersja nazwy przechodzila regule, a druga nie (698 z nich bez
+   * REGON-u, gdzie rozstrzyga sama nazwa). Firma dopisana po ostatniej
+   * budowie indeksu zostaje przy nazwie ze stanu.
+   */
+  const zIndeksu = db.prepare("select 1 from sqlite_master where type = 'table' and name = 'firmy_szukaj'").get()
+    ? db.prepare('select nazwa from firmy_szukaj where nip = ?')
+    : null;
   const nipy: string[] = [];
   /** true, gdy lista jest pelna. */
   const wez = (r: { nip: string; nazwa: string | null }): boolean => {
     const t = (typ.get(r.nip) as { typ: string | null } | undefined)?.typ ?? null;
-    if (wolno(r.nazwa, t)) nipy.push(r.nip);
+    const nazwa = (zIndeksu?.get(r.nip) as { nazwa: string } | undefined)?.nazwa ?? r.nazwa;
+    if (wolno(nazwa, t)) nipy.push(r.nip);
     return nipy.length >= limit;
   };
   let i = 0;

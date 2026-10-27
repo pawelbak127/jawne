@@ -5,6 +5,7 @@ import { firmyDoMapy, mapaZeSum, odswiezSumy, PORCJA_DNIA, przegladZeSum, sprawd
 import { DNI_USTALONE, policzMapePomocy, policzPrzeglad } from '../../src/lib/przeglad.js';
 import { policzPomocGminy, pomocGminyZeSum } from '../../src/lib/pomoc-gminy.js';
 import { policzPodsumowaniaGmin } from './agregaty.js';
+import { zbudujIndeksFirm } from './indeks-firm.js';
 
 /**
  * Kontrola, ze suma liczona dzien po dniu daje dokladnie to samo, co jedno
@@ -402,6 +403,18 @@ describe('firmy do mapy strony (pulapka 72)', () => {
     expect(firmyDoMapy(db, 10, wszystkie)).toEqual(zSql(10, wszystkie));
     expect(firmyDoMapy(db, 10, wszystkie)).toEqual(['1000000003', '1000000001', '1000000005', '1000000002', '1000000004']);
     expect(firmyDoMapy(db, 3, bezBety)).toEqual(zSql(3, bezBety));
+  });
+
+  it('ocenia nazwe, ktora pokaze strona firmy (najnowsza), a nie najwieksza alfabetycznie', () => {
+    dodajDzien('2026-01-01', 20, [{ nip: '1000000001', nazwa: 'Zeta sp. z o.o.', brutto: 500 }]);
+    dodajDzien('2026-01-02', 20, [{ nip: '1000000001', nazwa: 'Anna', brutto: 100 }]);
+    odswiezSumy(db);
+    const wolno = (n: string | null) => n?.includes('sp. z o.o.') ?? false;
+    // Bez indeksu firm zostaje nazwa ze stanu sum.
+    expect(firmyDoMapy(db, 10, wolno)).toEqual(['1000000001']);
+    zbudujIndeksFirm(db);
+    // Strona firmy pokaze „Anna” i da noindex — mapa strony nie moze jej polecac.
+    expect(firmyDoMapy(db, 10, wolno)).toEqual([]);
   });
 
   it('NIE przechodzi po calej tabeli pomocy — czyta tylko dni spoza stanu, indeksem po dniu', () => {
