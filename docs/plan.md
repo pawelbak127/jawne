@@ -158,12 +158,22 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    w `robots.txt` (`/szukaj`, `/firmy?`, CSV gmin, API — celowo), 471
    „zeskanowana, jeszcze nie zindeksowana”, 38 „duplikat bez kanonicznej”
    (znaczniki są — sprawdzone 26.10 na adresach z parametrami; najpewniej
-   strony odwiedzone przed 22.10). **Do zrobienia:** przykładowe adresy
-   z GSC dla „duplikat” i „zeskanowana, niezindeksowana” (wiersz → Eksportuj),
-   wtedy wiadomo, czy jest co poprawiać. Do rozważenia, jeśli za 2–3 tygodnie
-   indeks dalej stoi: mniej stron firm w mapie strony (tylko z treścią ponad
-   jeden–dwa przypadki), żeby Google nie oceniał serwisu po tysiącach
-   cienkich stron.
+   strony odwiedzone przed 22.10).
+   **Eksporty z 27.10.2026** („noindex”, „zeskanowana”, „wykryta”):
+   `noindex` to strony firm „Beneficjent pomocy publicznej” — celowo;
+   „zeskanowana” to w ¾ obrazki podglądu linku i favicon (348 z 471), reszta
+   zwykła dla nowej domeny; „wykryta” w próbce to w 73% strony firm, a obok
+   nich nieodwiedzone strony gmin, ustaw i głosowań. Przy okazji: mapa
+   strony polecała 727 firm, których strona ma `noindex` albo 404 (inna
+   wersja nazwy w mapie i na stronie) — naprawione w `65193ed`.
+   **Mapa strony w dwóch plikach (decyzja Pawła 27.10.2026):** `/sitemap.xml`
+   to indeks wskazujący `/sitemap-strony.xml` i `/sitemap-firmy.xml`;
+   adresów tyle samo co przed podziałem. Search Console pokaże indeksowanie
+   każdego pliku osobno. **Po wdrożeniu:** w GSC → Mapy witryn zgłosić
+   ponownie `sitemap.xml` i dodać oba pliki osobno (wtedy filtr raportu
+   indeksowania pokazuje każdy z nich). **Około 15.11:** porównać odsetek
+   zaindeksowanych w obu plikach; jeśli strony podstawowe dalej stoją —
+   przyciąć firmy w mapie (propozycja: 5 tys. największych według kwoty).
    **Robot z Alibaba Cloud (26.10.2026):** 34 020 zapytań w 7 dni z sieci
    47.79.x.x z podrobionym „wejściem z Google” — 85% czasu pracy serwera,
    a w raporcie odwiedzin liczony jako ludzie (pułapka 81). Zablokowany
