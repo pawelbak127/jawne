@@ -829,7 +829,7 @@ na serwerze, obok danych.
   (kancelaria@minrol.gov.pl, 14 dni na odpowiedź; `prywatne/mail-2-minrol-srpp.html`).
   **Wniosek o wykaz WPR w formie pliku** (`prywatne/mail-3-minrol-wpr.html`)
   — czekał na usunięcie usterki, żeby plik nie powstał z tego samego
-  wadliwego eksportu; od 28.10 **można go wysłać** (Paweł). W obu prosimy
+  wadliwego eksportu; od 28.10 można go wysłać — kiedy, decyduje Paweł. W obu prosimy
   o pominięcie imion, nazwisk i numerów osób fizycznych — pokazujemy
   rolnictwo wyłącznie zbiorczo, po gminach.
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
