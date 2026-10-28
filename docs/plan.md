@@ -177,8 +177,12 @@ Każdy etap sprawdzany tak samo: wszystkie typy stron × oba style × 390/1280
    **Robot z Alibaba Cloud (26.10.2026):** 34 020 zapytań w 7 dni z sieci
    47.79.x.x z podrobionym „wejściem z Google” — 85% czasu pracy serwera,
    a w raporcie odwiedzin liczony jako ludzie (pułapka 81). Zablokowany
-   w Caddy (`9d787e9`), raport poprawiony (`77514c9`). Prawdziwy ruch
-   20–26.10: 544 osoby, 619 odsłon, rośnie z dnia na dzień.
+   w Caddy (`9d787e9`), raport poprawiony (`77514c9`). Blokada działa
+   (28.10: po wdrożeniu 254 × 403, zero 200).
+   **Drugi robot (28.10.2026, pułapka 82):** sprzeczne nagłówki (nasz
+   Referer przy `Sec-Fetch-Site: none`), ok. 100 odsłon na dobę od 22.10 —
+   liczba „544 osoby, 619 odsłon” z 26.10 w większości była nim. Prawdziwy
+   ruch 22–28.10: **104 osoby, 170 odsłon**, w tym 24 wejścia z Google.
 
 Znana, świadoma luka: brak adresu korespondencyjnego (uśude art. 5 ust. 2),
 opisana w `/prywatnosc` i w `docs/test-rownowagi.md`. Zdjęcie `noindex` jej
@@ -814,17 +818,18 @@ na serwerze, obok danych.
   funduszy UE niewiele, pomocy publicznej też. Tam idą pieniądze rolne.
   Uwaga: to dane osobowe rolników — ta sama reguła progu.
   **Rozpoznane 25.10.2026** (`docs/zrodla.md`): płatności rolne po gminie są
-  tylko w ministerialnym wykazie beneficjentów WPR — **wstrzymany**, powód
-  poza repozytorium (`podatnosci/`), decyzja i kontakt z ministerstwem po
-  stronie Pawła. ARiMR na dane.gov.pl nie ma nic po gminach. SRPP (pomoc
+  tylko w ministerialnym wykazie beneficjentów WPR — wstrzymany 25.10 do
+  czasu usunięcia usterki zgłoszonej ministerstwu (IOD, kopia do CERT
+  Polska); **usterki usunięte — potwierdzenie Pawła 28.10.2026**.
+  ARiMR na dane.gov.pl nie ma nic po gminach. SRPP (pomoc
   rolna) ma wyszukiwarkę z kodem gminy, ale z zabezpieczeniem przed
   automatami — droga przez wniosek do Ministerstwa Rolnictwa, jak przy
   oświadczeniach z Kancelarii Sejmu.
   **Wniosek o dane SRPP w formie pliku — wysłany 26.10.2026**
   (kancelaria@minrol.gov.pl, 14 dni na odpowiedź; `prywatne/mail-2-minrol-srpp.html`).
   **Wniosek o wykaz WPR w formie pliku** (`prywatne/mail-3-minrol-wpr.html`)
-  czeka — wyślemy po odpowiedzi ministerstwa w sprawie opisanej w `podatnosci/`,
-  żeby plik nie powstał z tego samego wadliwego eksportu. W obu prosimy
+  — czekał na usunięcie usterki, żeby plik nie powstał z tego samego
+  wadliwego eksportu; od 28.10 **można go wysłać** (Paweł). W obu prosimy
   o pominięcie imion, nazwisk i numerów osób fizycznych — pokazujemy
   rolnictwo wyłącznie zbiorczo, po gminach.
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
