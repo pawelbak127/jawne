@@ -9,7 +9,7 @@ const POLUDNIE = Date.UTC(2026, 9, 3, 10, 0, 0) / 1000;
 
 const wpis = (o: {
   ts?: number; ip?: string; ua?: string; uri?: string; status?: number;
-  typ?: string; ref?: string; metoda?: string; rsc?: boolean; jezyk?: string;
+  typ?: string; ref?: string; metoda?: string; rsc?: boolean; jezyk?: string; sfs?: string;
 }): WpisDziennika => ({
   ts: o.ts ?? POLUDNIE,
   status: o.status ?? 200,
@@ -24,6 +24,7 @@ const wpis = (o: {
       ...(o.jezyk === '' ? {} : { 'Accept-Language': [o.jezyk ?? 'pl-PL,pl;q=0.9,en-US;q=0.8'] }),
       ...(o.ref ? { Referer: [o.ref] } : {}),
       ...(o.rsc ? { RSC: ['1'] } : {}),
+      ...(o.sfs ? { 'Sec-Fetch-Site': [o.sfs] } : {}),
     },
   },
   resp_headers: { 'Content-Type': [o.typ ?? 'text/html; charset=utf-8'] },
@@ -84,6 +85,17 @@ describe('roboty', () => {
     expect(czyRobot(udawany)).toBe(true);
     const p = podsumuj([udawany, wpis({ uri: '/' })], OPCJE);
     expect([p.odslon, p.robotow, p.zrodla]).toEqual([1, 1, []]);
+  });
+  it('nasz Referer przy Sec-Fetch-Site: none — robot (zmierzone 28.10.2026: 703 odsłony)', () => {
+    const udawany = { jezyk: 'en-US,en;q=0.9', sfs: 'none', uri: '/glosowanie/67-10' };
+    expect(czyRobot(wpis({ ...udawany, ref: 'https://zrejestru.pl/posel/piotr-krol' }))).toBe(true);
+    expect(czyRobot(wpis({ ...udawany, ref: 'https://www.zrejestru.pl/' }))).toBe(true);
+    // Przejście z naszej strony w prawdziwej przeglądarce:
+    expect(czyRobot(wpis({ ...udawany, sfs: 'same-origin', ref: 'https://zrejestru.pl/posel/piotr-krol' }))).toBe(false);
+    // Adres wpisany ręką albo zakładka — „none” bez Referera:
+    expect(czyRobot(wpis({ ...udawany }))).toBe(false);
+    // Przeglądarka bez Sec-Fetch-* (starsze Safari) z naszym Refererem:
+    expect(czyRobot(wpis({ ref: 'https://zrejestru.pl/' }))).toBe(false);
   });
 });
 

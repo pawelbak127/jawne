@@ -101,10 +101,32 @@ export function czyOdslona(w: WpisDziennika): boolean {
  * 776 osob i 28 750 odslon zamiast 544 osob i 619 odslon. Lista nazw
  * w ROBOT tego nie zlapie — robot, ktory chce byc liczony jako czlowiek,
  * nie przedstawia sie jako robot.
+ *
+ * NASZ Referer PRZY `Sec-Fetch-Site: none` TO TEZ ROBOT. Przegladarka
+ * wysyla „none” tylko wtedy, gdy wejscie zaczal sam czytelnik (adres wpisany
+ * reka, zakladka) — a wtedy nie ma skad wziac Referera. ZMIERZONE 28.10.2026
+ * na dzienniku z 7 dni: 703 z 867 odslon uznanych za ludzkie mialo te
+ * sprzeczna pare, prawie zawsze z `Accept-Language: en-US,en;q=0.9`, kazda
+ * z innego adresu IP, i przy ZADNEJ z nich ten sam adres nie pobral
+ * wczesniej niczego w ciagu 30 minut — czlowiek, ktory przyszedl z naszej
+ * innej strony, musialby ja najpierw pobrac. Przy pozostalych odslonach
+ * z naszym Refererem taka poprzednia odslona byla w 34 z 56.
  */
+const zNaszejStrony = (w: WpisDziennika): boolean => {
+  const ref = naglowek(w.request.headers, 'Referer');
+  const host = (w.request.host ?? '').replace(/^www\./, '');
+  if (!ref || !host) return false;
+  try {
+    return new URL(ref).hostname.replace(/^www\./, '') === host;
+  } catch {
+    return false;
+  }
+};
+
 export function czyRobot(w: WpisDziennika): boolean {
   const ua = naglowek(w.request.headers, 'User-Agent');
-  return ua === '' || ROBOT.test(ua) || naglowek(w.request.headers, 'Accept-Language') === '';
+  return ua === '' || ROBOT.test(ua) || naglowek(w.request.headers, 'Accept-Language') === ''
+    || (naglowek(w.request.headers, 'Sec-Fetch-Site') === 'none' && zNaszejStrony(w));
 }
 
 export function podsumuj(

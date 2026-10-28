@@ -1115,12 +1115,30 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     `47.79.x.x` z podrobionym `Referer: https://www.google.com/` i podpisem
     zwykłego Chrome'a — ale **bez `Accept-Language` i bez `Sec-Fetch-*`**,
     które każda współczesna przeglądarka wysyła przy każdym zapytaniu.
-    Prawdziwy ruch: **544 osoby, 619 odsłon**; prawdziwych wejść z Google
+    Prawdziwy ruch: **544 osoby, 619 odsłon** (SPROSTOWANIE: większość z nich
+    to drugi robot — pułapka 82); prawdziwych wejść z Google
     na strony firm — dwa. Lista nazw robotów (`ROBOT`) z pułapki 73 tego
     nie łapie: robot, który chce być liczony jako człowiek, nie przedstawia
     się jako robot. Teraz brak `Accept-Language` = robot (`czyRobot`, test
     na tym przypadku). Zasada: **statystykę, która rośnie skokowo, sprawdź
     po stronie źródła ruchu (sieć, nagłówki), zanim uwierzysz w czytelników.**
+
+82. **Drugi robot wysyłał komplet nagłówków przeglądarki — sprzecznych ze
+    sobą.** ZMIERZONE 28.10.2026 na dzienniku z 7 dni: po poprawce z pułapki 81
+    raport pokazywał 802 osoby i 868 odsłon, ale prawie żadnych wejść z Google
+    i każda „osoba” oglądała inną, głęboką podstronę (posła, głosowania,
+    organu). 703 z 867 odsłon miało `Referer` z naszej strony razem
+    z `Sec-Fetch-Site: none` — a „none” przeglądarka wysyła tylko wtedy, gdy
+    wejście zaczął sam czytelnik (adres wpisany ręką, zakładka), czyli bez
+    Referera. Do tego `Accept-Language: en-US,en;q=0.9`, inny adres IP przy
+    każdej odsłonie i **ani razu** wcześniejszego zapytania z tego samego
+    adresu w ciągu 30 minut; przy pozostałych odsłonach z naszym Refererem
+    taka poprzednia odsłona była w 34 z 56. Prawdziwy ruch z tych 7 dni:
+    **104 osoby, 170 odsłon**. Ten robot zaczął 22.10, więc liczby z pułapki 81
+    też go zawierały. Nie blokujemy go: ok. 100 zapytań na dobę nic serwera
+    nie kosztuje, a adresy się zmieniają. Zasada: **nie sprawdzaj, czy
+    nagłówek jest, tylko czy nagłówki do siebie pasują** — robot uczy się
+    dodawać brakujące, ale rzadko pilnuje, żeby nie przeczyły sobie nawzajem.
 
 ---
 
