@@ -43,6 +43,21 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
   w `/prywatnosc` sekcje „Kto jeszcze ma dostęp” i „Dziennik wejść” (dziś mówią,
   że nie ma zewnętrznej analityki) i dopisać `JAWNE_UMAMI_ID` do `jawne ustaw`.
 
+### Stan na 28.10.2026
+
+**Historia SUDOP pełna:** 3 952 dni od 01.01.2016, czyli 100% okna rejestru,
+23,3 mln przypadków (do tego 1,09 mln bez wskazanej gminy, osobno). Stan sum:
+3 940 dni ustalonych bez przerwy. Przebiegi historii mają teraz „0 z 20”
+zapytań — nie ma czego pobierać; zadanie dzienne dociąga bieżące dni.
+Skutek dla stron: trzy gminy pokazowe przestają mieć osobny tryb „pełnej
+historii” i liczą się jak pozostałe (reguła `pelnaHistoriaGminy` w `dane.ts`
+rozpoznaje to sama), a `/o-serwisie` nie mówi już o „stopniowym dociąganiu”.
+
+**Na serwerze działa `f81095a`** (mapa strony w dwóch plikach). **Czeka na
+`sudo jawne aktualizuj`:** `4ff98a3` (statystyki: drugi robot), `8917c48`
+(`/o-serwisie`) i tryb gmin pokazowych. Dysk 41 z 96 GB (42%). Ruch ludzi
+22–28.10: 104 osoby, 170 odsłon (pułapka 82).
+
 ### Stan na 14.10.2026
 
 **PREMIERA 14.10.2026, ok. 20:42:** Paweł ustawił `JAWNE_INDEKSOWANIE=tak`.

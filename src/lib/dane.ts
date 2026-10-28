@@ -2811,11 +2811,7 @@ const RESZTA_EKSPORTU = `(select typ from regon where regon.nip = z.nip_beneficj
  * Belchatowa mial te same 34 815 wierszy w innym porzadku.
  */
 export function* pomocDoEksportuPorcjami(teryt: string): Generator<PomocDoEksportu[]> {
-  const pelna = bezTabeli(
-    () => (jeden<{ c: number }>('select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt)?.c ?? 0) > 0,
-    false,
-  );
-  if (pelna) {
+  if (pelnaHistoriaGminy(teryt)) {
     /*
      * Najwieksza pomoc na NIP — JEDNO grupowanie i zlaczenie, nie podzapytanie
      * przy kazdym wierszu. ZMIERZONE 04.10.2026: po dodaniu indeksu
@@ -3111,9 +3107,7 @@ export function organyPomocy(teryt: string): OrganyPomocy {
      * zapytania: SEARCH USING COVERING INDEX), a nie przebiegiem po tabeli.
      * Takich gmin jest tyle, ile pelnych pobran — dzis trzy.
      */
-    const pelna = (jeden<{ c: number }>(
-      'select count(*) as c from pomoc_publiczna_pobrania where teryt = ?', teryt,
-    )?.c ?? 0) > 0;
+    const pelna = pelnaHistoriaGminy(teryt) !== null;
 
     const wiersze = pelna
       ? wszystkie<{
@@ -3365,22 +3359,52 @@ export function organyDoMapy(): string[] {
   }).map((r) => r.nip), []);
 }
 
+function zakresDniSum(): { od: string | null; do: string | null; dni: number } | null {
+  return bezTabeli(
+    () => jeden<{ od: string | null; do: string | null; dni: number }>(
+      'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_sumy_dni',
+    ),
+    null,
+  );
+}
+
+/**
+ * Pobranie gminy w calosci — o ile ta gmina ma jeszcze WLASNY tryb pelnej
+ * historii; `null`, gdy liczy sie jak kazda inna (z dni kraju). Jedna regula
+ * dla strony gminy, organow i eksportu CSV: rozjazd miedzy nimi pokazalby na
+ * jednej stronie liczby z dwoch roznych zbiorow dni (lekcja B2).
+ *
+ * Wlasny tryb maja trzy gminy pokazowe, ale TYLKO dopoki dni kraju nie siegaja
+ * poczatku ich okna. ZMIERZONE 28.10.2026: stan sum obejmuje 3 940 dni od
+ * 01.01.2016 bez przerwy, a gminy pokazowe nie maja ani jednego wiersza poza
+ * dniami kraju. Tryb pelny mowil wtedy nieprawde: „w pozostalych gminach
+ * mamy tylko dni pobrane dla calego kraju, wiec kwot nie da sie porownywac”,
+ * podpis „pobrane 17 wrzesnia” przy danych do wczoraj; liczyl tez dni
+ * nieustalone i nie mial porownania z mediana.
+ */
+function pelnaHistoriaGminy(teryt: string): { od: string; pobrano: string; wierszy: number } | null {
+  const pobranie = bezTabeli(() => jeden<{ od: string; pobrano: string; wierszy: number }>(
+    'select od, pobrano, wierszy from pomoc_publiczna_pobrania where teryt = ?', teryt,
+  ), null);
+  if (!pobranie) return null;
+  const dni = zakresDniSum();
+  return dni?.od && dni.od <= pobranie.od ? null : pobranie;
+}
+
 export function pomocGminy(teryt: string): PomocGminy {
   const pusto: PomocGminy = { zrodlo: null, pobranie: null, razem: null, ukrytych: { bezProgu: 0, zProgiem: 0 }, lata: [], przeznaczenia: [], udzielajacy: [], beneficjenci: [] };
   return bezTabeli(() => {
-    const pobranie = jeden<{ od: string; pobrano: string; wierszy: number }>(
-      'select od, pobrano, wierszy from pomoc_publiczna_pobrania where teryt = ?', teryt,
-    );
-    // Bez pelnego pobrania gminy zostaja dni pobrane dla calego kraju —
-    // pokazujemy je, ale mowimy wprost, ze to nie jest cala historia.
+    // Bez pelnego pobrania gminy zostaja dni pobrane dla calego kraju.
     // Swieze dni sa niepelne (urzedy zglaszaja pomoc do 7 dni po fakcie),
     // wiec w trybie dni liczymy tylko dni ustalone — patrz DNI_DO_USTALENIA.
+    const pobranie = pelnaHistoriaGminy(teryt);
     if (pobranie) {
-      // Gmina pobrana w calosci: jej 10-letniej historii nie ma w stanie sum
-      // (pulapka 35), wiec liczymy z tabeli. To trzy gminy pokazowe.
+      // Jej 10-letniej historii nie ma w stanie sum (pulapka 35),
+      // wiec liczymy z tabeli.
       const policzona = policzPomocGminy(czytnik, 'pomoc_publiczna', teryt);
       return { zrodlo: { rodzaj: 'gmina', od: pobranie.od, pobrano: pobranie.pobrano }, pobranie, ...policzona };
     }
+    const dni = zakresDniSum();
     /*
      * Tryb dni ustalonych — ZE STANU SUM, nie z tabeli pomocy. ZMIERZONE
      * 04.10.2026: liczenie z tabeli kosztowalo strone Krakowa 2,5 GB odczytu
@@ -3388,12 +3412,6 @@ export function pomocGminy(teryt: string): PomocGminy {
      * Zakres dni tez bierzemy ze stanu, nie z rejestru dni: liczby i podpis
      * pod nimi musza opisywac ten sam zbior dni.
      */
-    const dni = bezTabeli(
-      () => jeden<{ od: string | null; do: string | null; dni: number }>(
-        'select min(dzien) as od, max(dzien) as do, count(*) as dni from pomoc_sumy_dni',
-      ),
-      null,
-    );
     if (!dni?.dni || !dni.od || !dni.do) return pusto;
     const policzona = pomocGminyZeSum(czytnik, teryt);
     if (!policzona.razem) return pusto;

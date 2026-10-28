@@ -130,8 +130,9 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const medianaUe = ue2127 && ludnoscDoPrzeliczen ? medianaUeNaMieszkanca(g.wojewodztwo, '2021-2027') : null;
   const jestPomoc = Boolean(pomoc.zrodlo && pomoc.razem);
   const pomocNaOsobe = jestPomoc ? naMieszkanca(pomoc.razem!.brutto, ludnoscDoPrzeliczen) : null;
-  // Porownanie tylko w trybie dni: gmina z pelna 10-letnia historia nie ma
-  // z kim sie porownac — reszta kraju ma kilkanascie dni (pulapka 35).
+  // Porownanie tylko w trybie dni: w trybie „gmina” reszta kraju nie ma
+  // tych samych dni (pulapka 35). Od 28.10.2026 tryb „gmina” zostaje tylko
+  // tam, gdzie dni kraju nie siegaja poczatku okna — patrz `pomocGminy`.
   const medianaPomocy = jestPomoc && pomoc.zrodlo!.rodzaj === 'dni' && ludnoscDoPrzeliczen
     ? medianaPomocyNaMieszkanca(g.wojewodztwo)
     : null;
