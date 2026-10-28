@@ -16,6 +16,8 @@ export const metadata: Metadata = {
  * albo z mediow spolecznosciowych i chce wiedziec, czy moze nam ufac.
  * Do 13.10.2026 ta strona mowila „jawne” (stara nazwa), „historie dociagamy
  * nocami” (od 25.09 praca ciagla) i opisywala regule nazw sprzed REGON-u.
+ * Do 28.10.2026: „historie dociagamy stopniowo” — tego dnia historia SUDOP
+ * objela cale okno rejestru (3 952 dni od 01.01.2016).
  */
 export default function StronaOSerwisie() {
   return (
@@ -37,8 +39,8 @@ export default function StronaOSerwisie() {
             Na stronie każdej gminy łączymy to z publicznymi pieniędzmi: budżetem gminy
             i tym, na co go wydaje (GUS), projektami z Funduszy Europejskich (listy
             Ministerstwa Funduszy i Polityki Regionalnej), pomocą publiczną dla firm z bazy
-            SUDOP prowadzonej przez UOKiK — pobieraną dzień po dniu dla całego kraju,
-            a historię dociągamy stopniowo — oraz zamówieniami publicznymi z unijnego
+            SUDOP prowadzonej przez UOKiK — dla całego kraju od 2016 roku, z nowymi dniami
+            dopisywanymi codziennie — oraz zamówieniami publicznymi z unijnego
             dziennika TED. Te same liczby można obejrzeć na <Link href="/mapa">mapie wszystkich gmin</Link>.
             Kwoty przeliczamy na mieszkańca według GUS, a przypisanie gminy do okręgu
             wyborczego bierzemy z wyników PKW z 2023 roku.
