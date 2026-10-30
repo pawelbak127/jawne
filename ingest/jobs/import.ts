@@ -1175,8 +1175,15 @@ async function importBudzetow(db: DatabaseSync): Promise<void> {
  * gdy pobralismy go PO jego koncu; taki pomijamy. Budzet czasu (`--minut=`,
  * domyslnie 45) — zadanie `ted` ma jeden limit systemd na TED, BZP i REGON,
  * a historia to ok. 1 500 stron po ~9 s. Niedokonczone dni wracaja jutro.
- * Miedzy zapytaniami przerwa: API jest publiczne i bez limitow, ale to nie
- * powod, zeby je dociskac.
+ *
+ * LIMIT od 29.10.2026 ok. 13:00 UTC (informacja od asc, 30.10.2026): po kilku
+ * duzych stronach z rzedu (250 ogloszen, ok. 4 MB) API oddaje 403, takze przy
+ * 5 s odstepu — wyglada na limit ilosci danych, nie zapytan. Dlatego 5 s
+ * przerwy (dzienny przyrost to ok. 10 stron, czyli niecala minuta) i KURSOR:
+ * dzien przerwany odmowa wraca od ostatniej zapisanej strony, a nie od
+ * pierwszej. Bez kursora dzien dluzszy niz to, co limit przepuszcza naraz,
+ * nie skonczylby sie nigdy, a zaleglosc rosla z kazda noca (ten sam ksztalt
+ * co pulapka 77 przy SUDOP).
  */
 async function importBzp(db: DatabaseSync): Promise<void> {
   const odKiedy = process.argv.find((a) => a.startsWith('--od='))?.split('=')[1] ?? '2023-11-01';
@@ -1209,6 +1216,14 @@ async function importBzp(db: DatabaseSync): Promise<void> {
   const zapiszDzien = db.prepare(
     'insert into bzp_dni(dzien, ogloszen, pobrano) values (?,?,?) on conflict(dzien) do update set ogloszen=excluded.ogloszen, pobrano=excluded.pobrano',
   );
+  // Tylko dla importu (strony jej nie czytaja), wiec bez migracji.
+  db.exec('create table if not exists bzp_kursor (dzien text primary key, po_obiekcie text not null, ogloszen integer not null)');
+  const kursor = db.prepare('select po_obiekcie, ogloszen from bzp_kursor where dzien = ?');
+  const zapiszKursor = db.prepare(
+    'insert into bzp_kursor(dzien, po_obiekcie, ogloszen) values (?,?,?) on conflict(dzien) do update set po_obiekcie=excluded.po_obiekcie, ogloszen=excluded.ogloszen',
+  );
+  const usunKursor = db.prepare('delete from bzp_kursor where dzien = ?');
+  const PRZERWA_MS = 5000;
 
   let pobranychDni = 0;
   let ogloszen = 0;
@@ -1219,8 +1234,10 @@ async function importBzp(db: DatabaseSync): Promise<void> {
       log(`   koniec budzetu czasu — zostalo ${dni.length - pobranychDni} dni na nastepny przebieg`);
       break;
     }
-    let poObiekcie: string | null = null;
-    let wDniu = 0;
+    const zostawiony = kursor.get(dzien) as { po_obiekcie: string; ogloszen: number } | undefined;
+    let poObiekcie: string | null = zostawiony?.po_obiekcie ?? null;
+    let wDniu = zostawiony?.ogloszen ?? 0;
+    if (zostawiony) log(`   ${dzien}: wznawiam po ${wDniu} ogloszeniach`);
     for (;;) {
       let strona: OgloszenieBzp[];
       try {
@@ -1236,6 +1253,8 @@ async function importBzp(db: DatabaseSync): Promise<void> {
          * Od 23.10.2026 cala platforma oddaje strone „Przerwa techniczna”
          * (403 albo 503 z bramy Azure — informacja od asc, 25.10.2026): ten sam
          * przypadek, wiec 503 tez konczy przebieg zdaniem, a nie bledem etapu.
+         * Od 29.10.2026 odmowa to takze limit ilosci danych — wtedy kursor
+         * (zapisany ze strona) pozwala jutro zaczac od tego miejsca.
          */
         if (e instanceof Error && /HTTP (403|429|503)\b/.test(e.message)) {
           log(`   e-Zamowienia odmowily (${e.message.replace(/^.*-> /, '')}) — koncze na dzis, zostalo ${dni.length - pobranychDni} dni`);
@@ -1262,16 +1281,22 @@ async function importBzp(db: DatabaseSync): Promise<void> {
             czesci++;
           }
           wDniu++;
+          ogloszen++;
         }
+        // Kursor w tej samej transakcji co strona: po odmowie albo zabiciu
+        // procesu nie ma strony zapisanej bez kursora ani odwrotnie.
+        if (strona.length) zapiszKursor.run(dzien, strona[strona.length - 1]!.objectId, wDniu);
       });
       if (strona.length < NA_STRONE_BZP) break;
       poObiekcie = strona[strona.length - 1]!.objectId;
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, PRZERWA_MS));
     }
-    zapiszDzien.run(dzien, wDniu, new Date().toISOString());
+    wTransakcji(db, () => {
+      zapiszDzien.run(dzien, wDniu, new Date().toISOString());
+      usunKursor.run(dzien);
+    });
     pobranychDni++;
-    ogloszen += wDniu;
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, PRZERWA_MS));
   }
   const nabywcy = wTransakcji(db, () => odswiezTerytNabywcow(db));
   const gmin = wTransakcji(db, () => policzBzpGmin(db, PROG_PODEJRZANEJ_KWOTY));
