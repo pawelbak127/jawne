@@ -1338,22 +1338,28 @@ function SkladDochodow({ budzet, czyje }: { budzet: BudzetGminy; czyje: string }
     { nazwa: 'w tym udział w podatku CIT', kwota: budzet.udzial_cit },
     { nazwa: 'w tym podatek od nieruchomości', kwota: budzet.podatek_nieruchomosc },
   ].filter((p) => p.kwota !== null) as { nazwa: string; kwota: number }[];
-  const udzial = (k: number) => k / razem;
-  const opis = (k: number) => `${udzial(k / razem)} · ${zlote(k)}`;
+  /*
+    Do 30.10.2026 stalo tu `const udzial = (k) => k / razem`, ktore przeslanialo
+    `udzial()` z format.ts — tytul i opisy pokazywaly „3.07e-9” zamiast „84%”.
+    Na serwerze komponent byl ukryty (subwencja i dotacje puste do pierwszego
+    przebiegu `gus`), wiec blad wyszedl dopiero lokalnie, przy makiecie.
+  */
+  const czesc = (k: number) => k / razem;
+  const opis = (k: number) => `${udzial(czesc(k))} · ${zlote(k)}`;
   const wlasne = budzet.dochody_wlasne;
   const pozycje = glowne.flatMap((p) => [
-    { klucz: p.nazwa, nazwa: p.nazwa, opis: opis(p.kwota), udzial: udzial(p.kwota) },
+    { klucz: p.nazwa, nazwa: p.nazwa, opis: opis(p.kwota), udzial: czesc(p.kwota) },
     ...(p.nazwa === 'Dochody własne'
-      ? wSrodku.map((w) => ({ klucz: w.nazwa, nazwa: w.nazwa, opis: opis(w.kwota), udzial: udzial(w.kwota), wciete: true }))
+      ? wSrodku.map((w) => ({ klucz: w.nazwa, nazwa: w.nazwa, opis: opis(w.kwota), udzial: czesc(w.kwota), wciete: true }))
       : []),
   ]);
   if (Math.abs(reszta) > razem * 0.005) {
-    pozycje.push({ klucz: 'pozostale', nazwa: 'Pozostałe', opis: opis(Math.max(0, reszta)), udzial: udzial(Math.max(0, reszta)) });
+    pozycje.push({ klucz: 'pozostale', nazwa: 'Pozostałe', opis: opis(Math.max(0, reszta)), udzial: czesc(Math.max(0, reszta)) });
   }
   return (
     <ListaPaskow
       tytul={wlasne !== null
-        ? `${udzial(wlasne / razem)} dochodów ${budzet.rok} r. to dochody własne ${czyje}`
+        ? `${udzial(czesc(wlasne))} dochodów ${budzet.rok} r. to dochody własne ${czyje}`
         : `Z czego składają się dochody — ${budzet.rok}`}
       pozycje={pozycje}
       podpis="Pozycje wcięte są częścią dochodów własnych. Kredyty i obligacje nie są dochodem i nie ma ich w tej kwocie."
