@@ -43,6 +43,21 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
   w `/prywatnosc` sekcje „Kto jeszcze ma dostęp” i „Dziennik wejść” (dziś mówią,
   że nie ma zewnętrznej analityki) i dopisać `JAWNE_UMAMI_ID` do `jawne ustaw`.
 
+### Stan na 30.10.2026
+
+**Na serwerze działa `86730a4`** (wdrożone 28.10, 22:52): statystyki z drugim
+robotem, `/o-serwisie` i gminy pokazowe jak pozostałe. **Czeka na
+`sudo jawne aktualizuj`:** `b35a5ca` — strony gminy, firmy i porównania
+mówiły dalej „starsze dni pobieramy po kolei”; teraz o tym zdaniu rozstrzyga
+`wszystkieDniRejestru()` (na serwerze: 3 942 dni ustalone od 01.01.2016, bez
+dziury). Wszystkie zadania `success`, dysk 43 z 96 GB (45%). Ruch ludzi
+24–30.10: 98 osób, 164 odsłony; z Google 5 wejść, z Gemini i X po jednym.
+SRPP: ministerstwo odmówiło pliku (sekcja „Rolnictwo” niżej).
+Drobiazg: 14 dni z 19.08–01.09.2026 nie ma policzonych przypadków bez gminy
+(`bez_gminy` NULL = „nie wiemy”) — pliki na dysku nie pasują znacznikiem
+pobrania do zapisanego dnia, a zgadywać nie będziemy. W zwykły dzień to
+pojedyncze przypadki; naprawa wymagałaby ponownego pobrania 14 dni z UOKiK.
+
 ### Stan na 28.10.2026
 
 **Historia SUDOP pełna:** 3 952 dni od 01.01.2016, czyli 100% okna rejestru,
@@ -842,6 +857,17 @@ na serwerze, obok danych.
   oświadczeniach z Kancelarii Sejmu.
   **Wniosek o dane SRPP w formie pliku — wysłany 26.10.2026**
   (kancelaria@minrol.gov.pl, 14 dni na odpowiedź; `prywatne/mail-2-minrol-srpp.html`).
+  **Odpowiedź 30.10.2026 — odmowa** (`prywatne/2026-10-30-minrol-srpp-odpowiedz.md`):
+  zakres „nie stanowi informacji publicznej”, odesłanie do publicznego wykazu
+  beneficjentów (od 2017 r.), który eksportuje najwyżej 100 rekordów naraz.
+  Brak eksportu hurtowego jest zamierzony — „ochrona przed … pobieraniem dużych
+  wolumenów danych … i ich maszynowym przetwarzaniem” oraz przed zawieszaniem
+  aplikacji, w której urzędy zgłaszają pomoc. O ustawie o otwartych danych
+  (też we wniosku) pismo milczy. **Wykazu nie pobieramy — ani automatem, ani
+  strona po stronie**: właściciel wprost tego nie chce, a obciążenie trafiłoby
+  w system sprawozdawczy urzędów. Czy iść dalej (skarga na bezczynność do WSA,
+  wniosek o ponowne wykorzystywanie, porada Sieci Obywatelskiej Watchdog
+  Polska) — decyduje Paweł. Do tego czasu rolnictwo zostaje poza serwisem.
   **Wniosek o wykaz WPR w formie pliku** (`prywatne/mail-3-minrol-wpr.html`)
   — czekał na usunięcie usterki, żeby plik nie powstał z tego samego
   wadliwego eksportu; od 28.10 można go wysłać — kiedy, decyduje Paweł. W obu prosimy
