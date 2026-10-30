@@ -50,7 +50,8 @@ robotem, `/o-serwisie` i gminy pokazowe jak pozostałe. **Czeka na
 `sudo jawne aktualizuj`:** `b35a5ca` — strony gminy, firmy i porównania
 mówiły dalej „starsze dni pobieramy po kolei”; teraz o tym zdaniu rozstrzyga
 `wszystkieDniRejestru()` (na serwerze: 3 942 dni ustalone od 01.01.2016, bez
-dziury). Wszystkie zadania `success`, dysk 43 z 96 GB (45%). Ruch ludzi
+dziury); `695b7ae` — BZP wznawia dzień przerwany odmową od ostatniej strony
+(nowy limit e-Zamówień od 29.10, informacja od asc). Wszystkie zadania `success`, dysk 43 z 96 GB (45%). Ruch ludzi
 24–30.10: 98 osób, 164 odsłony; z Google 5 wejść, z Gemini i X po jednym.
 SRPP: ministerstwo odmówiło pliku (sekcja „Rolnictwo” niżej).
 Drobiazg: 14 dni z 19.08–01.09.2026 nie ma policzonych przypadków bez gminy
