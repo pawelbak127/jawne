@@ -238,11 +238,10 @@ export function sprawdzPorcjePrzyrostu(wyniki: readonly PrzypadekPomocy[], od: s
 
 /**
  * Najwczesniejsza data, ktora API jeszcze obejmuje: 1 stycznia roku n-10.
- * Pytanie o starsza pomoc nic nie daje, a obciaza kolejke.
+ * Pytanie o starsza pomoc nic nie daje, a obciaza kolejke. Regula zyje
+ * w `src/lib/format.ts`, bo strony porownuja z nia swoj zakres dni.
  */
-export function poczatekOknaDanych(dzis: Date): string {
-  return `${dzis.getUTCFullYear() - 10}-01-01`;
-}
+export { poczatekOknaSudop as poczatekOknaDanych } from '../../src/lib/format.js';
 
 /**
  * Kwota z API przychodzi jako tekst z kropka ("36878.61"). Pusty tekst i null

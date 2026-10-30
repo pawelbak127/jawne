@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial, euro } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial, euro, poczatekOknaSudop, wszystkieDniRejestru } from './format';
 
 describe('wojewodztwoWMiejscowniku', () => {
   it.each([
@@ -127,6 +127,26 @@ describe('okresDni — przegląd treści 24.10.2026', () => {
   });
   it('dziury: zakres i ile dni brakuje', () => {
     expect(okresDni(2, '2026-10-01', '2026-10-03')).toBe('od 01.10.2026 do 03.10.2026, bez 1 dnia, którego jeszcze nie pobraliśmy');
+  });
+});
+
+describe('wszystkieDniRejestru — historia SUDOP pelna od 28.10.2026', () => {
+  const dzis = new Date('2026-10-30T12:00:00Z');
+  it('okno rejestru zaczyna sie 1 stycznia roku n-10', () => {
+    expect(poczatekOknaSudop(dzis)).toBe('2016-01-01');
+    expect(poczatekOknaSudop(new Date('2027-01-01T00:00:00Z'))).toBe('2017-01-01');
+  });
+  it('od poczatku okna i bez dziury: komplet (3 942 dni jak na serwerze)', () => {
+    expect(wszystkieDniRejestru(3942, '2016-01-01', '2026-10-16', dzis)).toBe(true);
+  });
+  it('dziura w srodku: nie komplet, choc zakres dat ten sam', () => {
+    expect(wszystkieDniRejestru(3941, '2016-01-01', '2026-10-16', dzis)).toBe(false);
+  });
+  it('bez poczatku okna: nie komplet, choc dni ciagle', () => {
+    expect(wszystkieDniRejestru(3941, '2016-01-02', '2026-10-16', dzis)).toBe(false);
+  });
+  it('okno przesuwa sie z rokiem, a starsze dni zostaja: dalej komplet', () => {
+    expect(wszystkieDniRejestru(4307, '2016-01-01', '2027-10-16', new Date('2027-10-30T12:00:00Z'))).toBe(true);
   });
 });
 

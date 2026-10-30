@@ -11,7 +11,7 @@ import {
   type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type NowosciGminy, type ZamowieniaGminy,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, euro, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, euro, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, wszystkieDniRejestru, zlote, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
@@ -963,7 +963,9 @@ function PomocPubliczna({ pomoc }: { pomoc: ReturnType<typeof pomocGminy> }) {
       {z.rodzaj === 'dni' ? (
         <p className="uwaga text-atrament-2">
           <span className="font-medium text-atrament">{`Pomoc udzielona ${okresDni(z.dni, z.od, z.do)}.`}</span>
-          {' Rejestr sięga dziesięciu lat wstecz; starsze dni pobieramy po kolei, dla całego kraju naraz.'}
+          {wszystkieDniRejestru(z.dni, z.od, z.do)
+            ? ' To wszystkie dni z rejestru, który sięga dziesięciu lat wstecz. Nowe dopisujemy codziennie, każdy dwa tygodnie po dacie — wcześniej urzędy nie zdążą zgłosić całej udzielonej pomocy.'
+            : ' Rejestr sięga dziesięciu lat wstecz; starsze dni pobieramy po kolei, dla całego kraju naraz.'}
         </p>
       ) : (
         /*

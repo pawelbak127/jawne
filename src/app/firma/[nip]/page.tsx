@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { bazaDostepna, firma, organyZeStrona, przeznaczeniaFirmy, przypadkiFirmy, TERYT_WARSZAWY, zamowieniaBzpFirmy, zamowieniaFirmy, zrodloImportu, type Firma, type PrzeznaczenieFirmy, type PrzypadekFirmy, type ZamowieniaBzpFirmy, type ZamowieniaFirmy } from '@/lib/dane';
 import { KONTAKT } from '@/lib/adres';
-import { dataKrotko, liczba, okresDni, skroc, udzial, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, liczba, okresDni, skroc, udzial, wszystkieDniRejestru, zlote, zOdmiana } from '@/lib/format';
 import { nazwaDoPokazania, nazwaPodmiotuJawna, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { Dzial, ListaPaskow, Okruszek, Podstawa, Wiecej, Wiersz, Wiersze, WLiczbach, Wypis } from '@/components/Szablon';
@@ -43,6 +43,8 @@ export async function generateStaticParams(): Promise<{ nip: string }[]> {
  * Trzy liczby z `firma()` sa rozlaczne i sumuja sie do `przypadkow`, wiec
  * zdanie ponizej zawsze ma mianownik (regula 3). Dni nieustalone wymieniamy
  * osobno, bo sa NIEPELNE: urzedy maja 7 dni na zgloszenie pomocy.
+ * Od 28.10.2026 dni kraju obejmuja cale okno rejestru — wtedy mowimy to,
+ * zamiast „starsze dni pobieramy po kolei”.
  */
 function zakresDanych(f: Firma): string {
   const zDni = f.z_dni_ustalonych + f.z_dni_swiezych;
@@ -62,7 +64,8 @@ function zakresDanych(f: Firma): string {
   if (f.z_historii_gminy) {
     return `${liczba(f.z_historii_gminy)} z pełnej historii gminy i ${liczba(zDni)} z ${dni}.${swieze}${bezGminy}`;
   }
-  return `Z ${dni}; starsze dni rejestru pobieramy po kolei.${swieze}${bezGminy}`;
+  const komplet = f.dni_od && f.dni_do && wszystkieDniRejestru(f.dni_kraju, f.dni_od, f.dni_do);
+  return `Z ${dni}${komplet ? ' — to wszystkie dni, które rejestr udostępnia.' : '; starsze dni rejestru pobieramy po kolei.'}${swieze}${bezGminy}`;
 }
 
 function widok(nip: string) {

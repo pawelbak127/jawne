@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { bazaDostepna, porownanieGmin, wojewodztwaGmin } from '@/lib/dane';
-import { dataKrotko, zOdmiana } from '@/lib/format';
+import { dataKrotko, wszystkieDniRejestru, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { mediana } from '@/lib/porownanie-gmin';
 import { BrakDanych } from '@/components/BrakDanych';
@@ -86,7 +86,7 @@ export default async function PorownanieGminWojewodztwa({ params }: { params: Pr
               <li key={k.miara}>
                 {k.miara === 'dochody' ? `Dochody: budżet gminy za ${por.rokBudzetu} r. ÷ mieszkańcy. ` : null}
                 {k.miara === 'ue' ? 'UE 2021–2027: dofinansowanie z UE projektów realizowanych tylko w tej gminie; gmina bez takiego projektu ma zero. ' : null}
-                {k.miara === 'pomoc' && por.dniPomocy ? `Pomoc publiczna: wartość brutto dla firm z siedzibą w gminie, z ${zOdmiana(por.dniPomocy.dni, 'dnia', 'dni', 'dni')} już ustalonych (${dataKrotko(por.dniPomocy.od)}–${dataKrotko(por.dniPomocy.do)}); gmina bez przypadku ma zero; dane w rejestrze mogą ulec zmianie. Gminy pobrane w całości mają na swoich stronach pełną historię — tu, jak wszystkie, te same dni. ` : null}
+                {k.miara === 'pomoc' && por.dniPomocy ? `Pomoc publiczna: wartość brutto dla firm z siedzibą w gminie, z ${zOdmiana(por.dniPomocy.dni, 'dnia', 'dni', 'dni')} już ustalonych (${dataKrotko(por.dniPomocy.od)}–${dataKrotko(por.dniPomocy.do)}); gmina bez przypadku ma zero; dane w rejestrze mogą ulec zmianie.${wszystkieDniRejestru(por.dniPomocy.dni, por.dniPomocy.od, por.dniPomocy.do) ? '' : ' Gminy pobrane w całości mają na swoich stronach pełną historię — tu, jak wszystkie, te same dni.'} ` : null}
                 {`Mediana z ${zOdmiana(k.z, 'gminy', 'gmin', 'gmin')}. `}
                 {k.miara === 'dochody' ? <Podstawa adres={ZRODLO_GUS_BUDZET} nazwa="GUS BDL" data={String(por.rokBudzetu)} /> : null}
                 {k.miara === 'ue' ? <Podstawa adres={ZRODLO_FE_2127} nazwa="lista projektów FE" /> : null}

@@ -151,10 +151,31 @@ function kwotaWJednostce(n: number | null | undefined, waluta: string): string {
  * gdy sa dziury, mowimy ile dni brakuje — wtedy zakres sam by klamal.
  */
 export function okresDni(dni: number, od: string, doDnia: string): string {
-  const kalendarz = Math.round((Date.parse(`${doDnia.slice(0, 10)}T00:00:00Z`) - Date.parse(`${od.slice(0, 10)}T00:00:00Z`)) / 86_400_000) + 1;
+  const kalendarz = dniKalendarza(od, doDnia);
   const zakres = `od ${dataKrotko(od)} do ${dataKrotko(doDnia)}`;
   if (!Number.isFinite(kalendarz) || kalendarz <= 0) return zakres;
   if (dni >= kalendarz) return zakres;
   const braki = kalendarz - dni;
   return `${zakres}, bez ${zOdmiana(braki, 'dnia', 'dni', 'dni')}, ${braki === 1 ? 'którego' : 'których'} jeszcze nie pobraliśmy`;
+}
+
+function dniKalendarza(od: string, doDnia: string): number {
+  return Math.round((Date.parse(`${doDnia.slice(0, 10)}T00:00:00Z`) - Date.parse(`${od.slice(0, 10)}T00:00:00Z`)) / 86_400_000) + 1;
+}
+
+/**
+ * Najwczesniejszy dzien, ktory API SUDOP jeszcze obejmuje: 1 stycznia roku
+ * n-10. Import pyta tylko od tego dnia, a strony porownuja z nim swoj zakres.
+ */
+export function poczatekOknaSudop(dzis: Date): string {
+  return `${dzis.getUTCFullYear() - 10}-01-01`;
+}
+
+/**
+ * Czy dni obejmuja cale okno rejestru, bez dziury. Do 28.10.2026 strony gminy
+ * i firmy mowily „starsze dni pobieramy po kolei” — tego dnia historia objela
+ * cale okno (3 952 dni od 01.01.2016) i zdanie stalo sie nieprawda na zywo.
+ */
+export function wszystkieDniRejestru(dni: number, od: string, doDnia: string, dzis = new Date()): boolean {
+  return od.slice(0, 10) <= poczatekOknaSudop(dzis) && dni >= dniKalendarza(od, doDnia);
 }
