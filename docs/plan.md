@@ -45,13 +45,12 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
 ### Stan na 30.10.2026
 
-**Na serwerze działa `86730a4`** (wdrożone 28.10, 22:52): statystyki z drugim
-robotem, `/o-serwisie` i gminy pokazowe jak pozostałe. **Czeka na
-`sudo jawne aktualizuj`:** `b35a5ca` — strony gminy, firmy i porównania
-mówiły dalej „starsze dni pobieramy po kolei”; teraz o tym zdaniu rozstrzyga
-`wszystkieDniRejestru()` (na serwerze: 3 942 dni ustalone od 01.01.2016, bez
-dziury); `695b7ae` — BZP wznawia dzień przerwany odmową od ostatniej strony
-(nowy limit e-Zamówień od 29.10, informacja od asc). Wszystkie zadania `success`, dysk 43 z 96 GB (45%). Ruch ludzi
+**Na serwerze działa `10d0d4c`** (wdrożone 30.10, 22:30): zdania o komplecie
+dni na stronach gminy, firmy i porównania sprawdzone na żywo, BZP z kursorem.
+**PILNE — czeka `9d83b2a`, wdrożyć przed wtorkiem 3.11, 10:00:** skład dochodów
+gminy pokazywał „3.07e-9” zamiast „84%” (przesłonięta funkcja `udzial`). Na
+serwerze dziś ukryty, bo subwencja i dotacje są puste — wypełni je zadanie
+`gus` 3.11 o 10:00 i bez poprawki błąd stanie na 2 477 stronach gmin. Wszystkie zadania `success`, dysk 43 z 96 GB (45%). Ruch ludzi
 24–30.10: 98 osób, 164 odsłony; z Google 5 wejść, z Gemini i X po jednym.
 SRPP: ministerstwo odmówiło pliku (sekcja „Rolnictwo” niżej).
 Drobiazg: 14 dni z 19.08–01.09.2026 nie ma policzonych przypadków bez gminy
