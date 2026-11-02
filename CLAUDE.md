@@ -95,6 +95,7 @@ npm run import regon                       # REGON/BIR: kim jest NIP (GUS_BIR_KL
 npm run import zdjecia                     # 499 portretów do bazy, 6,8 MB (+ miniatury)
 npm run import miniatury                   # miniatury portretów z bazy, bez sieci, tylko brakujące (~4 s)
 npm run import cordis                      # CORDIS: Horyzont Europa i H2020, polscy uczestnicy (2 ZIP-y, 93 MB, ~10 s)
+npm run import akcyza                      # zwrot akcyzy rolnikom z MF Rb-28S, 2021+ (pierwszy raz ~8 min i 0,7 GB pobrania, potem rok bez zmian pomijany)
 npm run import oswiadczenia                # wykaz oświadczeń majątkowych z Kancelarii Sejmu (plik w ingest/zrodla), bez sieci
 npm run import obecnosc                    # dni obrad i usprawiedliwienia, 499 zapytan, ~4,5 min
 npm run import okregi wyliczenia           # bez sieci, ~5 s: gminy, sumy klubów, indeks
@@ -1150,6 +1151,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     więc raport podawał jako źródła „google.com 2”, a z ChatGPT przyszły
     42 odsłony w tym samym tygodniu. Zasada: **źródło wejścia to nie tylko
     Referer — sprawdź też parametry adresu, zanim uznasz, że kanału nie ma.**
+
+84. **Katalog dane.gov.pl bez `sort` GUBI zasoby, a nie tylko je powtarza.**
+    ZMIERZONE 02.11.2026: zbiór 872 (272 zasoby) oddał na trzech stronach
+    247 różnych, zbiór 1176 (174) — 156. Te, które wracają na kolejnej
+    stronie, wypierają inne, a tych nie ma na żadnej. W kodzie stał komentarz
+    „stronicowanie potrafi zwrócić ten sam zasób dwa razy” — prawdziwy, tylko
+    że to połowa problemu: import list FE 2014–2020 wybierał przez to plik
+    z 04.09 zamiast z 02.10 i liczył na danych sprzed miesiąca, nic nie
+    zgłaszając. Z `sort=id` — komplet (`zasobyZbioru` w `import.ts`).
+    Zasada: **duplikat w stronicowaniu to objaw, a nie cały błąd — policz,
+    czy różnych jest tyle, ile mówi licznik.**
 
 ---
 

@@ -74,7 +74,12 @@ case "${1:-}" in
     # `wykaz` uzgadnia liste gmin z PRG i wykazem jednostek GUS. Gdy wykaz
     # sie zgadza, nie wysyla ani jednego zapytania — pyta tylko wtedy, gdy
     # w PRG jest gmina, ktorej nie mamy (PKW jest zamrozona na dniu wyborow).
-    exec "$TSX" ingest/jobs/import.ts wykaz ludnosc budzety dzialy smup wyliczenia
+    "$TSX" ingest/jobs/import.ts wykaz ludnosc budzety dzialy smup wyliczenia || exit $?
+    # Zwrot akcyzy rolnikom (MF Rb-28S z dane.gov.pl) — osobnym krokiem, jak
+    # CORDIS: blad nie zabiera budzetow, a konczy zadanie bledem. Rok, ktorego
+    # plik sie nie zmienil, jest pomijany, wiec co miesiac to kilka sekund;
+    # nowy rok to jedno pobranie ok. 190 MB na dysk (plik znika po odczycie).
+    exec "$TSX" ingest/jobs/import.ts akcyza
     ;;
   fundusze)
     "$TSX" ingest/jobs/import.ts fundusze wyliczenia || exit $?

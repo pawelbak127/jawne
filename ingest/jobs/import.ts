@@ -11,7 +11,7 @@
 import { otworz, zalozSchemat, odnotujImport, wTransakcji, SCHEMAT_FE } from '../lib/baza.js';
 import { slugPosla } from '../lib/slug.js';
 import { GLOSY_ZNANE } from '../../src/lib/glosy.js';
-import { dlaKazdego, pobierzBajty, pobierzJson, przerwaBdlMs, kluczBdl, kluczSmup } from '../lib/http.js';
+import { dlaKazdego, pobierzBajty, pobierzDoPliku, pobierzJson, przerwaBdlMs, kluczBdl, kluczSmup } from '../lib/http.js';
 import * as api from '../lib/sejm.js';
 import type { ApiEtap } from '../lib/sejm.js';
 import { czytajGminyPkw, sprawdzGminyPkw } from '../lib/pkw.js';
@@ -34,8 +34,10 @@ import { wykazOswiadczen } from '../lib/oswiadczenia.js';
 import { uzupelnijMiniatury } from '../lib/miniatury.js';
 import { projektyCordis, uczestnicyPolscy, type Program } from '../lib/cordis.js';
 import { KonturyGmin, type PlikKonturow } from '../lib/kontury.js';
-import { plikiZZip } from '../lib/zip.js';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { plikiZZip, strumienJedynegoPliku } from '../lib/zip.js';
+import { plikiRoczne, zwrotyAkcyzy, type ZasobDaneGov } from '../lib/rb28s.js';
+import { closeSync, createReadStream, existsSync, mkdirSync, openSync, readFileSync, readSync, rmSync, writeFileSync } from 'node:fs';
+import { createInterface } from 'node:readline';
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import {
@@ -814,24 +816,36 @@ async function wyliczenia(db: DatabaseSync): Promise<void> {
 }
 
 /**
+ * Caly katalog zasobow zbioru z dane.gov.pl.
+ *
+ * BEZ `sort` STRONICOWANIE JEST NIESTABILNE — i nie chodzi tylko o zasob
+ * oddany dwa razy, ktory zapisalismy tu wczesniej: te, ktore sie powtarzaja,
+ * wypieraja inne, a tych nie ma na ZADNEJ stronie. ZMIERZONE 02.11.2026:
+ * zbior 872 (272 zasoby) oddal 247 roznych, zbior 1176 (174) — 156. Najnowszy
+ * plik listy FE 2014–2020 wychodzil przez to z 04.09 zamiast z 02.10 i import
+ * liczyl na danych sprzed miesiaca, nic nie zglaszajac. Z `sort=id` — komplet.
+ */
+async function zasobyZbioru(zbior: number): Promise<ZasobDaneGov[]> {
+  const zasoby = new Map<string, ZasobDaneGov>();
+  for (let strona = 1; strona <= 20; strona++) {
+    const j = await pobierzJson<{ data?: ZasobDaneGov[] }>(
+      `https://api.dane.gov.pl/1.4/datasets/${zbior}/resources?per_page=100&page=${strona}&sort=id`,
+    );
+    if (!j.data?.length) break;
+    for (const z of j.data) zasoby.set(z.id, z);
+  }
+  return [...zasoby.values()];
+}
+
+/**
  * Najnowszy plik XLSX zbioru z dane.gov.pl. Adres pliku zmienia sie co miesiac,
  * wiec pytamy katalog, zamiast wpisywac adres na sztywno.
- * Zmierzone: stronicowanie katalogu potrafi zwrocic ten sam zasob dwa razy.
  */
 async function najnowszyXlsx(zbior: number): Promise<{ url: string; data: string }> {
-  const zasoby: { data: string; url: string; format: string }[] = [];
-  for (let strona = 1; strona <= 10; strona++) {
-    const r = await fetch(`https://api.dane.gov.pl/1.4/datasets/${zbior}/resources?per_page=50&page=${strona}`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(60_000),
-    });
-    const j = (await r.json()) as { data?: { attributes: { data_date?: string; link?: string; format?: string } }[] };
-    if (!j.data?.length) break;
-    for (const d of j.data) {
-      zasoby.push({ data: d.attributes.data_date ?? '', url: d.attributes.link ?? '', format: d.attributes.format ?? '' });
-    }
-  }
-  const xlsx = zasoby.filter((z) => z.format === 'xlsx' && z.url).sort((a, b) => b.data.localeCompare(a.data));
+  const xlsx = (await zasobyZbioru(zbior))
+    .map((z) => ({ data: z.attributes.data_date ?? '', url: z.attributes.link ?? '', format: z.attributes.format ?? '' }))
+    .filter((z) => z.format === 'xlsx' && z.url)
+    .sort((a, b) => b.data.localeCompare(a.data));
   if (!xlsx[0]) throw new Error(`Zbior ${zbior}: brak pliku XLSX w katalogu`);
   return xlsx[0];
 }
@@ -2433,6 +2447,99 @@ async function importCordis(db: DatabaseSync): Promise<void> {
   odnotujImport(db, 'cordis', razem, `CORDIS: ${opisy.join(', ')}`);
 }
 
+/**
+ * Zwrot akcyzy za paliwo rolnicze wyplacony przez gminy — z rocznych
+ * sprawozdan Rb-28S Ministerstwa Finansow (ingest/lib/rb28s.ts). Jedyne
+ * pieniadze rolne po gminach, jakie mamy bez wykazow ministerstwa rolnictwa
+ * (SRPP i WPR — docs/plan.md, sekcja „Rolnictwo”).
+ *
+ * Rok, ktorego plik na dane.gov.pl sie nie zmienil, jest pomijany — bez tego
+ * zadanie `gus` pobieraloby co miesiac 0,9 GB tych samych danych (pulapka 64).
+ * Plik usuwamy zaraz po odczycie: 150–190 MB na rok, a potrzebny jest raz.
+ */
+const AKCYZA_OD_ROKU = 2021;
+
+function czyZip(plik: string): boolean {
+  const naglowek = Buffer.alloc(4);
+  const fd = openSync(plik, 'r');
+  try {
+    readSync(fd, naglowek, 0, 4, 0);
+  } finally {
+    closeSync(fd);
+  }
+  return naglowek.toString('latin1') === 'PK\u0003\u0004';
+}
+
+async function importAkcyzy(db: DatabaseSync): Promise<void> {
+  log('-> zwrot akcyzy za paliwo rolnicze (MF Rb-28S, dane.gov.pl zbior 872)');
+  const odNowa = process.argv.includes('--od-nowa');
+  const pliki = [...plikiRoczne(await zasobyZbioru(872)).values()]
+    .filter((p) => p.rok >= AKCYZA_OD_ROKU)
+    .sort((a, b) => b.rok - a.rok);
+  // Kontrola dziedziny (wzorzec 1): roczne pliki sa w zbiorze od 2018 r., wiec
+  // pusta lista to zmienione tytuly zasobow, a nie brak danych.
+  if (!pliki.length) throw new Error('Rb-28S: w zbiorze 872 nie ma pliku za IV kwartal — zmienily sie tytuly zasobow?');
+
+  const oczekiwane = new Set(
+    (db.prepare("select teryt from gminy where rodzaj <> 'dzielnica Warszawy'").all() as unknown as { teryt: string }[]).map((r) => r.teryt),
+  );
+  oczekiwane.add(TERYT_WARSZAWY);
+  const byly = new Map((db.prepare('select rok, zasob, zmieniono from akcyza_lata').all() as unknown as
+    { rok: number; zasob: string; zmieniono: string }[]).map((r) => [r.rok, r]));
+  const katalog = join(process.cwd(), 'dane', 'zrodla', 'mf');
+  mkdirSync(katalog, { recursive: true });
+  const wstaw = db.prepare('insert into akcyza_gmin(teryt, rok, kwota) values (?,?,?)');
+  const wstawRok = db.prepare(
+    `insert into akcyza_lata(rok, zasob, zmieniono, pobrano, gmin, suma) values (?,?,?,?,?,?)
+     on conflict(rok) do update set zasob = excluded.zasob, zmieniono = excluded.zmieniono,
+       pobrano = excluded.pobrano, gmin = excluded.gmin, suma = excluded.suma`,
+  );
+
+  let nowych = 0;
+  for (const p of pliki) {
+    const byl = byly.get(p.rok);
+    if (!odNowa && byl?.zasob === p.zasob && byl.zmieniono === p.zmieniono) {
+      log(`   ${p.rok}: plik bez zmian (zasob ${p.zasob}) — pomijam; --od-nowa pobiera ponownie`);
+      continue;
+    }
+    const plik = join(katalog, `rb28s-${p.rok}-${p.zasob}`);
+    const bajtow = await pobierzDoPliku(p.adres, plik);
+    try {
+      const zip = czyZip(plik);
+      const strumien = zip ? await strumienJedynegoPliku(plik, '.csv') : createReadStream(plik);
+      const w = await zwrotyAkcyzy(createInterface({ input: strumien, crlfDelay: Infinity }));
+      strumien.destroy();
+      // Kontrola dziedziny przed zapisem: inny naglowek, inny okres albo kwota
+      // daleko od zwyklych lat to inny plik albo zmiana klasyfikacji — nie dane.
+      if (w.brakKolumn.length) throw new Error(`Rb-28S ${p.rok}: brak kolumn ${w.brakKolumn.join(', ')} — format pliku sie zmienil`);
+      const okres = `${String(p.rok).slice(2)}/4`;
+      if (w.okresy.join() !== okres) throw new Error(`Rb-28S ${p.rok}: okresy w pliku ${w.okresy.join(', ')}, oczekiwany ${okres}`);
+      const suma = [...w.gminy.values()].reduce((a, b) => a + b, 0);
+      if (w.gminy.size < 2000 || suma < 5e8 || suma > 5e9) {
+        throw new Error(`Rb-28S ${p.rok}: zwrot w ${w.gminy.size} gminach, ${(suma / 1e6).toFixed(1)} mln zl — `
+          + 'daleko od zwyklych lat (ok. 2 440 gmin, 1,2–1,9 mld zl); nie zapisuje');
+      }
+      wTransakcji(db, () => {
+        db.prepare('delete from akcyza_gmin where rok = ?').run(p.rok);
+        // Zera nie dopisujemy: brak wiersza w roku z akcyza_lata to zmierzone zero.
+        for (const [teryt, kwota] of w.gminy) if (kwota) wstaw.run(teryt, p.rok, kwota);
+        wstawRok.run(p.rok, p.zasob, p.zmieniono, new Date().toISOString(), w.gminy.size, suma);
+      });
+      // Nieznany kod raportujemy, nie przerywamy (wzorzec 2): nowa gmina po
+      // podziale albo blad sprawozdania. Strona i tak go nie pokaze.
+      const spoza = [...w.gminy.keys()].filter((t) => !oczekiwane.has(t));
+      log(`   ${p.rok}: ${(bajtow / 1024 / 1024).toFixed(0)} MB${zip ? ' (ZIP)' : ''}, ${w.wierszy} wierszy; `
+        + `zwrot w ${w.gminy.size} gminach, razem ${(suma / 1e6).toFixed(1)} mln zl`
+        + (spoza.length ? `; UWAGA: ${spoza.length} kodow spoza listy gmin (np. ${spoza.slice(0, 3).join(', ')})` : ''));
+      nowych++;
+    } finally {
+      rmSync(plik, { force: true });
+    }
+  }
+  const lata = db.prepare('select min(rok) as od, max(rok) as do from akcyza_lata').get() as { od: number | null; do: number | null };
+  odnotujImport(db, 'akcyza', nowych, `lata ${lata.od}–${lata.do}; odswiezonych w tym przebiegu: ${nowych}`);
+}
+
 const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   kluby: importKlubow,
   poslowie: importPoslow,
@@ -2459,6 +2566,7 @@ const ETAPY: Record<string, (db: DatabaseSync) => Promise<void>> = {
   smup: importSmup,
   fundusze: importFunduszy,
   cordis: importCordis,
+  akcyza: importAkcyzy,
   wyliczenia,
   agregaty: etapAgregatow,
 };

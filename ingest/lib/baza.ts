@@ -1006,6 +1006,30 @@ create table if not exists smup_dane (
 create index if not exists smup_dane_klucz_rok on smup_dane(klucz, rok);
 
 /*
+ * Zwrot akcyzy za paliwo rolnicze wyplacony przez gmine — ze sprawozdan
+ * Rb-28S (Ministerstwo Finansow, dane.gov.pl zbior 872), dzial 010, rozdzial
+ * 01095, paragraf 4430. Sprawozdanie obejmuje KAZDY wydatek gminy, wiec brak
+ * wiersza w roku, ktory mamy w akcyza_lata, znaczy zmierzone zero, nie brak
+ * danych (regula 4) — strona dopisuje wtedy 0.
+ */
+create table if not exists akcyza_gmin (
+  teryt text not null,                         -- 6 cyfr; Warszawa jako 146501
+  rok   integer not null,
+  kwota real not null,                         -- zlote, wydatki wykonane (R4)
+  primary key (teryt, rok)
+) without rowid;
+
+/* Z jakiego pliku MF pochodzi dany rok — etap pomija rok, ktorego plik sie nie zmienil. */
+create table if not exists akcyza_lata (
+  rok        integer primary key,
+  zasob      text not null,                    -- id zasobu na dane.gov.pl
+  zmieniono  text not null,                    -- pole modified zasobu
+  pobrano    text not null,
+  gmin       integer not null,
+  suma       real not null
+);
+
+/*
   Obecnosc posla w dniach obrad — z /MP/{id}/votings/stats.
   Jedyne miejsce w API, gdzie rejestr podaje, czy nieobecnosc byla
   usprawiedliwiona; dotyczy calego DNIA, nie pojedynczego glosowania.

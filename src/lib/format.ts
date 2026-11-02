@@ -121,6 +121,18 @@ export function zlote(n: number | null | undefined): string {
 }
 
 /**
+ * Jak `zlote`, ale ponizej 10 zl z groszami. Kwota na mieszkanca w miescie
+ * potrafi wynosic 25 groszy (zwrot akcyzy w Krakowie), a `zlote` zaokragla
+ * ja do „0 zł” — czyli do zmierzonego zera, ktorym nie jest (zasada 4).
+ */
+export function zloteDokladnie(n: number | null | undefined): string {
+  if (n !== null && n !== undefined && Number.isFinite(n) && n !== 0 && Math.abs(n) < 10) {
+    return `${n.toFixed(2).replace('.', ',')} zł`;
+  }
+  return zlote(n);
+}
+
+/**
  * Kwota w euro, ta sama skala co `zlote`: „1,04 mld euro”, „350 tys. euro”.
  * Euro piszemy OSOBNO od zlotych i nigdy ich nie sumujemy (pulapka 23) —
  * dotyczy to CORDIS (Horyzont), ktory podaje wylacznie euro.

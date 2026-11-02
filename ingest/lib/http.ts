@@ -11,6 +11,11 @@
  *     bez rozrzutu wszystkie zawieszone zadania wracaja w tej samej chwili.
  */
 
+import { createWriteStream, renameSync, statSync } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { ReadableStream as WebReadableStream } from 'node:stream/web';
+
 const ROWNOLEGLE = Number(process.env.JAWNE_ROWNOLEGLE ?? 4);
 const PROB = 5;
 
@@ -78,6 +83,10 @@ export type OpcjeZapytania = {
   naglowki?: Record<string, string>;
 };
 
+// Kto pyta i jak sie odezwac — urzedy proszą o to wprost (asc tak robi).
+const podpis = (): string =>
+  `zrejestru.pl/0.2 (serwis obywatelski${process.env.JAWNE_KONTAKT?.trim() ? `; ${process.env.JAWNE_KONTAKT.trim()}` : ''})`;
+
 // POST jest potrzebny TED-owi: jego wyszukiwarka przyjmuje zapytanie w ciele.
 // Ponawianie, limit rownoleglosci i Retry-After dzialaja tak samo jak przy GET.
 export async function pobierz(url: string, opcje: OpcjeZapytania = {}): Promise<Response> {
@@ -93,8 +102,7 @@ export async function pobierz(url: string, opcje: OpcjeZapytania = {}): Promise<
             'Accept': opcje.json === false ? '*/*' : 'application/json',
             ...(opcje.cialo ? { 'Content-Type': opcje.typTresci ?? 'application/json' } : {}),
             ...(opcje.naglowki ?? {}),
-            // Kto pyta i jak sie odezwac — urzedy proszą o to wprost (asc tak robi).
-            'User-Agent': `zrejestru.pl/0.2 (serwis obywatelski${process.env.JAWNE_KONTAKT?.trim() ? `; ${process.env.JAWNE_KONTAKT.trim()}` : ''})`,
+            'User-Agent': podpis(),
             // Klucz GUS podnosi limit BDL z 100 do 500 zapytan na 15 minut.
             // Wysylamy go tylko do BDL — innym serwerom nic po nim.
             ...(kluczBdl() && url.startsWith('https://bdl.stat.gov.pl/') ? { 'X-ClientId': kluczBdl()! } : {}),
@@ -142,6 +150,41 @@ export async function pobierzJson<T>(url: string, opcje: OpcjeZapytania = {}): P
 export async function pobierzBajty(url: string): Promise<Buffer> {
   const odp = await pobierz(url, { json: false });
   return Buffer.from(await odp.arrayBuffer());
+}
+
+/**
+ * Duzy plik prosto na dysk, strumieniem — bez trzymania go w pamieci.
+ * `pobierz()` ma limit 45 s na CALE zapytanie razem z trescia, a sprawozdanie
+ * MF ma 190 MB; tu limit jest osobny, a przerwane pobieranie zaczyna sie od
+ * nowa (do PROB razy). Plik pojawia sie pod docelowa nazwa dopiero w calosci.
+ * Zwraca liczbe bajtow.
+ */
+export async function pobierzDoPliku(url: string, plik: string, limitMs = 20 * 60_000): Promise<number> {
+  await zajmij();
+  try {
+    let ostatniBlad = '';
+    for (let proba = 1; proba <= PROB; proba++) {
+      try {
+        const odp = await fetch(url, { headers: { 'Accept': '*/*', 'User-Agent': podpis() }, signal: AbortSignal.timeout(limitMs) });
+        if (!odp.ok || !odp.body) {
+          if (!DO_PONOWIENIA.has(odp.status)) throw new Error(`${url} -> HTTP ${odp.status}`);
+          ostatniBlad = `HTTP ${odp.status}`;
+        } else {
+          const tymczasowy = `${plik}.pobieranie`;
+          await pipeline(Readable.fromWeb(odp.body as WebReadableStream<Uint8Array>), createWriteStream(tymczasowy));
+          renameSync(tymczasowy, plik);
+          return statSync(plik).size;
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('-> HTTP')) throw e;
+        ostatniBlad = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      }
+      if (proba < PROB) await spij(Math.min(30_000, 1000 * 2 ** proba) + Math.random() * 1000);
+    }
+    throw new Error(`${url} -> poddaje sie po ${PROB} probach (${ostatniBlad})`);
+  } finally {
+    zwolnij();
+  }
 }
 
 /** Mapuje z ograniczona rownoleglascia i raportuje postep co `co` sztuk. */

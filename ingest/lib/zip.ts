@@ -1,4 +1,37 @@
+import type { Readable } from 'node:stream';
 import yauzl from 'yauzl';
+
+/**
+ * Strumien jedynego pliku o danym rozszerzeniu z archiwum NA DYSKU — dla
+ * archiwow, ktorych zawartosc nie miesci sie rozsadnie w pamieci (CSV
+ * sprawozdan MF ma po rozpakowaniu 150–190 MB). Zero albo kilka pasujacych
+ * plikow to BLAD: nie zgadujemy, ktory jest wlasciwy.
+ */
+export function strumienJedynegoPliku(sciezka: string, rozszerzenie: string): Promise<Readable> {
+  return new Promise((ok, blad) => {
+    yauzl.open(sciezka, { lazyEntries: true, autoClose: false }, (e, archiwum) => {
+      if (e || !archiwum) return blad(e ?? new Error(`nie da sie otworzyc ${sciezka}`));
+      const pasujace: yauzl.Entry[] = [];
+      archiwum.on('entry', (wpis: yauzl.Entry) => {
+        if (wpis.fileName.toLowerCase().endsWith(rozszerzenie)) pasujace.push(wpis);
+        archiwum.readEntry();
+      });
+      archiwum.on('end', () => {
+        if (pasujace.length !== 1) {
+          archiwum.close();
+          return blad(new Error(`${sciezka}: ${pasujace.length} plikow ${rozszerzenie} w archiwum, oczekiwany jeden`));
+        }
+        archiwum.openReadStream(pasujace[0]!, (e2, strumien) => {
+          if (e2 || !strumien) return blad(e2 ?? new Error(`nie da sie czytac ${pasujace[0]!.fileName}`));
+          strumien.on('close', () => archiwum.close());
+          ok(strumien);
+        });
+      });
+      archiwum.on('error', blad);
+      archiwum.readEntry();
+    });
+  });
+}
 
 /**
  * Wybrane pliki z archiwum ZIP trzymanego w pamieci — bez rozpakowywania na

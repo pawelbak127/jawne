@@ -775,6 +775,20 @@ na serwerze, obok danych.
 
 ## Pomysły — do oceny
 
+- **Wynagrodzenia wójtów, burmistrzów i prezydentów** (Paweł 02.11.2026:
+  „można kiedyś spróbować”). Dwa źródła, oba sprawdzone na jednym dokumencie
+  (`docs/zrodla.md`): **uchwała rady o wynagrodzeniu** — tekst wprost,
+  miesięczne składniki zdefiniowane wszędzie tak samo, ale uchwała zmieniająca
+  podaje tylko zmieniony składnik; **oświadczenie majątkowe**, dział VIII —
+  roczny dochód z urzędu, ale skan (Warszawa: wypełniony komputerowo, OCR
+  czyta), a formularz nie mówi, czy to kwota przed, czy po kosztach uzyskania.
+  Każda gmina ma własny BIP, więc praca ręczna: próba na 66 miastach na
+  prawach powiatu to 1–2 dni rocznie. Rozsądna kolejność: uchwały jako liczba
+  porównywalna, oświadczenie jako odnośnik. Najpierw (decyzja z 02.11):
+  raporty zarządów spółek Skarbu Państwa — ta sama potrzeba, jednolity format
+  z ustawy.
+  Obserwacja do sprawdzenia: wiele rad ustala maksimum z rozporządzenia —
+  wtedy uchwała powtarza widełki.
 - ~~**Mapa gmin**~~ **zrobione 23.09.2026**: `/mapa` — kartogram 2 477 gmin
   (dochody, fundusze UE, pomoc publiczna, zawsze na mieszkańca), kubełki po
   kwantylach, gmina bez danych szara. Granice z PRG (GUGiK), opis źródła
@@ -906,7 +920,13 @@ na serwerze, obok danych.
   **Droga bez ministerstwa (zmierzone 02.11.2026):** zwrot akcyzy za paliwo
   rolnicze wypłacają gminy i jest w Rb-28S (§ 4430 w rozdziale 01095):
   1,85 mld zł w 2 442 gminach za 2025 r., po gminach, bez danych osobowych
-  (`docs/zrodla.md`). Format pliku MF już znamy. Do decyzji Pawła.
+  (`docs/zrodla.md`). **Zrobione 02.11.2026 (decyzja Pawła):** etap
+  `akcyza` (lata 2021–2025, w zadaniu `gus`), dział „Rolnictwo” na stronie
+  gminy tam, gdzie gmina cokolwiek wypłaciła: kwota, na mieszkańca, mediana
+  gmin tego samego rodzaju (miasta na prawach powiatu — w kraju), lata
+  i zdanie „Czego tu nie ma” o ARiMR i SRPP. Mediany sprawdzone niezależnym
+  SQL-em (łódzkie: 159 gmin, 146 zł; miasta na prawach powiatu: 66, 0,61 zł).
+  Przy okazji naprawione stronicowanie katalogu dane.gov.pl (pułapka 84).
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
   i H2020, 5 498 polskich udziałów, 1,78 mld EUR netto), dział „Programy
   badawcze UE” na stronie gminy (168 gmin), w zadaniu `fundusze`. Gmina

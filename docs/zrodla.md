@@ -16,7 +16,8 @@ Stan na 17.09.2026. Każdy wiersz ma status i podstawę:
 | **Listy projektów Funduszy Europejskich** (MFiPR, dane.gov.pl, zbiory 13939 i 1176) | 34 348 projektów 2021–2027 i 103 824 z 2014–2020: beneficjent, wartość, dofinansowanie UE, miejsce realizacji | XLSX aktualizowany co miesiąc; adres pliku zmienia się — pytamy katalog | zmierzone |
 | **SUDOP** (UOKiK) `api-sudop.uokik.gov.pl/sudop-api` | pomoc publiczna i de minimis: beneficjent z NIP, udzielający, forma, przeznaczenie, wartość, gmina siedziby | bez klucza, **kolejka**; 15 zapytań/min; okno 10 lat; tylko ręcznie, dla wskazanych gmin — patrz `docs/sudop.md` | zmierzone |
 | **Imiona w rejestrze PESEL** (MC, dane.gov.pl, zbiór 1667) | 2 324 imiona noszone przez ≥ 200 osób — do rozpoznawania nazw jednoosobowych firm | XLSX raz w roku; wynik w `src/lib/imiona-pesel.ts` | zmierzone |
-| **dane.gov.pl** `api.dane.gov.pl/1.4` | katalog zbiorów, adresy aktualnych plików | bez klucza; stronicowanie potrafi zwrócić ten sam zasób dwa razy | zmierzone |
+| **dane.gov.pl** `api.dane.gov.pl/1.4` | katalog zbiorów, adresy aktualnych plików | bez klucza; **bez `sort` stronicowanie gubi zasoby** (zbiór 872: 247 różnych z 272, zbiór 1176: 156 ze 174 — powtórzone wypierają inne), z `sort=id` komplet | zmierzone 02.11.2026 |
+| **MF — sprawozdania Rb-28S gmin** (dane.gov.pl, zbiór 872) | zwrot akcyzy za paliwo rolnicze wypłacony przez gminę (dział 010, rozdział 01095, § 4430), lata 2021–2025 | plik roczny za IV kwartał, 150–190 MB, CSV albo ZIP; etap `akcyza` w zadaniu `gus`, rok bez zmian w katalogu pomijany | zmierzone 02.11.2026: 1 126,8 / 1 237,4 / 1 880,2 / 1 897,8 / 1 852,3 mln zł (2021–2025), ok. 2 440 gmin; 2024 wobec 1 942 mln zł złożonych wniosków według ministerstwa (98%) |
 
 ## SMUP — zmierzone 21.09.2026, klucz jest
 

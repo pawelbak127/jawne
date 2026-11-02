@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, okresDni, udzial, euro, poczatekOknaSudop, wszystkieDniRejestru } from './format';
+import { dataKrotko, dataSlownie, inicjaly, liczba, odmien, procent, skroc, wojewodztwoWMiejscowniku, zlote, zloteDokladnie, okresDni, udzial, euro, poczatekOknaSudop, wszystkieDniRejestru } from './format';
 
 describe('wojewodztwoWMiejscowniku', () => {
   it.each([
@@ -100,6 +100,19 @@ describe('skroc', () => {
 
   it('krotki tekst zostaje bez wielokropka', () => {
     expect(skroc('Ustawa', 20)).toBe('Ustawa');
+  });
+});
+
+describe('zloteDokladnie', () => {
+  it('ponizej 10 zl z groszami — 25 groszy to nie „0 zł”', () => {
+    expect(zloteDokladnie(0.249)).toBe('0,25 zł');
+    expect(zloteDokladnie(9.994)).toBe('9,99 zł');
+    expect(zloteDokladnie(36.4)).toBe('36 zł');
+  });
+
+  it('zero i brak wartosci zostaja soba', () => {
+    expect(zloteDokladnie(0)).toBe('0 zł');
+    expect(zloteDokladnie(null)).toBe('—');
   });
 });
 

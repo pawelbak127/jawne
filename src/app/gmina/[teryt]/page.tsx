@@ -3,15 +3,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
+  akcyzaGminy, bazaDostepna, budzetGminy, funduszeGminy, funduszeGminyLata, gminaPelna, historiaBudzetu, kluby, ludnoscWarszawy,
   medianaPomocyNaMieszkanca, medianaUeNaMieszkanca, najwiekszeProjektyGminy, nowosciGminy, organyPomocy, pomocGminy, porownanieBudzetu,
   horyzontGminy, type HoryzontGminy, type OrganizacjaHoryzontu,
   zamowieniaBzpGminy, type ZamowieniaBzpGminy,
   poslowieOkregu, smupGminy, TERYT_WARSZAWY, wydatkiDzialami, zamowieniaGminy, zrodloImportu,
-  type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
+  type AkcyzaGminy, type BudzetGminy, type FunduszeWOkresie, type FunduszeWRoku, type MedianaUe, type WartoscSmup, type WydatkiDzialami,
   type NowosciGminy, type ZamowieniaGminy,
 } from '@/lib/dane';
-import { dataKrotko, dataSlownie, euro, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, wszystkieDniRejestru, zlote, zOdmiana } from '@/lib/format';
+import { dataKrotko, dataSlownie, euro, liczba, okresDni, skroc, udzial, wojewodztwoWMiejscowniku, wszystkieDniRejestru, zlote, zloteDokladnie, zOdmiana } from '@/lib/format';
 import { adresWojewodztwa } from '@/lib/tekst';
 import { opisGminy } from '@/lib/wyszukiwanie';
 import { nazwaDoPokazania, PROG_JAWNOSCI_EUR } from '@/lib/prywatnosc';
@@ -54,6 +54,7 @@ const ZRODLO_FE_1420 = 'https://dane.gov.pl/pl/dataset/1176';
 const ZRODLO_GUS = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/zmienna/72305';
 const ZRODLO_GUS_BUDZET = 'https://bdl.stat.gov.pl/bdl/dane/podgrup/temat/G423';
 const ZRODLO_SMUP = 'https://smup.gov.pl';
+const ZRODLO_MF_RB28 = 'https://dane.gov.pl/pl/dataset/872';
 const ZRODLO_GUS_INFLACJA = 'https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/';
 
 export async function generateMetadata({ params }: { params: Promise<{ teryt: string }> }): Promise<Metadata> {
@@ -121,6 +122,11 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
   const saNowosci = nowosci.przypadkow > 0 || nowosci.zamowienia.length > 0 || nowosci.bzp.length > 0;
   const importTed = zrodloImportu('zamowienia');
   const importRegon = zrodloImportu('regon');
+  // Warszawa ma jedno sprawozdanie MF (146501), jak budzet. Dzial tylko tam,
+  // gdzie gmina wyplacila cokolwiek w ktorymkolwiek roku — duze miasta maja
+  // same zera i dzial bylby pusty.
+  const akcyza = akcyzaGminy(terytFunduszy, g.wojewodztwo, dzielnica ? 'miasto na prawach powiatu' : g.rodzaj);
+  const jestAkcyza = Boolean(akcyza?.lata.some((l) => l.kwota > 0));
 
   /* ---- liczby do „W liczbach” i do naglowkow dzialow (F1, F7, F8, F9) ---- */
   const dochodyNaOsobe = budzet ? naMieszkanca(budzet.dochody, ludnoscDoPrzeliczen) : null;
@@ -202,6 +208,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
     ...(smup.length ? [{ id: 'finanse', nazwa: 'Finanse i podatki' }] : []),
     { id: 'fundusze', nazwa: 'Fundusze UE' },
     { id: 'pomoc', nazwa: 'Pomoc publiczna' },
+    ...(jestAkcyza ? [{ id: 'rolnictwo', nazwa: 'Rolnictwo' }] : []),
     ...(zamowienia.ogloszen || zamowieniaBzp.ogloszen ? [{ id: 'zamowienia', nazwa: 'Zamówienia' }] : []),
     { id: 'dane', nazwa: akapit ? 'Do pobrania i cytowania' : 'Dane do pobrania' },
   ];
@@ -439,6 +446,8 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
             ) : null}
           </Dzial>
 
+          {jestAkcyza && akcyza ? <Rolnictwo nr={nr('rolnictwo')} a={akcyza} ludnosc={ludnoscDoPrzeliczen} dzielnica={dzielnica} /> : null}
+
           {zamowienia.ogloszen || zamowieniaBzp.ogloszen ? (
             <ZamowieniaWGminie
               nr={nr('zamowienia')}
@@ -499,6 +508,7 @@ export default async function StronaGminy({ params }: { params: Promise<{ teryt:
               g.ludnosc_rok ? `GUS ${budzet?.rok ?? g.ludnosc_rok}` : null,
               importFe ? `fundusze UE ${dataKrotko(importFe.kiedy)}` : null,
               pomoc.zrodlo?.rodzaj === 'dni' ? `SUDOP ${zOdmiana(pomoc.zrodlo.dni, 'dzień', 'dni', 'dni')} do ${dataKrotko(pomoc.zrodlo.do)}` : null,
+              jestAkcyza && akcyza ? `MF Rb-28S ${akcyza.rok}` : null,
               importTed ? `TED ${dataKrotko(importTed.kiedy)}` : null,
               importRegon ? `REGON ${dataKrotko(importRegon.kiedy)}` : null,
             ].filter(Boolean).join(' · ')}
@@ -855,6 +865,74 @@ function NaCoWydaje({ dzialy, ludnosc }: { dzialy: WydatkiDzialami; ludnosc: num
         </Wiecej>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Zwrot akcyzy za paliwo rolnicze — jedyne pieniadze rolne po gminach, jakie
+ * mamy: wyplaca je gmina, wiec sa w jej sprawozdaniu Rb-28S. Doplat ARiMR
+ * i pomocy publicznej z rejestru SRPP nie ma (docs/plan.md, „Rolnictwo”)
+ * i mowimy o tym wprost, zamiast pozwolic, by ta kwota udawala calosc.
+ */
+function Rolnictwo({ nr, a, ludnosc, dzielnica }: { nr: number; a: AkcyzaGminy; ludnosc: number | null; dzielnica: boolean }) {
+  const naOsobe = naMieszkanca(a.kwota, ludnosc);
+  const opisGrupy = !a.mediana ? null : {
+    'gminy': `mediana gmin wiejskich i miejsko-wiejskich województwa (${a.mediana.jednostek})`,
+    'miasta': `mediana gmin miejskich województwa (${a.mediana.jednostek})`,
+    'miasta-na-prawach-powiatu': `mediana miast na prawach powiatu (${a.mediana.jednostek})`,
+  }[a.mediana.grupa];
+  const podstawa = <Podstawa adres={ZRODLO_MF_RB28} nazwa="MF, sprawozdania Rb-28S" data={String(a.rok)} />;
+  return (
+    <Dzial
+      id="rolnictwo"
+      nr={nr}
+      tytul={`Zwrot akcyzy rolnikom: ${zlote(a.kwota)} w ${a.rok} r.`}
+      metoda={
+        <ul>
+          <li>
+            Kwota to wydatki wykonane z paragrafu 4430 w rozdziale 01095 działu 010 (Rolnictwo
+            i łowiectwo) — tak gminy księgują wypłatę zwrotu. Koszty obsługi idą osobnymi
+            paragrafami i tu ich nie ma.
+          </li>
+          <li>
+            {`W całej Polsce w ${a.rok} r.: ${zlote(a.kraj.suma)} w ${zOdmiana(a.kraj.gmin, 'gminie', 'gminach', 'gminach')}. Gmina bez wypłat liczy się w medianie jako zero — sprawozdanie obejmuje każdy wydatek gminy, więc brak kwoty to zmierzone zero.`}
+          </li>
+          <li>
+            Mediana jest liczona wśród gmin tego samego rodzaju, bo w mieście rolników jest mało, a na
+            wsi dużo. Kwota na mieszkańca to nasz zwykły mianownik; sam zwrot zależy od powierzchni
+            gruntów i liczby zwierząt w gospodarstwach, nie od liczby mieszkańców.
+          </li>
+        </ul>
+      }
+    >
+      <p className="wstep">
+        Producent rolny odzyskuje część akcyzy z ceny oleju napędowego zużytego w gospodarstwie.
+        Wniosek składa w gminie, w której leżą jego grunty, a gmina wypłaca pieniądze z dotacji
+        z budżetu państwa.
+        {dzielnica ? ' Dzielnice nie mają osobnych budżetów — pokazujemy całą Warszawę.' : ''}
+      </p>
+      <Wiersze>
+        <Wiersz
+          co="Zwrot akcyzy na mieszkańca"
+          ile={zloteDokladnie(naOsobe)}
+          zCzego={`${a.rok} r. · ${ludnosc ? `${zlote(a.kwota)} ÷ ${liczba(ludnosc)} mieszkańców` : zlote(a.kwota)}${a.mediana ? ` · ${opisGrupy}: ${zloteDokladnie(a.mediana.naOsobe)}` : ''}`}
+          porownanie={zdaniePorownania(naOsobe, a.mediana?.naOsobe ?? null, 'mediana gmin tego rodzaju')}
+          podstawa={podstawa}
+        />
+      </Wiersze>
+      {a.lata.length >= 2 ? (
+        <div className="mt-6 max-w-(--miara)">
+          <SlupkiLat tytul="Zwrot akcyzy wypłacony przez gminę, rok po roku" wiersze={a.lata.map((l) => ({ rok: l.rok, wartosc: l.kwota }))} />
+          <p className="podpis-wykresu">Kwoty w cenach bieżących. Stawka zwrotu na litr i roczne limity zmieniają się co rok.</p>
+        </div>
+      ) : null}
+      <Uwaga naglowek="Czego tu nie ma.">
+        Dopłat bezpośrednich i pieniędzy z programów rozwoju obszarów wiejskich (ARiMR) ani pomocy
+        publicznej w rolnictwie (rejestr SRPP Ministerstwa Rolnictwa). Wykazy ich beneficjentów są
+        tylko w wyszukiwarkach ministerstwa, bez pliku do pobrania, a sum po gminach ministerstwo
+        nie podaje.
+      </Uwaga>
+    </Dzial>
   );
 }
 

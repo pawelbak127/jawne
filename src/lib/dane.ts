@@ -2364,6 +2364,61 @@ export function porownanieBudzetu(wojewodztwo: string, rok: number): PorownanieB
   };
 }
 
+export type AkcyzaGminy = {
+  /** rosnaco; rok bez wiersza gminy ma 0 — sprawozdanie obejmuje kazdy wydatek, wiec to zmierzone zero */
+  lata: { rok: number; kwota: number }[];
+  rok: number;
+  kwota: number;
+  /** null, gdy w grupie jest mniej niz 5 jednostek */
+  mediana: { naOsobe: number; jednostek: number; grupa: 'gminy' | 'miasta' | 'miasta-na-prawach-powiatu' } | null;
+  kraj: { suma: number; gmin: number };
+  pobrano: string;
+};
+
+/**
+ * Zwrot akcyzy za paliwo rolnicze wyplacony przez gmine (MF Rb-28S, etap
+ * `akcyza`). Punkt odniesienia (zasada 9): mediana na mieszkanca w grupie,
+ * ktora ma te same szanse na niezerowa wartosc — miasto ma rolnikow malo,
+ * gmina wiejska duzo, wiec mediana wszystkich gmin wojewodztwa mowilaby
+ * o roznicy miasto–wies, nie o tej gminie. Grupa to gminy tego samego
+ * rodzaju w wojewodztwie, a miasta na prawach powiatu — w calym kraju (66).
+ */
+export function akcyzaGminy(teryt: string, wojewodztwo: string, rodzaj: string): AkcyzaGminy | null {
+  return bezTabeli(() => {
+    const lata = wszystkie<{ rok: number; pobrano: string; gmin: number; suma: number }>(
+      'select rok, pobrano, gmin, suma from akcyza_lata order by rok',
+    );
+    const ostatni = lata[lata.length - 1];
+    if (!ostatni) return null;
+    const kwoty = new Map(
+      wszystkie<{ rok: number; kwota: number }>('select rok, kwota from akcyza_gmin where teryt = ?', teryt).map((r) => [r.rok, r.kwota]),
+    );
+    const miastaPowiaty = rodzaj === 'miasto na prawach powiatu';
+    const wiersze = wszystkie<{ na_osobe: number }>(
+      `select coalesce(a.kwota, 0) * 1.0 / j.osob as na_osobe
+         from (${JEDNOSTKI_FE}) j
+         left join akcyza_gmin a on a.teryt = j.teryt and a.rok = ?
+        where j.rodzaj = ? ${miastaPowiaty ? '' : 'and j.wojewodztwo = ?'} and j.osob > 0
+        order by na_osobe`,
+      ostatni.rok, rodzaj, ...(miastaPowiaty ? [] : [wojewodztwo]),
+    );
+    const s = Math.floor(wiersze.length / 2);
+    const mediana = wiersze.length < 5 ? null : {
+      naOsobe: wiersze.length % 2 ? wiersze[s]!.na_osobe : (wiersze[s - 1]!.na_osobe + wiersze[s]!.na_osobe) / 2,
+      jednostek: wiersze.length,
+      grupa: miastaPowiaty ? 'miasta-na-prawach-powiatu' as const : rodzaj === 'miasto' ? 'miasta' as const : 'gminy' as const,
+    };
+    return {
+      lata: lata.map((l) => ({ rok: l.rok, kwota: kwoty.get(l.rok) ?? 0 })),
+      rok: ostatni.rok,
+      kwota: kwoty.get(ostatni.rok) ?? 0,
+      mediana,
+      kraj: { suma: ostatni.suma, gmin: ostatni.gmin },
+      pobrano: ostatni.pobrano,
+    };
+  }, null);
+}
+
 export type WartoscSmup = {
   klucz: string;
   etykieta: string;
