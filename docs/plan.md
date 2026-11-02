@@ -898,6 +898,10 @@ na serwerze, obok danych.
   wadliwego eksportu; od 28.10 można go wysłać — kiedy, decyduje Paweł. W obu prosimy
   o pominięcie imion, nazwisk i numerów osób fizycznych — pokazujemy
   rolnictwo wyłącznie zbiorczo, po gminach.
+  **Droga bez ministerstwa (zmierzone 02.11.2026):** zwrot akcyzy za paliwo
+  rolnicze wypłacają gminy i jest w Rb-28S (§ 4430 w rozdziale 01095):
+  1,85 mld zł w 2 442 gminach za 2025 r., po gminach, bez danych osobowych
+  (`docs/zrodla.md`). Format pliku MF już znamy. Do decyzji Pawła.
 - ~~**CORDIS**~~ **zrobione 25.10.2026**: etap `cordis` (Horyzont Europa
   i H2020, 5 498 polskich udziałów, 1,78 mld EUR netto), dział „Programy
   badawcze UE” na stronie gminy (168 gmin), w zadaniu `fundusze`. Gmina
