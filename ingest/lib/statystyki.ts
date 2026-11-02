@@ -40,6 +40,8 @@ export type Podsumowanie = {
   rodzaje: { rodzaj: string; odslony: number }[];
   zrodla: { host: string; wejsc: number }[];
   robotow: number;
+  /** Najwiecej zapytan robotow, po nazwie z podpisu (od 02.11.2026). */
+  roboty: { nazwa: string; zapytan: number }[];
   pominietych: number;
 };
 
@@ -129,26 +131,60 @@ export function czyRobot(w: WpisDziennika): boolean {
     || (naglowek(w.request.headers, 'Sec-Fetch-Site') === 'none' && zNaszejStrony(w));
 }
 
-export function podsumuj(
-  wpisy: Iterable<WpisDziennika>,
-  opcje: { dni: number; teraz: number; naszHost: string; ileStron?: number },
-): Podsumowanie {
+/**
+ * Nazwa robota do zestawienia: slowo z „bot”/„crawler”/„spider” z podpisu
+ * („OAI-SearchBot”, „AhrefsBot”), inaczej to, co rozpoznala lista ROBOT.
+ * Robot z podpisem przegladarki zlapany na naglowkach nie ma nazwy.
+ */
+export function nazwaRobota(w: WpisDziennika): string {
+  const ua = naglowek(w.request.headers, 'User-Agent');
+  if (!ua) return 'bez podpisu';
+  const nazwa = ua.match(/[A-Za-z][A-Za-z0-9-]*(?:bot|crawler|spider|externalhit|externalagent)\b/i)?.[0];
+  if (nazwa) return nazwa;
+  return ua.match(ROBOT)?.[0]?.toLowerCase() ?? 'podpis przeglądarki, nagłówki się nie zgadzają';
+}
+
+type OpcjePodsumowania = { dni: number; teraz: number; naszHost: string; ileStron?: number };
+
+export function podsumuj(wpisy: Iterable<WpisDziennika>, opcje: OpcjePodsumowania): Podsumowanie {
+  const licznik = licznikOdwiedzin(opcje);
+  for (const w of wpisy) licznik.dodaj(w);
+  return licznik.wynik();
+}
+
+/*
+ * Licznik zamiast tablicy wpisow. ZMIERZONE 02.11.2026: `sudo jawne
+ * statystyki 7` padlo na „JavaScript heap out of memory” (920 MB), bo
+ * skrypt zbieral wszystkie wpisy tygodnia, zanim je policzyl — a od 30.10
+ * roboty (OAI-SearchBot, AhrefsBot, Amazonbot, PerplexityBot) robia ok.
+ * 50 tys. zapytan na dobe zamiast kilku tysiecy. Komentarz w skrypcie
+ * zapowiadal, ze przy wzroscie ruchu o rzedy wielkosci to miejsce jest
+ * pierwsze do zmiany. Licznik trzyma tylko zbiory OSOB (ludzi), wpis po
+ * policzeniu idzie do kosza — pamiec nie rosnie z ruchem robotow.
+ */
+export function licznikOdwiedzin(opcje: OpcjePodsumowania): { dodaj(w: WpisDziennika): void; wynik(): Podsumowanie } {
   const prog = dzienPolski(opcje.teraz - opcje.dni * 86_400);
   const naDzien = new Map<string, { osoby: Set<string>; odslony: number }>();
   const wszystkieOsoby = new Set<string>();
   const strony = new Map<string, { odslony: number; osoby: Set<string> }>();
   const rodzaje = new Map<string, number>();
   const zrodla = new Map<string, number>();
+  const roboty = new Map<string, number>();
   let robotow = 0;
   let pominietych = 0;
   let od: string | null = null;
   let doDnia: string | null = null;
 
-  for (const w of wpisy) {
+  const dodaj = (w: WpisDziennika): void => {
     const dzien = dzienPolski(w.ts);
-    if (dzien <= prog) continue;
-    if (czyRobot(w)) { robotow++; continue; }
-    if (!czyOdslona(w)) { pominietych++; continue; }
+    if (dzien <= prog) return;
+    if (czyRobot(w)) {
+      robotow++;
+      const n = nazwaRobota(w);
+      roboty.set(n, (roboty.get(n) ?? 0) + 1);
+      return;
+    }
+    if (!czyOdslona(w)) { pominietych++; return; }
 
     if (!od || dzien < od) od = dzien;
     if (!doDnia || dzien > doDnia) doDnia = dzien;
@@ -177,24 +213,29 @@ export function podsumuj(
         if (h && h !== opcje.naszHost && h !== `www.${opcje.naszHost}`) zrodla.set(h, (zrodla.get(h) ?? 0) + 1);
       } catch { /* odsylacz, ktory nie jest adresem — pomijamy */ }
     }
-  }
-
-  const odslon = [...naDzien.values()].reduce((a, d) => a + d.odslony, 0);
-  return {
-    od,
-    do: doDnia,
-    dni: [...naDzien.entries()].sort(([a], [b]) => a.localeCompare(b))
-      .map(([dzien, d]) => ({ dzien, osoby: d.osoby.size, odslony: d.odslony })),
-    osobWOkresie: wszystkieOsoby.size,
-    odslon,
-    strony: [...strony.entries()].map(([s, v]) => ({ sciezka: s, odslony: v.odslony, osoby: v.osoby.size }))
-      .sort((a, b) => b.odslony - a.odslony || a.sciezka.localeCompare(b.sciezka))
-      .slice(0, opcje.ileStron ?? 15),
-    rodzaje: [...rodzaje.entries()].map(([rodzaj, n]) => ({ rodzaj, odslony: n }))
-      .sort((a, b) => b.odslony - a.odslony),
-    zrodla: [...zrodla.entries()].map(([host, n]) => ({ host, wejsc: n }))
-      .sort((a, b) => b.wejsc - a.wejsc).slice(0, 10),
-    robotow,
-    pominietych,
   };
+
+  const wynik = (): Podsumowanie => {
+    const odslon = [...naDzien.values()].reduce((a, d) => a + d.odslony, 0);
+    return {
+      od,
+      do: doDnia,
+      dni: [...naDzien.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([dzien, d]) => ({ dzien, osoby: d.osoby.size, odslony: d.odslony })),
+      osobWOkresie: wszystkieOsoby.size,
+      odslon,
+      strony: [...strony.entries()].map(([s, v]) => ({ sciezka: s, odslony: v.odslony, osoby: v.osoby.size }))
+        .sort((a, b) => b.odslony - a.odslony || a.sciezka.localeCompare(b.sciezka))
+        .slice(0, opcje.ileStron ?? 15),
+      rodzaje: [...rodzaje.entries()].map(([rodzaj, n]) => ({ rodzaj, odslony: n }))
+        .sort((a, b) => b.odslony - a.odslony),
+      zrodla: [...zrodla.entries()].map(([host, n]) => ({ host, wejsc: n }))
+        .sort((a, b) => b.wejsc - a.wejsc).slice(0, 10),
+      robotow,
+      roboty: [...roboty.entries()].map(([nazwa, zapytan]) => ({ nazwa, zapytan }))
+        .sort((a, b) => b.zapytan - a.zapytan || a.nazwa.localeCompare(b.nazwa)).slice(0, 8),
+      pominietych,
+    };
+  };
+  return { dodaj, wynik };
 }

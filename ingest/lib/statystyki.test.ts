@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { czyOdslona, czyRobot, dzienPolski, podsumuj, rodzajStrony, type WpisDziennika } from './statystyki';
+import { czyOdslona, czyRobot, dzienPolski, licznikOdwiedzin, nazwaRobota, podsumuj, rodzajStrony, type WpisDziennika } from './statystyki';
 
 const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile Safari/604.1';
@@ -167,4 +167,30 @@ describe('rodzaj strony', () => {
   it.each([['/', 'strona główna'], ['/gmina/121701', 'gmina'], ['/posel/a-b', 'posel'], ['/szukaj', 'szukaj']])(
     '%s -> %s', (s, r) => expect(rodzajStrony(s)).toBe(r),
   );
+});
+
+describe('roboty po nazwie (zmierzone 02.11.2026: ok. 50 tys. zapytań na dobę)', () => {
+  it('nazwa z podpisu, także gdy w środku podpisu przeglądarki', () => {
+    expect(nazwaRobota(wpis({ ua: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.3; +https://openai.com/searchbot' }))).toBe('OAI-SearchBot');
+    expect(nazwaRobota(wpis({ ua: 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)' }))).toBe('AhrefsBot');
+    expect(nazwaRobota(wpis({ ua: 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)' }))).toBe('facebookexternalhit');
+    expect(nazwaRobota(wpis({ ua: 'curl/8.5.0' }))).toBe('curl');
+    expect(nazwaRobota(wpis({ ua: '' }))).toBe('bez podpisu');
+  });
+  it('robot z podpisem przeglądarki, złapany na nagłówkach, nie dostaje cudzej nazwy', () => {
+    expect(nazwaRobota(wpis({ jezyk: '' }))).toBe('podpis przeglądarki, nagłówki się nie zgadzają');
+  });
+  it('zestawienie robotów w podsumowaniu, ludzie osobno', () => {
+    const ahrefs = 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)';
+    const p = podsumuj([wpis({ ua: ahrefs }), wpis({ ua: ahrefs, uri: '/gmina/100101' }), wpis({ ua: 'curl/8' }), wpis({})], OPCJE);
+    expect(p.robotow).toBe(3);
+    expect(p.roboty).toEqual([{ nazwa: 'AhrefsBot', zapytan: 2 }, { nazwa: 'curl', zapytan: 1 }]);
+    expect(p.odslon).toBe(1);
+  });
+  it('licznik wpis po wpisie daje to samo co podsumowanie tablicy', () => {
+    const wpisy = [wpis({}), wpis({ ip: '91.1.2.0', uri: '/posel/x' }), wpis({ ua: 'curl/8' }), wpis({ status: 404 })];
+    const l = licznikOdwiedzin(OPCJE);
+    for (const w of wpisy) l.dodaj(w);
+    expect(l.wynik()).toEqual(podsumuj(wpisy, OPCJE));
+  });
 });

@@ -12,7 +12,7 @@
  * moze byc kilkaset megabajtow i nie ma powodu trzymac go w pamieci.
  */
 import { createInterface } from 'node:readline';
-import { podsumuj, type WpisDziennika } from '../lib/statystyki.js';
+import { licznikOdwiedzin, type WpisDziennika } from '../lib/statystyki.js';
 
 const dni = Number(process.argv.find((a) => a.startsWith('--dni='))?.split('=')[1] ?? 30);
 const host = process.env.JAWNE_HOST?.trim() || 'zrejestru.pl';
@@ -34,13 +34,11 @@ async function* wpisy(): AsyncGenerator<WpisDziennika> {
 }
 
 async function main(): Promise<void> {
-  const zebrane: WpisDziennika[] = [];
-  // Agregacja potrzebuje zbiorow osob, ale nie surowych wpisow — zbieramy
-  // je tylko po to, by podac je jednym przebiegiem do czystej funkcji.
-  // Przy 90 dniach malego serwisu to dziesiatki tysiecy obiektow, nie miliony;
-  // gdyby ruch urosl o rzedy wielkosci, to miejsce jest pierwsze do zmiany.
-  for await (const w of wpisy()) zebrane.push(w);
-  const p = podsumuj(zebrane, { dni, teraz: Date.now() / 1000, naszHost: host });
+  // Do 02.11.2026 wpisy szly najpierw do tablicy — przy ok. 50 tys. zapytan
+  // robotow na dobe tydzien przestal sie miescic w stercie (licznikOdwiedzin).
+  const licznik = licznikOdwiedzin({ dni, teraz: Date.now() / 1000, naszHost: host });
+  for await (const w of wpisy()) licznik.dodaj(w);
+  const p = licznik.wynik();
 
   const out: string[] = [];
   out.push(`Odwiedziny ${host} — ostatnie ${dni} dni`);
@@ -78,6 +76,10 @@ async function main(): Promise<void> {
 
   out.push('');
   out.push(`Pominiete: ${liczba(p.robotow)} zadan robotow, ${liczba(p.pominietych)} zadan, ktore nie sa odslona.`);
+  if (p.roboty.length) {
+    out.push('Roboty (zapytania):');
+    for (const r of p.roboty) out.push(`   ${liczba(r.zapytan).padStart(8)}  ${r.nazwa}`);
+  }
   out.push('„Osoba" to para (adres IP skrocony do /24, przegladarka) w ciagu doby —');
   out.push('szacunek z dolu: dwie osoby z jednej sieci i z ta sama przegladarka licza sie raz.');
   process.stdout.write(`${out.join('\n')}\n`);
