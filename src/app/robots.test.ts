@@ -33,7 +33,11 @@ describe('robots.txt', () => {
   it('po premierze pozwala i podaje mape strony', async () => {
     const { wynik, wlaczone } = await wczytaj('tak');
     expect(wlaczone).toBe(true);
-    expect(wynik.rules).toEqual([{ userAgent: '*', allow: '/', disallow: ['/api/', '/szukaj', '/firmy?', '/gmina/*/csv/'] }]);
+    expect(wynik.rules).toEqual([
+      { userAgent: '*', allow: '/', disallow: ['/api/', '/szukaj', '/firmy?', '/gmina/*/csv/'] },
+      // Decyzja Pawla z 02.11.2026: narzedzie SEO zamkniete, roboty wyszukiwarek AI nie.
+      { userAgent: 'AhrefsBot', disallow: '/' },
+    ]);
     expect(String(wynik.sitemap)).toMatch(/\/sitemap\.xml$/);
   });
 

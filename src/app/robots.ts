@@ -22,6 +22,16 @@ export const revalidate = 3600;
  */
 export const ZAKAZANE_PO_PREMIERZE = ['/api/', '/szukaj', '/firmy?', '/gmina/*/csv/'];
 
+/*
+ * Roboty zamkniete w calosci (decyzja Pawla z 02.11.2026). AhrefsBot to
+ * narzedzie SEO, ktore sprzedaje dane o cudzych stronach: ZMIERZONE
+ * 27.10–02.11.2026 — 47 428 zapytan, co czwarte zapytanie robotow, i zero
+ * czytelnikow. Roboty wyszukiwarek AI zostaja: z ChatGPT przyszly w tym
+ * samym tygodniu 42 odslony, z Google 2 (pulapka 83). Ahrefs deklaruje, ze
+ * przestrzega robots.txt; gdyby nie, nastepny krok to 403 w Caddy, jak Meta.
+ */
+export const ZAMKNIETE_DLA = ['AhrefsBot'];
+
 export default function robots(): MetadataRoute.Robots {
   if (!INDEKSOWANIE_WLACZONE) {
     // Przed premiera: jedna, jednoznaczna odpowiedz. Mapy strony tu NIE
@@ -30,7 +40,11 @@ export default function robots(): MetadataRoute.Robots {
     return { rules: [{ userAgent: '*', disallow: '/' }] };
   }
   return {
-    rules: [{ userAgent: '*', allow: '/', disallow: ZAKAZANE_PO_PREMIERZE }],
+    rules: [
+      { userAgent: '*', allow: '/', disallow: ZAKAZANE_PO_PREMIERZE },
+      // Robot z wlasna grupa czyta tylko ja, nie grupe „*” — dlatego osobno.
+      ...ZAMKNIETE_DLA.map((userAgent) => ({ userAgent, disallow: '/' })),
+    ],
     sitemap: new URL('/sitemap.xml', ADRES_SERWISU).toString(),
   };
 }

@@ -63,8 +63,10 @@ zewnętrzne źródło czytelników:** 42 odsłony w 7 dni wobec 2 z Google (30 d
 użytkowników od połowy października. Raport tego nie widział — ChatGPT nie
 wysyła Referera, tylko `utm_source=chatgpt.com` (`9ae7547`, czeka na
 wdrożenie). Perplexity: 22 tys. zapytań robota, zero wejść i zero pobrań na
-prośbę — do sprawdzenia za miesiąc. Do decyzji Pawła: czy zamknąć
-`robots.txt` dla AhrefsBot (narzędzie SEO, nic nam nie daje).
+prośbę — do sprawdzenia za miesiąc. **Decyzja Pawła 02.11:** `robots.txt` zamyka
+AhrefsBot (narzędzie SEO, nic nam nie daje); roboty wyszukiwarek AI zostają.
+Po wdrożeniu sprawdzić w `sudo jawne statystyki`, czy AhrefsBot zniknął
+z zestawienia robotów — jeśli nie, 403 w Caddy jak przy Mecie.
 
 ### Stan na 30.10.2026
 
