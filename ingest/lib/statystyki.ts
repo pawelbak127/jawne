@@ -207,12 +207,25 @@ export function licznikOdwiedzin(opcje: OpcjePodsumowania): { dodaj(w: WpisDzien
     // Zrodlo liczymy tylko dla wejsc z ZEWNATRZ — przejscia miedzy naszymi
     // stronami maja odsylacz z naszym adresem i nic o zrodle nie mowia.
     const ref = naglowek(w.request.headers, 'Referer');
+    let zrodlo: string | null = null;
     if (ref) {
       try {
         const h = new URL(ref).hostname.replace(/^www\./, '');
-        if (h && h !== opcje.naszHost && h !== `www.${opcje.naszHost}`) zrodla.set(h, (zrodla.get(h) ?? 0) + 1);
+        if (h && h !== opcje.naszHost && h !== `www.${opcje.naszHost}`) zrodlo = h;
       } catch { /* odsylacz, ktory nie jest adresem — pomijamy */ }
     }
+    /*
+     * ChatGPT nie wysyla Referera, tylko dopisuje do odnosnika
+     * `utm_source=chatgpt.com`. ZMIERZONE 02.11.2026: od 21.10 75 takich
+     * odslon ludzi (11 tego dnia), a raport pokazywal jako zrodla tylko
+     * „google.com 2, t.co 1” — najwieksze zewnetrzne zrodlo czytelnikow
+     * bylo niewidoczne.
+     */
+    if (!zrodlo) {
+      const utm = new URLSearchParams((w.request.uri ?? '').split('?')[1] ?? '').get('utm_source');
+      if (utm) zrodlo = utm.trim().toLowerCase().replace(/^www\./, '') || null;
+    }
+    if (zrodlo) zrodla.set(zrodlo, (zrodla.get(zrodlo) ?? 0) + 1);
   };
 
   const wynik = (): Podsumowanie => {

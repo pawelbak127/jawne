@@ -142,6 +142,17 @@ describe('podsumowanie', () => {
     expect(p.zrodla.some((z) => z.host.includes('zrejestru'))).toBe(false);
   });
 
+  it('ChatGPT bez Referera, z utm_source=chatgpt.com — to też źródło (zmierzone 02.11.2026)', () => {
+    const p = podsumuj([
+      wpis({ uri: '/glosowanie/67-93?utm_source=chatgpt.com' }),
+      wpis({ uri: '/ustawa/3003?utm_source=chatgpt.com', ip: '1.1.1.0' }),
+      // Odsyłacz zewnętrzny ma pierwszeństwo przed parametrem.
+      wpis({ uri: '/sala?utm_source=chatgpt.com', ref: 'https://www.google.com/', ip: '2.2.2.0' }),
+    ], OPCJE);
+    expect(p.zrodla).toEqual([{ host: 'chatgpt.com', wejsc: 2 }, { host: 'google.com', wejsc: 1 }]);
+    expect(p.strony.find((s) => s.sciezka === '/glosowanie/67-93')?.odslony).toBe(1);
+  });
+
   it('strona z parametrem nawigacji to ta sama strona', () => {
     const p = podsumuj([
       wpis({ uri: '/ustawa/3126' }),
