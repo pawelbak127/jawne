@@ -775,6 +775,19 @@ na serwerze, obok danych.
 
 ## Pomysły — do oceny
 
+- ~~**Wynagrodzenia zarządów spółek Skarbu Państwa**~~ **zrobione 02.11.2026
+  (decyzja Pawła, wariant A)**: `/wynagrodzenia-zarzadow`, w menu „Zarządy
+  spółek”. 8 z 10 giełdowych spółek z bezpośrednim udziałem Skarbu Państwa
+  za 2025 r. (Enea, GPW, JSW, KGHM, Orlen, PKO BP, PZU, Tauron), 56 osób
+  w zarządach i 11 byłych członków z wypłatami w 2025 r. Imiennie: wynagrodzenie
+  (stałe + premie wypłacone w roku), inne świadczenia i odprawy osobno,
+  przeciętna pensja pracownika spółki z tego samego raportu. Dane przepisane
+  ręcznie (`src/lib/wynagrodzenia-zarzadow.ts`, test sum), sprawdzone w tekście
+  raportów i OCR-em skanów; przy każdej spółce odnośnik, tabela i SHA-256 pliku.
+  **Do zrobienia:** PGE i Grupa Azoty — ich strony odrzucają zapytania spoza
+  przeglądarki (nie obchodzimy), więc raporty trzeba pobrać ręcznie
+  w przeglądarce (Paweł) i dopisać. Co rok w czerwcu, po walnych
+  zgromadzeniach: raporty za kolejny rok. Rady nadzorcze — na razie nie.
 - **Wynagrodzenia wójtów, burmistrzów i prezydentów** (Paweł 02.11.2026:
   „można kiedyś spróbować”). Dwa źródła, oba sprawdzone na jednym dokumencie
   (`docs/zrodla.md`): **uchwała rady o wynagrodzeniu** — tekst wprost,

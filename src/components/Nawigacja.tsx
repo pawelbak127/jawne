@@ -38,6 +38,7 @@ export const MENU: Grupa[] = [
       { adres: '/gminy', etykieta: 'Gminy', opis: 'budżet, fundusze UE, pomoc dla firm' },
       { adres: '/pomoc-publiczna', etykieta: 'Pomoc publiczna', skrot: 'Pomoc', opis: 'dotacje i ulgi dla firm (UOKiK)' },
       { adres: '/firmy', etykieta: 'Firmy', opis: 'czy firma dostała pomoc — szukaj po nazwie albo NIP' },
+      { adres: '/wynagrodzenia-zarzadow', etykieta: 'Zarządy spółek', opis: 'imiennie: ile zarabiają zarządy spółek Skarbu Państwa' },
       { adres: '/mapa', etykieta: 'Mapa', opis: 'cała Polska, zawsze na mieszkańca' },
     ],
   },

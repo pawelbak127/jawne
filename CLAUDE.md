@@ -38,9 +38,9 @@ budowie na serwerze (pułapka 58).
 
 | Katalog | Co tam jest |
 |---|---|
-| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/gmina/[teryt]/organy`, `/firma/[nip]`, `/pomoc-publiczna`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/sala`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
+| `src/app/` | trasy: `/`, `/gminy`, `/gminy/[wojewodztwo]`, `/okregi`, `/okreg/[nr]`, `/gmina/[teryt]`, `/gmina/[teryt]/organy`, `/firma/[nip]`, `/pomoc-publiczna`, `/wynagrodzenia-zarzadow`, `/poslowie`, `/posel/[slug]`, `/glosowania`, `/glosowanie/[id]`, `/ustawy`, `/ustawa/[numer]`, `/mapa`, `/sala`, `/szukaj`, `/api/szukaj`, `/stan`, `/o-serwisie` |
 | `src/lib/dane.ts` | **jedyny** dostęp do bazy dla stron |
-| `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc` |
+| `src/lib/` | czyste funkcje z testami: `format`, `polkole`, `kluby`, `barwy`, `glosy`, `tekst`, `niezaleznosc`, `opis-glosowania`, `prywatnosc`; `wynagrodzenia-zarzadow` to dane przepisane ręcznie z raportów spółek (test sum) |
 | `ingest/zrodla/` | pliki źródłowe trzymane bajt w bajt (PKW 2023, plan sali Sejmu) i opisy źródeł zbyt dużych na repozytorium (PRG), z sumą SHA-256 |
 | `src/components/` | komponenty; `'use client'` tylko tam, gdzie potrzebna interakcja |
 | `ingest/` | import do SQLite: Sejm, PKW, GUS, listy FE; SUDOP osobnym, ręcznym skryptem |

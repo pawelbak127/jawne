@@ -17,7 +17,7 @@ const adres = (sciezka: string) => new URL(sciezka, ADRES_SERWISU).toString();
  * mapy — te same, ktore ich strony oznaczaja `noindex` na stale.
  */
 export function adresyStron(): WpisMapy[] {
-  const stale = ['/', '/gminy', '/mapa', '/okregi', '/sala', '/ustawy', '/komisje', '/poslowie', '/glosowania', '/pomoc-publiczna', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
+  const stale = ['/', '/gminy', '/mapa', '/okregi', '/sala', '/ustawy', '/komisje', '/poslowie', '/glosowania', '/pomoc-publiczna', '/wynagrodzenia-zarzadow', '/o-serwisie', '/stan'].map((s) => ({ url: adres(s) }));
   if (!bazaDostepna()) return stale;
   return [
     ...stale,
