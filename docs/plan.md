@@ -43,6 +43,23 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
   w `/prywatnosc` sekcje „Kto jeszcze ma dostęp” i „Dziennik wejść” (dziś mówią,
   że nie ma zewnętrznej analityki) i dopisać `JAWNE_UMAMI_ID` do `jawne ustaw`.
 
+### Stan na 02.11.2026
+
+**Na serwerze działa `fbbc180`** (wdrożone 31.10, 13:21) — w nim pilna
+poprawka składu dochodów (`9d83b2a`), więc zadanie `gus` 3.11 jej nie odsłoni.
+**Czeka na `aktualizuj`:** `b3459a5` — `sudo jawne statystyki` padało na braku
+pamięci (920 MB), bo trzymało wszystkie wpisy tygodnia; teraz licznik wpis po
+wpisie (203 MB, 11 s na tym samym dzienniku) i zestawienie robotów z nazwy.
+**Fala robotów od 30.10:** ok. 50 tys. zapytań na dobę (wcześniej kilka
+tysięcy) — w 7 dni OAI-SearchBot 96,7 tys., AhrefsBot 47,4 tys., Amazonbot
+23 tys., PerplexityBot 22,2 tys.; Googlebot 8,9 tys. przez cały dziennik
+(od 12.10). Obciążenie 0,4–0,6, bez kłopotu. Pamięć podręczna stron
+3,7 → 9,3 GB, bo roboty obeszły prawie wszystko: głosowania 5 182 z 5 201
+(po ok. 0,7 MB — strona głosowania ma 488 kB HTML-a), gminy prawie komplet,
+firmy czyszczone co dobę. To sufit, nie stały wzrost; dysk 48 z 96 GB.
+Ruch ludzi 27.10–2.11: 123 osoby, 201 odsłon. Do decyzji Pawła: czy
+zamknąć `robots.txt` dla AhrefsBot (narzędzie SEO, nic nam nie daje).
+
 ### Stan na 30.10.2026
 
 **Na serwerze działa `10d0d4c`** (wdrożone 30.10, 22:30): zdania o komplecie
