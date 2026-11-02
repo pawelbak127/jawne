@@ -57,8 +57,14 @@ tysięcy) — w 7 dni OAI-SearchBot 96,7 tys., AhrefsBot 47,4 tys., Amazonbot
 3,7 → 9,3 GB, bo roboty obeszły prawie wszystko: głosowania 5 182 z 5 201
 (po ok. 0,7 MB — strona głosowania ma 488 kB HTML-a), gminy prawie komplet,
 firmy czyszczone co dobę. To sufit, nie stały wzrost; dysk 48 z 96 GB.
-Ruch ludzi 27.10–2.11: 123 osoby, 201 odsłon. Do decyzji Pawła: czy
-zamknąć `robots.txt` dla AhrefsBot (narzędzie SEO, nic nam nie daje).
+Ruch ludzi 27.10–2.11: 124 osoby, 202 odsłony. **ChatGPT to już największe
+zewnętrzne źródło czytelników:** 42 odsłony w 7 dni wobec 2 z Google (30 dni:
+73 wobec 44), do tego 835 pobrań stron przez ChatGPT na prośbę jego
+użytkowników od połowy października. Raport tego nie widział — ChatGPT nie
+wysyła Referera, tylko `utm_source=chatgpt.com` (`9ae7547`, czeka na
+wdrożenie). Perplexity: 22 tys. zapytań robota, zero wejść i zero pobrań na
+prośbę — do sprawdzenia za miesiąc. Do decyzji Pawła: czy zamknąć
+`robots.txt` dla AhrefsBot (narzędzie SEO, nic nam nie daje).
 
 ### Stan na 30.10.2026
 

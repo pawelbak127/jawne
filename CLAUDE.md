@@ -1140,6 +1140,17 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     nagłówek jest, tylko czy nagłówki do siebie pasują** — robot uczy się
     dodawać brakujące, ale rzadko pilnuje, żeby nie przeczyły sobie nawzajem.
 
+83. **Raport odwiedzin padł na fali robotów i nie widział największego
+    źródła czytelników.** ZMIERZONE 02.11.2026: od 30.10 roboty robią ok.
+    50 tys. zapytań na dobę (OAI-SearchBot, AhrefsBot, Amazonbot,
+    PerplexityBot), a `sudo jawne statystyki 7` zbierało wszystkie wpisy
+    tygodnia w tablicę i padło na stercie 920 MB — teraz licznik wpis po
+    wpisie, 203 MB (lekcja pułapek 57 i 61, trzeci raz). Przy okazji:
+    **ChatGPT nie wysyła Referera**, tylko dopisuje `utm_source=chatgpt.com`,
+    więc raport podawał jako źródła „google.com 2”, a z ChatGPT przyszły
+    42 odsłony w tym samym tygodniu. Zasada: **źródło wejścia to nie tylko
+    Referer — sprawdź też parametry adresu, zanim uznasz, że kanału nie ma.**
+
 ---
 
 ## Bezpieczeństwo
