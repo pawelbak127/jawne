@@ -45,11 +45,16 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
 
 ### Stan na 02.11.2026
 
-**Na serwerze działa `fbbc180`** (wdrożone 31.10, 13:21) — w nim pilna
-poprawka składu dochodów (`9d83b2a`), więc zadanie `gus` 3.11 jej nie odsłoni.
-**Czeka na `aktualizuj`:** `b3459a5` — `sudo jawne statystyki` padało na braku
-pamięci (920 MB), bo trzymało wszystkie wpisy tygodnia; teraz licznik wpis po
-wpisie (203 MB, 11 s na tym samym dzienniku) i zestawienie robotów z nazwy.
+**Na serwerze działa `5a62808`** (wdrożone 02.11, 20:29): statystyki wpis po
+wpisie (`b3459a5` — wcześniej padały na braku pamięci, 920 MB), ChatGPT jako
+źródło wejść i zamknięty AhrefsBot. Pilna poprawka składu dochodów
+(`9d83b2a`) jest na serwerze od 31.10, więc zadanie `gus` 3.11 jej nie odsłoni.
+**Bing:** przez cały październik ani jednego zapytania robota Binga (Googlebot
+też spadł z ok. 2,5 tys. dziennie w połowie października do kilku). 02.11
+Paweł dodał stronę w Bing Webmaster Tools importem z Search Console; robot
+przyszedł tego samego wieczoru (robots.txt i strona główna, 200). Za kilka
+dni sprawdzić, czy chodzi po mapie strony; potem ewentualnie IndexNow
+(zgłaszanie nowych głosowań i ustaw po zadaniu `sejm`).
 **Fala robotów od 30.10:** ok. 50 tys. zapytań na dobę (wcześniej kilka
 tysięcy) — w 7 dni OAI-SearchBot 96,7 tys., AhrefsBot 47,4 tys., Amazonbot
 23 tys., PerplexityBot 22,2 tys.; Googlebot 8,9 tys. przez cały dziennik
