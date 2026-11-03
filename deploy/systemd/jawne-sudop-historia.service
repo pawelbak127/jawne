@@ -11,6 +11,8 @@ WorkingDirectory=/srv/jawne
 EnvironmentFile=/etc/jawne/jawne.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/bash /srv/jawne/deploy/zadanie.sh sudop-historia
+# 75 = historia ustapila zadaniu dziennemu (blokada zajeta) — to nie blad.
+SuccessExitStatus=75
 TimeoutStartSec=11h
 Nice=10
 NoNewPrivileges=true

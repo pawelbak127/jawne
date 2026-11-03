@@ -162,7 +162,23 @@ case "${1:-}" in
     # przebieg w trakcie czekania na kolejke (20–57 min na strone). 540 min
     # to 11 h minus najdluzsze czekanie (57 min), kwadrans przerwy po bledzie
     # i ok. 30 min na sumy po przebiegu.
-    sudop 60 --historia --maks-zapytan=20 --okno=zawsze --maks-minut=540
+    #
+    # USTAPIENIE TO NIE BLAD. Co noc o 22:00 zadanie dzienne bierze blokade na
+    # ok. godzine, a historia startuje o :07 i po minucie ustepuje — tak ma byc.
+    # Ale flock konczyl sie wtedy kodem 1 i `jawne stan` co rano pokazywal
+    # „exit-code” (01–03.11.2026), czyli falszywy alarm, do ktorego latwo
+    # przywyknac. Teraz kod 75 (EX_TEMPFAIL), ktory jednostka uznaje za
+    # sukces (SuccessExitStatus), i jedno zdanie w dzienniku; prawdziwy blad
+    # sudop.ts ma inny kod i dalej jest widac go jako blad. Bez `exec`, bo
+    # po nim nie byloby komu tego zdania napisac — historii nie dotyczy
+    # znacznik PID z zadania dziennego.
+    mkdir -p dane
+    kod=0
+    flock -E 75 --wait 60 dane/.sudop.flock "$TSX" ingest/jobs/sudop.ts --historia --maks-zapytan=20 --okno=zawsze --maks-minut=540 || kod=$?
+    if [ "$kod" = 75 ]; then
+      echo "Historia ustepuje: blokade SUDOP trzyma inne zadanie (zwykle dzienne od 22:00). Sprobuje przy nastepnym tyknieciu timera."
+    fi
+    exit "$kod"
     ;;
   *)
     echo "Uzycie: $0 sejm|gus|fundusze|ted|sudop-dzien|sudop-historia|porzadki" >&2
