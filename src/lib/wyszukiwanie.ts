@@ -43,8 +43,30 @@ export type PodpowiedzUstawy = {
   stan: string;
 };
 
+/**
+ * Zakres wyszukiwania: filtry pod polem na stronie głównej i na /szukaj.
+ * W adresie (`?zakres=gminy`), więc działa bez JavaScriptu i można go wysłać.
+ * Głosowania nie mają własnego filtra — szuka ich tylko „Wszystko”.
+ */
+export const ZAKRESY = ['wszystko', 'gminy', 'poslowie', 'firmy', 'ustawy'] as const;
+export type Zakres = (typeof ZAKRESY)[number];
+
+export const OPIS_ZAKRESU: Record<Zakres, { etykieta: string; podpowiedz: string; wsrod: string | null }> = {
+  wszystko: { etykieta: 'Wszystko', podpowiedz: 'Gmina, poseł, firma, NIP albo temat ustawy', wsrod: null },
+  gminy: { etykieta: 'Gminy', podpowiedz: 'Nazwa gminy albo miasta', wsrod: 'wśród gmin' },
+  poslowie: { etykieta: 'Posłowie', podpowiedz: 'Imię lub nazwisko posła', wsrod: 'wśród posłów' },
+  firmy: { etykieta: 'Firmy / NIP', podpowiedz: 'Nazwa firmy albo NIP', wsrod: 'wśród firm' },
+  ustawy: { etykieta: 'Ustawy', podpowiedz: 'Temat ustawy albo numer druku', wsrod: 'wśród ustaw' },
+};
+
+/** Nieznana wartość z adresu to „wszystko”, nie błąd: adres mógł być przepisany z ręki. */
+export function zakresZParametru(wartosc: unknown): Zakres {
+  return ZAKRESY.includes(wartosc as Zakres) ? (wartosc as Zakres) : 'wszystko';
+}
+
 export type OdpowiedzWyszukiwania = {
   fraza: string;
+  zakres: Zakres;
   gminy: PodpowiedzGminy[];
   poslowie: PodpowiedzPosla[];
   glosowania: PodpowiedzGlosowania[];

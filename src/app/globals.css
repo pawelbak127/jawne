@@ -295,8 +295,6 @@
   .naglowek .gora { display: flex; align-items: center; gap: 12px; min-height: 56px; }
   .marka { display: flex; align-items: baseline; gap: 12px; text-decoration: none; color: inherit; padding: 8px 0; }
   .marka b { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.35rem; line-height: 1; }
-  .marka span { display: none; font-size: 0.85rem; opacity: 0.85; }
-  @media (min-width: 1280px) { .marka span { display: inline; } }
 
   .szukaj-naglowek { flex: 1; display: none; }
   @media (min-width: 1024px) { .szukaj-naglowek { display: block; max-width: 26rem; margin-left: auto; } }
@@ -315,17 +313,35 @@
   .tylko-tel { margin-left: auto; display: flex; gap: 4px; }
   @media (min-width: 1024px) { .tylko-tel { display: none; } }
 
-  /* komputer: wszystkie dzialy w dwoch podpisanych grupach, bez rozwijania (F12) */
+  /*
+    komputer: jeden pasek. Panel otwiera `data-otwarte` z komponentu; regula
+    z :not([data-js]) to to samo bez JavaScriptu. `display: none`, nie
+    `visibility`: odnosnik schowany tak nie prefetchuje strony na malym serwerze.
+  */
   .menu-grupy { display: none; background: var(--papier-3); color: var(--atrament); }
   [data-styl="a"] .menu-grupy { background: var(--papier); border-top: 1px solid var(--kreska); }
   @media (min-width: 1024px) { .menu-grupy { display: block; } }
-  .menu-grupy .rzad { display: flex; flex-wrap: wrap; gap: 0 28px; }
-  .menu-grupy .grupa { display: flex; align-items: center; flex-wrap: wrap; }
-  .menu-grupy .podpis { font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--atrament-2); margin-right: 6px; font-weight: 600; }
-  .menu-grupy a { color: var(--akcent); text-decoration: underline; padding: 10px 8px; font-size: 0.9rem; border-bottom: 4px solid transparent; }
-  [data-styl="a"] .menu-grupy a { color: var(--atrament); text-decoration: none; }
-  .menu-grupy a:hover { text-decoration-thickness: 2px; }
-  .menu-grupy a[aria-current="page"] { color: var(--atrament); text-decoration: none; font-weight: 600; border-bottom-color: var(--pasek-kreska); }
+  .menu-grupy .rzad { display: flex; flex-wrap: wrap; gap: 0 4px; }
+  .rozwijane { position: relative; display: flex; }
+  .rozwijane > button, .link-paska {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; background: none; border: 0;
+    border-bottom: 4px solid transparent; color: var(--atrament); font: inherit; font-size: 0.9rem; font-weight: 600; text-decoration: none; cursor: pointer;
+  }
+  .menu-grupy .rzad > :first-child { margin-left: -10px; }
+  .rozwijane > button:hover, .rozwijane[data-otwarte] > button, .link-paska:hover { background: var(--papier-2); }
+  .rozwijane > button[data-biezaca], .link-paska[aria-current="page"] { border-bottom-color: var(--pasek-kreska); }
+  .rozwijane[data-otwarte] > button svg { transform: rotate(180deg); }
+  .rozwijane-panel {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 50; width: 24rem; margin: 0; padding: 6px 0;
+    list-style: none; background: var(--papier-2); color: var(--atrament); border: 2px solid var(--atrament);
+  }
+  .rozwijane[data-otwarte] > .rozwijane-panel,
+  :root:not([data-js]) .rozwijane:hover > .rozwijane-panel,
+  :root:not([data-js]) .rozwijane:focus-within > .rozwijane-panel { display: block; }
+  .rozwijane-panel a { display: block; padding: 8px 14px; color: var(--atrament); font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+  .rozwijane-panel a span { display: block; color: var(--atrament-2); font-size: 0.8rem; font-weight: 400; }
+  .rozwijane-panel a:hover { background: var(--papier-3); }
+  .rozwijane-panel a[aria-current="page"] { box-shadow: inset 4px 0 0 var(--pasek-kreska); }
 
   /* telefon: szukanie i skroty obu grup na wierzchu, reszta pod „Menu” */
   .tel { background: var(--papier-3); color: var(--atrament); padding-top: 10px; }
@@ -357,8 +373,23 @@
   .wyglad { display: none; }
   :root[data-js] .wyglad { display: block; }
   @media (min-width: 1024px) { .wyglad { position: relative; } }
-  .wyglad > summary .napis { display: none; }
-  @media (min-width: 640px) { .wyglad > summary .napis { display: inline; } }
+  /* komputer: widok na wierzchu (dwa segmenty), pod ikona zostaje jasnosc */
+  .widok { display: none; align-items: center; gap: 8px; margin-left: 12px; font-size: 0.8rem; white-space: nowrap; }
+  @media (min-width: 1024px) {
+    :root[data-js] .widok { display: flex; }
+    .wyglad .widok-w-panelu { display: none; }
+    .wyglad .widok-w-panelu + fieldset { margin-top: 0; padding-top: 0; border-top: 0; }
+  }
+  .bez-szukania .widok { margin-left: auto; }
+  .segmenty { display: flex; border: 1.5px solid currentColor; }
+  .segmenty label { position: relative; cursor: pointer; }
+  .segmenty label + label { border-left: 1.5px solid currentColor; }
+  .segmenty input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .segmenty span { display: flex; align-items: center; min-height: 36px; padding: 0 10px; }
+  /* za `data-styl`, nie za :checked: pola zaznacza dopiero hydracja, a to by migalo */
+  :root:not([data-styl="a"]) .segmenty input[value="standard"] + span,
+  [data-styl="a"] .segmenty input[value="a"] + span { background: var(--pasek-tekst); color: var(--pasek); font-weight: 600; }
+  .segmenty input:focus-visible + span { outline: 3px solid currentColor; outline-offset: 2px; }
   .wyglad-panel {
     position: absolute; left: 0; right: 0; top: 100%; z-index: 50; padding: 12px 16px 14px;
     background: var(--papier-2); color: var(--atrament); border: 2px solid var(--atrament); font-size: 0.9rem;
@@ -512,23 +543,34 @@
   .bohater h1 { font-weight: 600; font-size: 1.75rem; line-height: 1.12; max-width: 24em; }
   @media (min-width: 1024px) { .bohater h1 { font-size: 2.4rem; } }
   .bohater .podtytul { margin-top: 12px; color: var(--atrament-2); max-width: var(--miara); }
-  .bohater-szukaj { display: flex; margin-top: 18px; max-width: 40rem; }
-  .bohater-szukaj .pole, .karta-firma .pole { min-height: 52px; font-size: 1rem; }
-  .bohater-szukaj button, .karta-firma button {
+  .bohater-pole { max-width: 40rem; }
+  .bohater-szukaj { display: flex; margin-top: 18px; }
+  .bohater-szukaj .pole { min-height: 52px; font-size: 1rem; }
+  .bohater-szukaj button {
     flex: none; min-height: 52px; padding: 0 20px; font: inherit; font-weight: 600; cursor: pointer;
     background: var(--atrament); color: var(--papier); border: 2px solid var(--atrament);
   }
-  :root:not([data-styl="a"]) .bohater-szukaj button,
-  :root:not([data-styl="a"]) .karta-firma button { background: var(--akcent); border-color: var(--akcent); color: var(--papier-2); }
+  :root:not([data-styl="a"]) .bohater-szukaj button { background: var(--akcent); border-color: var(--akcent); color: var(--papier-2); }
+  /* filtry zakresu: pola radio w formularzu, wiec dzialaja bez JavaScriptu */
+  .zakresy { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; border: 0; max-width: 40rem; }
+  .zakresy label { position: relative; cursor: pointer; }
+  .zakresy input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .zakresy label > span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--kreska-2); border-radius: 999px; background: var(--papier-2); color: var(--atrament); font-size: var(--sredni); white-space: pre; }
+  .zakresy .ile { color: var(--atrament-2); }
+  .zakresy input:checked + span { background: var(--akcent); border-color: var(--akcent); color: var(--papier-2); font-weight: 600; }
+  .zakresy input:checked + span .ile { color: inherit; }
+  .zakresy input:focus-visible + span { outline: 3px solid var(--akcent); outline-offset: 2px; }
+  [data-styl="a"] .zakresy label > span { border-color: var(--atrament); border-radius: 0; }
+  [data-styl="a"] .zakresy input:checked + span { background: var(--atrament); border-color: var(--atrament); color: var(--papier); }
   .bohater-przyklady { margin-top: 10px; font-size: var(--drobny); color: var(--atrament-2); }
   .bohater-przyklady a { color: var(--akcent); text-decoration: underline; text-underline-offset: 4px; }
   .karty { display: grid; gap: 14px; margin-top: 28px; }
   @media (min-width: 760px) { .karty { grid-template-columns: repeat(3, 1fr); } }
   .karta { display: flex; flex-direction: column; padding: 16px 18px 18px; border: 1px solid var(--kreska); border-top: 3px solid var(--atrament); background: var(--papier-2); color: var(--atrament); text-decoration: none; }
-  .karta-obraz { display: flex; align-items: center; justify-content: center; height: 150px; margin-bottom: 12px; }
-  .karta-obraz svg { max-height: 150px; width: auto; max-width: 100%; }
-  .karta-firma { flex-direction: column; align-items: stretch; gap: 8px; }
-  .karta-firma button { width: 100%; }
+  .karta-obraz { display: flex; align-items: center; justify-content: center; height: 110px; margin-bottom: 10px; }
+  .karta-obraz svg { max-height: 110px; width: auto; max-width: 100%; }
+  .mini-nip rect { fill: var(--papier); stroke: var(--atrament-3); stroke-width: 1.5; }
+  .mini-nip-napis { fill: var(--atrament-2); font-family: var(--f-znak); font-size: 16px; font-weight: 600; }
   .karta b { font-family: var(--f-naglowek); font-weight: 600; font-size: 1.2rem; display: block; }
   a.karta b { color: var(--akcent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
   a.karta:hover b { text-decoration-thickness: 3px; }
@@ -541,12 +583,27 @@
   }
   .pozycje .streszczenie { margin-top: 6px; max-width: var(--miara); color: var(--atrament-2); font-size: var(--sredni); }
   .etykieta-zrodla { color: var(--atrament-3); font-size: var(--drobny); white-space: nowrap; }
-  /* polkole pierwszej ustawy: obok tekstu na komputerze; na telefonie wystarcza pasek pod opisem */
-  .ustawy-glowna > li.z-polkolem { grid-template-columns: minmax(0, 1fr); }
-  .polkole-ustawy { display: none; }
-  @media (min-width: 760px) {
-    .ustawy-glowna > li.z-polkolem { grid-template-columns: minmax(0, 1fr) 210px; align-items: center; }
-    .polkole-ustawy { display: block; width: 210px; }
+  /* karta ustawy: stopniowe odkrywanie; opis po rozwinieciu, w Wypisie od razu */
+  .pozycje > li.karta-ustawy { grid-template-columns: minmax(0, 1fr); }
+  .kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--atrament-2); font-size: var(--drobny); }
+  .znacznik-tematu { display: inline-block; padding: 2px 8px; background: var(--papier-3); color: var(--atrament); font-weight: 600; text-decoration: none; }
+  .znacznik-tematu:hover { text-decoration: underline; }
+  [data-styl="a"] .znacznik-tematu { background: none; border: 1px solid var(--atrament); font-family: var(--f-znak); font-weight: 500; }
+  /* !important: `h-2` z warstwy utilities wygrywa z tą warstwą i rośnie z pismem do 10 px */
+  .karta-ustawy [role="img"] { height: 8px !important; }
+  .karta-ustawy .tytul-poz { display: block; margin-top: 8px; max-width: var(--miara); font-size: 1.1rem; line-height: 1.3; }
+  .szczegoly-ustawy { margin-top: 4px; max-width: var(--miara); }
+  .szczegoly-ustawy > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--akcent); font-size: var(--sredni); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; list-style: none; }
+  .szczegoly-ustawy > summary::-webkit-details-marker { display: none; }
+  .szczegoly-ustawy > summary::after { content: ""; border-inline: 5px solid transparent; border-top: 6px solid currentColor; }
+  .szczegoly-ustawy[open] > summary::after { transform: rotate(180deg); }
+  .szczegoly-ustawy .tresc { padding-bottom: 4px; }
+  .szczegoly-ustawy .tresc > * + * { margin-top: 6px; }
+  /* bez wsparcia: zostaje zwykly przycisk rozwijania, a tresc jest dostepna */
+  @supports selector(::details-content) {
+    [data-styl="a"] .szczegoly-ustawy::details-content { display: block; content-visibility: visible; }
+    [data-styl="a"] .szczegoly-ustawy > summary { display: none; }
+    [data-styl="a"] .szczegoly-ustawy .tresc { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--kreska-2); }
   }
   .pieniadze-glowna { display: grid; gap: 18px; margin-top: 14px; }
   @media (min-width: 760px) { .pieniadze-glowna { grid-template-columns: 260px minmax(0, 1fr); align-items: start; gap: 28px; } }

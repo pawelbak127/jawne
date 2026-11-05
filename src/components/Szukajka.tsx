@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useMemo, useState } from 'react';
-import { dataKrotko, skroc } from '@/lib/format';
-import { opisGminy, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { dataKrotko, liczba, skroc } from '@/lib/format';
+import { OPIS_ZAKRESU, opisGminy, ZAKRESY, type OdpowiedzWyszukiwania, type Zakres } from '@/lib/wyszukiwanie';
 
 /**
  * Jedno pole: miasto, nazwisko posla albo temat glosowania.
@@ -15,15 +15,27 @@ import { opisGminy, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
  *
  * Gminy ida na gore listy celowo: wiekszosc ludzi nie zna nazwiska swojego
  * posla, ale zna swoja miejscowosc.
+ *
+ * Filtry zakresu (`liczby`) to zwykle pola radio w tym samym formularzu:
+ * bez JavaScriptu trafiaja do adresu (`?zakres=gminy`). Skrypt doklada tylko
+ * zmiane podpowiedzi w polu i zakres podpowiedzi w trakcie pisania.
  */
 export function Szukajka({
   poczatkowa = '',
   etykieta = 'Twoja miejscowość, nazwisko posła albo temat głosowania',
   autofocus = false,
+  liczby,
+  poczatkowyZakres = 'wszystko',
+  wariant,
 }: {
   poczatkowa?: string;
   etykieta?: string;
   autofocus?: boolean;
+  /** Podane = pokazujemy filtry zakresu; liczby trafiaja na ich etykiety. */
+  liczby?: { gminy: number; poslowie: number };
+  poczatkowyZakres?: Zakres;
+  /** „bohater”: duze pole w stylu strony glownej, bez lupy. */
+  wariant?: 'bohater';
 }) {
   const id = useId();
   const router = useRouter();
@@ -31,15 +43,19 @@ export function Szukajka({
   const [wyniki, ustawWyniki] = useState<OdpowiedzWyszukiwania | null>(null);
   const [otwarte, ustawOtwarte] = useState(false);
   const [aktywny, ustawAktywny] = useState(-1);
+  const [zakres, ustawZakres] = useState<Zakres>(poczatkowyZakres);
+  const pole = useRef<HTMLInputElement>(null);
 
   const q = fraza.trim();
+  const zParametrem = zakres === 'wszystko' ? '' : `&zakres=${zakres}`;
+  const podpowiedz = liczby ? OPIS_ZAKRESU[zakres].podpowiedz : etykieta;
 
   useEffect(() => {
     if (q.length < 2) return;
     const przerwij = new AbortController();
     const zegar = setTimeout(async () => {
       try {
-        const odp = await fetch(`/api/szukaj?q=${encodeURIComponent(q)}`, { signal: przerwij.signal });
+        const odp = await fetch(`/api/szukaj?q=${encodeURIComponent(q)}${zParametrem}`, { signal: przerwij.signal });
         if (odp.ok) ustawWyniki((await odp.json()) as OdpowiedzWyszukiwania);
       } catch {
         // Przerwane albo brak sieci. Pole dalej dziala jako zwykly formularz.
@@ -49,11 +65,11 @@ export function Szukajka({
       clearTimeout(zegar);
       przerwij.abort();
     };
-  }, [q]);
+  }, [q, zParametrem]);
 
-  // Wyniki pokazujemy tylko dla BIEZACEJ frazy — inaczej przy szybkim pisaniu
-  // pod "Gdańsk" przez chwile wisza wyniki dla "Gd".
-  const widoczne = q.length >= 2 && wyniki?.fraza === q ? wyniki : null;
+  // Wyniki pokazujemy tylko dla BIEZACEJ frazy i zakresu — inaczej przy szybkim
+  // pisaniu pod "Gdańsk" przez chwile wisza wyniki dla "Gd".
+  const widoczne = q.length >= 2 && wyniki?.fraza === q && wyniki.zakres === zakres ? wyniki : null;
 
   const pozycje = useMemo(() => {
     if (!widoczne) return [];
@@ -63,9 +79,9 @@ export function Szukajka({
       ...widoczne.ustawy.map((u) => ({ klucz: `u${u.numer}`, adres: `/ustawa/${u.numer}` })),
       ...widoczne.firmy.map((f) => ({ klucz: `f${f.nip}`, adres: `/firma/${f.nip}` })),
       ...widoczne.glosowania.map((g) => ({ klucz: `v${g.id}`, adres: `/glosowanie/${g.id}` })),
-      { klucz: 'wszystko', adres: `/szukaj?q=${encodeURIComponent(q)}` },
+      { klucz: 'wszystko', adres: `/szukaj?q=${encodeURIComponent(q)}${zParametrem}` },
     ];
-  }, [widoczne, q]);
+  }, [widoczne, q, zParametrem]);
 
   const indeks = (klucz: string) => pozycje.findIndex((p) => p.klucz === klucz);
   const klasaPozycji = (klucz: string) =>
@@ -87,6 +103,7 @@ export function Szukajka({
     }
   }
 
+  const bohater = wariant === 'bohater';
   const pusto = widoczne && !widoczne.gminy.length && !widoczne.poslowie.length
     && !widoczne.glosowania.length && !widoczne.firmy.length && !widoczne.ustawy.length;
 
@@ -103,136 +120,173 @@ export function Szukajka({
             router.push(wybrana.adres);
           }
         }}
-        className="flex items-center gap-2 rounded-2xl border border-kreska-2 bg-papier-2 py-1.5 pr-1.5 pl-4 shadow-karta focus-within:border-akcent"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-atrament-3" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-        </svg>
-        <input
-          name="q"
-          value={fraza}
-          onChange={(e) => {
-            ustawFraze(e.target.value);
-            ustawOtwarte(true);
-            ustawAktywny(-1);
-          }}
-          onFocus={() => ustawOtwarte(true)}
-          onBlur={() => ustawOtwarte(false)}
-          onKeyDown={klawisz}
-          type="search"
-          autoComplete="off"
-          autoFocus={autofocus}
-          aria-label={etykieta}
-          placeholder={etykieta}
-          role="combobox"
-          aria-expanded={otwarte && Boolean(widoczne)}
-          aria-controls={`${id}-lista`}
-          aria-autocomplete="list"
-          className="h-11 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-atrament-3"
-        />
-        <button
-          type="submit"
-          className="h-11 shrink-0 rounded-xl bg-atrament px-4 text-sm font-medium text-papier transition-opacity hover:opacity-90"
+      {/* Lista stoi w tym samym bloku co pole: wisi pod nim, a nie pod filtrami. */}
+      <div className={bohater ? 'relative bohater-pole' : 'relative'}>
+        <div className={bohater
+          ? 'bohater-szukaj'
+          : 'flex items-center gap-2 rounded-2xl border border-kreska-2 bg-papier-2 py-1.5 pr-1.5 pl-4 shadow-karta focus-within:border-akcent'}
         >
-          Szukaj
-        </button>
-      </form>
-
-      {otwarte && widoczne ? (
-        <div
-          id={`${id}-lista`}
-          role="listbox"
-          // mousedown zamiast click: inaczej blur pola zamyka liste, zanim klik dojdzie.
-          onMouseDown={(e) => e.preventDefault()}
-          className="absolute z-30 mt-2 max-h-[70vh] w-full overflow-y-auto rounded-2xl border border-kreska bg-papier-2 py-2 text-left shadow-karta-2"
-        >
-          {pusto ? (
-            <p className="px-4 py-3 text-sm text-atrament-2">
-              Nic nie znaleźliśmy. Szukamy w nazwach gmin, nazwiskach posłów, tytułach głosowań
-              i ustaw oraz wśród firm — po nazwie albo po numerze NIP.
-            </p>
-          ) : null}
-
-          {widoczne.gminy.length ? (
-            <Grupa tytul="Gminy — posłowie i publiczne pieniądze">
-              {widoczne.gminy.map((g) => (
-                <Link key={g.teryt} href={`/gmina/${g.teryt}`} role="option" aria-selected={indeks(`g${g.teryt}`) === aktywny} className={klasaPozycji(`g${g.teryt}`)}>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-medium">{g.nazwa}</span>
-                    <span className="block truncate text-xs text-atrament-3">{opisGminy(g)}</span>
-                  </span>
-                  <span className="shrink-0 text-sm text-akcent">
-                    {`okręg ${g.okreg}${g.okregNazwa ? ` · ${g.okregNazwa}` : ''} →`}
-                  </span>
-                </Link>
-              ))}
-            </Grupa>
-          ) : null}
-
-          {widoczne.poslowie.length ? (
-            <Grupa tytul="Posłowie">
-              {widoczne.poslowie.map((p) => (
-                <Link key={p.slug} href={`/posel/${p.slug}`} role="option" aria-selected={indeks(`p${p.slug}`) === aktywny} className={klasaPozycji(`p${p.slug}`)}>
-                  <span className="font-medium">{p.nazwa}</span>
-                  <span className="text-sm text-atrament-2">{p.klub ?? 'bez klubu'}</span>
-                  <span className="ml-auto truncate text-xs text-atrament-3">
-                    {p.aktywny ? (p.okreg ?? '') : 'mandat wygasł'}
-                  </span>
-                </Link>
-              ))}
-            </Grupa>
-          ) : null}
-
-          {widoczne.ustawy.length ? (
-            <Grupa tytul={`Ustawy — droga przez Sejm (${widoczne.ustawWszystkich})`}>
-              {widoczne.ustawy.map((u) => (
-                <Link key={u.numer} href={`/ustawa/${u.numer}`} role="option" aria-selected={indeks(`u${u.numer}`) === aktywny} className={klasaPozycji(`u${u.numer}`)}>
-                  <span className="liczby shrink-0 text-xs text-atrament-3">{`druk ${u.numer}`}</span>
-                  <span className="min-w-0 flex-1 text-sm leading-snug">{u.tytul}</span>
-                  <span className="shrink-0 text-xs text-atrament-3">{u.stan}</span>
-                </Link>
-              ))}
-            </Grupa>
-          ) : null}
-
-          {widoczne.firmy.length ? (
-            <Grupa tytul="Firmy — pomoc publiczna">
-              {widoczne.firmy.map((f) => (
-                <Link key={f.nip} href={`/firma/${f.nip}`} role="option" aria-selected={indeks(`f${f.nip}`) === aktywny} className={klasaPozycji(`f${f.nip}`)}>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-medium">{f.nazwa}</span>
-                    <span className="block truncate text-xs text-atrament-3">{f.opis}</span>
-                  </span>
-                  <span className="liczby shrink-0 text-xs text-atrament-3">{f.nip}</span>
-                </Link>
-              ))}
-            </Grupa>
-          ) : null}
-
-          {widoczne.glosowania.length ? (
-            <Grupa tytul={`Głosowania (${widoczne.glosowanWszystkich})`}>
-              {widoczne.glosowania.map((g) => (
-                <Link key={g.id} href={`/glosowanie/${g.id}`} role="option" aria-selected={indeks(`v${g.id}`) === aktywny} className={klasaPozycji(`v${g.id}`)}>
-                  <span className="liczby shrink-0 text-xs text-atrament-3">{dataKrotko(g.data)}</span>
-                  <span className="text-sm leading-snug">{skroc(g.tytul, 110)}</span>
-                </Link>
-              ))}
-            </Grupa>
-          ) : null}
-
-          {!pusto ? (
-            <Link
-              href={`/szukaj?q=${encodeURIComponent(q)}`}
-              role="option"
-              aria-selected={indeks('wszystko') === aktywny}
-              className={`mt-1 block border-t border-kreska px-4 pt-3 pb-1.5 text-sm text-akcent ${indeks('wszystko') === aktywny ? 'underline' : ''}`}
-            >
-              {`Wszystkie wyniki dla „${q}” →`}
-            </Link>
-          ) : null}
+          {bohater ? null : (
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-atrament-3" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+            </svg>
+          )}
+          <input
+            ref={pole}
+            name="q"
+            value={fraza}
+            onChange={(e) => {
+              ustawFraze(e.target.value);
+              ustawOtwarte(true);
+              ustawAktywny(-1);
+            }}
+            onFocus={() => ustawOtwarte(true)}
+            onBlur={() => ustawOtwarte(false)}
+            onKeyDown={klawisz}
+            type="search"
+            autoComplete="off"
+            autoFocus={autofocus}
+            aria-label={etykieta}
+            placeholder={podpowiedz}
+            role="combobox"
+            aria-expanded={otwarte && Boolean(widoczne)}
+            aria-controls={`${id}-lista`}
+            aria-autocomplete="list"
+            className={bohater ? 'pole' : 'h-11 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-atrament-3'}
+          />
+          <button
+            type="submit"
+            className={bohater ? undefined : 'h-11 shrink-0 rounded-xl bg-atrament px-4 text-sm font-medium text-papier transition-opacity hover:opacity-90'}
+          >
+            Szukaj
+          </button>
         </div>
+
+        {otwarte && widoczne ? (
+          <div
+            id={`${id}-lista`}
+            role="listbox"
+            // mousedown zamiast click: inaczej blur pola zamyka liste, zanim klik dojdzie.
+            onMouseDown={(e) => e.preventDefault()}
+            className="absolute z-30 mt-2 max-h-[70vh] w-full overflow-y-auto rounded-2xl border border-kreska bg-papier-2 py-2 text-left shadow-karta-2"
+          >
+            {pusto ? (
+              <p className="px-4 py-3 text-sm text-atrament-2">
+                Nic nie znaleźliśmy. Szukamy w nazwach gmin, nazwiskach posłów, tytułach głosowań
+                i ustaw oraz wśród firm — po nazwie albo po numerze NIP.
+              </p>
+            ) : null}
+
+            {widoczne.gminy.length ? (
+              <Grupa tytul="Gminy — posłowie i publiczne pieniądze">
+                {widoczne.gminy.map((g) => (
+                  <Link key={g.teryt} href={`/gmina/${g.teryt}`} role="option" aria-selected={indeks(`g${g.teryt}`) === aktywny} className={klasaPozycji(`g${g.teryt}`)}>
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">{g.nazwa}</span>
+                      <span className="block truncate text-xs text-atrament-3">{opisGminy(g)}</span>
+                    </span>
+                    <span className="shrink-0 text-sm text-akcent">
+                      {`okręg ${g.okreg}${g.okregNazwa ? ` · ${g.okregNazwa}` : ''} →`}
+                    </span>
+                  </Link>
+                ))}
+              </Grupa>
+            ) : null}
+
+            {widoczne.poslowie.length ? (
+              <Grupa tytul="Posłowie">
+                {widoczne.poslowie.map((p) => (
+                  <Link key={p.slug} href={`/posel/${p.slug}`} role="option" aria-selected={indeks(`p${p.slug}`) === aktywny} className={klasaPozycji(`p${p.slug}`)}>
+                    <span className="font-medium">{p.nazwa}</span>
+                    <span className="text-sm text-atrament-2">{p.klub ?? 'bez klubu'}</span>
+                    <span className="ml-auto truncate text-xs text-atrament-3">
+                      {p.aktywny ? (p.okreg ?? '') : 'mandat wygasł'}
+                    </span>
+                  </Link>
+                ))}
+              </Grupa>
+            ) : null}
+
+            {widoczne.ustawy.length ? (
+              <Grupa tytul={`Ustawy — droga przez Sejm (${widoczne.ustawWszystkich})`}>
+                {widoczne.ustawy.map((u) => (
+                  <Link key={u.numer} href={`/ustawa/${u.numer}`} role="option" aria-selected={indeks(`u${u.numer}`) === aktywny} className={klasaPozycji(`u${u.numer}`)}>
+                    <span className="liczby shrink-0 text-xs text-atrament-3">{`druk ${u.numer}`}</span>
+                    <span className="min-w-0 flex-1 text-sm leading-snug">{u.tytul}</span>
+                    <span className="shrink-0 text-xs text-atrament-3">{u.stan}</span>
+                  </Link>
+                ))}
+              </Grupa>
+            ) : null}
+
+            {widoczne.firmy.length ? (
+              <Grupa tytul="Firmy — pomoc publiczna">
+                {widoczne.firmy.map((f) => (
+                  <Link key={f.nip} href={`/firma/${f.nip}`} role="option" aria-selected={indeks(`f${f.nip}`) === aktywny} className={klasaPozycji(`f${f.nip}`)}>
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">{f.nazwa}</span>
+                      <span className="block truncate text-xs text-atrament-3">{f.opis}</span>
+                    </span>
+                    <span className="liczby shrink-0 text-xs text-atrament-3">{f.nip}</span>
+                  </Link>
+                ))}
+              </Grupa>
+            ) : null}
+
+            {widoczne.glosowania.length ? (
+              <Grupa tytul={`Głosowania (${widoczne.glosowanWszystkich})`}>
+                {widoczne.glosowania.map((g) => (
+                  <Link key={g.id} href={`/glosowanie/${g.id}`} role="option" aria-selected={indeks(`v${g.id}`) === aktywny} className={klasaPozycji(`v${g.id}`)}>
+                    <span className="liczby shrink-0 text-xs text-atrament-3">{dataKrotko(g.data)}</span>
+                    <span className="text-sm leading-snug">{skroc(g.tytul, 110)}</span>
+                  </Link>
+                ))}
+              </Grupa>
+            ) : null}
+
+            {!pusto ? (
+              <Link
+                href={`/szukaj?q=${encodeURIComponent(q)}${zParametrem}`}
+                role="option"
+                aria-selected={indeks('wszystko') === aktywny}
+                className={`mt-1 block border-t border-kreska px-4 pt-3 pb-1.5 text-sm text-akcent ${indeks('wszystko') === aktywny ? 'underline' : ''}`}
+              >
+                {`Wszystkie wyniki dla „${q}” →`}
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      {liczby ? (
+        <fieldset className="zakresy">
+          <legend className="sr-only">Gdzie szukać</legend>
+          {ZAKRESY.map((z) => {
+            const ile = z === 'gminy' ? liczby.gminy : z === 'poslowie' ? liczby.poslowie : null;
+            return (
+              <label key={z}>
+                <input
+                  type="radio"
+                  name="zakres"
+                  value={z}
+                  checked={zakres === z}
+                  onChange={() => { ustawZakres(z); ustawAktywny(-1); }}
+                  // Tylko klikniecie (detail > 0): strzalki w grupie radio tez wywoluja
+                  // click, a przeniesienie fokusu w pole przerwaloby im chodzenie.
+                  onClick={(e) => { if (e.detail > 0 && q.length >= 2) pole.current?.focus(); }}
+                />
+                <span>
+                  {OPIS_ZAKRESU[z].etykieta}
+                  {ile !== null ? <span className="ile">{` (${liczba(ile)})`}</span> : null}
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
       ) : null}
+      </form>
     </div>
   );
 }

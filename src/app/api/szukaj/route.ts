@@ -1,5 +1,5 @@
 import { szukaj } from '@/lib/dane';
-import { opisFirmy, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
+import { opisFirmy, zakresZParametru, type OdpowiedzWyszukiwania } from '@/lib/wyszukiwanie';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { skroc } from '@/lib/format';
 import { opisJednaLinia } from '@/lib/opis-glosowania';
@@ -9,11 +9,14 @@ import { opisJednaLinia } from '@/lib/opis-glosowania';
  * ktora dziala bez JavaScriptu — ta trasa tylko przyspiesza pisanie.
  */
 export async function GET(zadanie: Request) {
-  const fraza = (new URL(zadanie.url).searchParams.get('q') ?? '').slice(0, 120);
-  const w = szukaj(fraza, 5);
+  const parametry = new URL(zadanie.url).searchParams;
+  const fraza = (parametry.get('q') ?? '').slice(0, 120);
+  const zakres = zakresZParametru(parametry.get('zakres'));
+  const w = szukaj(fraza, 5, zakres);
 
   const odpowiedz: OdpowiedzWyszukiwania = {
     fraza,
+    zakres,
     gminy: w.gminy.slice(0, 5).map((g) => ({
       teryt: g.teryt,
       nazwa: g.nazwa,

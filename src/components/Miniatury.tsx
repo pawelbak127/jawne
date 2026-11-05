@@ -54,6 +54,32 @@ export function MiniPolkole({ bloki, opis }: { bloki: readonly BlokMiniatury[]; 
  * Miniatura mapy 16 wojewodztw (src/lib/mini-mapa.ts, z PRG). `barwa` zwraca
  * wypelnienie dla wojewodztwa (po nazwie) albo undefined — wtedy tlo neutralne.
  */
+/**
+ * Pole NIP-u na karcie „Sprawdź firmę”: dziesięć pustych kratek w układzie
+ * 3-3-2-2. Puste celowo — przykładowy numer byłby numerem czyjejś firmy.
+ * Ozdoba: treść niesie podpis karty, stąd aria-hidden.
+ */
+export function MiniNip() {
+  const SZER = 16;
+  const ODSTEP = 3;
+  const MIEDZY_GRUPAMI = 10;
+  const kratki: number[] = [];
+  let x = 6;
+  for (const ile of [3, 3, 2, 2]) {
+    for (let i = 0; i < ile; i++) {
+      kratki.push(x);
+      x += SZER + (i < ile - 1 ? ODSTEP : 0);
+    }
+    x += MIEDZY_GRUPAMI;
+  }
+  return (
+    <svg viewBox="0 0 220 76" aria-hidden="true" className="mini-nip block h-auto w-full">
+      <text x="6" y="22" className="mini-nip-napis">NIP</text>
+      {kratki.map((k) => <rect key={k} x={k} y="34" width={SZER} height="28" />)}
+    </svg>
+  );
+}
+
 export function MiniMapa({ opis, barwa }: { opis: string; barwa?: (nazwa: string) => string | undefined }) {
   return (
     <svg viewBox={`0 0 ${MINI_MAPA.szer} ${MINI_MAPA.wys}`} role="img" aria-label={opis} className="block h-auto w-full">

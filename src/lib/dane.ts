@@ -17,6 +17,8 @@ import { policzPomocGminy, pomocGminyZeSum } from './pomoc-gminy';
 import type { WierszPorownania } from './porownanie-gmin';
 import { KONTAKT } from './adres';
 import { zwinDoPowiatow, type LudnoscGminy, type WartoscNaMapie } from './mapa';
+import { kodyKomisjiUstawy } from './komisje-ustawy';
+import type { Zakres } from './wyszukiwanie';
 import {
   DNI_USTALONE, KLUCZ_FIRM_DO_MAPY, KLUCZ_MAPY_POMOCY, KLUCZ_PRZEGLADU, podpisDni, policzMapePomocy,
   policzPrzeglad, type Czytnik, type PrzegladPomocy,
@@ -686,17 +688,18 @@ export type WynikiWyszukiwania = {
  * klawiaturze ogonek to dodatkowy klawisz i ludzie go pomijaja. Glosowania
  * ida przez FTS5 — patrz uwagi w tekst.ts o odmianie i o literze "ł".
  */
-export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
+export function szukaj(fraza: string, ileGlosowan = 8, zakres: Zakres = 'wszystko'): WynikiWyszukiwania {
   const pusty: WynikiWyszukiwania = { fraza, poslowie: [], gminy: [], glosowania: [], glosowanWszystkich: 0, firmy: [], ustawy: [], ustawWszystkich: 0 };
   const q = uprosc(fraza.trim());
   if (q.length < 2 || !bazaDostepna()) return pusty;
+  const szukamy = (z: Zakres) => zakres === 'wszystko' || zakres === z;
 
   indeksPoslow ??= listaPoslow().map((p) => ({
     ...p,
     klucz: uprosc(p.imie_nazwisko),
     kluczNazwiska: uprosc(p.nazwisko),
   }));
-  const poslowie = indeksPoslow
+  const poslowie = !szukamy('poslowie') ? [] : indeksPoslow
     .filter((p) => p.klucz.includes(q))
     // Najpierw trafienie od poczatku nazwiska, potem sprawujacy mandat.
     .sort((a, b) =>
@@ -705,7 +708,7 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
       || a.nazwisko.localeCompare(b.nazwisko, 'pl'))
     .slice(0, 8);
 
-  const gminy: GminaWWyszukiwaniu[] = bezTabeli(
+  const gminy: GminaWWyszukiwaniu[] = !szukamy('gminy') ? [] : bezTabeli(
     () => wszystkie<GminaWWyszukiwaniu>(
       `select g.teryt as teryt, g.nazwa as nazwa, g.rodzaj as rodzaj, g.powiat as powiat,
               g.wojewodztwo as wojewodztwo, g.okreg_nr as okreg_nr, g.uprawnionych as uprawnionych,
@@ -722,7 +725,7 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
 
   // Warszawy nie ma w tabeli gmin (sa 18 dzielnic), a to jej ludzie szukaja
   // najczesciej. Dokladamy ja z przodu, gdy fraza pasuje do nazwy miasta.
-  if ('warszawa'.startsWith(q) || q.startsWith('warszaw')) {
+  if (szukamy('gminy') && ('warszawa'.startsWith(q) || q.startsWith('warszaw'))) {
     const w = warszawaJakoGmina();
     if (w && !gminy.some((g) => g.teryt === TERYT_WARSZAWY)) {
       gminy.unshift({
@@ -736,8 +739,9 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
 
   let glosowania: GlosowanieSkrot[] = [];
   let glosowanWszystkich = 0;
-  const fts = zapytanieFts(fraza);
-  if (fts) {
+  // Glosowania maja tylko zakres „wszystko”; ustawy ten sam indeks co dotad.
+  const fts = szukamy('ustawy') ? zapytanieFts(fraza) : null;
+  if (fts && zakres === 'wszystko') {
     glosowania = bezTabeli(
       () => wszystkie<GlosowanieSkrot>(
         `select ${KOLUMNY_GLOSOWANIA}
@@ -777,12 +781,24 @@ export function szukaj(fraza: string, ileGlosowan = 8): WynikiWyszukiwania {
   }
   // Numer druku tez jest kluczem: „druk 30" i „30" maja trafiac w proces.
   const numer = fraza.trim().replace(/^druk\s*(nr)?\s*/i, '');
-  if (/^\d{1,4}$/.test(numer) && !ustawy.some((u) => u.numer === numer)) {
+  if (szukamy('ustawy') && /^\d{1,4}$/.test(numer) && !ustawy.some((u) => u.numer === numer)) {
     const p = proces(numer);
     if (p) { ustawy.unshift(p); ustawWszystkich++; }
   }
 
-  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich, firmy: szukajFirm(fraza), ustawy, ustawWszystkich };
+  return { fraza, poslowie, gminy, glosowania, glosowanWszystkich, firmy: szukamy('firmy') ? szukajFirm(fraza) : [], ustawy, ustawWszystkich };
+}
+
+/**
+ * Liczby na filtrach wyszukiwarki: tyle, ile dany filtr naprawde przeszukuje.
+ * Poslow jest wiecej niz mandatow, bo szukamy tez posla z wygaslym mandatem
+ * (zasada 5: nikogo nie ukrywamy); Warszawa to jedna gmina (pulapka 24).
+ */
+export function liczbyWyszukiwarki(): { gminy: number; poslowie: number } {
+  return {
+    gminy: wojewodztwaGmin().reduce((a, w) => a + w.gmin, 0),
+    poslowie: listaPoslow().length,
+  };
 }
 
 export type FirmaSkrot = {
@@ -1582,7 +1598,8 @@ export function ostatnioUchwalone(ile: number): ProcesSkrot[] {
   );
 }
 
-export type UstawaZWynikiem = { p: ProcesSkrot; glosowanie: Glosowanie | null };
+export type KomisjaUstawy = { kod: string; nazwa: string };
+export type UstawaZWynikiem = { p: ProcesSkrot; glosowanie: Glosowanie | null; komisje: KomisjaUstawy[] };
 
 /**
  * Ostatnio uchwalone ustawy razem z OSTATNIM glosowaniem nad calosc — na
@@ -1593,13 +1610,20 @@ export type UstawaZWynikiem = { p: ProcesSkrot; glosowanie: Glosowanie | null };
  * Kilka zapytan po kluczu na ustawe — strona glowna pyta o 3–4.
  */
 export function ostatnioUchwaloneZWynikiem(ile: number): UstawaZWynikiem[] {
+  const nazwyKomisji = new Map(listaKomisji().map((k) => [k.kod, k.nazwa]));
   return ostatnioUchwalone(ile).map((p) => {
-    const zEtapow = etapyProcesu(p.numer)
+    const etapy = etapyProcesu(p.numer);
+    // Tylko komisje, ktore mamy w spisie: znacznik prowadzi do ich strony.
+    const komisje = kodyKomisjiUstawy(etapy).flatMap((kod) => {
+      const nazwa = nazwyKomisji.get(kod);
+      return nazwa ? [{ kod, nazwa }] : [];
+    });
+    const zEtapow = etapy
       .filter((e) => e.glos_posiedzenie !== null && e.glos_numer !== null && e.glosowanie_mamy > 0)
       .map((e) => glosowanie(e.glos_posiedzenie!, e.glos_numer!))
       .filter((g): g is Glosowanie => g !== null);
     const kandydaci = zEtapow.length ? zEtapow : glosowaniaPoDruku(p.numer);
-    return { p, glosowanie: [...kandydaci].reverse().find((g) => opisGlosowania(g).nadCaloscia) ?? null };
+    return { p, glosowanie: [...kandydaci].reverse().find((g) => opisGlosowania(g).nadCaloscia) ?? null, komisje };
   });
 }
 

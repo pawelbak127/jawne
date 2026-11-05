@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { bazaDostepna, szukaj } from '@/lib/dane';
+import { bazaDostepna, liczbyWyszukiwarki, szukaj } from '@/lib/dane';
 import { liczba, zlote, zOdmiana } from '@/lib/format';
-import { opisFirmy, opisGminy } from '@/lib/wyszukiwanie';
+import { OPIS_ZAKRESU, opisFirmy, opisGminy, zakresZParametru } from '@/lib/wyszukiwanie';
 import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
 import { BrakDanych } from '@/components/BrakDanych';
 import { PozycjaGlosowania } from '@/components/PozycjaGlosowania';
@@ -18,11 +18,13 @@ export const metadata: Metadata = {
 
 const GLOSOWAN_NA_STRONIE = 50;
 
-export default async function StronaSzukaj({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function StronaSzukaj({ searchParams }: { searchParams: Promise<{ q?: string; zakres?: string }> }) {
   if (!bazaDostepna()) return <BrakDanych />;
-  const { q = '' } = await searchParams;
+  const { q = '', zakres: parametrZakresu } = await searchParams;
   const fraza = q.slice(0, 120);
-  const w = szukaj(fraza, GLOSOWAN_NA_STRONIE);
+  const zakres = zakresZParametru(parametrZakresu);
+  const { wsrod } = OPIS_ZAKRESU[zakres];
+  const w = szukaj(fraza, GLOSOWAN_NA_STRONIE, zakres);
   const grupy = [
     { id: 'gminy-w', nazwa: 'gminy', ile: w.gminy.length },
     { id: 'poslowie-w', nazwa: 'posłowie', ile: w.poslowie.length },
@@ -37,11 +39,11 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
     <div className="obszar">
       <Okruszek ogniwa={[{ nazwa: 'Szukaj' }]} />
       <Wypis
-        tytul={krotka ? 'Szukaj' : `Wyniki dla „${fraza.trim()}”: ${liczba(razem)}`}
+        tytul={krotka ? 'Szukaj' : `Wyniki dla „${fraza.trim()}”${wsrod ? ` ${wsrod}` : ''}: ${liczba(razem)}`}
         podtytul="Gminy, posłowie, ustawy, firmy i głosowania — każda grupa prowadzi do pełnej strony."
       />
       <div className="mt-5 max-w-xl">
-        <Szukajka poczatkowa={fraza} />
+        <Szukajka poczatkowa={fraza} liczby={liczbyWyszukiwarki()} poczatkowyZakres={zakres} />
       </div>
 
       {krotka ? (
@@ -50,7 +52,11 @@ export default async function StronaSzukaj({ searchParams }: { searchParams: Pro
           głosowania lub ustawy, numer druku albo nazwę bądź NIP firmy.
         </p>
       ) : razem === 0 ? (
-        <p className="mt-6 text-atrament-2">{`Nic nie znaleźliśmy dla „${fraza}”.`}</p>
+        <p className="mt-6 text-atrament-2">
+          {`Nic nie znaleźliśmy dla „${fraza}”${wsrod ? ` ${wsrod}` : ''}.`}
+          {/* Pusty wynik filtra nie moze wygladac jak brak danych w calym serwisie. */}
+          {wsrod ? <>{' '}<Link href={`/szukaj?q=${encodeURIComponent(fraza.trim())}`}>{`Szukaj „${fraza.trim()}” we wszystkich działach →`}</Link></> : null}
+        </p>
       ) : (
         <nav className="zakladki" aria-label="Grupy wyników">
           {grupy.map((g) => (

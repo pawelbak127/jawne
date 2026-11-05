@@ -1,15 +1,13 @@
 import Link from 'next/link';
 import {
-  bazaDostepna, kluby, liczbaProcesow, ostatnioUchwaloneZWynikiem, przegladPomocy,
-  wojewodztwaGmin, zrodloImportu, type Glosowanie,
+  bazaDostepna, kluby, liczbaProcesow, liczbyWyszukiwarki, ostatnioUchwaloneZWynikiem,
+  przegladPomocy, zrodloImportu,
 } from '@/lib/dane';
-import { dataKrotko, liczba, okresDni, skroc, zlote, zOdmiana } from '@/lib/format';
-import { bezNazwiskOsobPrywatnych } from '@/lib/prywatnosc';
-import { tytulUstawy } from '@/lib/tytul-ustawy';
-import { BARWY_GLOSU } from '@/lib/barwy-glosu';
+import { dataKrotko, liczba, okresDni, zlote, zOdmiana } from '@/lib/format';
 import { BrakDanych } from '@/components/BrakDanych';
-import { MiniMapa, MiniPolkole, type BlokMiniatury } from '@/components/Miniatury';
-import { PaseczekGlosow } from '@/components/PaseczekGlosow';
+import { KartaUstawy } from '@/components/KartaUstawy';
+import { MiniMapa, MiniNip, MiniPolkole, type BlokMiniatury } from '@/components/Miniatury';
+import { Szukajka } from '@/components/Szukajka';
 import { WarunkiSudop, ZRODLO_SUDOP } from '@/components/WarunkiSudop';
 import { Dzial, Podstawa, Wiersz, Wiersze } from '@/components/Szablon';
 
@@ -23,6 +21,9 @@ import { Dzial, Podstawa, Wiersz, Wiersze } from '@/components/Szablon';
  * w gminach jedna liczba z zakresem dat. „Co mamy” i „Uklad izby” wypadly —
  * dublowaly reszte strony; zasady sa w stopce i na /o-serwisie.
  *
+ * Audyt z 05.11.2026 (docs/przebudowa/audyt-2026-11.md): jedno pole z filtrami
+ * zamiast trzech, krotsze karty, a karty ustaw odkrywaja szczegoly stopniowo.
+ *
  * Przyklady: dwie miejscowosci i dwa tematy. Celowo bez nazwisk —
  * nazwisko wybrane przez nas na stronie glownej czyta sie jak wyroznienie.
  */
@@ -31,24 +32,10 @@ const PRZYKLADY = ['Kraków', 'Zakopane', 'podatek', 'sygnaliści'];
 /** Szesc odcieni z /mapa (MapaGmin) — kubelki po kwantylach, nie ciagly gradient. */
 const BARWY_MAPY = ['#dbeee9', '#b3ddd3', '#84c7b6', '#55ac97', '#2f8a76', '#1b6152'];
 
-/** Bloki polkola wedlug GLOSU (nie posla) — za, przeciw, wstrzymali sie, obecni bez glosu, nieobecni. */
-function blokiGlosowania(g: Glosowanie): BlokMiniatury[] {
-  const bezGlosu = Math.max(0, g.glosowalo - g.za - g.przeciw - g.wstrzymalo);
-  return [
-    { id: 'za', ile: g.za, barwa: BARWY_GLOSU.za.jasny, barwaCiemna: BARWY_GLOSU.za.ciemny },
-    { id: 'przeciw', ile: g.przeciw, barwa: BARWY_GLOSU.przeciw.jasny, barwaCiemna: BARWY_GLOSU.przeciw.ciemny },
-    { id: 'wstrzymal', ile: g.wstrzymalo, barwa: BARWY_GLOSU.wstrzymal.jasny, barwaCiemna: BARWY_GLOSU.wstrzymal.ciemny },
-    { id: 'obecny', ile: bezGlosu, barwa: BARWY_GLOSU.inne.jasny, barwaCiemna: BARWY_GLOSU.inne.ciemny },
-    { id: 'brak', ile: g.nieobecnych, barwa: BARWY_GLOSU.brak.jasny, barwaCiemna: BARWY_GLOSU.brak.ciemny },
-  ].filter((b) => b.ile > 0);
-}
-
 export default function StronaGlowna() {
   if (!bazaDostepna()) return <BrakDanych />;
 
   const listaKlubow = kluby();
-  // Ta sama liczba co na /gminy: Warszawa raz, nie 18 dzielnic (pulapka 24).
-  const gminLiczba = wojewodztwaGmin().reduce((a, w) => a + w.gmin, 0);
   const ustawUchwalonych = liczbaProcesow('projekt ustawy', 'uchwalone');
   const ustawy = ostatnioUchwaloneZWynikiem(4);
   const pomoc = przegladPomocy();
@@ -57,7 +44,6 @@ export default function StronaGlowna() {
   // Kluby w kolejnosci z kluby.ts (od lewej strony sali), tylko z mandatami.
   const klubyIzby = listaKlubow.filter((k) => (k.mandaty ?? 0) > 0);
   const blokiIzby: BlokMiniatury[] = klubyIzby.map((k) => ({ id: k.id, ile: k.mandaty ?? 0, barwa: k.barwa, barwaCiemna: k.barwaCiemna }));
-  const mandatow = blokiIzby.reduce((a, b) => a + b.ile, 0);
 
   const ludnosc = pomoc && pomoc.wojewodztwa.length >= 16 && pomoc.wojewodztwa.every((w) => w.osob)
     ? pomoc.wojewodztwa.reduce((a, w) => a + (w.osob ?? 0), 0)
@@ -80,11 +66,7 @@ export default function StronaGlowna() {
           Ile publicznych pieniędzy trafia do Twojej gminy.
         </h1>
         <p className="podtytul">Wszystko z rejestrów publicznych — przy każdej liczbie odnośnik do źródła.</p>
-        <form action="/szukaj" method="get" role="search" className="bohater-szukaj">
-          <label htmlFor="szukaj-glowna" className="sr-only">Szukaj gminy, posła, firmy albo NIP-u</label>
-          <input id="szukaj-glowna" name="q" type="search" className="pole" placeholder="Gmina, poseł, firma, NIP" />
-          <button type="submit">Szukaj</button>
-        </form>
+        <Szukajka wariant="bohater" etykieta="Szukaj gminy, posła, firmy albo NIP-u" liczby={liczbyWyszukiwarki()} />
         <p className="bohater-przyklady">
           {'Na przykład: '}
           {PRZYKLADY.map((p, i) => (
@@ -105,22 +87,18 @@ export default function StronaGlowna() {
         <Link href="/gminy" className="karta">
           <span className="karta-obraz"><MiniMapa opis="Mapa Polski z podziałem na województwa" /></span>
           <b>Moja gmina →</b>
-          <span>{`Budżet, fundusze UE, pomoc dla firm i zamówienia — ${liczba(gminLiczba)} gmin, zawsze na mieszkańca.`}</span>
+          <span>Budżet, fundusze UE i pomoc dla firm, zawsze na mieszkańca.</span>
         </Link>
         <Link href="/poslowie" className="karta">
           <span className="karta-obraz"><MiniPolkole bloki={blokiIzby} opis={`Sejm: ${klubyIzby.map((k) => `${k.id} ${k.mandaty}`).join(', ')}`} /></span>
           <b>Mój poseł →</b>
-          <span>{`Jak głosuje i kiedy inaczej niż klub — ${liczba(mandatow)} posłów w ${zOdmiana(klubyIzby.length, 'klubie', 'klubach', 'klubach')}. Barwy klubów są nasze, nie partyjne.`}</span>
+          <span>Jak głosuje i kiedy inaczej niż klub.</span>
         </Link>
-        <div className="karta">
-          <form action="/firmy" method="get" role="search" className="karta-obraz karta-firma">
-            <label htmlFor="szukaj-firmy-glowna" className="sr-only">Nazwa firmy albo NIP</label>
-            <input id="szukaj-firmy-glowna" name="q" type="search" className="pole" placeholder="Nazwa firmy albo NIP" />
-            <button type="submit">Sprawdź firmę</button>
-          </form>
-          <b>Firma</b>
-          <span>Pomoc publiczna dla firmy, po nazwie albo NIP-ie — a na jej stronie także wygrane zamówienia.</span>
-        </div>
+        <Link href="/firmy" className="karta">
+          <span className="karta-obraz"><MiniNip /></span>
+          <b>Sprawdź firmę po NIP →</b>
+          <span>Pomoc publiczna i wygrane zamówienia.</span>
+        </Link>
       </nav>
 
       {ustawy.length ? (
@@ -129,39 +107,8 @@ export default function StronaGlowna() {
           tytul="Ostatnio w Sejmie"
           obok={<Podstawa adres="https://api.sejm.gov.pl/sejm/term10/processes" nazwa="rejestr procesów" />}
         >
-          <ul className="pozycje ustawy-glowna">
-            {ustawy.map(({ p, glosowanie: g }, i) => {
-              const t = tytulUstawy(bezNazwiskOsobPrywatnych(p.tytul));
-              return (
-                <li key={p.numer} className={i === 0 && g ? 'z-polkolem' : undefined}>
-                  <div className="min-w-0">
-                    <p className="meta">
-                      {[t.autor ? `projekt ${t.autor}` : null, p.data_zakonczenia ? `uchwalona ${dataKrotko(p.data_zakonczenia)}` : 'uchwalona', `druk ${p.numer}`].filter(Boolean).join(' · ')}
-                    </p>
-                    <Link href={`/ustawa/${p.numer}`} className="tytul-poz">{skroc(t.krotki, 150)}</Link>
-                    {p.opis ? (
-                      <p className="streszczenie">
-                        {skroc(bezNazwiskOsobPrywatnych(p.opis.charAt(0).toLocaleUpperCase('pl-PL') + p.opis.slice(1)), 230)}
-                        <span className="etykieta-zrodla"> — opis z rejestru</span>
-                      </p>
-                    ) : null}
-                    {g ? (
-                      <>
-                        <PaseczekGlosow g={g} className="mt-2 max-w-xl" zOpisem />
-                        <p className="meta mt-1">
-                          <Link href={`/glosowanie/${g.posiedzenie}-${g.numer}`}>{`Głosowanie nad całością, ${dataKrotko(g.data)} →`}</Link>
-                        </p>
-                      </>
-                    ) : null}
-                  </div>
-                  {i === 0 && g ? (
-                    <div className="polkole-ustawy">
-                      <MiniPolkole bloki={blokiGlosowania(g)} opis={`Głosowanie nad całością: za ${g.za}, przeciw ${g.przeciw}, wstrzymało się ${g.wstrzymalo}, nieobecnych ${g.nieobecnych}`} />
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
+          <ul className="pozycje">
+            {ustawy.map((u) => <KartaUstawy key={u.p.numer} ustawa={u} />)}
           </ul>
           <p className="pliki">
             <Link href="/ustawy?stan=uchwalone">{`Wszystkie ${liczba(ustawUchwalonych)} uchwalone ustawy →`}</Link>
