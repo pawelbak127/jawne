@@ -270,13 +270,30 @@ EOF
   # przez caly czas budowy, a przerwa trwa tyle, co restart.
   krok "Budowa strony (kilkanascie minut; strona dziala na starej wersji)"
   jako rm -rf .next-budowa
-  # „Killed" bez zadnego wyjasnienia to komunikat POWLOKI o zabiciu procesu
-  # przez jadro. Nazwijmy mechanizm od razu, zamiast kazac go szukac.
-  if ! jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build"; then
+  # CZCIONKI PLYNA Z GOOGLE PRZY KAZDEJ BUDOWIE, a Google czasem podaje adres
+  # bez rozszerzenia (`/l/font?kit=…`), na ktorym loader Next 16.3 sie wywraca
+  # (pulapka 85). Blad przejsciowy i pada w 25. sekundzie, wiec ponawiamy —
+  # ale TYLKO ten jeden: inny blad budowy ponowiony dwa razy to strata czasu,
+  # a przy braku pamieci jeszcze dwa razy to samo zabicie procesu.
+  dziennik_budowy=$(mktemp)
+  for proba in 1 2 3; do
+    kod=0
+    jako bash -c "set -a; . '$USTAWIENIA'; set +a; JAWNE_KATALOG_BUDOWY=.next-budowa exec npm run build" 2>&1 | tee "$dziennik_budowy" || kod=$?
+    [ "$kod" -eq 0 ] && break
+    if [ "$proba" -lt 3 ] && grep -qF 'An error occurred in `next/font`' "$dziennik_budowy"; then
+      echo "Budowa padla na czcionce z Google Fonts (blad przejsciowy, pulapka 85). Proba $((proba + 1)) z 3 za minute."
+      jako rm -rf .next-budowa
+      sleep 60
+      continue
+    fi
+    # „Killed" bez zadnego wyjasnienia to komunikat POWLOKI o zabiciu procesu
+    # przez jadro. Nazwijmy mechanizm od razu, zamiast kazac go szukac.
     echo "Budowa nie doszla do konca. Ostatnie zabicia procesu przez jadro (brak pamieci):"
     dmesg -T 2>/dev/null | grep -iE 'killed process|out of memory' | tail -3 | sed 's/^/   /'       || echo "   (dziennik jadra niedostepny — sprawdz: sudo dmesg -T | grep -i 'killed process')"
+    rm -f "$dziennik_budowy"
     exit 1
-  fi
+  done
+  rm -f "$dziennik_budowy"
   [ -f "$KATALOG/.next-budowa/prerender-manifest.json" ]     || { echo "Budowa nie zostawila kompletu plikow — nie podmieniam dzialajacej strony."; exit 1; }
 
   # Next dopisuje do tsconfig.json sciezki katalogu budowy. Wpisy dla

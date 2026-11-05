@@ -1163,6 +1163,26 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     Zasada: **duplikat w stronicowaniu to objaw, a nie cały błąd — policz,
     czy różnych jest tyle, ile mówi licznik.**
 
+85. **Budowa zależy od Google Fonts przy każdym wdrożeniu — i pada na jednej
+    odpowiedzi na kilkanaście.** ZMIERZONE 05.11.2026: `aktualizuj` z 03.11
+    padł po 25 s budowy na `TypeError: Cannot read properties of null
+    (reading '1')` w `next/font`. Google zwykle podaje plik czcionki jako
+    `/s/….woff2`, ale czasem jako `/l/font?kit=…` bez rozszerzenia, a loader
+    w Next 16.3.5 wyciąga rozszerzenie z adresu i nie sprawdza wyniku. Ten sam
+    adres CSS i ten sam podpis przeglądarki, w 15 zapytaniach co sekundę:
+    IBM Plex Sans 1 raz `/l/font`, pozostałe trzy kroje 0 razy. **Pierwszy
+    pomiar kłamał w obie strony:** jedno zapytanie dało `/l/font` („Google
+    zmienił format”), następne `/s/` („już działa”), a 96 kolejnych szło
+    z uciętym podpisem i się nie liczy. Lokalnie nie widać tego przy budowie
+    z gotową pamięcią podręczną. Stara strona działała dalej, a zadania wróciły
+    same, więc jedynym śladem było „strona NIE jest zbudowana z tego kodu”.
+    `instaluj.sh` ponawia budowę do trzech razy, ale TYLKO przy tym błędzie
+    (sprawdzone na czterech scenariuszach na prawdziwym bloku skryptu).
+    Właściwa naprawa to Next ≥ 16.4.3, gdzie rozszerzenie nie pochodzi już
+    z adresu (w 16.3.8 i 16.4.2 błąd jeszcze jest). Zasada: **odpowiedź cudzej
+    usługi mierz serią, nie jednym strzałem** — i **każda zależność od sieci
+    w budowie to losowa awaria wdrożenia, tylko jeszcze niewylosowana.**
+
 ---
 
 ## Bezpieczeństwo

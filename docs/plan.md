@@ -43,6 +43,20 @@ Zdjęcie tego jest ostatnim krokiem, nie pierwszym.
   w `/prywatnosc` sekcje „Kto jeszcze ma dostęp” i „Dziennik wejść” (dziś mówią,
   że nie ma zewnętrznej analityki) i dopisać `JAWNE_UMAMI_ID` do `jawne ustaw`.
 
+### Stan na 05.11.2026
+
+**Na serwerze działa `298db4e`** (wdrożone 02.11, 23:27): `/wynagrodzenia-zarzadow`
+i dział „Rolnictwo”. **`aktualizuj` z 03.11 padł na budowie** przez czcionkę
+z Google Fonts (pułapka 85); stara strona działała dalej, zadania wróciły same.
+Nic czytelnikowi nie przepadło: `9b36ddb` zmienia tylko `deploy/`, a jednostki
+i `zadanie.sh` weszły przed budową (`SuccessExitStatus=75` działa). `instaluj.sh`
+ponawia teraz budowę przy tym jednym błędzie. **Do decyzji:** aktualizacja Next
+do ≥ 16.4.3 — właściwa naprawa, ale trzeba zmierzyć pamięć budowy (pułapka 58).
+**Zadanie `fundusze` 05.11:** lista 2014–2020 wreszcie z pliku z 02.10 (pułapka
+84; liczba projektów bez zmian, 103 822), pierwszy CORDIS na serwerze: 1 038,8
++ 743,2 mln EUR, bez gminy 72 udziały (12,5 mln EUR), REGON i współrzędne zgodne
+w 98,6%. Zadanie `gus` 03.11 pobrało akcyzę, sumy jak lokalnie.
+
 ### Stan na 02.11.2026
 
 **Na serwerze działa `5a62808`** (wdrożone 02.11, 20:29): statystyki wpis po
