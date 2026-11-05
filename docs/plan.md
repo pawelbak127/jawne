@@ -59,6 +59,8 @@ na serwerze oraz pierwszy przebieg `porzadki` w nowym katalogu.
 84; liczba projektów bez zmian, 103 822), pierwszy CORDIS na serwerze: 1 038,8
 + 743,2 mln EUR, bez gminy 72 udziały (12,5 mln EUR), REGON i współrzędne zgodne
 w 98,6%. Zadanie `gus` 03.11 pobrało akcyzę, sumy jak lokalnie.
+**Audyt UX/UI:** Moduły 1 i 2 na gałęzi `przeglad-ux`, do oceny Pawła; plan Modułów
+3 i 4 oraz koszt cofnięcia F12: `docs/przebudowa/audyt-2026-11.md`.
 
 ### Stan na 02.11.2026
 

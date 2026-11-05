@@ -1221,6 +1221,14 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     w którym nasze skrypty znają jego katalogi — „działa” mówi o stronie, a nie
     o tym, co ją sprząta.**
 
+87. **Next podpina Reacta pod `document`, więc `e.stopPropagation()` nie zatrzyma
+    słuchacza na `document`.** ZMIERZONE 05.11.2026 testem w przeglądarce: Escape
+    w menu rozwijanym miał oddać fokus przyciskowi, a ogólne zamykanie paneli
+    w `Nawigacja` wołało zaraz `blur()`. Typecheck, lint i testy jednostkowe tego
+    nie widzą. Rozstrzyga cel zdarzenia (`closest('.rozwijane')`). W tym samym
+    miejscu: reguła z `@layer components` przegrywa z klasą Tailwinda z warstwy
+    `utilities`, stąd `!important` przy wysokości paska głosów na karcie ustawy.
+
 ---
 
 ## Bezpieczeństwo

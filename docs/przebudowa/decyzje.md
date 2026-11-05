@@ -11,3 +11,4 @@
 | 07.10.2026 | który styl domyślny | moje założenie: **Standardowy (J+G)** — najbardziej typowy układ przy pierwszym wejściu z wyszukiwarki | do potwierdzenia przez Pawła |
 | 07.10.2026 | pozostałe motywy | archiwum z działającymi prototypami obu rund, opisami i planszami: `archiwum/` | zrobione |
 | — | warunki UOKiK zwinięte do jednej linii | bez odpowiedzi | czeka |
+| 05.11.2026 | audyt UX: menu na komputerze | rozwijane „Sejm” i „Pieniądze publiczne” oraz linki „Mapa” i „O danych”; cofa F12 na komputerze (powody i koszt: `audyt-2026-11.md`) | na gałęzi `przeglad-ux`, do oceny Pawła |
