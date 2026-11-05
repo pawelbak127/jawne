@@ -50,8 +50,11 @@ i dział „Rolnictwo”. **`aktualizuj` z 03.11 padł na budowie** przez czcion
 z Google Fonts (pułapka 85); stara strona działała dalej, zadania wróciły same.
 Nic czytelnikowi nie przepadło: `9b36ddb` zmienia tylko `deploy/`, a jednostki
 i `zadanie.sh` weszły przed budową (`SuccessExitStatus=75` działa). `instaluj.sh`
-ponawia teraz budowę przy tym jednym błędzie. **Do decyzji:** aktualizacja Next
-do ≥ 16.4.3 — właściwa naprawa, ale trzeba zmierzyć pamięć budowy (pułapka 58).
+ponawia teraz budowę przy tym jednym błędzie. **Next 16.4.5 czeka na `aktualizuj`
+(pułapka 86, pilne: zawiera poprawki bezpieczeństwa):** pamięć budowy bez zmian,
+58 z 59 adresów identycznych, `porzadki` poprawione pod nowe miejsce pamięci
+podręcznej. Po wdrożeniu sprawdzić `sudo jawne stan`, wersje `next` i `sharp`
+na serwerze oraz pierwszy przebieg `porzadki` w nowym katalogu.
 **Zadanie `fundusze` 05.11:** lista 2014–2020 wreszcie z pliku z 02.10 (pułapka
 84; liczba projektów bez zmian, 103 822), pierwszy CORDIS na serwerze: 1 038,8
 + 743,2 mln EUR, bez gminy 72 udziały (12,5 mln EUR), REGON i współrzędne zgodne

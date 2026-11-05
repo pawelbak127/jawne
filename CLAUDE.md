@@ -938,7 +938,8 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     `Disallow: /`, podpisany jak Chrome z dopiskiem. Teraz: Caddy oddaje mu
     403, a zadanie `jawne-porzadki` co 6 h usuwa wpisy pamięci podręcznej
     STRON FIRM starsze niż doba (tylko `{id}.html/.rsc/.meta/.segments`,
-    nigdy katalogi z kodem trasy); wdrożenie czyści je też z `.next-poprzednia`.
+    nigdy katalogi z kodem trasy); wdrożenie czyści je też z `.next-poprzednia`
+    (miejsce tych wpisów zmieniło się od Next 16.3.8 — pułapka 86).
     Gmin, głosowań, ustaw i organów jest skończona liczba — tych nie
     usuwamy, bo zimne renderowanie Warszawy to 9 s blokady całego procesu
     (zmierzone 14.10.2026; koszt to odczyt wszystkich firm miasta, nie REGON).
@@ -1182,6 +1183,43 @@ PRESENT 21 315 | VOTE_VALID 3 485        (VOTE_INVALID: 0 wystąpień)
     z adresu (w 16.3.8 i 16.4.2 błąd jeszcze jest). Zasada: **odpowiedź cudzej
     usługi mierz serią, nie jednym strzałem** — i **każda zależność od sieci
     w budowie to losowa awaria wdrożenia, tylko jeszcze niewylosowana.**
+    **Zrobione 05.11.2026 (16.4.5):** ta sama atrapa odpowiedzi Google
+    (`NEXT_FONT_GOOGLE_MOCKED_RESPONSES`, wszystkie adresy `/l/font`) wywraca
+    16.3.5 błędem z wdrożenia, a 16.4.5 buduje. Ponawianie zostaje, bo sieć
+    w budowie zostaje.
+
+86. **Aktualizacja Next przeniosła pamięć podręczną stron — a żadne porównanie
+    odpowiedzi tego nie widzi.** ZMIERZONE 05.11.2026 przy przejściu z 16.3.5
+    na 16.4.5: od 16.3.8 (tam pierwszy raz jest `route-cache-key.js`) strona
+    renderowana na żądanie leży w
+    `.next/server/route-cache/APP_PAGE/<sha256 trasy>/$/firma/{nip}.*`, a nie
+    w `.next/server/app/firma/{nip}.*`. Katalog powstaje dopiero przy ruchu;
+    po świeżej budowie go nie ma. Czytelnik nie widzi różnicy: 58 z 59 adresów
+    ma ten sam status, nagłówki, treść i elementy (jedyna zmiana: `/_next/image`
+    dla brakującego pliku 400 → 404), obrazki OG są identyczne bajt w bajt,
+    testy, build i przeglądarka przechodzą. Ale zadanie `porzadki` (pułapka 73)
+    szukało w starym miejscu, więc przestałoby usuwać cokolwiek, wypisując
+    zwyczajne „1 MB -> 1 MB”, a dysk rósłby bez sufitu. Wyszło dopiero z pytania,
+    czy wpisy w ogóle pojawiają się tam, gdzie je sprzątamy. Teraz `porzadki`
+    czyści oba miejsca, a wdrożenie usuwa `route-cache` poprzedniej wersji.
+    Sprawdzone blokiem wyciętym ze skryptu na prawdziwym układzie: świeży wpis
+    zostaje, postarzony znika, kod trasy nietknięty, po restarcie `MISS` i nowy
+    wpis. Pamięć przy jednym workerze, jak na 2 rdzeniach serwera
+    (`CIRCLE_NODE_TOTAL=2`; bez tego lokalnie 16 procesów i 4,1 GB, co o serwerze
+    nic nie mówi):
+
+    | | 16.3.5 | 16.4.5 |
+    |---|---|---|
+    | kompilacja, szczyt | 697–719 MB | 707–722 MB |
+    | pełna budowa, szczyt | 956 MB | 960–1 005 MB |
+    | strona po ruchu (59 adresów) | 371 MB | 343 MB |
+    | pliki statyczne | 1 283 kB | 1 313 kB |
+
+    O wydaniach bezpieczeństwa z 22.09, 30.09, 14.10 i 03.11 dowiedzieliśmy się
+    dopiero przy tej aktualizacji, bo nic ich nie pilnuje; gałąź 16.3 nie dostaje
+    już poprawek. Zasada: **po aktualizacji frameworka sprawdź każde miejsce,
+    w którym nasze skrypty znają jego katalogi — „działa” mówi o stronie, a nie
+    o tym, co ją sprząta.**
 
 ---
 

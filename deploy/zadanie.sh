@@ -123,7 +123,11 @@ case "${1:-}" in
     # Krakow 5,8 s, a przez ten czas nie odpowiada zadna strona (pulapka 69).
     # Koszt to przeczytanie wszystkich firm miasta (Wroclaw: 82 tys. wierszy,
     # 0,94 s na zimno), nie REGON (0,05 s) — sprawdzone, zanim cos zmienilem.
-    for k in .next/server/app/firma; do
+    #
+    # MIEJSCE WPISOW ZMIENILO SIE W NEXT 16.3.8 (pulapka 86): server/app/firma
+    # -> server/route-cache/APP_PAGE/<sha256 trasy>/$/firma. Stara sciezka
+    # zostaje na wypadek cofniecia do poprzedniej wersji.
+    for k in .next/server/route-cache/APP_PAGE/*/\$/firma .next/server/app/firma; do
       [ -d "$k" ] || continue
       przed=$(du -sm "$k" | cut -f1)
       find "$k" -mindepth 1 -maxdepth 1 \( -name '*.html' -o -name '*.rsc' -o -name '*.meta' -o -name '*.segments' \) \

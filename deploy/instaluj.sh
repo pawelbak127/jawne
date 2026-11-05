@@ -270,10 +270,10 @@ EOF
   # przez caly czas budowy, a przerwa trwa tyle, co restart.
   krok "Budowa strony (kilkanascie minut; strona dziala na starej wersji)"
   jako rm -rf .next-budowa
-  # CZCIONKI PLYNA Z GOOGLE PRZY KAZDEJ BUDOWIE, a Google czasem podaje adres
-  # bez rozszerzenia (`/l/font?kit=…`), na ktorym loader Next 16.3 sie wywraca
-  # (pulapka 85). Blad przejsciowy i pada w 25. sekundzie, wiec ponawiamy —
-  # ale TYLKO ten jeden: inny blad budowy ponowiony dwa razy to strata czasu,
+  # CZCIONKI PLYNA Z GOOGLE PRZY KAZDEJ BUDOWIE (pulapka 85). Adres bez
+  # rozszerzenia (`/l/font?kit=…`) naprawil Next 16.4, ale sama zaleznosc od
+  # sieci zostaje, a blad przejsciowy pada juz w 25. sekundzie, wiec ponawiamy —
+  # TYLKO ten jeden: inny blad budowy ponowiony dwa razy to strata czasu,
   # a przy braku pamieci jeszcze dwa razy to samo zabicie procesu.
   dziennik_budowy=$(mktemp)
   for proba in 1 2 3; do
@@ -309,12 +309,16 @@ EOF
   # Poprzednia wersja zostaje do cofniecia, ale BEZ swojej pamieci podrecznej
   # stron: ZMIERZONE 13.10.2026 bylo to 7,2 GB, ktore lezalyby do nastepnego
   # wdrozenia. Do cofniecia potrzebny jest kod, strony wyrenderuja sie same.
+  # Do Next 16.3.7 wpisy leza obok kodu trasy w server/app; od 16.3.8 w osobnym
+  # server/route-cache, ktory powstaje dopiero przy ruchu (pulapka 86). Pierwsze
+  # wdrozenie po aktualizacji ma poprzednia wersje jeszcze w starym ukladzie.
   if [ -d "$KATALOG/.next-poprzednia/server/app" ]; then
     jako find .next-poprzednia/server/app/firma .next-poprzednia/server/app/gmina \
       .next-poprzednia/server/app/glosowanie .next-poprzednia/server/app/organ \
       .next-poprzednia/server/app/ustawa -mindepth 1 -maxdepth 1 \
       \( -name '*.html' -o -name '*.rsc' -o -name '*.meta' -o -name '*.segments' \) \
       -exec rm -rf {} + 2>/dev/null || true
+    jako rm -rf .next-poprzednia/server/route-cache
   fi
   # Z CZEGO zbudowano — zeby `sudo jawne stan` mogl to porownac z HEAD.
   # ZMIERZONE 03.10.2026: HEAD stal piec commitow i dziewiec godzin PRZED
